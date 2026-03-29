@@ -32,7 +32,7 @@ export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl
 
     // Public routes
-    const publicRoutes = ['/login', '/signup']
+    const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password']
     const isPublicRoute = publicRoutes.some((r) => pathname.startsWith(r))
 
     if (!user && !isPublicRoute) {
