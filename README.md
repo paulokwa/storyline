@@ -1,5 +1,18 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Environment Variables
+
+To run the project locally, you need to set up your environment variables. 
+
+1. Copy the `.env.example` file to `.env.local`:
+   ```bash
+   cp .env.example .env.local
+   ```
+2. Open `.env.local` and fill in your actual credentials.
+
+> [!WARNING]
+> Please do not commit your `.env.local` file to Git. It is already included in `.gitignore`.
+
 ## Getting Started
 
 First, run the development server:

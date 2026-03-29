@@ -7,27 +7,33 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { PenLine, AlertCircle } from 'lucide-react'
+import { PenLine, AlertCircle, Sparkles } from 'lucide-react'
 
-export default function LoginPage() {
+export default function ResetPasswordPage() {
     const router = useRouter()
-    const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [confirmPassword, setConfirmPassword] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
+        if (password !== confirmPassword) {
+            setError('Passwords do not match')
+            return
+        }
+
         setLoading(true)
         setError('')
 
         const supabase = createClient()
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        const { error } = await supabase.auth.updateUser({ password })
 
         if (error) {
             setError(error.message)
             setLoading(false)
         } else {
+            // Success! Password updated.
             router.push('/library')
             router.refresh()
         }
@@ -45,36 +51,32 @@ export default function LoginPage() {
                 </div>
 
                 <div className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 p-10">
-                    <h1 className="text-3xl font-serif text-slate-800 mb-2 leading-tight">Welcome back</h1>
-                    <p className="text-slate-400 font-medium mb-8">Sign in to your creative sanctuary</p>
+                    <h1 className="text-3xl font-serif text-slate-800 mb-2 leading-tight">Secure your account</h1>
+                    <p className="text-slate-400 font-medium mb-8">Set your new manuscript key</p>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-2">
-                            <Label htmlFor="email" className="text-[11px] font-sans tracking-widest uppercase text-slate-400 ml-1">Email</Label>
+                            <Label htmlFor="password" className="text-[11px] font-sans tracking-widest uppercase text-slate-400 ml-1">New Password</Label>
                             <Input
-                                id="email"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="you@example.com"
+                                id="password"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="At least 8 characters"
+                                minLength={8}
                                 required
                                 className="h-12 bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-4 transition-all"
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <div className="flex items-center justify-between ml-1">
-                                <Label htmlFor="password" className="text-[11px] font-sans tracking-widest uppercase text-slate-400">Password</Label>
-                                <Link href="/forgot-password" className="text-[11px] font-sans tracking-widest uppercase text-[#546354] hover:underline font-semibold transition-all">
-                                    Forgot password?
-                                </Link>
-                            </div>
+                            <Label htmlFor="confirmPassword" className="text-[11px] font-sans tracking-widest uppercase text-slate-400 ml-1">Confirm New Password</Label>
                             <Input
-                                id="password"
+                                id="confirmPassword"
                                 type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                placeholder="Repeat your new password"
                                 required
                                 className="h-12 bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-4 transition-all"
                             />
@@ -88,17 +90,19 @@ export default function LoginPage() {
                         )}
 
                         <Button type="submit" className="w-full h-12 bg-[#546354] hover:bg-[#3d4a3d] text-white rounded-full font-serif italic text-lg shadow-lg hover:shadow-xl transition-all duration-300" disabled={loading}>
-                            {loading ? 'Opening the gates…' : 'Step Inside'}
+                            {loading ? 'Securing…' : 'Update Password'}
                         </Button>
                     </form>
                 </div>
 
-                <p className="text-center text-sm text-slate-400 mt-8">
-                    New to the sanctuary?{' '}
-                    <Link href="/signup" className="text-[#546354] font-semibold hover:underline">
-                        Create an account
-                    </Link>
-                </p>
+                <div className="mt-8 text-center pt-2">
+                    <p className="text-slate-400 text-sm font-medium">
+                        Remembered it?{' '}
+                        <Link href="/login" className="text-[#546354] font-semibold hover:underline transition-colors">
+                            Sign in instead
+                        </Link>
+                    </p>
+                </div>
             </div>
         </div>
     )

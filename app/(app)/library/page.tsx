@@ -7,15 +7,21 @@ import { Plus } from 'lucide-react'
 
 export const metadata = { title: 'My Projects — Storyline' }
 
+export const dynamic = 'force-dynamic'
+
 export default async function LibraryPage() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login')
 
-    const { data: projects } = await supabase
+    const { data: projects, error } = await supabase
         .from('projects')
         .select('*')
         .order('updated_at', { ascending: false })
+
+    if (error) {
+        console.error('Error fetching projects:', error)
+    }
 
     return (
         <div className="fade-in">

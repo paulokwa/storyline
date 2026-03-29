@@ -5,8 +5,9 @@ import { createClient } from '@/lib/supabase/client'
 import StructureTree from './StructureTree'
 import SceneEditor from './SceneEditor'
 import WritingModeToggle from '@/components/shared/WritingModeToggle'
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, BookOpen, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Plus } from 'lucide-react'
 import type { Database, WritingMode } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
 
@@ -34,7 +35,7 @@ export default function StoryTab({ project, initialNodes, initialScenes }: Story
     const handleWritingModeChange = useCallback(async (mode: WritingMode) => {
         setWritingMode(mode)
         const supabase = createClient()
-        await supabase.from('projects').update({ writing_mode: mode }).eq('id', project.id)
+        await (supabase as any).from('projects').update({ writing_mode: mode }).eq('id', project.id)
     }, [project.id])
 
     const handleNodesChange = useCallback((updated: StructureNode[]) => {
@@ -96,6 +97,8 @@ export default function StoryTab({ project, initialNodes, initialScenes }: Story
                             scene={activeScene}
                             writingMode={writingMode}
                             onUpdate={handleSceneUpdate}
+                            isProjectEmpty={nodes.length <= (project.type === 'tv_script' ? 3 : 2)}
+                            projectType={project.type as any}
                         />
                     ) : activeNodeId ? (
                         <SceneEditorPlaceholder
@@ -105,7 +108,10 @@ export default function StoryTab({ project, initialNodes, initialScenes }: Story
                             onCreated={handleSceneCreated}
                         />
                     ) : (
-                        <EmptyEditorState />
+                        <EmptyEditorState
+                            projectType={project.type as any}
+                            isProjectEmpty={nodes.length === 0}
+                        />
                     )}
                 </div>
             </div>
@@ -113,14 +119,51 @@ export default function StoryTab({ project, initialNodes, initialScenes }: Story
     )
 }
 
-function EmptyEditorState() {
+
+function EmptyEditorState({ projectType, isProjectEmpty }: { projectType: 'tv_script' | 'novel', isProjectEmpty: boolean }) {
     return (
-        <div className="flex flex-col items-center justify-center h-full text-center px-8 py-16">
-            <div className="text-4xl mb-4">✍️</div>
-            <h3 className="text-lg font-medium text-slate-700 mb-2">Select a scene to start writing</h3>
-            <p className="text-sm text-slate-400 max-w-xs">
-                Click on a scene in the structure panel on the left, or add a new one.
+        <div className="flex flex-col items-center justify-center min-h-full text-center px-10 py-12 animate-in fade-in zoom-in duration-700">
+            <div className="w-20 h-20 bg-white/50 rounded-full flex items-center justify-center mb-8 shadow-sm border border-white">
+                <BookOpen className="w-8 h-8 text-slate-300" />
+            </div>
+            <h3 className="text-2xl font-serif text-slate-800 mb-6 tracking-tight">Start your story here.</h3>
+            <p className="text-slate-500 max-w-sm leading-relaxed font-medium mb-12">
+                Use the panel on the left to add episodes and scenes,<br className="hidden md:block" /> or begin writing in this scene.
             </p>
+
+            {isProjectEmpty && (
+                <div className="w-full max-w-md bg-[#f5f4ef]/80 border border-[#546354]/10 rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.03)] backdrop-blur-sm text-left animate-in slide-in-from-bottom-4 duration-1000">
+                    <h4 className="text-sm font-serif italic text-[#546354]/80 mb-6 flex items-center gap-2">
+                        <Sparkles className="w-4 h-4" /> You're just getting started.
+                    </h4>
+                    <div className="space-y-8">
+                        <div className="flex items-start gap-5">
+                            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-white border border-[#546354]/10 shadow-sm flex items-center justify-center text-xs font-bold text-[#546354]">1</span>
+                            <div className="space-y-1">
+                                <p className="text-sm font-bold text-slate-700">Add an {projectType === 'tv_script' ? 'episode' : 'chapter'}</p>
+                                <p className="text-xs text-slate-400">Click in the structure panel to begin.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-5">
+                            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-white border border-[#546354]/10 shadow-sm flex items-center justify-center text-xs font-bold text-[#546354]">2</span>
+                            <div className="space-y-1">
+                                <p className="text-sm font-bold text-slate-700">Create a scene</p>
+                                <p className="text-xs text-slate-400">Hover over your container to add scenes.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-5">
+                            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-white border border-[#546354]/10 shadow-sm flex items-center justify-center text-xs font-bold text-[#546354]">3</span>
+                            <div className="space-y-1">
+                                <p className="text-sm font-bold text-slate-700">Begin writing</p>
+                                <p className="text-xs text-slate-400">Select any scene to open the canvas.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <p className="mt-10 text-[10px] text-center font-bold uppercase tracking-widest text-[#546354]/30">You can always reorganize later.</p>
+                </div>
+            )}
+
+            <div className="mt-12 w-32 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
         </div>
     )
 }
@@ -136,10 +179,10 @@ function SceneEditorPlaceholder({ nodeId, projectId, writingMode, onCreated }: {
     async function create() {
         setCreating(true)
         const supabase = createClient()
-        const { data } = await supabase.from('scenes').insert({
+        const { data } = await (supabase as any).from('scenes').insert({
             node_id: nodeId, project_id: projectId, writing_mode: writingMode
         }).select().single()
-        if (data) onCreated(data)
+        if (data) onCreated(data as any)
         setCreating(false)
     }
 

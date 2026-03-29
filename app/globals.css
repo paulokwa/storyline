@@ -51,21 +51,41 @@ body {
 /* Editor typography */
 .editor-content {
   font-family: var(--editor-font);
-  font-size: 1.0625rem;
+  font-size: 1.125rem;
   line-height: 1.8;
-  color: hsl(222, 14%, 18%);
+  color: #31332f;
 }
 
 .editor-content p {
-  margin-bottom: 1em;
+  margin-bottom: 1.5em;
 }
 
+/* TipTap Placeholder Refinement */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #adb5bd;
+  pointer-events: none;
+  height: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* Ensure no focus ring on the editor itself */
+.ProseMirror:focus {
+  outline: none !important;
+  border: none !important;
+}
+
+/* Custom placeholder styling for "Simple" mode */
 .editor-content p.is-empty::before {
-  color: hsl(var(--muted-foreground));
+  color: #a0a09a;
   content: attr(data-placeholder);
   float: left;
   height: 0;
   pointer-events: none;
+  font-style: italic;
+  font-family: var(--editor-font);
+  opacity: 0.6;
 }
 
 /* Screenplay mode formatting */

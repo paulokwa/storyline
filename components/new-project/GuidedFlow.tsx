@@ -79,11 +79,17 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
     return (
         <div className="fade-in space-y-12">
             <div className="flex items-center justify-between">
-                <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/60">
+                <div className="flex flex-col gap-2">
+                    <span className="text-[10px] font-extrabold uppercase tracking-[0.3em] text-[#546354]/60">
                         Guided Flow · {stepIndex + 1} of {STEPS.length}
                     </span>
-                    <h2 className="text-sm font-medium text-slate-400">Phase: {STAGE_LABELS[step]}</h2>
+                    <div className="w-24 h-1 bg-stone-200/40 rounded-full overflow-hidden shadow-inner">
+                        <div
+                            className="h-full bg-[#546354] rounded-full transition-all duration-1000 ease-in-out"
+                            style={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }}
+                        />
+                    </div>
+                    <h2 className="text-sm font-medium text-slate-400 mt-1">Phase: {STAGE_LABELS[step]}</h2>
                 </div>
             </div>
 
@@ -132,7 +138,7 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
                                 key={t}
                                 onClick={() => setData(d => ({ ...d, tone: d.tone === t ? '' : t }))}
                                 className={cn(
-                                    'text-sm py-4 px-5 rounded-2xl transition-all text-left font-medium border-2',
+                                    'text-sm py-4 px-5 rounded-2xl transition-all text-left font-medium border-2 active:scale-[0.98]',
                                     data.tone === t
                                         ? 'border-primary bg-primary/5 text-primary shadow-inner'
                                         : 'border-transparent bg-stone-50/50 text-slate-500 hover:bg-stone-100 hover:text-slate-800'

@@ -140,10 +140,16 @@ export default function StructureTree({
 
                 <div className="flex-1 overflow-y-auto py-2">
                     {rootNodes.length === 0 ? (
-                        <div className="text-center py-10 px-4">
-                            <p className="text-xs text-slate-400 mb-4 truncate">No {rootLabel.toLowerCase()}s yet.</p>
-                            <Button variant="outline" size="sm" onClick={addRootNode} className="text-xs h-8">
-                                Add your first {rootLabel.toLowerCase()}
+                        <div className="text-center py-16 px-6">
+                            <p className="text-sm text-slate-400 mb-6 font-serif italic">
+                                Start your story by creating your first {rootLabel.toLowerCase()}.
+                            </p>
+                            <Button
+                                onClick={addRootNode}
+                                className="bg-white hover:bg-slate-50 text-[#546354] border border-[#546354]/10 shadow-sm transition-all duration-300 rounded-xl px-6"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                + Create {rootLabel}
                             </Button>
                         </div>
                     ) : (
@@ -196,6 +202,8 @@ function NodeItem({ node, nodes, activeNodeId, depth, onSelect, onAddChild, onDe
     const children = buildTree(nodes, node.id)
     const Icon = NODE_ICONS[node.type as NodeType] ?? FileText
     const isScene = node.type === 'scene'
+    const isAct = node.type === 'act'
+    const isRoot = node.type === 'episode' || node.type === 'chapter'
     const isActive = isScene && activeNodeId === node.id
 
     function handleClick(e: React.MouseEvent) {
@@ -214,22 +222,37 @@ function NodeItem({ node, nodes, activeNodeId, depth, onSelect, onAddChild, onDe
         <div>
             <div
                 className={cn(
-                    'group flex items-center gap-2 py-2 px-4 mx-2 rounded-xl cursor-pointer transition-all text-sm mb-1',
-                    isActive ? 'bg-white text-[#546354] shadow-sm font-medium' : 'text-slate-500 hover:bg-white/40',
+                    'group flex items-center gap-2 py-3 px-4 mx-3 rounded-2xl cursor-pointer transition-all duration-300 text-sm mb-1 relative border border-transparent',
+                    isActive
+                        ? 'bg-white text-[#546354] shadow-[0_8px_24px_rgba(0,0,0,0.06)] font-bold border-[#546354]/10 z-10'
+                        : 'text-slate-500 hover:bg-white/60',
+                    isRoot && 'font-serif italic text-base py-4 bg-white/30 backdrop-blur-sm border-white/40 mb-2 mt-2 shadow-[0_2px_8px_rgba(0,0,0,0.02)]',
+                    isAct && 'font-semibold text-slate-700 py-2.5',
+                    isScene && 'text-slate-500 py-2'
                 )}
-                style={{ paddingLeft: `${12 + depth * 16}px` }}
+                style={{ paddingLeft: `${16 + depth * 24}px` }}
                 onMouseEnter={() => setHovered(true)}
                 onMouseLeave={() => setHovered(false)}
                 onClick={handleClick}
             >
+                {/* Visual indicator for active scene */}
+                {isActive && (
+                    <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-[#546354] rounded-full shadow-[0_0_12px_rgba(84,99,84,0.3)]" />
+                )}
+
                 {!isScene && (
-                    <span className="text-slate-400">
-                        {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                    <span className="text-slate-400 group-hover:text-[#546354] transition-colors">
+                        {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     </span>
                 )}
-                {isScene && <div className="w-3.5" />}
+                {isScene && <div className="w-4" />}
 
-                <Icon className={cn('w-4 h-4 shrink-0', isActive ? 'text-primary' : 'text-slate-400')} />
+                <Icon className={cn(
+                    'shrink-0 transition-transform duration-300',
+                    isRoot ? 'w-5 h-5 text-[#546354]/80' : 'w-4 h-4',
+                    isActive ? 'text-[#546354] scale-110' : 'text-slate-400',
+                    isAct && 'text-slate-500'
+                )} />
 
                 {editing ? (
                     <input
@@ -241,12 +264,16 @@ function NodeItem({ node, nodes, activeNodeId, depth, onSelect, onAddChild, onDe
                             if (e.key === 'Escape') { setDraft(node.title); setEditing(false) }
                         }}
                         onClick={e => e.stopPropagation()}
-                        className="flex-1 bg-white border border-primary/20 rounded px-1 text-xs outline-none h-6 font-serif italic"
+                        className="flex-1 bg-white border border-[#546354]/20 rounded-xl px-3 text-xs outline-none h-8 font-serif italic shadow-inner"
                         autoFocus
                     />
                 ) : (
                     <span
-                        className="flex-1 truncate"
+                        className={cn(
+                            "flex-1 truncate",
+                            isRoot && "tracking-tight text-[#485748]",
+                            isScene && "text-slate-600 font-medium"
+                        )}
                         onDoubleClick={(e) => { e.stopPropagation(); setEditing(true) }}
                     >
                         {node.title}
@@ -257,25 +284,21 @@ function NodeItem({ node, nodes, activeNodeId, depth, onSelect, onAddChild, onDe
                     <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
                         {CHILD_TYPE[node.type as keyof typeof CHILD_TYPE] && (
                             <Tooltip>
-                                <TooltipTrigger>
-                                    <button
-                                        onClick={() => onAddChild(node)}
-                                        className="p-1 rounded hover:bg-primary/10 text-slate-400 hover:text-primary"
-                                    >
-                                        <Plus className="w-3.5 h-3.5" />
-                                    </button>
+                                <TooltipTrigger
+                                    onClick={() => onAddChild(node)}
+                                    className="p-1 rounded hover:bg-primary/10 text-slate-400 hover:text-primary"
+                                >
+                                    <Plus className="w-3.5 h-3.5" />
                                 </TooltipTrigger>
                                 <TooltipContent side="top">{CHILD_LABELS[node.type as keyof typeof CHILD_LABELS]}</TooltipContent>
                             </Tooltip>
                         )}
                         <Tooltip>
-                            <TooltipTrigger>
-                                <button
-                                    onClick={() => onDelete(node)}
-                                    className="p-1 rounded hover:bg-red-100 text-slate-400 hover:text-red-600"
-                                >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                            <TooltipTrigger
+                                onClick={() => onDelete(node)}
+                                className="p-1 rounded hover:bg-red-100 text-slate-400 hover:text-red-600"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" />
                             </TooltipTrigger>
                             <TooltipContent side="top">Delete</TooltipContent>
                         </Tooltip>

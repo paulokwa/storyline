@@ -40,46 +40,60 @@ export default function NewProjectPage() {
 
     async function createProject(extras?: {
         title?: string; premise?: string; tone?: string; setting?: string;
-        firstCharacterName?: string; firstIdea?: string
+        firstCharacterName?: string; firstIdea?: string;
+        writingMode?: WritingMode;
     }) {
         if (creating) return
         setCreating(true)
         const supabase = createClient()
 
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+            setCreating(false)
+            console.error("No user found")
+            return
+        }
+
+        const payload: any = {
+            user_id: user.id,
+            title: state.title || extras?.title || 'My New Project',
+            type: state.type!,
+            writing_mode: extras?.writingMode || state.writingMode!,
+        }
+
+        if (extras?.premise) payload.premise = extras.premise
+        if (extras?.tone) payload.tone = extras.tone
+        if (extras?.setting) payload.setting = extras.setting
+
+        console.log("Supabase Insert Payload:", JSON.stringify(payload, null, 2))
+
         const { data: project, error } = await (supabase as any)
             .from('projects')
-            .insert({
-                title: state.title || extras?.title || 'My New Project',
-                type: state.type!,
-                writing_mode: state.writingMode!,
-                premise: extras?.premise ?? null,
-                tone: extras?.tone ?? null,
-                setting: extras?.setting ?? null,
-            })
+            .insert(payload)
             .select()
             .single()
 
         if (error || !project) {
+            console.error("Supabase Insert Error:", error)
             setCreating(false)
             return
         }
 
-        // Scaffold structure nodes ... (omitted for tool brevity, I'll keep the logic from previous session)
-        // I will actually provide the full logic here to avoid corruption
+        // Scaffold structure nodes
         if (state.type === 'tv_script') {
             const { data: episode } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, type: 'episode', title: 'Episode 1', order_index: 0 }).select().single()
             if (episode) {
                 const { data: act } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (episode as any).id, type: 'act', title: 'Act 1', order_index: 0 }).select().single()
                 if (act) {
                     const { data: scene } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (act as any).id, type: 'scene', title: 'Scene 1', order_index: 0 }).select().single()
-                    if (scene) await (supabase as any).from('scenes').insert({ node_id: (scene as any).id, project_id: project.id, writing_mode: state.writingMode! })
+                    if (scene) await (supabase as any).from('scenes').insert({ node_id: (scene as any).id, project_id: project.id, writing_mode: payload.writing_mode })
                 }
             }
         } else {
             const { data: chapter } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, type: 'chapter', title: 'Chapter 1', order_index: 0 }).select().single()
             if (chapter) {
                 const { data: scene } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (chapter as any).id, type: 'scene', title: 'Scene 1', order_index: 0 }).select().single()
-                if (scene) await (supabase as any).from('scenes').insert({ node_id: (scene as any).id, project_id: project.id, writing_mode: state.writingMode! })
+                if (scene) await (supabase as any).from('scenes').insert({ node_id: (scene as any).id, project_id: project.id, writing_mode: payload.writing_mode })
             }
         }
 
@@ -101,12 +115,12 @@ export default function NewProjectPage() {
                         </div>
                         <span className="text-sm">Archive</span>
                     </Link>
-                    <div className="flex flex-col items-end gap-1.5">
-                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">Phase {currentStepIndex + 1} of {steps.length}</span>
-                        <div className="w-32 h-1 bg-stone-100 rounded-full overflow-hidden">
+                    <div className="flex flex-col items-end gap-2">
+                        <span className="text-[10px] font-extrabold uppercase tracking-[0.3em] text-[#546354]/60">Phase {currentStepIndex + 1} of {steps.length}</span>
+                        <div className="w-40 h-1.5 bg-stone-200/40 rounded-full overflow-hidden shadow-inner">
                             <div
-                                className="h-1 bg-primary rounded-full transition-all duration-700 ease-out"
-                                style={{ width: `${Math.max(12, progress)}%` }}
+                                className="h-full bg-[#546354] rounded-full transition-all duration-1000 ease-in-out shadow-[0_0_8px_rgba(84,99,84,0.3)]"
+                                style={{ width: `${Math.max(8, progress)}%` }}
                             />
                         </div>
                     </div>
@@ -114,6 +128,14 @@ export default function NewProjectPage() {
 
                 <div className="w-full max-w-2xl px-6">
                     <div className="sanctuary-card rounded-[2.5rem] p-10 md:p-14 relative overflow-hidden animate-in fade-in zoom-in-95 duration-1000">
+                        {step === 'title' && (
+                            <StepTitle
+                                value={state.title}
+                                onChange={(title) => setState(s => ({ ...s, title }))}
+                                onContinue={() => setStep('type')}
+                            />
+                        )}
+
                         {step === 'type' && (
                             <StepTypeSelect
                                 value={state.type}
@@ -141,13 +163,11 @@ export default function NewProjectPage() {
                             <StepWritingMode
                                 value={state.writingMode}
                                 onSelect={(writingMode) => {
-                                    const nextState = { ...state, writingMode }
-                                    setState(nextState)
+                                    setState(s => ({ ...s, writingMode }))
                                     if (state.startMode === 'guided') {
                                         setStep('guided')
                                     } else {
-                                        // Trigger creation with current local state to avoid race conditions
-                                        createProject()
+                                        createProject({ writingMode })
                                     }
                                 }}
                                 onBack={() => setStep('start_mode')}
@@ -343,10 +363,10 @@ function TypeCard({ icon, title, description, selected, onClick, disabled }: {
             onClick={onClick}
             disabled={disabled}
             className={cn(
-                'group text-left p-8 rounded-3xl transition-all duration-500 relative border border-transparent',
+                'group text-left p-8 rounded-[2rem] transition-all duration-500 relative border border-transparent active:scale-[0.98]',
                 selected
-                    ? 'bg-primary/5 border-primary/20 shadow-inner'
-                    : 'bg-stone-50/50 hover:bg-white hover:shadow-xl hover:scale-[1.02] border-transparent',
+                    ? 'bg-[#546354]/5 border-[#546354]/10 shadow-inner'
+                    : 'bg-stone-50/50 hover:bg-white hover:shadow-[0_20px_50px_rgba(0,0,0,0.06)] hover:-translate-y-2 border-transparent',
                 disabled && 'opacity-50 cursor-not-allowed'
             )}
         >
@@ -359,13 +379,15 @@ function TypeCard({ icon, title, description, selected, onClick, disabled }: {
             <div className="font-serif text-xl text-slate-800 mb-2 group-hover:text-primary transition-colors">{title}</div>
             <div className="text-sm text-slate-500 leading-relaxed font-medium">{description}</div>
 
-            {selected && (
-                <div className="absolute top-4 right-4">
-                    <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center animate-in zoom-in-0 duration-300">
-                        <ChevronRight className="w-4 h-4 text-white" />
+            {
+                selected && (
+                    <div className="absolute top-4 right-4">
+                        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center animate-in zoom-in-0 duration-300">
+                            <ChevronRight className="w-4 h-4 text-white" />
+                        </div>
                     </div>
-                </div>
-            )}
-        </button>
+                )
+            }
+        </button >
     )
 }

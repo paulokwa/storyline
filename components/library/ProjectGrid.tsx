@@ -83,7 +83,7 @@ function ProjectCard({ project }: { project: Project }) {
     return (
         <Link
             href={`/project/${project.id}/story`}
-            className="group block sanctuary-card rounded-[2rem] p-8 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl relative overflow-hidden"
+            className="group block sanctuary-card rounded-[2rem] p-8 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl relative overflow-hidden active:scale-[0.98]"
         >
             <div className="relative z-10">
                 <div className="flex items-start justify-between mb-8">
