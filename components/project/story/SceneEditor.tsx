@@ -3,7 +3,7 @@
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
-import { useEffect, useCallback, useRef, useState } from 'react'
+import { useEffect, useCallback, useRef, useState, useImperativeHandle, forwardRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Database, WritingMode } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
@@ -12,10 +12,16 @@ import FirstTimeGuidance from './FirstTimeGuidance'
 
 type Scene = Database['public']['Tables']['scenes']['Row']
 
+export interface SceneEditorRef {
+    appendContent: (text: string) => void
+    getText: () => string
+}
+
 interface SceneEditorProps {
     scene: Scene
     writingMode: WritingMode
     onUpdate: (scene: Scene) => void
+    onTextChange?: (text: string) => void
     isProjectEmpty?: boolean
     projectType?: 'tv_script' | 'novel'
 }
@@ -23,7 +29,14 @@ interface SceneEditorProps {
 const SIMPLE_PLACEHOLDER = 'Start your story here. Use the panel on the left to add episodes and scenes, or begin writing in this scene.'
 const SCREENPLAY_PLACEHOLDER = 'INT. LOCATION — DAY\n\nAction begins here.'
 
-export default function SceneEditor({ scene, writingMode, onUpdate, isProjectEmpty, projectType }: SceneEditorProps) {
+const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({ 
+    scene, 
+    writingMode, 
+    onUpdate, 
+    onTextChange, 
+    isProjectEmpty, 
+    projectType 
+}: SceneEditorProps, ref: React.ForwardedRef<SceneEditorRef>) => {
     const [isSaving, setIsSaving] = useState(false)
     const [manualDismiss, setManualDismiss] = useState(false)
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -59,8 +72,9 @@ export default function SceneEditor({ scene, writingMode, onUpdate, isProjectEmp
         ],
         content: scene.content as object ?? null,
         autofocus: 'end',
-        onUpdate: ({ editor }) => {
+        onUpdate: ({ editor }: { editor: any }) => {
             setIsSaving(true)
+            if (onTextChange) onTextChange(editor.getText())
             if (saveTimer.current) clearTimeout(saveTimer.current)
             saveTimer.current = setTimeout(() => {
                 save(editor.getJSON())
@@ -73,6 +87,13 @@ export default function SceneEditor({ scene, writingMode, onUpdate, isProjectEmp
         },
     })
 
+    // Sync initial text to parent on mount
+    useEffect(() => {
+        if (editor && onTextChange) {
+            onTextChange(editor.getText())
+        }
+    }, [editor, onTextChange])
+
     // When scene changes, update editor content
     useEffect(() => {
         if (editor && scene.content) {
@@ -83,6 +104,25 @@ export default function SceneEditor({ scene, writingMode, onUpdate, isProjectEmp
             }
         }
     }, [scene.id, editor])
+
+    useImperativeHandle(ref, () => ({
+        appendContent: (text: string) => {
+            if (editor) {
+                editor.commands.focus('end')
+                // Build proper paragraph nodes for each line to preserve structure
+                const paragraphs = text
+                    .split('\n')
+                    .filter(line => line.trim() !== '')
+                    .map(line => ({ type: 'paragraph', content: [{ type: 'text', text: line }] }))
+                if (paragraphs.length === 0) return
+                editor.commands.insertContent([
+                    { type: 'paragraph' }, // blank line separator
+                    ...paragraphs,
+                ])
+            }
+        },
+        getText: () => editor?.getText() ?? ''
+    }), [editor])
 
     // State for temporary "Saved" tag
     const [justSaved, setJustSaved] = useState(false)
@@ -144,4 +184,8 @@ export default function SceneEditor({ scene, writingMode, onUpdate, isProjectEmp
             </div>
         </div>
     )
-}
+})
+
+SceneEditor.displayName = 'SceneEditor'
+
+export default SceneEditor

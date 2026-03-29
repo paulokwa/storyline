@@ -1,7 +1,14 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function proxy(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
+    const { pathname } = request.nextUrl
+    
+    // Skip middleware for API routes as they handle their own auth
+    if (pathname.startsWith('/api')) {
+        return NextResponse.next()
+    }
+
     let supabaseResponse = NextResponse.next({ request })
 
     const supabase = createServerClient(
@@ -28,8 +35,6 @@ export async function proxy(request: NextRequest) {
     const {
         data: { user },
     } = await supabase.auth.getUser()
-
-    const { pathname } = request.nextUrl
 
     // Public routes
     const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password']

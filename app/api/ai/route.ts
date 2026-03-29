@@ -1,5 +1,3 @@
-import { openai } from '@ai-sdk/openai'
-import { streamText } from 'ai'
 import { createClient } from '@/lib/supabase/server'
 
 export const maxDuration = 30
@@ -30,6 +28,14 @@ Be constructive and encouraging.`,
 Write a vivid, engaging first draft of the scene the user describes. 
 Aim for 300-500 words. Match the tone and style implied by their description.
 End with a one-line note about what they could explore or change.`,
+
+    helper: `You are a creative writing partner.
+The user is working on a story scene. Use the provided scene context and the user's specific request to:
+- Answer questions about their plot or characters
+- Suggest how to start or end the scene
+- Brainstorm sensory details or dialogue
+- Offer quick critiques
+Keep responses concise, encouraging, and focused. Do not rewrite the entire scene unless asked.`,
 }
 
 export async function POST(req: Request) {
@@ -40,11 +46,12 @@ export async function POST(req: Request) {
         return new Response('Unauthorized', { status: 401 })
     }
 
-    const { action, input, format, projectId } = await req.json() as {
+    const { action, input, format, projectId, prompt } = await req.json() as {
         action: string
         input: string
         format?: string
         projectId: string
+        prompt?: string
     }
 
     const systemPrompt = SYSTEM_PROMPTS[action]
@@ -63,16 +70,90 @@ export async function POST(req: Request) {
         ? `\n\nProject context: "${project.title}" — ${project.type === 'tv_script' ? 'TV Script' : 'Novel'}. ${project.premise ? `Premise: ${project.premise}.` : ''} ${project.tone ? `Tone: ${project.tone}.` : ''}`
         : ''
 
-    const userMessage = action === 'bridge' && format
-        ? `Format requested: ${format}\n\n${input}`
-        : input
+    let userMessage = input
+    if (action === 'bridge' && format) {
+        userMessage = `Format requested: ${format}\n\n${input}`
+    } else if (action === 'helper' && prompt) {
+        userMessage = `User Request: ${prompt}\n\nScene Context:\n${input}`
+    }
 
-    const result = streamText({
-        model: openai('gpt-4o-mini'),
-        system: systemPrompt + projectContext,
-        messages: [{ role: 'user', content: userMessage }],
-        maxTokens: 1000,
-    } as any)
+    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY
+    if (!apiKey) {
+        return new Response('API key not configured', { status: 500 })
+    }
 
-    return result.toTextStreamResponse()
+    // Direct call to Gemini API — bypasses AI SDK compatibility issues
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`
+
+    const geminiResponse = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: [
+                { role: 'user', parts: [{ text: userMessage }] },
+            ],
+            systemInstruction: {
+                parts: [{ text: systemPrompt + projectContext }],
+            },
+            generationConfig: {
+                maxOutputTokens: 1000,
+                thinkingConfig: {
+                    thinkingBudget: 0,
+                },
+            },
+        }),
+    })
+
+    if (!geminiResponse.ok) {
+        const errBody = await geminiResponse.text()
+        console.error('Gemini API error:', errBody)
+        return new Response(`AI service error: ${geminiResponse.status}`, { status: 502 })
+    }
+
+    // Transform the Gemini SSE stream into a plain text stream for useCompletion
+    const reader = geminiResponse.body!.getReader()
+    const decoder = new TextDecoder()
+
+    const stream = new ReadableStream({
+        async start(controller) {
+            try {
+                while (true) {
+                    const { done, value } = await reader.read()
+                    if (done) break
+
+                    const chunk = decoder.decode(value, { stream: true })
+                    // Gemini SSE format: lines starting with "data: " contain JSON
+                    const lines = chunk.split('\n')
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6))
+                                const parts = data?.candidates?.[0]?.content?.parts
+                                if (parts) {
+                                    for (const part of parts) {
+                                        if (part.text) {
+                                            controller.enqueue(new TextEncoder().encode(part.text))
+                                        }
+                                    }
+                                }
+                            } catch {
+                                // Skip malformed JSON chunks
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('Stream processing error:', err)
+            } finally {
+                controller.close()
+            }
+        },
+    })
+
+    return new Response(stream, {
+        headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Transfer-Encoding': 'chunked',
+        },
+    })
 }

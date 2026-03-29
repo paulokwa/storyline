@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import StructureTree from './StructureTree'
-import SceneEditor from './SceneEditor'
+import SceneEditor, { SceneEditorRef } from './SceneEditor'
+import AiHelperPanel from './AiHelperPanel'
 import WritingModeToggle from '@/components/shared/WritingModeToggle'
 import { PanelLeftClose, PanelLeftOpen, BookOpen, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -29,8 +30,11 @@ export default function StoryTab({ project, initialNodes, initialScenes }: Story
     )
     const [writingMode, setWritingMode] = useState<WritingMode>(project.writing_mode)
     const [sidebarOpen, setSidebarOpen] = useState(true)
+    const [aiPanelOpen, setAiPanelOpen] = useState(false)
+    const [currentSceneText, setCurrentSceneText] = useState('')
+    const editorRef = useRef<SceneEditorRef>(null)
 
-    const activeScene = scenes.find(s => s.node_id === activeNodeId)
+    const activeScene = scenes.find((s: Scene) => s.node_id === activeNodeId)
 
     const handleWritingModeChange = useCallback(async (mode: WritingMode) => {
         setWritingMode(mode)
@@ -44,14 +48,15 @@ export default function StoryTab({ project, initialNodes, initialScenes }: Story
 
     const handleSceneSelect = useCallback((nodeId: string) => {
         setActiveNodeId(nodeId)
+        setCurrentSceneText('') // Reset context when switching scenes
     }, [])
 
     const handleSceneCreated = useCallback((scene: Scene) => {
-        setScenes(prev => [...prev, scene])
+        setScenes((prev: Scene[]) => [...prev, scene])
     }, [])
 
     const handleSceneUpdate = useCallback((updated: Scene) => {
-        setScenes(prev => prev.map(s => s.id === updated.id ? updated : s))
+        setScenes((prev: Scene[]) => prev.map((s: Scene) => s.id === updated.id ? updated : s))
     }, [])
 
     return (
@@ -80,23 +85,39 @@ export default function StoryTab({ project, initialNodes, initialScenes }: Story
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setSidebarOpen(o => !o)}
+                        onClick={() => setSidebarOpen((o: boolean) => !o)}
                         className="text-slate-400 hover:text-[#546354] h-8 w-8 p-0"
                         title={sidebarOpen ? 'Hide structure panel' : 'Show structure panel'}
                     >
                         {sidebarOpen ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
                     </Button>
 
-                    <WritingModeToggle mode={writingMode} onChange={handleWritingModeChange} />
+                    <div className="flex items-center gap-4">
+                        <WritingModeToggle mode={writingMode} onChange={handleWritingModeChange} />
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setAiPanelOpen((o: boolean) => !o)}
+                            className={cn(
+                                "h-8 px-3 gap-2 rounded-full transition-all font-serif italic",
+                                aiPanelOpen ? "bg-indigo-50 text-indigo-600 shadow-sm" : "text-slate-400 hover:text-indigo-500"
+                            )}
+                        >
+                            <Sparkles className={cn("w-4 h-4", aiPanelOpen && "animate-pulse")} />
+                            {aiPanelOpen ? 'Helper Open' : 'AI Helper'}
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Editor content */}
                 <div className="flex-1 overflow-y-auto">
                     {activeNodeId && activeScene ? (
                         <SceneEditor
+                            ref={editorRef}
                             scene={activeScene}
                             writingMode={writingMode}
                             onUpdate={handleSceneUpdate}
+                            onTextChange={setCurrentSceneText}
                             isProjectEmpty={nodes.length <= (project.type === 'tv_script' ? 3 : 2)}
                             projectType={project.type as any}
                         />
@@ -114,6 +135,20 @@ export default function StoryTab({ project, initialNodes, initialScenes }: Story
                         />
                     )}
                 </div>
+            </div>
+
+            {/* Right AI Sidebar */}
+            <div className={cn(
+                'bg-white transition-all duration-500 overflow-hidden border-l border-slate-100',
+                aiPanelOpen ? 'w-80 min-w-80' : 'w-0 min-w-0'
+            )}>
+                {aiPanelOpen && (
+                    <AiHelperPanel
+                        projectId={project.id}
+                        sceneText={currentSceneText}
+                        onInsert={(text) => editorRef.current?.appendContent(text)}
+                    />
+                )}
             </div>
         </div>
     )

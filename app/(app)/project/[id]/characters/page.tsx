@@ -8,6 +8,11 @@ export default async function CharactersPage({ params }: { params: Promise<{ id:
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login')
 
-    // Data fetching removed for Phase 1 alignment
-    return <CharactersTab projectId={id} />
+    const { data: characters } = await supabase
+        .from('characters')
+        .select('*')
+        .eq('project_id', id)
+        .order('order_index', { ascending: true })
+
+    return <CharactersTab projectId={id} characters={characters || []} />
 }
