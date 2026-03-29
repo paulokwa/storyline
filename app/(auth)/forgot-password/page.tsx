@@ -16,19 +16,29 @@ export default function ForgotPasswordPage() {
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
+        console.log('Forgot password submit triggered for:', email)
         setLoading(true)
         setError('')
 
-        const supabase = createClient()
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${window.location.origin}/reset-password`,
-        })
+        try {
+            const supabase = createClient()
+            console.log('Supabase client created, calling reset API...')
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/reset-password`,
+            })
+            console.log('Reset API responded. Error:', error)
 
-        if (error) {
-            setError(error.message)
-            setLoading(false)
-        } else {
-            setSubmitted(true)
+            if (error) {
+                setError(error.message)
+                setLoading(false)
+            } else {
+                console.log('Success, updating UI state...')
+                setSubmitted(true)
+                setLoading(false)
+            }
+        } catch (err: any) {
+            console.error('Caught exception during reset:', err)
+            setError(err.message || 'An unexpected error occurred')
             setLoading(false)
         }
     }
@@ -88,7 +98,7 @@ export default function ForgotPasswordPage() {
                                     </div>
                                 )}
 
-                                <Button type="submit" className="w-full h-12 bg-[#546354] hover:bg-[#3d4a3d] text-white rounded-full font-serif italic text-lg shadow-lg hover:shadow-xl transition-all duration-300" disabled={loading}>
+                                <Button onClick={handleSubmit} type="submit" className="w-full h-12 bg-[#546354] hover:bg-[#3d4a3d] text-white rounded-full font-serif italic text-lg shadow-lg hover:shadow-xl transition-all duration-300" disabled={loading}>
                                     {loading ? 'Sending link…' : 'Send Recovery Link'}
                                 </Button>
                             </form>

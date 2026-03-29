@@ -18,6 +18,7 @@ export default function ResetPasswordPage() {
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
+        console.log('Reset password submit triggered')
         if (password !== confirmPassword) {
             setError('Passwords do not match')
             return
@@ -26,16 +27,24 @@ export default function ResetPasswordPage() {
         setLoading(true)
         setError('')
 
-        const supabase = createClient()
-        const { error } = await supabase.auth.updateUser({ password })
+        try {
+            console.log('Updating password in Supabase...')
+            const supabase = createClient()
+            const { error } = await supabase.auth.updateUser({ password })
+            console.log('Password update response. Error:', error)
 
-        if (error) {
-            setError(error.message)
+            if (error) {
+                setError(error.message)
+                setLoading(false)
+            } else {
+                console.log('Success! Redirecting...')
+                router.push('/library')
+                router.refresh()
+            }
+        } catch (err: any) {
+            console.error('Caught exception during update:', err)
+            setError(err.message || 'An unexpected error occurred')
             setLoading(false)
-        } else {
-            // Success! Password updated.
-            router.push('/library')
-            router.refresh()
         }
     }
 
@@ -89,7 +98,7 @@ export default function ResetPasswordPage() {
                             </div>
                         )}
 
-                        <Button type="submit" className="w-full h-12 bg-[#546354] hover:bg-[#3d4a3d] text-white rounded-full font-serif italic text-lg shadow-lg hover:shadow-xl transition-all duration-300" disabled={loading}>
+                        <Button onClick={handleSubmit} type="submit" className="w-full h-12 bg-[#546354] hover:bg-[#3d4a3d] text-white rounded-full font-serif italic text-lg shadow-lg hover:shadow-xl transition-all duration-300" disabled={loading}>
                             {loading ? 'Securing…' : 'Update Password'}
                         </Button>
                     </form>
