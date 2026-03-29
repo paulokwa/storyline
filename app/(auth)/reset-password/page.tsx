@@ -16,6 +16,9 @@ export default function ResetPasswordPage() {
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
 
+    // Initialize exactly once on mount so PKCE ?code= exchange happens immediately in the background
+    const [supabase] = useState(() => createClient())
+
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
         console.log('Reset password submit triggered')
@@ -29,7 +32,6 @@ export default function ResetPasswordPage() {
 
         try {
             console.log('Updating password in Supabase...')
-            const supabase = createClient()
             const { error } = await supabase.auth.updateUser({ password })
             console.log('Password update response. Error:', error)
 
