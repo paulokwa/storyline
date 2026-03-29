@@ -53,11 +53,11 @@ export async function POST(req: Request) {
     }
 
     // Optionally fetch project context for richer prompts
-    const { data: project } = await supabase
+    const { data: project } = (await supabase
         .from('projects')
         .select('title, type, premise, tone')
         .eq('id', projectId)
-        .single()
+        .single()) as { data: any }
 
     const projectContext = project
         ? `\n\nProject context: "${project.title}" — ${project.type === 'tv_script' ? 'TV Script' : 'Novel'}. ${project.premise ? `Premise: ${project.premise}.` : ''} ${project.tone ? `Tone: ${project.tone}.` : ''}`

@@ -42,8 +42,8 @@ export default function ProjectShell({
     async function saveTitle() {
         if (!titleDraft.trim()) return setEditingTitle(false)
         const supabase = createClient()
-        const { data } = await supabase
-            .from('projects')
+        const { data } = await (supabase
+            .from('projects') as any)
             .update({ title: titleDraft.trim() })
             .eq('id', project.id)
             .select()
