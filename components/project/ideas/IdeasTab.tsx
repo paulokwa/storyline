@@ -46,11 +46,12 @@ export default function IdeasTab({
         }
     }, [renamingId])
 
-    const saveIdea = useCallback(async (id: string, updates: Partial<Idea>) => {
+    const saveIdea = useCallback(async (id: string, updates: Database['public']['Tables']['ideas']['Update']) => {
         setIsSaving(true)
         const supabase = createClient()
         
-        const { data, error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (supabase as any)
             .from('ideas')
             .update(updates)
             .eq('id', id)
@@ -74,7 +75,7 @@ export default function IdeasTab({
         if (saveTimer.current) clearTimeout(saveTimer.current)
         setIsSaving(true)
         saveTimer.current = setTimeout(() => {
-            saveIdea(id, { [field]: value })
+            saveIdea(id, { [field]: value } as Database['public']['Tables']['ideas']['Update'])
         }, 1000)
     }
 
@@ -83,7 +84,7 @@ export default function IdeasTab({
         if (!window.confirm('Are you sure you want to delete this fragment? It will be permanently removed from your archive.')) return
 
         setIsSaving(true)
-        const supabase = createClient()
+        const supabase = createClient() as any
         const { error } = await supabase
             .from('ideas')
             .delete()
@@ -109,7 +110,7 @@ export default function IdeasTab({
 
     async function handleCreateIdea() {
         setIsCreating(true)
-        const supabase = createClient()
+        const supabase = createClient() as any
         
         const nextOrderIndex = Math.max(0, ...localIdeas.map((i: Idea) => i.order_index)) + 1
         
@@ -262,7 +263,7 @@ export default function IdeasTab({
                                 
                                 <input
                                     type="text"
-                                    value={selectedIdea.title}
+                                    value={selectedIdea.title ?? ''}
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange(selectedIdea.id, 'title', e.target.value)}
                                     className="w-full bg-transparent text-6xl font-serif italic text-slate-800 tracking-tight leading-tight outline-none border-none placeholder:text-slate-200"
                                     placeholder="Untitled Idea"

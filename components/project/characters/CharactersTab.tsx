@@ -35,11 +35,12 @@ export default function CharactersTab({
         }
     }, [isSaving])
 
-    const saveCharacter = useCallback(async (id: string, updates: Partial<Character>) => {
+    const saveCharacter = useCallback(async (id: string, updates: Database['public']['Tables']['characters']['Update']) => {
         setIsSaving(true)
         const supabase = createClient()
         
-        const { data, error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (supabase as any)
             .from('characters')
             .update(updates)
             .eq('id', id)
@@ -63,7 +64,7 @@ export default function CharactersTab({
         if (saveTimer.current) clearTimeout(saveTimer.current)
         setIsSaving(true)
         saveTimer.current = setTimeout(() => {
-            saveCharacter(id, { [field]: value })
+            saveCharacter(id, { [field]: value } as Database['public']['Tables']['characters']['Update'])
         }, 1000)
     }
 
@@ -72,7 +73,7 @@ export default function CharactersTab({
         if (!window.confirm('Are you sure you want to delete this character? This action cannot be undone.')) return
 
         setIsSaving(true)
-        const supabase = createClient()
+        const supabase = createClient() as any
         const { error } = await supabase
             .from('characters')
             .delete()
@@ -97,7 +98,7 @@ export default function CharactersTab({
 
     async function handleCreateCharacter() {
         setIsCreating(true)
-        const supabase = createClient()
+        const supabase = createClient() as any
         
         const nextOrderIndex = Math.max(0, ...localCharacters.map((c: Character) => c.order_index)) + 1
         
