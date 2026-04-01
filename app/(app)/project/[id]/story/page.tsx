@@ -16,14 +16,32 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
         .order('order_index')
     const { data: scenes } = await supabase
         .from('scenes')
+        .select(`
+            *,
+            scene_characters(characters(*)),
+            scene_ideas(ideas(*))
+        `)
+        .eq('project_id', id)
+
+    const { data: projectCharacters } = await supabase
+        .from('characters')
         .select('*')
         .eq('project_id', id)
+        .order('order_index')
+
+    const { data: projectIdeas } = await supabase
+        .from('ideas')
+        .select('*')
+        .eq('project_id', id)
+        .order('order_index')
 
     return (
         <StoryTab
             project={project!}
             initialNodes={nodes ?? []}
-            initialScenes={scenes ?? []}
+            initialScenes={scenes as any ?? []}
+            projectCharacters={projectCharacters ?? []}
+            projectIdeas={projectIdeas ?? []}
         />
     )
 }

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import {
-    BookOpen, Users, Lightbulb, Sparkles,
+    BookOpen, Users, Lightbulb,
     ChevronLeft, Settings, Check, X,
     Tv
 } from 'lucide-react'
@@ -21,7 +21,6 @@ const TABS = [
     { slug: 'story', label: 'Story', icon: BookOpen },
     { slug: 'characters', label: 'Characters', icon: Users },
     { slug: 'ideas', label: 'Ideas', icon: Lightbulb },
-    { slug: 'ai', label: 'AI Help', icon: Sparkles },
 ] as const
 
 export default function ProjectShell({

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { User, Users, Plus, Search, ChevronRight, PenTool, Hash, Loader2, Trash2 } from 'lucide-react'
+import { User, Users, Plus, Search, ChevronRight, PenTool, Hash, Loader2, Trash2, Pencil } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -22,8 +22,11 @@ export default function CharactersTab({
     const [isCreating, setIsCreating] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
     const [justSaved, setJustSaved] = useState(false)
+    const [renamingId, setRenamingId] = useState<string | null>(null)
+    const [renameValue, setRenameValue] = useState('')
     
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const renameInputRef = useRef<HTMLInputElement>(null)
     const selectedCharacter = localCharacters.find((c: Character) => c.id === selectedId)
 
     // Sync justSaved state
@@ -34,6 +37,14 @@ export default function CharactersTab({
             return () => clearTimeout(timer)
         }
     }, [isSaving])
+
+    // Focus rename input when it opens
+    useEffect(() => {
+        if (renamingId && renameInputRef.current) {
+            renameInputRef.current.focus()
+            renameInputRef.current.select()
+        }
+    }, [renamingId])
 
     const saveCharacter = useCallback(async (id: string, updates: Database['public']['Tables']['characters']['Update']) => {
         setIsSaving(true)
@@ -117,11 +128,34 @@ export default function CharactersTab({
         if (data) {
             setLocalCharacters((prev: Character[]) => [...prev, data as Character])
             setSelectedId(data.id)
+            // Auto-open rename for new character
+            setRenamingId(data.id)
+            setRenameValue('New Character')
         } else if (error) {
             console.error('Error creating character:', error)
         }
         
         setIsCreating(false)
+    }
+
+    function startRename(char: Character, e: React.MouseEvent) {
+        e.stopPropagation()
+        setSelectedId(char.id)
+        setRenamingId(char.id)
+        setRenameValue(char.name ?? '')
+    }
+
+    function commitRename(id: string) {
+        const trimmed = renameValue.trim()
+        if (trimmed && trimmed !== localCharacters.find(c => c.id === id)?.name) {
+            handleFieldChange(id, 'name', trimmed)
+        }
+        setRenamingId(null)
+    }
+
+    function handleRenameKeyDown(e: React.KeyboardEvent, id: string) {
+        if (e.key === 'Enter') commitRename(id)
+        if (e.key === 'Escape') setRenamingId(null)
     }
 
     if (localCharacters.length === 0) {
@@ -161,22 +195,45 @@ export default function CharactersTab({
                             )}
                         >
                             <div className={cn(
-                                "w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-500",
+                                "w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center transition-all duration-500",
                                 selectedId === char.id ? "bg-[#fbf9f5] scale-105" : "bg-white border border-slate-100"
                             )}>
                                 <User className={cn("w-4.5 h-4.5 transition-colors duration-500", selectedId === char.id ? "text-[#546354]" : "text-stone-300")} />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className={cn(
-                                    "text-sm font-medium tracking-tight truncate",
-                                    selectedId === char.id ? "text-slate-800" : "text-slate-500"
-                                )}>
-                                    {char.name}
-                                </p>
-                                <p className="text-[10px] text-slate-300 uppercase tracking-widest mt-0.5 font-medium opacity-60">Cast Member</p>
+                                {renamingId === char.id ? (
+                                    <input
+                                        ref={renameInputRef}
+                                        type="text"
+                                        value={renameValue}
+                                        onChange={e => setRenameValue(e.target.value)}
+                                        onBlur={() => commitRename(char.id)}
+                                        onKeyDown={e => handleRenameKeyDown(e, char.id)}
+                                        onClick={e => e.stopPropagation()}
+                                        className="w-full bg-[#fbf9f5] border border-[#546354]/20 rounded-lg px-2 py-0.5 text-sm font-medium text-slate-800 outline-none ring-1 ring-[#546354]/10"
+                                    />
+                                ) : (
+                                    <>
+                                        <p className={cn(
+                                            "text-sm font-medium tracking-tight truncate",
+                                            selectedId === char.id ? "text-slate-800" : "text-slate-500"
+                                        )}>
+                                            {char.name}
+                                        </p>
+                                        <p className="text-[10px] text-slate-300 uppercase tracking-widest mt-0.5 font-medium opacity-60">Cast Member</p>
+                                    </>
+                                )}
                             </div>
-                            {selectedId === char.id && (
-                                <div className="w-1.5 h-1.5 rounded-full bg-[#546354]/40" />
+                            {selectedId === char.id && renamingId !== char.id ? (
+                                <button
+                                    onClick={e => startRename(char, e)}
+                                    className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-slate-50 text-stone-300 hover:text-[#546354] transition-all duration-200 flex-shrink-0"
+                                    title="Rename character"
+                                >
+                                    <Pencil className="w-3 h-3" />
+                                </button>
+                            ) : selectedId === char.id && (
+                                <div className="w-1.5 h-1.5 rounded-full bg-[#546354]/40 flex-shrink-0" />
                             )}
                         </button>
                     ))}

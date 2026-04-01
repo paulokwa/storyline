@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils'
 interface AiHelperPanelProps {
     projectId: string
     sceneText: string
+    linkedCharacters?: any[]
+    linkedIdeas?: any[]
     onInsert: (text: string) => void
 }
 
@@ -27,7 +29,7 @@ const PROMPT_TEMPLATES = [
     { label: 'How to end it?', value: 'How could I end this scene effectively?' },
 ]
 
-export default function AiHelperPanel({ projectId, sceneText, onInsert }: AiHelperPanelProps) {
+export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCharacters = [], linkedIdeas = [] }: AiHelperPanelProps) {
     const [prompt, setPrompt] = useState('')
     const [lastPrompt, setLastPrompt] = useState('')
     const [copied, setCopied] = useState(false)
@@ -66,6 +68,15 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert }: AiHelp
                     action: 'helper',
                     projectId,
                     input: sceneTextRef.current.slice(-10000),
+                    linkedCharacters: linkedCharacters.map((c: any) => ({
+                        name: c.name,
+                        description: c.description,
+                        notes: c.notes
+                    })),
+                    linkedIdeas: linkedIdeas.map((i: any) => ({
+                        title: i.title,
+                        content: i.content
+                    }))
                 }
             })
         } catch {
@@ -124,6 +135,23 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert }: AiHelp
                     >
                         <X className="w-3.5 h-3.5" />
                     </button>
+                )}
+            </div>
+
+            {/* Context Indicator */}
+            <div className="bg-[#fcfbf9] px-6 py-2 border-b border-slate-200/60 flex items-center gap-2 text-xs text-slate-400 font-medium">
+                <span>Using current scene</span>
+                {linkedCharacters.length > 0 && (
+                    <>
+                        <span className="w-1 h-1 bg-slate-200 rounded-full mx-1"></span>
+                        <span>{linkedCharacters.length} linked character{linkedCharacters.length !== 1 ? 's' : ''}</span>
+                    </>
+                )}
+                {linkedIdeas.length > 0 && (
+                    <>
+                        <span className="w-1 h-1 bg-slate-200 rounded-full mx-1"></span>
+                        <span>{linkedIdeas.length} linked idea{linkedIdeas.length !== 1 ? 's' : ''}</span>
+                    </>
                 )}
             </div>
 

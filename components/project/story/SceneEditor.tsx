@@ -9,8 +9,12 @@ import type { Database, WritingMode } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
 
 import FirstTimeGuidance from './FirstTimeGuidance'
+import LinkedContext from './LinkedContext'
 
-type Scene = Database['public']['Tables']['scenes']['Row']
+type Scene = Database['public']['Tables']['scenes']['Row'] & {
+    scene_characters?: any[]
+    scene_ideas?: any[]
+}
 
 export interface SceneEditorRef {
     appendContent: (text: string) => void
@@ -24,6 +28,9 @@ interface SceneEditorProps {
     onTextChange?: (text: string) => void
     isProjectEmpty?: boolean
     projectType?: 'tv_script' | 'novel'
+    projectCharacters?: any[]
+    projectIdeas?: any[]
+    onLinkingUpdate?: () => void
 }
 
 const SIMPLE_PLACEHOLDER = 'Start your story here. Use the panel on the left to add episodes and scenes, or begin writing in this scene.'
@@ -35,7 +42,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     onUpdate, 
     onTextChange, 
     isProjectEmpty, 
-    projectType 
+    projectType,
+    projectCharacters = [],
+    projectIdeas = [],
+    onLinkingUpdate
 }: SceneEditorProps, ref: React.ForwardedRef<SceneEditorRef>) => {
     const [isSaving, setIsSaving] = useState(false)
     const [manualDismiss, setManualDismiss] = useState(false)
@@ -153,6 +163,14 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 "transition-all duration-700 p-8 md:p-16 rounded-[3rem] border border-transparent hover:border-[#546354]/5 focus-within:border-[#546354]/10 focus-within:shadow-[0_40px_100px_rgba(0,0,0,0.02)] relative",
                 writingMode === 'simple' && "editor-content text-[#31332f]/90 leading-[2.2] bg-white/10"
             )}>
+                <LinkedContext 
+                    sceneId={scene.id}
+                    sceneCharacters={scene.scene_characters || []}
+                    sceneIdeas={scene.scene_ideas || []}
+                    projectCharacters={projectCharacters}
+                    projectIdeas={projectIdeas}
+                    onUpdate={onLinkingUpdate || (() => {})}
+                />
                 <EditorContent
                     editor={editor}
                     className={cn(

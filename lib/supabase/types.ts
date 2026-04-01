@@ -173,6 +173,50 @@ export interface Database {
                     updated_at?: string
                 }
             }
+            scene_characters: {
+                Row: {
+                    id: string
+                    scene_id: string
+                    character_id: string
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    scene_id: string
+                    character_id: string
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    scene_id?: string
+                    character_id?: string
+                    created_at?: string
+                }
+            }
+            scene_ideas: {
+                Row: {
+                    id: string
+                    scene_id: string
+                    idea_id: string
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    scene_id: string
+                    idea_id: string
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    scene_id?: string
+                    idea_id?: string
+                    created_at?: string
+                }
+            }
         }
+        Views: Record<string, never>
+        Functions: Record<string, never>
+        Enums: Record<string, never>
+        CompositeTypes: Record<string, never>
     }
 }

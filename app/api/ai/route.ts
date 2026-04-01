@@ -46,12 +46,14 @@ export async function POST(req: Request) {
         return new Response('Unauthorized', { status: 401 })
     }
 
-    const { action, input, format, projectId, prompt } = await req.json() as {
+    const { action, input, format, projectId, prompt, linkedCharacters, linkedIdeas } = await req.json() as {
         action: string
         input: string
         format?: string
         projectId: string
         prompt?: string
+        linkedCharacters?: any[]
+        linkedIdeas?: any[]
     }
 
     const systemPrompt = SYSTEM_PROMPTS[action]
@@ -74,7 +76,28 @@ export async function POST(req: Request) {
     if (action === 'bridge' && format) {
         userMessage = `Format requested: ${format}\n\n${input}`
     } else if (action === 'helper' && prompt) {
-        userMessage = `User Request: ${prompt}\n\nScene Context:\n${input}`
+        let contextBlock = `CURRENT SCENE:\n${input}\n\n`
+        
+        if (linkedCharacters && linkedCharacters.length > 0) {
+            contextBlock += `LINKED CHARACTERS:\n`
+            linkedCharacters.forEach(c => {
+                contextBlock += `- ${c.name || 'Unnamed'}\n`
+                if (c.description) contextBlock += `  Description: ${c.description}\n`
+                if (c.notes) contextBlock += `  Notes: ${c.notes}\n`
+            })
+            contextBlock += '\n'
+        }
+
+        if (linkedIdeas && linkedIdeas.length > 0) {
+            contextBlock += `LINKED IDEAS:\n`
+            linkedIdeas.forEach(i => {
+                contextBlock += `- ${i.title || 'Untitled'}\n`
+                if (i.content) contextBlock += `  Content: ${i.content}\n`
+            })
+            contextBlock += '\n'
+        }
+
+        userMessage = `${contextBlock}USER REQUEST: ${prompt}`
     }
 
     const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY

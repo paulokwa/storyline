@@ -67,6 +67,24 @@ CREATE TABLE IF NOT EXISTS ideas (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Scene Characters (links characters to scenes)
+CREATE TABLE IF NOT EXISTS scene_characters (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  scene_id UUID REFERENCES scenes(id) ON DELETE CASCADE NOT NULL,
+  character_id UUID REFERENCES characters(id) ON DELETE CASCADE NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(scene_id, character_id)
+);
+
+-- Scene Ideas (links ideas to scenes)
+CREATE TABLE IF NOT EXISTS scene_ideas (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  scene_id UUID REFERENCES scenes(id) ON DELETE CASCADE NOT NULL,
+  idea_id UUID REFERENCES ideas(id) ON DELETE CASCADE NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(scene_id, idea_id)
+);
+
 -- ============================================================
 -- Indexes
 -- ============================================================
@@ -76,7 +94,10 @@ CREATE INDEX IF NOT EXISTS idx_structure_nodes_parent_id ON structure_nodes(pare
 CREATE INDEX IF NOT EXISTS idx_scenes_project_id ON scenes(project_id);
 CREATE INDEX IF NOT EXISTS idx_characters_project_id ON characters(project_id);
 CREATE INDEX IF NOT EXISTS idx_ideas_project_id ON ideas(project_id);
-
+CREATE INDEX IF NOT EXISTS idx_scene_characters_scene_id ON scene_characters(scene_id);
+CREATE INDEX IF NOT EXISTS idx_scene_characters_character_id ON scene_characters(character_id);
+CREATE INDEX IF NOT EXISTS idx_scene_ideas_scene_id ON scene_ideas(scene_id);
+CREATE INDEX IF NOT EXISTS idx_scene_ideas_idea_id ON scene_ideas(idea_id);
 -- ============================================================
 -- Row Level Security
 -- ============================================================
@@ -86,7 +107,8 @@ ALTER TABLE structure_nodes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scenes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE characters ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ideas ENABLE ROW LEVEL SECURITY;
-
+ALTER TABLE scene_characters ENABLE ROW LEVEL SECURITY;
+ALTER TABLE scene_ideas ENABLE ROW LEVEL SECURITY;
 -- Profiles: own row only
 CREATE POLICY "profiles_own" ON profiles FOR ALL USING (auth.uid() = id);
 
@@ -108,6 +130,28 @@ CREATE POLICY "characters_own" ON characters FOR ALL
 -- Ideas: via project ownership
 CREATE POLICY "ideas_own" ON ideas FOR ALL
   USING (EXISTS (SELECT 1 FROM projects WHERE projects.id = ideas.project_id AND projects.user_id = auth.uid()));
+
+-- Scene Characters: via scene's project ownership
+CREATE POLICY "scene_characters_own" ON scene_characters FOR ALL
+  USING (EXISTS (
+    SELECT 1 FROM scenes
+    JOIN characters ON scenes.project_id = characters.project_id
+    JOIN projects ON scenes.project_id = projects.id
+    WHERE scenes.id = scene_characters.scene_id
+    AND characters.id = scene_characters.character_id
+    AND projects.user_id = auth.uid()
+  ));
+
+-- Scene Ideas: via scene's project ownership
+CREATE POLICY "scene_ideas_own" ON scene_ideas FOR ALL
+  USING (EXISTS (
+    SELECT 1 FROM scenes
+    JOIN ideas ON scenes.project_id = ideas.project_id
+    JOIN projects ON scenes.project_id = projects.id
+    WHERE scenes.id = scene_ideas.scene_id
+    AND ideas.id = scene_ideas.idea_id
+    AND projects.user_id = auth.uid()
+  ));
 
 -- ============================================================
 -- Trigger: Create profile on user signup

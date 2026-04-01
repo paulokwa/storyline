@@ -1,0 +1,102 @@
+import { SupabaseClient } from '@supabase/supabase-js'
+import { Database } from './types'
+
+export type Supabase = SupabaseClient<Database>
+
+// ==========================================
+// CHARACTER LINKS
+// ==========================================
+
+export async function getLinkedCharacters(supabase: Supabase, sceneId: string) {
+    const { data, error } = await supabase
+        .from('scene_characters' as any)
+        .select(`
+            ...,
+            characters (
+                *
+            )
+        `)
+        .eq('scene_id', sceneId)
+        
+    if (error) throw error
+    return (data || []).map((d: any) => d.characters)
+}
+
+export async function addCharacterLink(supabase: Supabase, sceneId: string, characterId: string) {
+    const { data, error } = await supabase
+        .from('scene_characters' as any)
+        // @ts-ignore
+        .insert({
+            scene_id: sceneId,
+            character_id: characterId
+        })
+        .select()
+        .single()
+        
+    if (error) {
+        // 23505 is PostgreSQL unique_violation error code
+        if (error.code === '23505') return null
+        throw error
+    }
+    
+    return data
+}
+
+export async function removeCharacterLink(supabase: Supabase, sceneId: string, characterId: string) {
+    const { error } = await supabase
+        .from('scene_characters' as any)
+        .delete()
+        .eq('scene_id', sceneId)
+        .eq('character_id', characterId)
+        
+    if (error) throw error
+}
+
+// ==========================================
+// IDEA LINKS
+// ==========================================
+
+export async function getLinkedIdeas(supabase: Supabase, sceneId: string) {
+    const { data, error } = await supabase
+        .from('scene_ideas' as any)
+        .select(`
+            ...,
+            ideas (
+                *
+            )
+        `)
+        .eq('scene_id', sceneId)
+        
+    if (error) throw error
+    return (data || []).map((d: any) => d.ideas)
+}
+
+export async function addIdeaLink(supabase: Supabase, sceneId: string, ideaId: string) {
+    const { data, error } = await supabase
+        .from('scene_ideas' as any)
+        // @ts-ignore
+        .insert({
+            scene_id: sceneId,
+            idea_id: ideaId
+        })
+        .select()
+        .single()
+        
+    if (error) {
+        // 23505 is PostgreSQL unique_violation error code
+        if (error.code === '23505') return null
+        throw error
+    }
+    
+    return data
+}
+
+export async function removeIdeaLink(supabase: Supabase, sceneId: string, ideaId: string) {
+    const { error } = await supabase
+        .from('scene_ideas' as any)
+        .delete()
+        .eq('scene_id', sceneId)
+        .eq('idea_id', ideaId)
+        
+    if (error) throw error
+}

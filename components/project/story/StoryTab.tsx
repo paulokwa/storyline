@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 import StructureTree from './StructureTree'
 import SceneEditor, { SceneEditorRef } from './SceneEditor'
 import AiHelperPanel from './AiHelperPanel'
@@ -19,10 +20,13 @@ type Scene = Database['public']['Tables']['scenes']['Row']
 interface StoryTabProps {
     project: Project
     initialNodes: StructureNode[]
-    initialScenes: Scene[]
+    initialScenes: any[] // any[] to handle joined scenes with linked ideas/characters temporarily
+    projectCharacters: any[]
+    projectIdeas: any[]
 }
 
-export default function StoryTab({ project, initialNodes, initialScenes }: StoryTabProps) {
+export default function StoryTab({ project, initialNodes, initialScenes, projectCharacters, projectIdeas }: StoryTabProps) {
+    const router = useRouter()
     const [nodes, setNodes] = useState(initialNodes)
     const [scenes, setScenes] = useState(initialScenes)
     const [activeNodeId, setActiveNodeId] = useState<string | null>(
@@ -35,6 +39,11 @@ export default function StoryTab({ project, initialNodes, initialScenes }: Story
     const editorRef = useRef<SceneEditorRef>(null)
 
     const activeScene = scenes.find((s: Scene) => s.node_id === activeNodeId)
+
+    // Sync from server components when router.refresh() fetches fresh data (like scene links)
+    useEffect(() => {
+        setScenes(initialScenes)
+    }, [initialScenes])
 
     const handleWritingModeChange = useCallback(async (mode: WritingMode) => {
         setWritingMode(mode)
@@ -120,6 +129,9 @@ export default function StoryTab({ project, initialNodes, initialScenes }: Story
                             onTextChange={setCurrentSceneText}
                             isProjectEmpty={nodes.length <= (project.type === 'tv_script' ? 3 : 2)}
                             projectType={project.type as any}
+                            projectCharacters={projectCharacters}
+                            projectIdeas={projectIdeas}
+                            onLinkingUpdate={() => router.refresh()}
                         />
                     ) : activeNodeId ? (
                         <SceneEditorPlaceholder
@@ -146,6 +158,8 @@ export default function StoryTab({ project, initialNodes, initialScenes }: Story
                     <AiHelperPanel
                         projectId={project.id}
                         sceneText={currentSceneText}
+                        linkedCharacters={activeScene?.scene_characters?.map((c: any) => c.characters).filter(Boolean) || []}
+                        linkedIdeas={activeScene?.scene_ideas?.map((i: any) => i.ideas).filter(Boolean) || []}
                         onInsert={(text) => editorRef.current?.appendContent(text)}
                     />
                 )}
