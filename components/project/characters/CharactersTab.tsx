@@ -12,9 +12,11 @@ type Character = Database['public']['Tables']['characters']['Row']
 
 export default function CharactersTab({
     projectId,
+    projectType = 'novel',
     characters: initialCharacters = []
 }: {
     projectId: string
+    projectType?: string
     characters?: Character[]
 }) {
     const [localCharacters, setLocalCharacters] = useState<Character[]>(initialCharacters)
@@ -159,7 +161,7 @@ export default function CharactersTab({
     }
 
     if (localCharacters.length === 0) {
-        return <EmptyCharactersState onCreate={handleCreateCharacter} isCreating={isCreating} />
+        return <EmptyCharactersState onCreate={handleCreateCharacter} isCreating={isCreating} projectType={projectType} />
     }
 
     return (
@@ -169,7 +171,9 @@ export default function CharactersTab({
                 <div className="p-6 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Users className="w-4 h-4 text-[#546354]/60" />
-                        <h2 className="text-[11px] font-sans tracking-[0.2em] uppercase text-[#546354]/60 font-medium">Dramatis Personae</h2>
+                        <h2 className="text-[11px] font-sans tracking-[0.2em] uppercase text-[#546354]/60 font-medium">
+                            {projectType === 'novel' ? 'Literary Characters' : 'Dramatis Personae'}
+                        </h2>
                     </div>
                     {/* Add button */}
                     <button 
@@ -220,7 +224,9 @@ export default function CharactersTab({
                                         )}>
                                             {char.name}
                                         </p>
-                                        <p className="text-[10px] text-slate-300 uppercase tracking-widest mt-0.5 font-medium opacity-60">Cast Member</p>
+                                        <p className="text-[10px] text-slate-300 uppercase tracking-widest mt-0.5 font-medium opacity-60">
+                                            {projectType === 'novel' ? 'Character' : 'Cast Member'}
+                                        </p>
                                     </>
                                 )}
                             </div>
@@ -275,28 +281,36 @@ export default function CharactersTab({
                             {/* Description - Physical & Background */}
                             <div className="space-y-8">
                                 <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3 text-[10px] font-sans tracking-[0.3em] uppercase text-stone-300 font-bold">
-                                        <Search className="w-4 h-4 text-stone-200" />
-                                        <span>Archetype & Persona</span>
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-3 text-[10px] font-sans tracking-[0.3em] uppercase text-stone-300 font-bold">
+                                            <Search className="w-4 h-4 text-stone-200" />
+                                            <span>Character Overview</span>
+                                        </div>
+                                        <p className="text-[10px] text-stone-400/60 font-medium ml-7 tracking-normal">Who they are, background, role in the story</p>
                                     </div>
                                     <div className="w-10 h-px bg-stone-100" />
                                 </div>
                                 <div className="bg-white rounded-[3rem] p-12 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.02)] ring-1 ring-slate-100/50">
-                                    <textarea
-                                        value={selectedCharacter.description || ''}
-                                        onChange={(e) => handleFieldChange(selectedCharacter.id, 'description', e.target.value)}
-                                        className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-xl italic outline-none border-none min-h-[150px] resize-none placeholder:text-stone-200"
-                                        placeholder="Begin detailing the life and background of this cast member..."
-                                    />
+                                        <textarea
+                                            value={selectedCharacter.description || ''}
+                                            onChange={(e) => handleFieldChange(selectedCharacter.id, 'description', e.target.value)}
+                                            className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-xl italic outline-none border-none min-h-[150px] resize-none placeholder:text-stone-200"
+                                            placeholder={projectType === 'novel' 
+                                                ? "Describe the life, history, and physical presence of this character..." 
+                                                : "Begin detailing the life and background of this cast member..."}
+                                        />
                                 </div>
                             </div>
 
                             {/* Notes - Psychology & Arcs */}
                             <div className="space-y-8">
                                 <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3 text-[10px] font-sans tracking-[0.3em] uppercase text-stone-300 font-bold">
-                                        <PenTool className="w-4 h-4 text-stone-200" />
-                                        <span>Psychological Depths</span>
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-3 text-[10px] font-sans tracking-[0.3em] uppercase text-stone-300 font-bold">
+                                            <PenTool className="w-4 h-4 text-stone-200" />
+                                            <span>Inner World</span>
+                                        </div>
+                                        <p className="text-[10px] text-stone-400/60 font-medium ml-7 tracking-normal">fears, motivations, desires, emotional struggles</p>
                                     </div>
                                     <div className="w-10 h-px bg-stone-100" />
                                 </div>
@@ -357,7 +371,7 @@ export default function CharactersTab({
     )
 }
 
-function EmptyCharactersState({ onCreate, isCreating }: { onCreate: () => void, isCreating: boolean }) {
+function EmptyCharactersState({ onCreate, isCreating, projectType }: { onCreate: () => void, isCreating: boolean, projectType: string }) {
     return (
         <div className="min-h-full bg-[#fbf9f5] flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-700">
             <div className="max-w-2xl w-full py-20 px-10 rounded-[3rem] bg-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.04)] ring-1 ring-slate-100 flex flex-col items-center">
@@ -366,7 +380,9 @@ function EmptyCharactersState({ onCreate, isCreating }: { onCreate: () => void, 
                 </div>
 
                 <h2 className="text-4xl font-serif italic text-slate-800 mb-4 tracking-tight">The Stage Awaits</h2>
-                <p className="text-[11px] font-sans tracking-[0.4em] uppercase text-stone-300 mb-10 font-bold">Dramatis Personae Empty</p>
+                <p className="text-[11px] font-sans tracking-[0.4em] uppercase text-stone-300 mb-10 font-bold">
+                    {projectType === 'novel' ? 'Character Archive Empty' : 'Dramatis Personae Empty'}
+                </p>
 
                 <div className="space-y-8 max-w-md">
                     <p className="text-slate-500 font-medium leading-relaxed italic text-lg">

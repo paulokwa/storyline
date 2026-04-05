@@ -8,11 +8,12 @@ export default async function CharactersPage({ params }: { params: Promise<{ id:
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login')
 
-    const { data: characters } = await supabase
-        .from('characters')
-        .select('*')
-        .eq('project_id', id)
-        .order('order_index', { ascending: true })
+    const [{ data: characters }, { data: projectData }] = await Promise.all([
+        supabase.from('characters').select('*').eq('project_id', id).order('order_index', { ascending: true }),
+        supabase.from('projects').select('type').eq('id', id).single()
+    ])
 
-    return <CharactersTab projectId={id} characters={characters || []} />
+    const project = projectData as any
+
+    return <CharactersTab projectId={id} characters={characters || []} projectType={project?.type || 'novel'} />
 }

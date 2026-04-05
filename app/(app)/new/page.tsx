@@ -4,10 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { PenLine, Tv, BookOpen, Zap, Map, ChevronRight, ChevronLeft, Info, Sparkles } from 'lucide-react'
+import { PenLine, Tv, BookOpen, Zap, Map, ChevronRight, ChevronLeft, Info, Sparkles, FileText } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import type { ProjectType, WritingMode } from '@/lib/supabase/types'
 import GuidedFlow from '@/components/new-project/GuidedFlow'
+import ImportWizard from '@/components/new-project/ImportWizard'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import {
@@ -17,8 +18,8 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-type StartMode = 'quick' | 'guided'
-type Step = 'title' | 'type' | 'start_mode' | 'writing_mode' | 'guided'
+type StartMode = 'quick' | 'guided' | 'import'
+type Step = 'title' | 'type' | 'start_mode' | 'writing_mode' | 'guided' | 'import'
 
 interface NewProjectState {
     title: string
@@ -42,6 +43,7 @@ export default function NewProjectPage() {
         title?: string; premise?: string; tone?: string; setting?: string;
         firstCharacterName?: string; firstIdea?: string;
         writingMode?: WritingMode;
+        chunks?: { title: string; content: string }[];
     }) {
         if (creating) return
         setCreating(true)
@@ -79,28 +81,65 @@ export default function NewProjectPage() {
             return
         }
 
-        // Scaffold structure nodes
-        if (state.type === 'tv_script') {
-            const { data: episode } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, type: 'episode', title: 'Episode 1', order_index: 0 }).select().single()
-            if (episode) {
-                const { data: act } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (episode as any).id, type: 'act', title: 'Act 1', order_index: 0 }).select().single()
-                if (act) {
-                    const { data: scene } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (act as any).id, type: 'scene', title: 'Scene 1', order_index: 0 }).select().single()
-                    if (scene) await (supabase as any).from('scenes').insert({ node_id: (scene as any).id, project_id: project.id, writing_mode: payload.writing_mode })
+        if (extras?.chunks && extras.chunks.length > 0) {
+            // Scaffold imported structure
+            const chunks = extras.chunks
+            let actParentId = null
+
+            if (state.type === 'tv_script') {
+                const { data: episode } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, type: 'episode', title: 'Imported Episode', order_index: 0 }).select().single()
+                if (episode) {
+                    const { data: act } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (episode as any).id, type: 'act', title: 'Imported Act', order_index: 0 }).select().single()
+                    actParentId = act ? (act as any).id : null
+                }
+            }
+
+            for (let i = 0; i < chunks.length; i++) {
+                const chunk = chunks[i]
+                const paragraphs = chunk.content.split('\n').filter(l => l.trim() !== '').map(l => ({ type: 'paragraph', content: [{ type: 'text', text: l }] }))
+                const tiptapJson = { type: 'doc', content: paragraphs.length ? paragraphs : [{ type: 'paragraph' }] }
+
+                if (state.type === 'novel') {
+                    const { data: chapter } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, type: 'chapter', title: chunk.title || `Chapter ${i + 1}`, order_index: i }).select().single()
+                    if (chapter) {
+                        const { data: scene } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (chapter as any).id, type: 'scene', title: chunk.title, order_index: 0 }).select().single()
+                        if (scene) await (supabase as any).from('scenes').insert({ node_id: (scene as any).id, project_id: project.id, writing_mode: payload.writing_mode, content: tiptapJson })
+                    }
+                } else {
+                    if (actParentId) {
+                        const { data: scene } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: actParentId, type: 'scene', title: chunk.title || `Scene ${i + 1}`, order_index: i }).select().single()
+                        if (scene) await (supabase as any).from('scenes').insert({ node_id: (scene as any).id, project_id: project.id, writing_mode: payload.writing_mode, content: tiptapJson })
+                    }
                 }
             }
         } else {
-            const { data: chapter } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, type: 'chapter', title: 'Chapter 1', order_index: 0 }).select().single()
-            if (chapter) {
-                const { data: scene } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (chapter as any).id, type: 'scene', title: 'Scene 1', order_index: 0 }).select().single()
-                if (scene) await (supabase as any).from('scenes').insert({ node_id: (scene as any).id, project_id: project.id, writing_mode: payload.writing_mode })
+            // Scaffold standard blank structure nodes
+            if (state.type === 'tv_script') {
+                const { data: episode } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, type: 'episode', title: 'Episode 1', order_index: 0 }).select().single()
+                if (episode) {
+                    const { data: act } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (episode as any).id, type: 'act', title: 'Act 1', order_index: 0 }).select().single()
+                    if (act) {
+                        const { data: scene } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (act as any).id, type: 'scene', title: 'Scene 1', order_index: 0 }).select().single()
+                        if (scene) await (supabase as any).from('scenes').insert({ node_id: (scene as any).id, project_id: project.id, writing_mode: payload.writing_mode })
+                    }
+                }
+            } else {
+                const { data: chapter } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, type: 'chapter', title: 'Chapter 1', order_index: 0 }).select().single()
+                if (chapter) {
+                    const { data: scene } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (chapter as any).id, type: 'scene', title: 'Scene 1', order_index: 0 }).select().single()
+                    if (scene) await (supabase as any).from('scenes').insert({ node_id: (scene as any).id, project_id: project.id, writing_mode: payload.writing_mode })
+                }
             }
         }
 
         router.push(`/project/${project.id}/story`)
     }
 
-    const steps: Step[] = state.startMode === 'guided' ? ['title', 'type', 'start_mode', 'writing_mode', 'guided'] : ['title', 'type', 'start_mode', 'writing_mode']
+    const steps: Step[] = state.startMode === 'guided' 
+        ? ['title', 'type', 'start_mode', 'writing_mode', 'guided'] 
+        : state.startMode === 'import' 
+        ? ['title', 'type', 'start_mode', 'writing_mode', 'import']
+        : ['title', 'type', 'start_mode', 'writing_mode']
     const currentStepIndex = steps.indexOf(step)
     const progress = ((currentStepIndex) / (steps.length - 1)) * 100
 
@@ -166,6 +205,8 @@ export default function NewProjectPage() {
                                     setState(s => ({ ...s, writingMode }))
                                     if (state.startMode === 'guided') {
                                         setStep('guided')
+                                    } else if (state.startMode === 'import') {
+                                        setStep('import')
                                     } else {
                                         createProject({ writingMode })
                                     }
@@ -180,6 +221,15 @@ export default function NewProjectPage() {
                                 projectType={state.type}
                                 initialTitle={state.title}
                                 onComplete={createProject}
+                                onBack={() => setStep('writing_mode')}
+                                creating={creating}
+                            />
+                        )}
+
+                        {step === 'import' && state.type && (
+                            <ImportWizard 
+                                projectType={state.type}
+                                onComplete={(chunks) => createProject({ chunks })}
                                 onBack={() => setStep('writing_mode')}
                                 creating={creating}
                             />
@@ -285,6 +335,13 @@ function StepStartMode({ value, projectType, onSelect, onBack }: {
                     description="Empty pages and a clean structure. Best when you just need to write."
                     selected={value === 'quick'}
                     onClick={() => onSelect('quick')}
+                />
+                <TypeCard
+                    icon={<FileText className="w-8 h-8" />}
+                    title="Import Manuscript"
+                    description="Upload an existing .docx, .md, or .txt file and automatically split it."
+                    selected={value === 'import'}
+                    onClick={() => onSelect('import')}
                 />
                 <TypeCard
                     icon={<Map className="w-8 h-8" />}
