@@ -31,6 +31,10 @@ interface SceneEditorProps {
     projectCharacters?: any[]
     projectIdeas?: any[]
     onLinkingUpdate?: () => void
+    activeCharacters?: Record<string, boolean>
+    setActiveCharacters?: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
+    activeIdeas?: Record<string, boolean>
+    setActiveIdeas?: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
 }
 
 const SIMPLE_PLACEHOLDER = 'Start your story here. Use the panel on the left to add episodes and scenes, or begin writing in this scene.'
@@ -45,7 +49,11 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     projectType,
     projectCharacters = [],
     projectIdeas = [],
-    onLinkingUpdate
+    onLinkingUpdate,
+    activeCharacters,
+    setActiveCharacters,
+    activeIdeas,
+    setActiveIdeas
 }: SceneEditorProps, ref: React.ForwardedRef<SceneEditorRef>) => {
     const [isSaving, setIsSaving] = useState(false)
     const [manualDismiss, setManualDismiss] = useState(false)
@@ -170,6 +178,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                     projectCharacters={projectCharacters}
                     projectIdeas={projectIdeas}
                     onUpdate={onLinkingUpdate || (() => {})}
+                    activeCharacters={activeCharacters}
+                    setActiveCharacters={setActiveCharacters}
+                    activeIdeas={activeIdeas}
+                    setActiveIdeas={setActiveIdeas}
                 />
                 <EditorContent
                     editor={editor}

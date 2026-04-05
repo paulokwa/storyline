@@ -16,6 +16,10 @@ interface LinkedContextProps {
     projectCharacters: any[]
     projectIdeas: any[]
     onUpdate: () => void
+    activeCharacters?: Record<string, boolean>
+    setActiveCharacters?: (action: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => void
+    activeIdeas?: Record<string, boolean>
+    setActiveIdeas?: (action: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => void
 }
 
 export default function LinkedContext({ 
@@ -24,7 +28,11 @@ export default function LinkedContext({
     sceneIdeas, 
     projectCharacters, 
     projectIdeas,
-    onUpdate
+    onUpdate,
+    activeCharacters,
+    setActiveCharacters,
+    activeIdeas,
+    setActiveIdeas
 }: LinkedContextProps) {
     const supabase = createClient()
     const [isPending, startTransition] = useTransition()
@@ -67,30 +75,55 @@ export default function LinkedContext({
 
     return (
         <div className="flex flex-col gap-4 mb-8 bg-black/5 p-4 rounded-2xl border border-black/5 shadow-sm">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-[#546354]/60">Linked Context</h3>
+            <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-[#546354]/60">Linked Context</h3>
+                {(linkedChars.length > 0 || linkedIds.length > 0) && (
+                    <span className="text-[10px] text-[#546354]/60 font-medium">Select what AI should use</span>
+                )}
+            </div>
             
             <div className="flex flex-wrap gap-2">
                 {/* Linked Characters */}
-                {linkedChars.map(char => (
-                    <div key={char.id} className="flex items-center gap-2 bg-[#546354]/10 text-[#546354] px-3 py-1.5 rounded-full text-sm font-medium">
-                        <Users className="w-3.5 h-3.5 opacity-60" />
-                        {char.name}
-                        <button onClick={() => removeCharacter(char.id)} className="ml-1 opacity-50 hover:opacity-100 transition-opacity" disabled={isPending}>
-                            <X className="w-3.5 h-3.5" />
-                        </button>
-                    </div>
-                ))}
+                {linkedChars.map(char => {
+                    const isActive = activeCharacters?.[char.id] !== false
+                    return (
+                        <div key={char.id} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors", isActive ? "bg-[#546354]/10 text-[#546354] border-transparent" : "bg-white text-slate-400 border-slate-200 grayscale opacity-70")}>
+                            <input
+                                type="checkbox"
+                                checked={isActive}
+                                onChange={(e) => setActiveCharacters?.(prev => ({ ...prev, [char.id]: e.target.checked }))}
+                                className="w-3 h-3 rounded-sm cursor-pointer accent-[#546354]"
+                                title="Include in AI generation"
+                            />
+                            <Users className="w-3.5 h-3.5 opacity-60" />
+                            {char.name}
+                            <button onClick={() => removeCharacter(char.id)} className="ml-1 opacity-50 hover:opacity-100 transition-opacity" disabled={isPending}>
+                                <X className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    )
+                })}
                 
                 {/* Linked Ideas */}
-                {linkedIds.map(idea => (
-                    <div key={idea.id} className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full text-sm font-medium border border-indigo-100/50">
-                        <Lightbulb className="w-3.5 h-3.5 opacity-60" />
-                        {idea.title}
-                        <button onClick={() => removeIdea(idea.id)} className="ml-1 opacity-50 hover:opacity-100 transition-opacity" disabled={isPending}>
-                            <X className="w-3.5 h-3.5" />
-                        </button>
-                    </div>
-                ))}
+                {linkedIds.map(idea => {
+                    const isActive = activeIdeas?.[idea.id] !== false
+                    return (
+                        <div key={idea.id} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors", isActive ? "bg-indigo-50 text-indigo-700 border-indigo-100/50" : "bg-white text-slate-400 border-slate-200 grayscale opacity-70")}>
+                            <input
+                                type="checkbox"
+                                checked={isActive}
+                                onChange={(e) => setActiveIdeas?.(prev => ({ ...prev, [idea.id]: e.target.checked }))}
+                                className="w-3 h-3 rounded-sm cursor-pointer accent-indigo-600"
+                                title="Include in AI generation"
+                            />
+                            <Lightbulb className="w-3.5 h-3.5 opacity-60" />
+                            {idea.title}
+                            <button onClick={() => removeIdea(idea.id)} className="ml-1 opacity-50 hover:opacity-100 transition-opacity" disabled={isPending}>
+                                <X className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    )
+                })}
 
                 {/* Add Character Dropdown */}
                 {unlinkedCharacters.length > 0 && (

@@ -36,6 +36,8 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [aiPanelOpen, setAiPanelOpen] = useState(false)
     const [currentSceneText, setCurrentSceneText] = useState('')
+    const [activeCharacters, setActiveCharacters] = useState<Record<string, boolean>>({})
+    const [activeIdeas, setActiveIdeas] = useState<Record<string, boolean>>({})
     const editorRef = useRef<SceneEditorRef>(null)
 
     const activeScene = scenes.find((s: Scene) => s.node_id === activeNodeId)
@@ -132,6 +134,10 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                             projectCharacters={projectCharacters}
                             projectIdeas={projectIdeas}
                             onLinkingUpdate={() => router.refresh()}
+                            activeCharacters={activeCharacters}
+                            setActiveCharacters={setActiveCharacters}
+                            activeIdeas={activeIdeas}
+                            setActiveIdeas={setActiveIdeas}
                         />
                     ) : activeNodeId ? (
                         <SceneEditorPlaceholder
@@ -158,8 +164,8 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                     <AiHelperPanel
                         projectId={project.id}
                         sceneText={currentSceneText}
-                        linkedCharacters={activeScene?.scene_characters?.map((c: any) => c.characters).filter(Boolean) || []}
-                        linkedIdeas={activeScene?.scene_ideas?.map((i: any) => i.ideas).filter(Boolean) || []}
+                        linkedCharacters={(activeScene?.scene_characters?.map((c: any) => c.characters).filter(Boolean) || []).filter((c: any) => activeCharacters[c.id] !== false)}
+                        linkedIdeas={(activeScene?.scene_ideas?.map((i: any) => i.ideas).filter(Boolean) || []).filter((i: any) => activeIdeas[i.id] !== false)}
                         onInsert={(text) => editorRef.current?.appendContent(text)}
                     />
                 )}

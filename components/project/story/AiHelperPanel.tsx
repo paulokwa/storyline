@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useRef } from 'react'
 import { useCompletion } from '@ai-sdk/react'
-import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check } from 'lucide-react'
+import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -35,6 +35,8 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
     const [copied, setCopied] = useState(false)
     // Holds the previous response while a new one is loading — avoids blank flash
     const [previousCompletion, setPreviousCompletion] = useState('')
+    const [previewOpen, setPreviewOpen] = useState(false)
+    const [promptMode, setPromptMode] = useState('Continue Writing')
 
     // Snapshot scene text at submit time so the hook body stays stable during streaming
     const sceneTextRef = useRef(sceneText)
@@ -55,15 +57,32 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!prompt.trim() || isLoading) return
         const currentPrompt = prompt.trim()
-        setLastPrompt(currentPrompt)
+        if (!currentPrompt && promptMode === 'Continue Writing') return
+        if (isLoading) return
+
+        let finalPrompt = currentPrompt
+        if (promptMode === 'Improve Scene') {
+            finalPrompt = currentPrompt 
+                ? `Improve clarity, flow, and quality of this scene.\n\nUser instructions: ${currentPrompt}`
+                : `Improve clarity, flow, and quality of this scene.`
+        } else if (promptMode === 'Add Conflict') {
+            finalPrompt = currentPrompt 
+                ? `Introduce tension, stakes, or conflict.\n\nUser instructions: ${currentPrompt}`
+                : `Introduce tension, stakes, or conflict.`
+        } else if (promptMode === 'Rewrite with Emotion') {
+            finalPrompt = currentPrompt 
+                ? `Enhance emotional depth and character expression.\n\nUser instructions: ${currentPrompt}`
+                : `Enhance emotional depth and character expression.`
+        }
+
+        setLastPrompt(currentPrompt || promptMode)
         setPrompt('')
         setCopied(false)
         // Preserve current response while new one loads
         if (completion) setPreviousCompletion(completion)
         try {
-            await complete(currentPrompt, {
+            await complete(finalPrompt, {
                 body: {
                     action: 'helper',
                     projectId,
@@ -271,7 +290,55 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
             </div>
 
             {/* Input Area */}
-            <div className="bg-white border-t border-slate-200/60">
+            <div className="bg-white border-t border-slate-200/60 z-10">
+                {/* Context Preview */}
+                <div className="border-b border-slate-100">
+                    <button
+                        type="button"
+                        onClick={() => setPreviewOpen(!previewOpen)}
+                        className="w-full px-4 py-2 flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
+                    >
+                        <span>AI Context Preview</span>
+                        {previewOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+                    </button>
+                    
+                    {previewOpen && (
+                        <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 max-h-48 overflow-y-auto text-[11px] font-mono whitespace-pre-wrap text-slate-600 space-y-4">
+                            <div>
+                                <div className="font-bold text-slate-400 mb-1">SCENE:</div>
+                                <div className="line-clamp-4 hover:line-clamp-none italic bg-white p-2 border border-slate-100 rounded-lg">{sceneTextRef.current.slice(-1000) || '(empty)'}</div>
+                            </div>
+                            
+                            {linkedCharacters.length > 0 && (
+                                <div>
+                                    <div className="font-bold text-slate-400 mb-1">CHARACTERS:</div>
+                                    <ul className="list-disc pl-4 space-y-1 bg-white p-2 border border-slate-100 rounded-lg">
+                                        {linkedCharacters.map(c => (
+                                            <li key={c.id}>
+                                                <span className="font-bold">{c.name}</span>: {c.description || 'No description'}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {linkedIdeas.length > 0 && (
+                                <div>
+                                    <div className="font-bold text-slate-400 mb-1">IDEAS:</div>
+                                    <ul className="list-disc pl-4 space-y-1 bg-white p-2 border border-slate-100 rounded-lg">
+                                        {linkedIdeas.map(i => (
+                                            <li key={i.id}>
+                                                <span className="font-bold">{i.title}</span>
+                                                {i.content && <span className="text-slate-400"> - {i.content.length > 50 ? i.content.slice(0, 50) + '...' : i.content}</span>}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
                 {/* Prompt templates */}
                 <div className="px-4 pt-3 pb-2 flex flex-wrap gap-1.5">
                     {PROMPT_TEMPLATES.map((t) => (
@@ -287,40 +354,58 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
                 </div>
 
                 <div className="px-4 pb-4">
-                    <form onSubmit={handleSubmit} className="relative">
-                        <textarea
-                            value={prompt}
-                            onChange={(e) => setPrompt(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault()
-                                    handleSubmit(e as any)
-                                }
-                            }}
-                            placeholder="Ask anything about this scene…"
-                            rows={3}
-                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-3.5 pl-4 pr-12 text-sm focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-300 transition-all resize-none outline-none placeholder:text-slate-300 font-serif leading-relaxed"
-                        ></textarea>
-                        <button
-                            type="submit"
-                            disabled={!prompt.trim() || isLoading}
-                            className={cn(
-                                "absolute bottom-3.5 right-3.5 p-2 rounded-xl transition-all active:scale-90",
-                                prompt.trim() && !isLoading
-                                    ? "bg-indigo-500 text-white hover:bg-indigo-600 shadow-md shadow-indigo-200"
-                                    : "bg-slate-100 text-slate-300 cursor-not-allowed"
-                            )}
-                        >
-                            {isLoading ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                                <Send className="w-3.5 h-3.5" />
-                            )}
-                        </button>
+                    <form onSubmit={handleSubmit} className="space-y-3">
+                        <div className="relative">
+                            <textarea
+                                value={prompt}
+                                onChange={(e) => setPrompt(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault()
+                                        handleSubmit(e as any)
+                                    }
+                                }}
+                                placeholder="Ask anything about this scene…"
+                                rows={3}
+                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-3.5 pl-4 pr-12 text-sm focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-300 transition-all resize-none outline-none placeholder:text-slate-300 font-serif leading-relaxed"
+                            ></textarea>
+                            <button
+                                type="submit"
+                                disabled={(!prompt.trim() && promptMode === 'Continue Writing') || isLoading}
+                                className={cn(
+                                    "absolute bottom-3.5 right-3.5 p-2 rounded-xl transition-all active:scale-90",
+                                    (prompt.trim() || promptMode !== 'Continue Writing') && !isLoading
+                                        ? "bg-indigo-500 text-white hover:bg-indigo-600 shadow-md shadow-indigo-200"
+                                        : "bg-slate-100 text-slate-300 cursor-not-allowed"
+                                )}
+                            >
+                                {isLoading ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                    <Send className="w-3.5 h-3.5" />
+                                )}
+                            </button>
+                        </div>
+                        
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">AI Mode:</label>
+                                <select 
+                                    value={promptMode}
+                                    onChange={(e) => setPromptMode(e.target.value)}
+                                    className="bg-transparent text-slate-600 text-[11px] font-medium outline-none cursor-pointer appearance-none border-b border-transparent hover:border-slate-300 transition-colors"
+                                >
+                                    <option value="Continue Writing">Continue Writing</option>
+                                    <option value="Improve Scene">Improve Scene</option>
+                                    <option value="Add Conflict">Add Conflict</option>
+                                    <option value="Rewrite with Emotion">Rewrite with Emotion</option>
+                                </select>
+                            </div>
+                            <p className="text-[10px] text-center text-slate-300 font-bold uppercase tracking-tight">
+                                Enter to send • Shift+Enter for new line
+                            </p>
+                        </div>
                     </form>
-                    <p className="mt-2.5 text-[10px] text-center text-slate-300 font-bold uppercase tracking-tight">
-                        Enter to send • Shift+Enter for new line
-                    </p>
                 </div>
             </div>
         </div>
