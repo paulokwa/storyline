@@ -2,8 +2,9 @@
 
 import React, { useState, useMemo, useRef } from 'react'
 import { useCompletion } from '@ai-sdk/react'
-import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp } from 'lucide-react'
+import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 interface AiHelperPanelProps {
@@ -20,6 +21,13 @@ const EMPTY_HINTS = [
     'What detail would make this scene more vivid?',
     'What is my character feeling right now?',
 ]
+
+const MODE_EXPLANATIONS: Record<string, string> = {
+    'Continue Writing': 'Seamlessly continues the scene based on your prompt.',
+    'Improve Scene': 'Refines the clarity, flow, and overall prose quality.',
+    'Add Conflict': 'Introduces new tension, higher stakes, or drama.',
+    'Rewrite with Emotion': 'Deepens emotional resonance and character expressions.'
+}
 
 const PROMPT_TEMPLATES = [
     { label: 'What happens next?', value: 'What could happen next in this scene?' },
@@ -58,22 +66,27 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         const currentPrompt = prompt.trim()
-        if (!currentPrompt && promptMode === 'Continue Writing') return
         if (isLoading) return
 
-        let finalPrompt = currentPrompt
-        if (promptMode === 'Improve Scene') {
+        const STRICT_PROSE_RULES = `\n\nWrite in narrative prose.\nDo not give advice, suggestions, or explanations.\nOutput only the story.`
+        let finalPrompt = ''
+
+        if (promptMode === 'Continue Writing') {
             finalPrompt = currentPrompt 
-                ? `Improve clarity, flow, and quality of this scene.\n\nUser instructions: ${currentPrompt}`
-                : `Improve clarity, flow, and quality of this scene.`
+                ? `Continue the scene based on these instructions: ${currentPrompt}${STRICT_PROSE_RULES}`
+                : `Continue the scene.${STRICT_PROSE_RULES}`
+        } else if (promptMode === 'Improve Scene') {
+            finalPrompt = currentPrompt 
+                ? `Continue the scene by improving clarity, flow, and quality.\n\nUser instructions: ${currentPrompt}${STRICT_PROSE_RULES}`
+                : `Continue the scene by improving clarity, flow, and quality.${STRICT_PROSE_RULES}`
         } else if (promptMode === 'Add Conflict') {
             finalPrompt = currentPrompt 
-                ? `Introduce tension, stakes, or conflict.\n\nUser instructions: ${currentPrompt}`
-                : `Introduce tension, stakes, or conflict.`
+                ? `Continue the scene by introducing tension, stakes, or conflict.\n\nUser instructions: ${currentPrompt}${STRICT_PROSE_RULES}`
+                : `Continue the scene by introducing tension, stakes, or conflict.${STRICT_PROSE_RULES}`
         } else if (promptMode === 'Rewrite with Emotion') {
             finalPrompt = currentPrompt 
-                ? `Enhance emotional depth and character expression.\n\nUser instructions: ${currentPrompt}`
-                : `Enhance emotional depth and character expression.`
+                ? `Continue the scene by enhancing emotional depth and character expression.\n\nUser instructions: ${currentPrompt}${STRICT_PROSE_RULES}`
+                : `Continue the scene by enhancing emotional depth and character expression.${STRICT_PROSE_RULES}`
         }
 
         setLastPrompt(currentPrompt || promptMode)
@@ -367,14 +380,14 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
                                 }}
                                 placeholder="Ask anything about this scene…"
                                 rows={3}
-                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-3.5 pl-4 pr-12 text-sm focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-300 transition-all resize-none outline-none placeholder:text-slate-300 font-serif leading-relaxed"
+                                className="w-full bg-slate-50 border border-slate-300 rounded-2xl py-3.5 pl-4 pr-12 text-sm focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all resize-none outline-none placeholder:text-slate-400 font-serif leading-relaxed"
                             ></textarea>
                             <button
                                 type="submit"
-                                disabled={(!prompt.trim() && promptMode === 'Continue Writing') || isLoading}
+                                disabled={isLoading}
                                 className={cn(
                                     "absolute bottom-3.5 right-3.5 p-2 rounded-xl transition-all active:scale-90",
-                                    (prompt.trim() || promptMode !== 'Continue Writing') && !isLoading
+                                    !isLoading
                                         ? "bg-indigo-500 text-white hover:bg-indigo-600 shadow-md shadow-indigo-200"
                                         : "bg-slate-100 text-slate-300 cursor-not-allowed"
                                 )}
@@ -389,7 +402,19 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
                         
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
-                                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">AI Mode:</label>
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center">
+                                    AI Mode:
+                                    <TooltipProvider>
+                                        <Tooltip delayDuration={300}>
+                                            <TooltipTrigger asChild>
+                                                <Info className="w-3.5 h-3.5 ml-1.5 text-slate-300 hover:text-slate-500 cursor-help transition-colors" />
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top" className="text-xs">
+                                                {MODE_EXPLANATIONS[promptMode]}
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </label>
                                 <select 
                                     value={promptMode}
                                     onChange={(e) => setPromptMode(e.target.value)}

@@ -70,7 +70,14 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             .eq('id', sceneRef.current.id)
             .select()
             .single()
-        if (data) onUpdate(data)
+        
+        if (data) {
+            onUpdate({
+                ...data,
+                scene_characters: sceneRef.current.scene_characters,
+                scene_ideas: sceneRef.current.scene_ideas
+            })
+        }
 
         setIsSaving(false)
     }, [writingMode, onUpdate])
@@ -168,7 +175,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             writingMode === 'screenplay' ? 'screenplay-mode' : 'max-w-6xl mx-auto'
         )}>
             <div className={cn(
-                "transition-all duration-700 p-8 md:p-16 rounded-[3rem] border border-transparent hover:border-[#546354]/5 focus-within:border-[#546354]/10 focus-within:shadow-[0_40px_100px_rgba(0,0,0,0.02)] relative",
+                "transition-all duration-700 p-8 md:p-16 rounded-[3rem] border border-slate-200 hover:border-slate-300 focus-within:border-slate-400 focus-within:shadow-[0_40px_100px_rgba(0,0,0,0.02)] relative",
                 writingMode === 'simple' && "editor-content text-[#31332f]/90 leading-[2.2] bg-white/10"
             )}>
                 <LinkedContext 
