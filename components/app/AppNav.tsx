@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { PenLine, LogOut } from 'lucide-react'
+import { PenLine, LogOut, Settings as SettingsIcon } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 
 export default function AppNav({ user }: { user: User }) {
@@ -30,8 +30,17 @@ export default function AppNav({ user }: { user: User }) {
                     <span className="font-semibold text-lg">Storyline</span>
                 </Link>
 
-                <div className="flex items-center gap-3">
-                    <span className="text-sm text-slate-500 hidden sm:block">Hi, {displayName}</span>
+                <div className="flex items-center gap-2 sm:gap-3">
+                    <span className="text-sm text-slate-500 hidden sm:block mr-2">Hi, {displayName}</span>
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => router.push('/settings')}
+                        className="text-slate-500 hover:text-slate-800 gap-1.5"
+                    >
+                        <SettingsIcon className="w-4 h-4" />
+                        <span className="hidden sm:inline">Settings</span>
+                    </Button>
                     <Button
                         variant="ghost"
                         size="sm"

@@ -47,3 +47,12 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Known Risks & Deferred Hardening
+
+Currently, there are a few active architectural risks and missing security features that have been deliberately deferred from the Phase 1 MVP. We strongly recommend resolving these before any broader public release:
+
+- **No Rate Limiting:** The AI endpoint (`/api/ai`) currently has no explicit, IP-based or user-based rate limiting built natively into the route. Abuse could potentially exhaust project quotas or cause minor denial-of-service issues. Note: Basic payload caps (string length validation) *are* implemented.
+- **API Keys are not Encrypted-At-Rest:** User's Bring-Your-Own API Keys are securely obscured from the frontend, locked down with Postgres Row Level Security (RLS) policies, and stripped from auth JWT payloads. However, they are stored as standard `TEXT` in the generic database instance instead of being cryptographically hashed or processed via a dedicated secrets vault natively (such as Supabase Vault / pgsodium).
+
+**Action Required:** Revisit and apply a secure DDOS / rate limiting framework (such as Vercel Edge KV or Upstash) alongside Enterprise database encryption parameters before scaling to a wider audience.

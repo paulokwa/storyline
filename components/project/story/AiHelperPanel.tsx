@@ -2,7 +2,8 @@
 
 import React, { useState, useMemo, useRef } from 'react'
 import { useCompletion } from '@ai-sdk/react'
-import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info } from 'lucide-react'
+import Link from 'next/link'
+import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -222,22 +223,48 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
                         <div className="bg-white w-9 h-9 rounded-full flex items-center justify-center mx-auto shadow-sm">
                             <AlertCircle className="w-4 h-4 text-red-400" />
                         </div>
-                        <div className="space-y-1">
-                            <p className="text-sm font-semibold text-red-900">Something went wrong</p>
-                            <p className="text-xs text-red-500 leading-relaxed font-serif italic">
-                                The AI partner ran into an issue. Your prompt is saved — you can retry below.
-                            </p>
-                        </div>
-                        <Button
-                            onClick={() => lastPrompt && handleSubmit({ preventDefault: () => {} } as any)}
-                            variant="outline"
-                            size="sm"
-                            disabled={!lastPrompt || isLoading}
-                            className="w-full bg-white border-red-200 text-red-700 hover:bg-red-50 rounded-xl gap-2 text-xs"
-                        >
-                            <RefreshCcw className="w-3 h-3" />
-                            Try again
-                        </Button>
+                        {error.message?.includes('NO_API_KEY') ? (
+                            <>
+                                <div className="space-y-1">
+                                    <p className="text-sm font-semibold text-red-900">API Key Missing</p>
+                                    <p className="text-xs text-red-500 leading-relaxed font-serif italic">
+                                        Please provide an AI API key in your account settings to use the Scene Helper.
+                                    </p>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full bg-white border-red-200 text-red-700 hover:bg-red-50 rounded-xl gap-2 text-xs"
+                                >
+                                    <Link href="/settings" className="flex items-center gap-2 w-full justify-center">
+                                        <Settings className="w-3 h-3" />
+                                        Go to Settings
+                                    </Link>
+                                </Button>
+                            </>
+                        ) : (
+                            <>
+                                <div className="space-y-1">
+                                    <p className="text-sm font-semibold text-red-900">Something went wrong</p>
+                                    <p className="text-xs text-red-500 leading-relaxed font-serif italic">
+                                        The AI partner ran into an issue. Your prompt is saved — you can retry below.
+                                        {error.message ? ` (${error.message})` : ''}
+                                    </p>
+                                </div>
+                                <Button
+                                    type="button"
+                                    onClick={() => lastPrompt && handleSubmit({ preventDefault: () => {} } as any)}
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={!lastPrompt || isLoading}
+                                    className="w-full bg-white border-red-200 text-red-700 hover:bg-red-50 rounded-xl gap-2 text-xs"
+                                >
+                                    <RefreshCcw className="w-3 h-3" />
+                                    Try again
+                                </Button>
+                            </>
+                        )}
                     </div>
                 )}
 
@@ -404,8 +431,8 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
                             <div className="flex items-center gap-2">
                                 <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center">
                                     AI Mode:
-                                    <TooltipProvider>
-                                        <Tooltip delayDuration={300}>
+                                    <TooltipProvider delay={300}>
+                                        <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <Info className="w-3.5 h-3.5 ml-1.5 text-slate-300 hover:text-slate-500 cursor-help transition-colors" />
                                             </TooltipTrigger>

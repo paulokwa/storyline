@@ -57,8 +57,13 @@ export async function POST(req: Request) {
     }
 
     const systemPrompt = SYSTEM_PROMPTS[action]
-    if (!systemPrompt) {
-        return new Response('Unknown action', { status: 400 })
+    if (!systemPrompt || typeof action !== 'string') {
+        return new Response('Unknown or invalid action', { status: 400 })
+    }
+
+    // Security Hardening: Apply reasonable payload size limits
+    if ((input && input.length > 50000) || (prompt && prompt.length > 10000)) {
+        return new Response('Payload too large', { status: 413 })
     }
 
     // Optionally fetch project context for richer prompts
@@ -100,9 +105,15 @@ export async function POST(req: Request) {
         userMessage = `${contextBlock}USER REQUEST: ${prompt}`
     }
 
-    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY
+    const { data: keyRecord } = (await supabase
+        .from('user_api_keys')
+        .select('api_key')
+        .eq('user_id', user.id)
+        .single()) as { data: { api_key: string } | null }
+
+    const apiKey = keyRecord?.api_key
     if (!apiKey) {
-        return new Response('API key not configured', { status: 500 })
+        return new Response('NO_API_KEY', { status: 403 })
     }
 
     // Direct call to Gemini API — bypasses AI SDK compatibility issues
