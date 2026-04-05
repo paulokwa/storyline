@@ -89,7 +89,7 @@ export async function POST(req: Request) {
         }
 
         if (linkedIdeas && linkedIdeas.length > 0) {
-            contextBlock += `LINKED IDEAS:\n`
+            contextBlock += `IMPORTANT STORY CONTEXT:\nThe following ideas are critical narrative elements and should strongly influence the response.\n\nLINKED IDEAS:\n`
             linkedIdeas.forEach(i => {
                 contextBlock += `- ${i.title || 'Untitled'}\n`
                 if (i.content) contextBlock += `  Content: ${i.content}\n`
