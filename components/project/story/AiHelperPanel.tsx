@@ -433,7 +433,7 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
                                     AI Mode:
                                     <TooltipProvider delay={300}>
                                         <Tooltip>
-                                            <TooltipTrigger asChild>
+                                            <TooltipTrigger>
                                                 <Info className="w-3.5 h-3.5 ml-1.5 text-slate-300 hover:text-slate-500 cursor-help transition-colors" />
                                             </TooltipTrigger>
                                             <TooltipContent side="top" className="text-xs">
