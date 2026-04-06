@@ -35,6 +35,12 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
         .eq('project_id', id)
         .order('order_index')
 
+    const { data: aiSettings } = (await supabase
+        .from('user_api_keys')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()) as { data: any | null }
+
     return (
         <StoryTab
             project={project!}
@@ -42,6 +48,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
             initialScenes={scenes as any ?? []}
             projectCharacters={projectCharacters ?? []}
             projectIdeas={projectIdeas ?? []}
+            aiSettings={aiSettings ?? { ai_enabled: false }}
         />
     )
 }

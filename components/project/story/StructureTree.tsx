@@ -285,10 +285,10 @@ const NodeItem = React.memo(function NodeItem({ node, nodes, activeNodeId, depth
                     </span>
                 )}
 
-                {(!editing && (hovered || isActive || window.innerWidth < 768)) && (
+                {(!editing && (hovered || isActive || (typeof window !== 'undefined' && window.innerWidth < 768))) && (
                     <div className={cn(
                         "flex items-center gap-1 shrink-0 transition-opacity duration-300 md:opacity-0 md:group-hover:opacity-100",
-                        (isActive || window.innerWidth < 768) && "opacity-100"
+                        (isActive || (typeof window !== 'undefined' && window.innerWidth < 768)) && "opacity-100"
                     )} onClick={e => e.stopPropagation()}>
                         {CHILD_TYPE[node.type as NodeType] && (
                             <button

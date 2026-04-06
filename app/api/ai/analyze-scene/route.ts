@@ -97,15 +97,20 @@ export async function POST(req: Request) {
         return new Response('SCENE_TOO_LARGE', { status: 413 })
     }
 
-    // ── Fetch user API key ───────────────────────────────────────────────────
-    const { data: keyRecord } = (await supabase
+    // ── Fetch user AI settings ───────────────────────────────────────────────────
+    const { data: settings } = (await supabase
         .from('user_api_keys')
-        .select('api_key')
+        .select('*')
         .eq('user_id', user.id)
-        .single()) as { data: { api_key: string } | null }
+        .single()) as { data: any | null }
 
-    const apiKey = keyRecord?.api_key
-    if (!apiKey) {
+    if (!settings || !settings.ai_enabled) {
+        return new Response('AI_DISABLED', { status: 403 })
+    }
+
+    const { ai_provider, api_key, ollama_url, ollama_model } = settings
+
+    if (ai_provider !== 'gemini' || !api_key) {
         return new Response('NO_API_KEY', { status: 403 })
     }
 
@@ -113,7 +118,7 @@ export async function POST(req: Request) {
     const delimitedScene = `<scene>\n${trimmed}\n</scene>`
 
     // ── Call Gemini (non-streaming) ──────────────────────────────────────────
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${api_key}`
 
     let geminiResponse: Response
     try {
@@ -129,9 +134,7 @@ export async function POST(req: Request) {
                 },
                 generationConfig: {
                     maxOutputTokens: 800,
-                    thinkingConfig: {
-                        thinkingBudget: 0,
-                    },
+                    responseMimeType: 'application/json'
                 },
             }),
         })
@@ -164,20 +167,20 @@ export async function POST(req: Request) {
     // Strip markdown code fences if Gemini ignores the instruction
     const cleaned = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim()
 
-    let analysis: unknown
+    let finalAnalysis: any = null
     try {
-        analysis = JSON.parse(cleaned)
+        finalAnalysis = JSON.parse(cleaned)
     } catch (err) {
         console.error('[analyze-scene] Failed to JSON.parse AI output:', err, '\nRaw (truncated):', trunc(cleaned))
         return new Response('INVALID_AI_RESPONSE', { status: 502 })
     }
 
-    if (!isValidAnalysis(analysis)) {
-        console.error('[analyze-scene] AI response failed shape validation:', trunc(analysis))
+    if (!isValidAnalysis(finalAnalysis)) {
+        console.error('[analyze-scene] AI response failed shape validation:', trunc(finalAnalysis))
         return new Response('INVALID_AI_RESPONSE', { status: 502 })
     }
 
-    return new Response(JSON.stringify(analysis), {
+    return new Response(JSON.stringify(finalAnalysis), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
     })

@@ -17,6 +17,8 @@ import ExportModal from '@/components/export/ExportModal'
 import ProjectSettingsModal from '@/components/project/ProjectSettingsModal'
 import { cn } from '@/lib/utils'
 import type { Database } from '@/lib/supabase/types'
+import { ReaderProvider } from '@/hooks/useSpeech'
+import { FloatingPlayer } from '@/components/project/story/ReaderMode'
 
 type Project = Database['public']['Tables']['projects']['Row']
 
@@ -150,9 +152,12 @@ export default function ProjectShell({
             </div>
 
             {/* Page content */}
-            <div className="flex-1 overflow-hidden max-w-7xl w-full mx-auto flex flex-col">
-                {children}
-            </div>
+            <ReaderProvider>
+                <div className="flex-1 overflow-hidden max-w-7xl w-full mx-auto flex flex-col">
+                    {children}
+                </div>
+                <FloatingPlayer />
+            </ReaderProvider>
 
             <ExportModal 
                 open={exportModalOpen}

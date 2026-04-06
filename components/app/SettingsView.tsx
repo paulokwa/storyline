@@ -7,9 +7,20 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
+import { ChevronLeft } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 
-export default function SettingsView({ user, maskedApiKey }: { user: User, maskedApiKey: string | null }) {
+export default function SettingsView({ user, maskedApiKey, aiSettings }: { 
+    user: User, 
+    maskedApiKey: string | null,
+    aiSettings: {
+        ai_enabled: boolean,
+        ai_provider: string,
+        ai_fallback_enabled: boolean,
+        ollama_model: string,
+        ollama_url: string
+    }
+}) {
     const supabase = createClient()
     const router = useRouter()
     const [loading, setLoading] = useState(false)
@@ -21,6 +32,13 @@ export default function SettingsView({ user, maskedApiKey }: { user: User, maske
     const [password, setPassword] = useState('')
     const [apiKey, setApiKey] = useState('')
     
+    // AI Settings State
+    const [aiEnabled, setAiEnabled] = useState(aiSettings.ai_enabled)
+    const [aiProvider, setAiProvider] = useState(aiSettings.ai_provider)
+    const [aiFallback, setAiFallback] = useState(aiSettings.ai_fallback_enabled)
+    const [ollamaModel, setOllamaModel] = useState(aiSettings.ollama_model)
+    const [ollamaUrl, setOllamaUrl] = useState(aiSettings.ollama_url)
+
     // Deletion states
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [deleteConfirmText, setDeleteConfirmText] = useState('')
@@ -60,16 +78,29 @@ export default function SettingsView({ user, maskedApiKey }: { user: User, maske
         setLoading(false)
     }
 
-    const handleSaveApiKey = async (e: React.FormEvent) => {
+    const handleSaveAiSettings = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
         setSuccessMessage(null)
         setErrorMessage(null)
 
         // Store the actual key in the secure user_api_keys table
+        const updatePayload: any = {
+            user_id: user.id,
+            ai_enabled: aiEnabled,
+            ai_provider: aiProvider,
+            ai_fallback_enabled: aiFallback,
+            ollama_model: ollamaModel,
+            ollama_url: ollamaUrl
+        }
+        
+        if (apiKey) {
+            updatePayload.api_key = apiKey
+        }
+
         const { error: dbError } = await (supabase as any)
             .from('user_api_keys')
-            .upsert({ user_id: user.id, api_key: apiKey }, { onConflict: 'user_id' })
+            .upsert(updatePayload, { onConflict: 'user_id' })
 
         if (dbError) {
             setErrorMessage(dbError.message)
@@ -84,7 +115,7 @@ export default function SettingsView({ user, maskedApiKey }: { user: User, maske
             })
         }
 
-        setSuccessMessage('API Key saved successfully.')
+        setSuccessMessage('AI Settings saved successfully.')
         setApiKey('')
         router.refresh()
         setLoading(false)
@@ -139,9 +170,20 @@ export default function SettingsView({ user, maskedApiKey }: { user: User, maske
 
     return (
         <div className="max-w-2xl mx-auto space-y-8">
-            <div>
-                <h1 className="text-3xl font-bold text-slate-800">Settings</h1>
-                <p className="text-slate-500 mt-2">Manage your account and app preferences.</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold text-slate-800">Settings</h1>
+                    <p className="text-slate-500 mt-2">Manage your account and app preferences.</p>
+                </div>
+                <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => router.back()}
+                    className="text-slate-500 hover:text-slate-800 gap-1.5 border-slate-200"
+                >
+                    <ChevronLeft className="w-4 h-4" />
+                    <span>Go Back</span>
+                </Button>
             </div>
 
             {successMessage && (
@@ -160,47 +202,108 @@ export default function SettingsView({ user, maskedApiKey }: { user: User, maske
                 {/* AI API Settings */}
                 <Card className="p-6">
                     <h2 className="text-xl font-semibold mb-4">AI Features Settings</h2>
-                    <div className="space-y-4">
-                        {existingApiKey ? (
-                            <div className="p-4 bg-indigo-50 text-indigo-900 rounded-md flex justify-between items-center">
-                                <div>
-                                    <p className="font-medium">Active API Key</p>
-                                    <p className="text-sm opacity-80">
-                                        {existingApiKey}
-                                    </p>
-                                </div>
-                                <Button 
-                                    variant="outline"
-                                    onClick={handleRemoveApiKey}
-                                    disabled={loading}
-                                    className="bg-white"
-                                >
-                                    Remove Key
-                                </Button>
+                    
+                    <form onSubmit={handleSaveAiSettings} className="space-y-6">
+                        
+                        {/* Master Toggle */}
+                        <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                            <div className="space-y-0.5">
+                                <Label className="text-base">Enable AI Features</Label>
+                                <p className="text-sm text-slate-500">Master switch to turn all AI features on or off.</p>
                             </div>
-                        ) : (
-                            <div className="p-4 bg-amber-50 text-amber-900 rounded-md mb-4 text-sm">
-                                No API key found. AI features are currently disabled. Please provide a Google Gemini API Key to enable AI assistance.
+                            <input 
+                                type="checkbox" 
+                                checked={aiEnabled} 
+                                onChange={(e) => setAiEnabled(e.target.checked)}
+                                className="w-5 h-5 text-indigo-600 rounded bg-slate-100 border-slate-300 focus:ring-indigo-500"
+                            />
+                        </div>
+
+                        {aiEnabled && (
+                            <div className="space-y-6 animate-in fade-in duration-300">
+                                {/* Provider Selection */}
+                                <div className="space-y-3">
+                                    <Label>Preferred AI Provider</Label>
+                                    <div className="flex flex-col sm:flex-row gap-3">
+                                        <label className={`flex-1 border p-4 rounded-lg cursor-pointer transition-all ${aiProvider === 'gemini' ? 'border-indigo-500 bg-indigo-50/50 ring-1 ring-indigo-500' : 'border-slate-200 hover:border-slate-300'}`}>
+                                            <div className="flex items-center gap-2">
+                                                <input type="radio" name="provider" value="gemini" checked={aiProvider === 'gemini'} onChange={(e) => setAiProvider(e.target.value)} />
+                                                <span className="font-medium text-slate-900">Gemini Cloud</span>
+                                            </div>
+                                            <p className="text-xs text-slate-500 mt-1 ml-5">Fast, highly capable, cloud-hosted.</p>
+                                        </label>
+                                        <label className={`flex-1 border p-4 rounded-lg cursor-pointer transition-all ${aiProvider === 'ollama' ? 'border-indigo-500 bg-indigo-50/50 ring-1 ring-indigo-500' : 'border-slate-200 hover:border-slate-300'}`}>
+                                            <div className="flex items-center gap-2">
+                                                <input type="radio" name="provider" value="ollama" checked={aiProvider === 'ollama'} onChange={(e) => setAiProvider(e.target.value)} />
+                                                <span className="font-medium text-slate-900">Local Ollama</span>
+                                            </div>
+                                            <p className="text-xs text-slate-500 mt-1 ml-5">Private, runs completely on your machine.</p>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                {/* Gemini Config */}
+                                {aiProvider === 'gemini' && (
+                                    <div className="p-5 border border-slate-200 rounded-lg space-y-4 bg-slate-50">
+                                        <h3 className="font-semibold text-slate-800">Google Gemini Configuration</h3>
+                                        {existingApiKey ? (
+                                            <div className="p-3 bg-white border border-slate-200 rounded-md flex justify-between items-center shadow-sm">
+                                                <div>
+                                                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Active API Key</p>
+                                                    <p className="text-sm font-mono text-slate-600">{existingApiKey}</p>
+                                                </div>
+                                                <Button type="button" variant="ghost" size="sm" onClick={handleRemoveApiKey} disabled={loading} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                                                    Remove
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-md text-sm shadow-sm">
+                                                No Gemini API key found. Some features may be disabled.
+                                            </div>
+                                        )}
+                                        <div className="space-y-2">
+                                            <Label htmlFor="apiKey">{existingApiKey ? 'Update API Key' : 'Enter Google Gemini API Key'}</Label>
+                                            <Input id="apiKey" type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="AIzaSy..." className="bg-white" />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Ollama Config */}
+                                {aiProvider === 'ollama' && (
+                                    <div className="p-5 border border-slate-200 rounded-lg space-y-5 bg-slate-50">
+                                        <h3 className="font-semibold text-slate-800">Local Ollama Configuration</h3>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="ollamaUrl">Local API URL</Label>
+                                            <Input id="ollamaUrl" type="text" value={ollamaUrl} onChange={(e) => setOllamaUrl(e.target.value)} placeholder="http://127.0.0.1:11434" className="bg-white" />
+                                            <p className="text-xs text-slate-500">Change this if accessing Ollama from a different device on your network.</p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="ollamaModel">Local Model Name</Label>
+                                            <Input id="ollamaModel" type="text" value={ollamaModel} onChange={(e) => setOllamaModel(e.target.value)} placeholder="llama3" className="bg-white" />
+                                            <p className="text-xs text-slate-500">Make sure this model is pulled via your terminal: `ollama pull {ollamaModel || 'llama3'}`</p>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-200">
+                                            <input type="checkbox" id="aiFallback" checked={aiFallback} onChange={(e) => setAiFallback(e.target.checked)} className="rounded bg-white border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                                            <Label htmlFor="aiFallback" className="font-normal cursor-pointer text-sm">Allow fallback to Gemini if Local Ollama is unreachable</Label>
+                                        </div>
+                                        {aiFallback && !existingApiKey && (
+                                            <p className="text-xs text-amber-600 pl-6">Fallback is enabled but you have no Gemini API Key saved.</p>
+                                        )}
+                                        {aiFallback && (
+                                            <div className="pl-6 space-y-2">
+                                                <Label htmlFor="apiKeyOllamaFallback" className="text-xs">Provide Fallback Gemini Key</Label>
+                                                <Input id="apiKeyOllamaFallback" type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder={existingApiKey ? "(Key exists)" : "AIzaSy..."} className="bg-white h-8 text-sm" />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
 
-                        <form onSubmit={handleSaveApiKey} className="space-y-4 pt-2">
-                            <div className="space-y-2">
-                                <Label htmlFor="apiKey">Set / Update Google Gemini API Key</Label>
-                                <Input
-                                    id="apiKey"
-                                    type="password"
-                                    value={apiKey}
-                                    onChange={(e) => setApiKey(e.target.value)}
-                                    placeholder="AIzaSy..."
-                                    required
-                                />
-                            </div>
-                            <Button type="submit" disabled={loading || !apiKey}>
-                                {existingApiKey ? 'Update Key' : 'Save Key'}
-                            </Button>
-                        </form>
-                    </div>
+                        <Button type="submit" disabled={loading} className="w-full">
+                            Save AI Settings
+                        </Button>
+                    </form>
                 </Card>
 
                 {/* Profile Settings */}

@@ -9,9 +9,19 @@ import AiHelperPanel from './AiHelperPanel'
 import WritingModeToggle from '@/components/shared/WritingModeToggle'
 import { PanelLeftClose, PanelLeftOpen, BookOpen, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
 import type { Database, WritingMode } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
+import { ReaderControls } from './ReaderMode'
+
+function extractTextFromJson(content: any): string {
+    if (typeof content === 'string') return content
+    if (!content) return ''
+    if (content.type === 'text') return content.text || ''
+    if (Array.isArray(content.content)) {
+        return content.content.map((c: any) => extractTextFromJson(c)).join('\n')
+    }
+    return ''
+}
 
 type Project = Database['public']['Tables']['projects']['Row']
 type StructureNode = Database['public']['Tables']['structure_nodes']['Row']
@@ -23,9 +33,17 @@ interface StoryTabProps {
     initialScenes: any[] // any[] to handle joined scenes with linked ideas/characters temporarily
     projectCharacters: any[]
     projectIdeas: any[]
+    aiSettings: {
+        ai_enabled: boolean
+        ai_provider: string
+        ai_fallback_enabled: boolean
+        ollama_model: string
+        ollama_url: string
+        api_key: string | null
+    }
 }
 
-export default function StoryTab({ project, initialNodes, initialScenes, projectCharacters, projectIdeas }: StoryTabProps) {
+export default function StoryTab({ project, initialNodes, initialScenes, projectCharacters, projectIdeas, aiSettings }: StoryTabProps) {
     const router = useRouter()
     const [nodes, setNodes] = useState(initialNodes)
     const [scenes, setScenes] = useState(initialScenes)
@@ -127,21 +145,66 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                 <WritingModeToggle mode={writingMode} onChange={handleWritingModeChange} />
                             </div>
                         )}
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                                setAiPanelOpen((o: boolean) => !o)
-                                if (sidebarOpen) setSidebarOpen(false)
+                        {aiSettings.ai_enabled && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                    setAiPanelOpen((o: boolean) => !o)
+                                    if (sidebarOpen) setSidebarOpen(false)
+                                }}
+                                className={cn(
+                                    "h-8 px-3 gap-2 rounded-full transition-all font-serif italic",
+                                    aiPanelOpen ? "bg-indigo-50 text-indigo-600 shadow-sm" : "text-slate-400 hover:text-indigo-500"
+                                )}
+                            >
+                                <Sparkles className={cn("w-4 h-4", aiPanelOpen && "animate-pulse")} />
+                                <span className="hidden xs:inline">{aiPanelOpen ? 'Helper Open' : 'AI Helper'}</span>
+                            </Button>
+                        )}
+
+                        <div className="w-px h-4 bg-slate-200 mx-1 hidden sm:block" />
+
+                        <ReaderControls 
+                            getSelection={() => editorRef.current?.getSelectionText() || ''}
+                            getScene={() => editorRef.current?.getText() || ''}
+                            getChapter={() => {
+                                if (!activeNodeId) return ''
+                                const activeNode = nodes.find(n => n.id === activeNodeId)
+                                if (!activeNode) return ''
+                                
+                                // Find root of this chapter/episode
+                                let rootNode = activeNode
+                                while (rootNode && rootNode.parent_id !== null) {
+                                     rootNode = nodes.find(n => n.id === rootNode.parent_id) || rootNode
+                                }
+                                
+                                const isDescendant = (nodeId: string, parentId: string): boolean => {
+                                     const node = nodes.find(n => n.id === nodeId)
+                                     if (!node) return false
+                                     if (node.parent_id === parentId) return true
+                                     if (node.parent_id) return isDescendant(node.parent_id, parentId)
+                                     return false
+                                }
+
+                                const chapterScenes = scenes.filter((s: any) => {
+                                     const sceneNode = nodes.find(n => n.id === s.node_id)
+                                     if (!sceneNode) return false
+                                     if (sceneNode.id === rootNode.id) return true
+                                     return isDescendant(sceneNode.id, rootNode.id)
+                                })
+                                
+                                // Sort properly by tree flatten
+                                const flattenTree = (parentId: string | null): string[] => {
+                                    const children = nodes.filter(n => n.parent_id === parentId).sort((a,b) => (a.order_index ?? 0) - (b.order_index ?? 0))
+                                    return children.flatMap(c => [c.id, ...flattenTree(c.id)])
+                                }
+                                const order = flattenTree(null)
+                                chapterScenes.sort((a: any, b: any) => order.indexOf(a.node_id) - order.indexOf(b.node_id))
+                                
+                                return chapterScenes.map((s: any) => extractTextFromJson(s.content)).join('\n\n')
                             }}
-                            className={cn(
-                                "h-8 px-3 gap-2 rounded-full transition-all font-serif italic",
-                                aiPanelOpen ? "bg-indigo-50 text-indigo-600 shadow-sm" : "text-slate-400 hover:text-indigo-500"
-                            )}
-                        >
-                            <Sparkles className={cn("w-4 h-4", aiPanelOpen && "animate-pulse")} />
-                            <span className="hidden xs:inline">{aiPanelOpen ? 'Helper Open' : 'AI Helper'}</span>
-                        </Button>
+                        />
                     </div>
                 </div>
 
@@ -164,6 +227,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                 setActiveCharacters={setActiveCharacters}
                                 activeIdeas={activeIdeas}
                                 setActiveIdeas={setActiveIdeas}
+                                aiSettings={aiSettings}
                             />
                         ) : activeNodeId ? (
                             <SceneEditorPlaceholder
@@ -195,6 +259,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                             sceneText={currentSceneText}
                             linkedCharacters={(activeScene?.scene_characters?.map((c: any) => c.characters).filter(Boolean) || []).filter((c: any) => activeCharacters[c.id] !== false)}
                             linkedIdeas={(activeScene?.scene_ideas?.map((i: any) => i.ideas).filter(Boolean) || []).filter((i: any) => activeIdeas[i.id] !== false)}
+                            aiSettings={aiSettings}
                             onInsert={(text) => {
                                 editorRef.current?.appendContent(text)
                                 if (window.innerWidth < 768) setAiPanelOpen(false)
@@ -206,7 +271,6 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         </div>
     )
 }
-
 
 function EmptyEditorState({ projectType, isProjectEmpty }: { projectType: 'tv_script' | 'novel', isProjectEmpty: boolean }) {
     return (

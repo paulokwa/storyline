@@ -20,6 +20,7 @@ type Scene = Database['public']['Tables']['scenes']['Row'] & {
 export interface SceneEditorRef {
     appendContent: (text: string) => void
     getText: () => string
+    getSelectionText: () => string
 }
 
 interface SceneEditorProps {
@@ -36,6 +37,14 @@ interface SceneEditorProps {
     setActiveCharacters?: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
     activeIdeas?: Record<string, boolean>
     setActiveIdeas?: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
+    aiSettings: {
+        ai_enabled: boolean
+        ai_provider: string
+        ai_fallback_enabled: boolean
+        ollama_model: string
+        ollama_url: string
+        api_key: string | null
+    }
 }
 
 const SIMPLE_PLACEHOLDER = 'Start your story here. Use the panel on the left to add episodes and scenes, or begin writing in this scene.'
@@ -54,7 +63,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     activeCharacters,
     setActiveCharacters,
     activeIdeas,
-    setActiveIdeas
+    setActiveIdeas,
+    aiSettings
 }: SceneEditorProps, ref: React.ForwardedRef<SceneEditorRef>) => {
     const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'failed' | 'idle'>('saved')
     const [lastSavedContent, setLastSavedContent] = useState<string>(JSON.stringify(scene.content))
@@ -299,7 +309,13 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 ])
             }
         },
-        getText: () => editor?.getText() ?? ''
+        getText: () => editor?.getText() ?? '',
+        getSelectionText: () => {
+            if (!editor) return ''
+            const { from, to } = editor.state.selection
+            if (from === to) return ''
+            return editor.state.doc.textBetween(from, to, ' ')
+        }
     }), [editor])
 
     const handleAnalyzeScene = useCallback(async () => {
@@ -354,43 +370,46 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             'min-h-full pt-6 sm:pt-12 pb-32 md:pb-80 transition-all duration-700 ease-in-out relative',
             writingMode === 'screenplay' ? 'bg-[#f0f0ed] py-10 sm:py-20 px-4 sm:px-8' : 'px-4 sm:px-12 md:px-24 max-w-6xl mx-auto'
         )}>
-            {/* Analyze Scene button — top-right, outside card so it floats above */}
-            <div className={cn(
-                "flex items-start justify-end mb-4 gap-3",
-                writingMode === 'screenplay' && "max-w-[80ch] mx-auto"
-            )}>
-                <div className="flex flex-col items-end gap-1">
-                    <button
-                        onClick={handleAnalyzeScene}
-                        disabled={isAnalyzing || !editor || editor.isEmpty}
-                        className={cn(
-                            "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200",
-                            "border border-slate-200 bg-white/60 backdrop-blur-sm text-slate-600",
-                            "hover:border-violet-200 hover:bg-violet-50/80 hover:text-violet-700 hover:shadow-sm",
-                            "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-slate-200 disabled:hover:bg-white/60 disabled:hover:text-slate-600",
-                            isAnalyzing && "border-violet-300 bg-violet-50/80 text-violet-700 animate-pulse",
-                            // Reliability: disable analysis if unsaved or saving to ensure we analyze the latest version
-                            (saveStatus === 'saving' || saveStatus === 'idle') && "opacity-50 pointer-events-none"
+            {aiSettings.ai_enabled && (
+                <div className={cn(
+                    "flex items-start justify-end mb-4 gap-3",
+                    writingMode === 'screenplay' && "max-w-[80ch] mx-auto"
+                )}>
+                    <div className="flex flex-col items-end gap-1">
+                        <button
+                            onClick={handleAnalyzeScene}
+                            disabled={isAnalyzing || !editor || editor.isEmpty}
+                            className={cn(
+                                "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200",
+                                "border border-slate-200 bg-white/60 backdrop-blur-sm text-slate-600",
+                                "hover:border-violet-200 hover:bg-violet-50/80 hover:text-violet-700 hover:shadow-sm",
+                                "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-slate-200 disabled:hover:bg-white/60 disabled:hover:text-slate-600",
+                                isAnalyzing && "border-violet-300 bg-violet-50/80 text-violet-700 animate-pulse",
+                                // Reliability: disable analysis if unsaved or saving to ensure we analyze the latest version
+                                (saveStatus === 'saving' || saveStatus === 'idle') && "opacity-50 pointer-events-none"
+                            )}
+                        >
+                            <span>{isAnalyzing ? (saveStatus === 'saving' || saveStatus === 'idle' ? '⌛' : '⏳') : '✨'}</span>
+                            <span>
+                                {saveStatus === 'saving' || saveStatus === 'idle' 
+                                    ? 'Autosaving…' 
+                                    : isAnalyzing ? 'Analyzing…' : 'Analyze Scene'
+                                }
+                            </span>
+                        </button>
+                        <span className="text-[10px] text-slate-400 tracking-wide">
+                            {aiSettings.ai_enabled && aiSettings.ai_provider === 'ollama' 
+                                ? 'Scene Analysis requires Gemini Cloud' 
+                                : 'Analyzes only this scene using your API key'}
+                        </span>
+                        {analyzeError && (
+                            <span className="text-[11px] text-red-400 max-w-[240px] text-right leading-tight">
+                                {analyzeError}
+                            </span>
                         )}
-                    >
-                        <span>{isAnalyzing ? (saveStatus === 'saving' || saveStatus === 'idle' ? '⌛' : '⏳') : '✨'}</span>
-                        <span>
-                            {saveStatus === 'saving' || saveStatus === 'idle' 
-                                ? 'Autosaving…' 
-                                : isAnalyzing ? 'Analyzing…' : 'Analyze Scene'
-                            }
-                        </span>
-                    </button>
-                    <span className="text-[10px] text-slate-400 tracking-wide">
-                        Analyzes only this scene using your API key
-                    </span>
-                    {analyzeError && (
-                        <span className="text-[11px] text-red-400 max-w-[240px] text-right leading-tight">
-                            {analyzeError}
-                        </span>
-                    )}
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className={cn(
                 "transition-all duration-700 relative",

@@ -14,6 +14,14 @@ interface AiHelperPanelProps {
     linkedCharacters?: any[]
     linkedIdeas?: any[]
     onInsert: (text: string) => void
+    aiSettings: {
+        ai_enabled: boolean
+        ai_provider: string
+        ai_fallback_enabled: boolean
+        ollama_model: string
+        ollama_url: string
+        api_key: string | null
+    }
 }
 
 const EMPTY_HINTS = [
@@ -38,7 +46,7 @@ const PROMPT_TEMPLATES = [
     { label: 'How to end it?', value: 'How could I end this scene effectively?' },
 ]
 
-export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCharacters = [], linkedIdeas = [] }: AiHelperPanelProps) {
+export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCharacters = [], linkedIdeas = [], aiSettings }: AiHelperPanelProps) {
     const [prompt, setPrompt] = useState('')
     const [lastPrompt, setLastPrompt] = useState('')
     const [copied, setCopied] = useState(false)
@@ -64,8 +72,118 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
     const displayedCompletion = completion || (isLoading ? previousCompletion : '')
     const isShowingPrevious = isLoading && !completion && !!previousCompletion
 
+    const handleInsert = () => {
+        onInsert(displayedCompletion)
+        handleClear()
+    }
+
+    const handleTemplate = (value: string) => {
+        setPrompt(value)
+    }
+
+    // --- Provider Orchestration ---
+    const runGeminiCloud = async (finalPrompt: string) => {
+        await complete(finalPrompt, {
+            body: {
+                action: 'helper',
+                projectId,
+                input: sceneTextRef.current.slice(-10000),
+                linkedCharacters: linkedCharacters.map((c: any) => ({
+                    name: c.name,
+                    description: c.description,
+                    notes: c.notes
+                })),
+                linkedIdeas: linkedIdeas.map((i: any) => ({
+                    title: i.title,
+                    content: i.content
+                }))
+            }
+        })
+    }
+
+    const runLocalOllama = async (finalPrompt: string) => {
+        // Build the prompt with context
+        const projectContext = `Project: ${projectId}. `
+        const charactersContext = linkedCharacters.length > 0 
+            ? `Characters: ${linkedCharacters.map(c => c.name).join(', ')}. ` 
+            : ''
+        const ideasContext = linkedIdeas.length > 0 
+            ? `Ideas: ${linkedIdeas.map(i => i.title).join(', ')}. ` 
+            : ''
+        
+        const fullInternalPrompt = `${projectContext}${charactersContext}${ideasContext}\n\nSCENE:\n${sceneTextRef.current.slice(-6000)}\n\nUSER REQUEST: ${finalPrompt}`
+
+        try {
+            const response = await fetch(`${aiSettings.ollama_url}/api/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: aiSettings.ollama_model,
+                    prompt: fullInternalPrompt,
+                    stream: true
+                })
+            })
+
+            if (!response.ok || !response.body) {
+                throw new Error(response.status === 404 ? 'Ollama model not found' : 'Ollama connection failed')
+            }
+
+            const reader = response.body.getReader()
+            const decoder = new TextDecoder()
+            let accumulated = ''
+
+            // Simple manual stream handler for Ollama's non-standard NDJSON stream
+            while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+
+                const chunk = decoder.decode(value, { stream: true })
+                const lines = chunk.split('\n')
+                
+                for (const line of lines) {
+                    if (!line.trim()) continue
+                    try {
+                        const json = JSON.parse(line)
+                        if (json.response) {
+                            accumulated += json.response
+                            setCompletion(accumulated)
+                        }
+                    } catch (e) {
+                        // Partial JSON chunk
+                    }
+                }
+            }
+        } catch (err: any) {
+            if (aiSettings.ai_fallback_enabled && aiSettings.api_key) {
+                console.warn('Ollama failed, falling back to Gemini:', err.message)
+                await runGeminiCloud(finalPrompt)
+            } else {
+                throw err
+            }
+        }
+    }
+
+    const handleCopy = async () => {
+        if (!displayedCompletion) return
+        try {
+            await navigator.clipboard.writeText(displayedCompletion)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
+        } catch {
+            // Clipboard not available - silently fail
+        }
+    }
+
+    const handleClear = () => {
+        setCompletion('')
+        setPreviousCompletion('')
+        setLastPrompt('')
+        setCopied(false)
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        if (!aiSettings.ai_enabled) return
         const currentPrompt = prompt.trim()
         if (isLoading) return
 
@@ -93,57 +211,23 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
         setLastPrompt(currentPrompt || promptMode)
         setPrompt('')
         setCopied(false)
-        // Preserve current response while new one loads
-        if (completion) setPreviousCompletion(completion)
+        setCompletion('') // Clear for new run
+        
+        if (displayedCompletion) setPreviousCompletion(displayedCompletion)
+        
         try {
-            await complete(finalPrompt, {
-                body: {
-                    action: 'helper',
-                    projectId,
-                    input: sceneTextRef.current.slice(-10000),
-                    linkedCharacters: linkedCharacters.map((c: any) => ({
-                        name: c.name,
-                        description: c.description,
-                        notes: c.notes
-                    })),
-                    linkedIdeas: linkedIdeas.map((i: any) => ({
-                        title: i.title,
-                        content: i.content
-                    }))
-                }
-            })
-        } catch {
-            // error state handled by useCompletion's onError / error field
+            if (aiSettings.ai_provider === 'ollama') {
+                // We use a manual fetch for Ollama to handle the 127.0.0.1 browser routing requirement
+                // useCompletion is used for Gemini
+                await runLocalOllama(finalPrompt)
+            } else {
+                await runGeminiCloud(finalPrompt)
+            }
+        } catch (err: any) {
+            console.error('AI Processing Error:', err)
         } finally {
             setPreviousCompletion('')
         }
-    }
-
-    const handleCopy = async () => {
-        if (!completion) return
-        try {
-            await navigator.clipboard.writeText(completion)
-            setCopied(true)
-            setTimeout(() => setCopied(false), 2000)
-        } catch {
-            // Clipboard not available - silently fail
-        }
-    }
-
-    const handleClear = () => {
-        setCompletion('')
-        setPreviousCompletion('')
-        setLastPrompt('')
-        setCopied(false)
-    }
-
-    const handleInsert = () => {
-        onInsert(completion)
-        handleClear()
-    }
-
-    const handleTemplate = (value: string) => {
-        setPrompt(value)
     }
 
     // Pick a random hint on mount
@@ -158,7 +242,9 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
                 </div>
                 <div className="flex-1">
                     <h3 className="text-sm font-serif font-bold text-slate-800">Scene Helper</h3>
-                    <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Powered by Gemini</p>
+                    <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">
+                        Powered by {aiSettings.ai_provider === 'ollama' ? `Ollama (${aiSettings.ollama_model})` : 'Gemini'}
+                    </p>
                 </div>
                 {(completion || previousCompletion) && !isLoading && (
                     <button
