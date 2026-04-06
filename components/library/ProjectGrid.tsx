@@ -31,7 +31,7 @@ export default function ProjectGrid({ projects }: { projects: Project[] }) {
                 </p>
                 <Link href="/new">
                     <Button className="sanctuary-btn-primary h-14 px-10 rounded-full text-base font-semibold gap-3">
-                        <Plus className="w-5 h-5" /> Create Your First Project
+                        <Plus className="w-5 h-5" /> Start New Project
                     </Button>
                 </Link>
             </div>
@@ -41,7 +41,7 @@ export default function ProjectGrid({ projects }: { projects: Project[] }) {
     return (
         <TooltipProvider>
             <div className="max-w-7xl mx-auto px-6 py-16 md:py-24 fade-in">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-20">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-20 border-b border-slate-100 pb-12">
                     <div className="space-y-4">
                         <h1 className="text-5xl md:text-7xl font-serif text-slate-800 tracking-tight leading-tight">
                             The Manuscript<br /><span className="text-slate-400">Archive</span>
@@ -126,7 +126,6 @@ function ProjectCard({ project }: { project: Project }) {
 
                 <div className="mt-10 pt-6 border-t border-slate-50 flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-widest group-hover:text-primary transition-colors">
-                        {project.writing_mode.replace('_', ' ')}
                     </span>
                     <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-primary text-slate-300 group-hover:text-white transition-all duration-500 transform group-hover:rotate-[-45deg]">
                         <ChevronRight className="w-5 h-5" />

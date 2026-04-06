@@ -1,12 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
     ChevronRight, ChevronDown, Plus, Trash2,
-    Film, Layers, FileText, BookOpen, Info
+    Film, Layers, FileText, BookOpen
 } from 'lucide-react'
 import {
     Tooltip,
@@ -16,7 +15,6 @@ import {
 } from "@/components/ui/tooltip"
 import { cn } from '@/lib/utils'
 import type { Database, NodeType } from '@/lib/supabase/types'
-import { useRouter } from 'next/navigation'
 
 type Project = Database['public']['Tables']['projects']['Row']
 type StructureNode = Database['public']['Tables']['structure_nodes']['Row']
@@ -50,7 +48,6 @@ const CHILD_LABELS: Partial<Record<NodeType, string>> = {
     chapter: 'Add Part',
 }
 
-// Display names used when auto-titling newly created child nodes
 const CHILD_DISPLAY_NAMES: Partial<Record<NodeType, string>> = {
     episode: 'Act',
     act: 'Scene',
@@ -134,7 +131,7 @@ export default function StructureTree({
         onNodesChange(nodes.map(n => n.id === node.id ? { ...n, title } : n))
     }
 
-    const rootNodes = buildTree(nodes, null)
+    const rootNodes = useMemo(() => buildTree(nodes, null), [nodes])
 
     return (
         <TooltipProvider>
@@ -191,7 +188,7 @@ export default function StructureTree({
     )
 }
 
-function NodeItem({ node, nodes, activeNodeId, depth, onSelect, onAddChild, onDelete, onRename }: {
+interface NodeItemProps {
     node: StructureNode
     nodes: StructureNode[]
     activeNodeId: string | null
@@ -200,13 +197,15 @@ function NodeItem({ node, nodes, activeNodeId, depth, onSelect, onAddChild, onDe
     onAddChild: (n: StructureNode) => void
     onDelete: (n: StructureNode) => void
     onRename: (n: StructureNode, title: string) => void
-}) {
+}
+
+const NodeItem = React.memo(function NodeItem({ node, nodes, activeNodeId, depth, onSelect, onAddChild, onDelete, onRename }: NodeItemProps) {
     const [expanded, setExpanded] = useState(true)
     const [hovered, setHovered] = useState(false)
     const [editing, setEditing] = useState(false)
     const [draft, setDraft] = useState(node.title)
 
-    const children = buildTree(nodes, node.id)
+    const children = useMemo(() => buildTree(nodes, node.id), [nodes, node.id])
     const Icon = NODE_ICONS[node.type as NodeType] ?? FileText
     const isScene = node.type === 'scene'
     const isAct = node.type === 'act'
@@ -242,7 +241,6 @@ function NodeItem({ node, nodes, activeNodeId, depth, onSelect, onAddChild, onDe
                 onMouseLeave={() => setHovered(false)}
                 onClick={handleClick}
             >
-                {/* Visual indicator for active scene */}
                 {isActive && (
                     <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-[#546354] rounded-full shadow-[0_0_12px_rgba(84,99,84,0.3)]" />
                 )}
@@ -332,4 +330,19 @@ function NodeItem({ node, nodes, activeNodeId, depth, onSelect, onAddChild, onDe
             )}
         </div>
     )
-}
+}, (prev, next) => {
+    // Custom comparison to reduce tree re-renders
+    // Only re-render if:
+    // 1. The specific node data changed (title, etc)
+    // 2. The active status of this node changed
+    // 3. The global nodes list changed (which might contain new children)
+    const wasActive = prev.activeNodeId === prev.node.id;
+    const isActive = next.activeNodeId === next.node.id;
+    
+    if (wasActive !== isActive) return false;
+    if (prev.node !== next.node) return false;
+    if (prev.nodes !== next.nodes) return false;
+    if (prev.depth !== next.depth) return false;
+    
+    return true;
+});

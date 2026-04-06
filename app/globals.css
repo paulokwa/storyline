@@ -90,38 +90,50 @@ body {
 
 /* Screenplay mode formatting */
 .screenplay-mode {
-  font-family: 'Courier Final Draft', 'Courier Prime', 'Courier New', monospace;
+  font-family: 'Courier Prime', 'Courier Final Draft', 'Courier New', monospace;
   font-size: 12pt;
-  line-height: 1.5;
-  max-width: 65ch;
+  line-height: 1; /* Standard screenplay line spacing is tight/single */
+  width: 8.5in;
   margin: 0 auto;
+  background: white;
+  min-height: 11in;
+  padding: 1in 1in 1in 1.5in;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.05);
+  border: 1px solid #e1e4e8;
+  color: black;
 }
 
 .screenplay-slugline {
   text-transform: uppercase;
   font-weight: bold;
   margin-top: 2em;
-  margin-bottom: 0.5em;
+  margin-bottom: 1em;
 }
 
 .screenplay-action {
+  margin-top: 1em;
   margin-bottom: 1em;
 }
 
 .screenplay-character {
   text-transform: uppercase;
-  text-align: center;
+  margin-left: 2.2in;
   margin-top: 1.5em;
   margin-bottom: 0;
+  width: fit-content;
 }
 
 .screenplay-dialogue {
-  margin: 0 4em;
+  margin-left: 1.0in;
+  width: 3.5in;
+  margin-top: 0;
   margin-bottom: 1em;
 }
 
 .screenplay-parenthetical {
-  margin: 0 6em;
+  margin-left: 1.6in;
+  width: 2.0in;
+  margin-top: 0;
   margin-bottom: 0;
   font-style: italic;
 }

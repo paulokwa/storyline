@@ -10,8 +10,10 @@ import { Badge } from '@/components/ui/badge'
 import {
     BookOpen, Users, Lightbulb,
     ChevronLeft, Settings, Check, X,
-    Tv
+    Tv,
+    Download
 } from 'lucide-react'
+import ExportModal from '@/components/export/ExportModal'
 import { cn } from '@/lib/utils'
 import type { Database } from '@/lib/supabase/types'
 
@@ -35,6 +37,7 @@ export default function ProjectShell({
     const [project, setProject] = useState(initialProject)
     const [editingTitle, setEditingTitle] = useState(false)
     const [titleDraft, setTitleDraft] = useState(project.title)
+    const [exportModalOpen, setExportModalOpen] = useState(false)
 
     const activeTab = TABS.find(t => pathname.includes(`/${t.slug}`))?.slug ?? 'story'
 
@@ -99,10 +102,26 @@ export default function ProjectShell({
                             </button>
                         )}
 
-                        <div className="flex items-center gap-2 ml-auto shrink-0">
-                            <Badge variant="outline" className="text-xs hidden sm:inline-flex capitalize">
-                                {project.writing_mode === 'screenplay' ? 'Screenplay' : 'Simple'}
-                            </Badge>
+                        <div className="flex items-center gap-2">
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="hidden sm:flex rounded-xl bg-white/50 border-[#e0ded9] text-[#546354] hover:bg-white hover:border-[#546354]/20 transition-all duration-300"
+                                onClick={() => setExportModalOpen(true)}
+                            >
+                                <Download className="w-3.5 h-3.5 mr-1.5" />
+                                Export
+                            </Button>
+                            
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className="rounded-xl text-slate-400 hover:text-slate-600 hover:bg-[#efeee9]"
+                                onClick={() => {/* Future: Open general settings */}}
+                                title="Project Settings"
+                            >
+                                <Settings className="w-4 h-4" />
+                            </Button>
                         </div>
                     </div>
 
@@ -131,6 +150,13 @@ export default function ProjectShell({
             <div className="flex-1 max-w-7xl w-full mx-auto">
                 {children}
             </div>
+
+            <ExportModal 
+                open={exportModalOpen}
+                onOpenChange={setExportModalOpen}
+                projectId={project.id}
+                projectTitle={project.title}
+            />
         </div>
     )
 }

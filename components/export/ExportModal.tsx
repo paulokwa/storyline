@@ -1,0 +1,331 @@
+'use client'
+
+import { useState, useEffect, useMemo } from 'react'
+import { 
+    Dialog, 
+    DialogContent, 
+    DialogHeader, 
+    DialogTitle,
+    DialogFooter,
+    DialogDescription
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { 
+    FileText, 
+    Code, 
+    Files, 
+    Download, 
+    Settings2, 
+    Eye,
+    CheckCircle2,
+    AlertCircle
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { buildExportPayload, ExportOptions } from '@/lib/export/buildExportPayload'
+import { toMarkdown } from '@/lib/export/toMarkdown'
+import { toText } from '@/lib/export/toText'
+import { toHtml } from '@/lib/export/toHtml'
+import { toDocx } from '@/lib/export/toDocx'
+import { toEpub } from '@/lib/export/toEpub'
+import { toPdf } from '@/lib/export/toPdf'
+
+interface ExportModalProps {
+    open: boolean
+    onOpenChange: (open: boolean) => void
+    projectId: string
+    projectTitle: string
+}
+
+export default function ExportModal({ open, onOpenChange, projectId, projectTitle }: ExportModalProps) {
+    const [loading, setLoading] = useState(false)
+    const [options, setOptions] = useState<ExportOptions>({
+        format: 'md',
+        scope: 'entire_project',
+        includeProjectTitle: true,
+        includeChapterTitles: true,
+        includeSceneSubtitles: true,
+        contentMode: 'prose_only'
+    })
+
+    // Stats for preview
+    const [stats, setStats] = useState<{ chapters: number, scenes: number, hasProse: boolean, hasSummaries: boolean } | null>(null)
+
+    useEffect(() => {
+        if (!open) return
+        
+        async function fetchStats() {
+            try {
+                const payload = await buildExportPayload(projectId)
+                const chapters = payload.nodes.filter(n => n.type === 'chapter' || n.type === 'episode').length
+                const scenes = payload.nodes.filter(n => n.type === 'scene').length
+                const hasProse = payload.nodes.some(n => n.content?.content?.length > 0)
+                const hasSummaries = payload.nodes.some(n => n.summary && n.summary.trim().length > 0)
+                setStats({ chapters, scenes, hasProse, hasSummaries })
+            } catch (e) {
+                console.error('Failed to fetch stats:', e)
+            }
+        }
+        fetchStats()
+    }, [open, projectId])
+
+    async function handleExport() {
+        setLoading(true)
+        try {
+            const payload = await buildExportPayload(projectId)
+            let blob: Blob
+            let extension = 'txt'
+
+            switch (options.format) {
+                case 'md':
+                    blob = new Blob([toMarkdown(payload, options)], { type: 'text/markdown' })
+                    extension = 'md'
+                    break
+                case 'html':
+                    blob = new Blob([toHtml(payload, options)], { type: 'text/html' })
+                    extension = 'html'
+                    break
+                case 'txt':
+                    blob = new Blob([toText(payload, options)], { type: 'text/plain' })
+                    extension = 'txt'
+                    break
+                case 'docx':
+                    blob = await toDocx(payload, options)
+                    extension = 'docx'
+                    break
+                case 'pdf':
+                    blob = await toPdf(payload, options)
+                    extension = 'pdf'
+                    break
+                case 'epub':
+                    blob = await toEpub(payload, options)
+                    extension = 'epub'
+                    break
+                default:
+                    throw new Error('Unsupported format')
+            }
+
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `${projectTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.${extension}`
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            URL.revokeObjectURL(url)
+            onOpenChange(false)
+        } catch (error) {
+            console.error('Export failed:', error)
+            alert('Failed to export project. Please try again.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const formats = [
+        { id: 'md', label: 'Markdown', icon: Code, ext: '.md', desc: 'Best for backup & generic editors' },
+        { id: 'txt', label: 'Plain Text', icon: FileText, ext: '.txt', desc: 'Pure text, no formatting' },
+        { id: 'html', label: 'HTML', icon: Files, ext: '.html', desc: 'Ready for browser viewing' },
+        { id: 'docx', label: 'MS Word', icon: Files, ext: '.docx', desc: 'Professional manuscript' },
+        { id: 'pdf', label: 'PDF Document', icon: FileText, ext: '.pdf', desc: 'Fixed layout for printing' },
+        { id: 'epub', label: 'EPUB Ebook', icon: Files, ext: '.epub', desc: 'Ready for Kindle/iBooks' },
+    ]
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-[640px] p-0 overflow-hidden rounded-3xl border-none shadow-2xl bg-[#fbf9f5]">
+                <DialogHeader className="p-8 pb-4 bg-white/50 backdrop-blur-md border-b border-[#f0eee9]">
+                    <DialogTitle className="text-2xl font-serif text-[#31332f] flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                            <Download className="w-5 h-5 text-amber-600" />
+                        </div>
+                        Export Project
+                    </DialogTitle>
+                    <DialogDescription className="text-slate-500 font-sans mt-2">
+                        Collect your work into a single file for sharing or publishing.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                    <div className="space-y-4">
+                        <label className="flex items-center gap-2 text-[10px] font-sans tracking-[0.2em] uppercase text-slate-400 font-bold mb-2">
+                            Scope
+                        </label>
+                        <div className="flex gap-2 p-1 bg-slate-900/5 rounded-2xl w-fit">
+                            {(['entire_project', 'selected_chapters', 'selected_scenes'] as const).map((s) => (
+                                <button
+                                    key={s}
+                                    onClick={() => setOptions({ ...options, scope: s })}
+                                    className={cn(
+                                        "px-4 py-2 rounded-xl text-xs font-medium transition-all duration-300",
+                                        options.scope === s
+                                            ? "bg-white text-slate-900 shadow-sm"
+                                            : "text-slate-500 hover:text-slate-700 hover:bg-white/40",
+                                        s !== 'entire_project' && "opacity-50 grayscale cursor-not-allowed" // Disabled for V1
+                                    )}
+                                    title={s !== 'entire_project' ? 'Coming soon in V2' : ''}
+                                >
+                                    {s === 'entire_project' ? 'Entire Project' : s === 'selected_chapters' ? 'Chapters' : 'Scenes'}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Format Selector */}
+                    <div className="space-y-4">
+                        <label className="flex items-center gap-2 text-[10px] font-sans tracking-[0.2em] uppercase text-slate-400 font-bold mb-2">
+                            <Settings2 className="w-3 h-3" />
+                            Target Format
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                            {formats.map((f) => (
+                                <button
+                                    key={f.id}
+                                    onClick={() => setOptions({ ...options, format: f.id as any })}
+                                    className={cn(
+                                        "flex flex-col items-start p-4 rounded-2xl border transition-all duration-300 text-left",
+                                        options.format === f.id
+                                            ? "bg-white border-amber-200 shadow-lg shadow-amber-900/5 ring-1 ring-amber-200"
+                                            : "border-slate-100 bg-white/40 hover:bg-white hover:border-slate-200"
+                                    )}
+                                >
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <f.icon className={cn("w-4 h-4", options.format === f.id ? "text-amber-600" : "text-slate-400")} />
+                                        <span className={cn("font-medium", options.format === f.id ? "text-slate-900" : "text-slate-600")}>
+                                            {f.label}
+                                        </span>
+                                        <span className="text-[10px] text-slate-400 font-mono">{f.ext}</span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-400 leading-tight">
+                                        {f.desc}
+                                    </p>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Options Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-6">
+                            <label className="flex items-center gap-2 text-[10px] font-sans tracking-[0.2em] uppercase text-slate-400 font-bold">
+                                Includes
+                            </label>
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between group">
+                                    <Label htmlFor="inc-title" className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">
+                                        Project Title
+                                    </Label>
+                                    <Switch
+                                        id="inc-title"
+                                        checked={options.includeProjectTitle}
+                                        onCheckedChange={(v) => setOptions({ ...options, includeProjectTitle: v })}
+                                    />
+                                </div>
+                                <div className="flex items-center justify-between group">
+                                    <Label htmlFor="inc-chapters" className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">
+                                        Chapter Titles
+                                    </Label>
+                                    <Switch
+                                        id="inc-chapters"
+                                        checked={options.includeChapterTitles}
+                                        onCheckedChange={(v) => setOptions({ ...options, includeChapterTitles: v })}
+                                    />
+                                </div>
+                                <div className="flex items-center justify-between group">
+                                    <Label htmlFor="inc-scenes" className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">
+                                        Scene Subtitles
+                                    </Label>
+                                    <Switch
+                                        id="inc-scenes"
+                                        checked={options.includeSceneSubtitles}
+                                        onCheckedChange={(v) => setOptions({ ...options, includeSceneSubtitles: v })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            <label className="flex items-center gap-2 text-[10px] font-sans tracking-[0.2em] uppercase text-slate-400 font-bold">
+                                Content Mode
+                            </label>
+                            <div className="space-y-2">
+                                {(['prose_only', 'summaries_only', 'both'] as const).map((mode) => (
+                                    <button
+                                        key={mode}
+                                        onClick={() => setOptions({ ...options, contentMode: mode })}
+                                        className={cn(
+                                            "w-full flex items-center justify-between px-3 py-2 rounded-xl border text-sm transition-all duration-300",
+                                            options.contentMode === mode
+                                                ? "bg-amber-50 border-amber-200 text-amber-900 font-medium"
+                                                : "bg-white/40 border-transparent text-slate-500 hover:bg-white hover:border-slate-100"
+                                        )}
+                                    >
+                                        <span>
+                                            {mode === 'prose_only' && 'Manuscript Prose'}
+                                            {mode === 'summaries_only' && 'Outline Summaries'}
+                                            {mode === 'both' && 'Outline + Prose'}
+                                        </span>
+                                        {options.contentMode === mode && <CheckCircle2 className="w-4 h-4 text-amber-600" />}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Preview Box */}
+                    <div className="bg-slate-900/5 rounded-[2rem] p-6 border border-slate-900/5">
+                        <div className="flex items-center gap-2 text-[10px] font-sans tracking-[0.2em] uppercase text-slate-400 font-bold mb-4">
+                            <Eye className="w-3 h-3" />
+                            Export Preview
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                                <p className="text-sm font-medium text-slate-700">
+                                    {projectTitle}
+                                </p>
+                                <p className="text-xs text-slate-400">
+                                    {stats ? `${stats.chapters} chapters, ${stats.scenes} scenes` : 'Loading project stats...'}
+                                </p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-lg font-serif text-slate-900">
+                                    {options.format.toUpperCase()}
+                                </p>
+                                <p className="text-[10px] text-slate-400 uppercase tracking-widest">
+                                    {options.contentMode === 'prose_only' ? 'Prose' : options.contentMode === 'summaries_only' ? 'Summary' : 'Mixed'}
+                                </p>
+                            </div>
+                        </div>
+                        {options.contentMode === 'summaries_only' && stats && !stats.hasSummaries && (
+                            <div className="mt-4 flex items-center gap-2 p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-700 text-xs">
+                                <AlertCircle className="w-4 h-4" />
+                                No summaries found. Export will be empty for summaries only.
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <DialogFooter className="p-8 bg-white border-t border-[#f0eee9] flex flex-col sm:flex-row gap-4 sm:justify-between items-center">
+                    <div className="flex items-center gap-2 text-slate-400 text-xs">
+                        <AlertCircle className="w-4 h-4" />
+                        Selected structure order preserved
+                    </div>
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-xl flex-1 sm:flex-none">
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleExport}
+                            disabled={loading}
+                            className="bg-[#546354] hover:bg-[#3d4a3d] text-white rounded-xl px-8 flex-1 sm:flex-none shadow-lg shadow-slate-900/10 transition-all duration-300"
+                        >
+                            <Download className={cn("w-4 h-4 mr-2", loading && "animate-pulse")} />
+                            {loading ? 'Generating...' : 'Generate Export'}
+                        </Button>
+                    </div>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}

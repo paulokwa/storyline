@@ -9,9 +9,11 @@ export type Supabase = SupabaseClient<Database>
 
 export async function getLinkedCharacters(supabase: Supabase, sceneId: string) {
     const { data, error } = await supabase
-        .from('scene_characters' as any)
+        .from('scene_characters')
         .select(`
-            ...,
+            id,
+            scene_id,
+            character_id,
             characters (
                 *
             )
@@ -24,8 +26,8 @@ export async function getLinkedCharacters(supabase: Supabase, sceneId: string) {
 
 export async function addCharacterLink(supabase: Supabase, sceneId: string, characterId: string) {
     const { data, error } = await supabase
-        .from('scene_characters' as any)
-        // @ts-ignore
+        .from('scene_characters')
+        // @ts-ignore - Supabase type inference failure
         .insert({
             scene_id: sceneId,
             character_id: characterId
@@ -44,7 +46,7 @@ export async function addCharacterLink(supabase: Supabase, sceneId: string, char
 
 export async function removeCharacterLink(supabase: Supabase, sceneId: string, characterId: string) {
     const { error } = await supabase
-        .from('scene_characters' as any)
+        .from('scene_characters')
         .delete()
         .eq('scene_id', sceneId)
         .eq('character_id', characterId)
@@ -58,9 +60,11 @@ export async function removeCharacterLink(supabase: Supabase, sceneId: string, c
 
 export async function getLinkedIdeas(supabase: Supabase, sceneId: string) {
     const { data, error } = await supabase
-        .from('scene_ideas' as any)
+        .from('scene_ideas')
         .select(`
-            ...,
+            id,
+            scene_id,
+            idea_id,
             ideas (
                 *
             )
@@ -73,8 +77,8 @@ export async function getLinkedIdeas(supabase: Supabase, sceneId: string) {
 
 export async function addIdeaLink(supabase: Supabase, sceneId: string, ideaId: string) {
     const { data, error } = await supabase
-        .from('scene_ideas' as any)
-        // @ts-ignore
+        .from('scene_ideas')
+        // @ts-ignore - Supabase type inference failure
         .insert({
             scene_id: sceneId,
             idea_id: ideaId
@@ -93,7 +97,7 @@ export async function addIdeaLink(supabase: Supabase, sceneId: string, ideaId: s
 
 export async function removeIdeaLink(supabase: Supabase, sceneId: string, ideaId: string) {
     const { error } = await supabase
-        .from('scene_ideas' as any)
+        .from('scene_ideas')
         .delete()
         .eq('scene_id', sceneId)
         .eq('idea_id', ideaId)

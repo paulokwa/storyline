@@ -30,12 +30,14 @@ export default async function LibraryPage() {
                     <h1 className="text-2xl font-semibold text-slate-800">My Projects</h1>
                     <p className="text-slate-500 text-sm mt-0.5">All your stories in one place</p>
                 </div>
-                <Link href="/new">
-                    <Button className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
-                        <Plus className="w-4 h-4" />
-                        New Project
-                    </Button>
-                </Link>
+                {(projects?.length ?? 0) > 0 && (
+                    <Link href="/new">
+                        <Button variant="outline" className="gap-2 border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium">
+                            <Plus className="w-4 h-4" />
+                            Start New Project
+                        </Button>
+                    </Link>
+                )}
             </div>
 
             <ProjectGrid projects={projects ?? []} />

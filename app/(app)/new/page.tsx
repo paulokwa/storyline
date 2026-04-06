@@ -112,7 +112,7 @@ export default function NewProjectPage() {
             // This is intentional duplication: firstIdea is saved as an idea AND prefilled into the first writing unit.
             const paragraphs = firstIdea.split('\n')
                 .filter(l => l.trim() !== '')
-                .map(l => ({ type: 'paragraph', content: [{ type: 'text', text: l }] }))
+                .map(l => ({ type: 'paragraph', content: [{ type: 'text', text: (l as string) }] }))
             
             initialSceneContent = { type: 'doc', content: paragraphs.length ? paragraphs : [{ type: 'paragraph' }] }
         }
@@ -138,8 +138,10 @@ export default function NewProjectPage() {
                 if (state.type === 'novel') {
                     const { data: chapter } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, type: 'chapter', title: chunk.title || `Chapter ${i + 1}`, order_index: i }).select().single()
                     if (chapter) {
-                        const { data: scene } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (chapter as any).id, type: 'scene', title: chunk.title, order_index: 0 }).select().single()
-                        if (scene) await (supabase as any).from('scenes').insert({ node_id: (scene as any).id, project_id: project.id, writing_mode: payload.writing_mode, content: tiptapJson })
+                        // @ts-ignore - Supabase type inference failure
+                        const { data: scene } = await supabase.from('structure_nodes').insert({ project_id: project.id, parent_id: (chapter as any).id, type: 'scene', title: chunk.title || 'Scene 1', order_index: 0 }).select().single()
+                        // @ts-ignore - Supabase type inference failure
+                        if (scene) await supabase.from('scenes').insert({ node_id: (scene as any).id, project_id: project.id, writing_mode: payload.writing_mode, content: tiptapJson })
                     }
                 } else {
                     if (actParentId) {
@@ -160,18 +162,20 @@ export default function NewProjectPage() {
                         const sceneData: any = { node_id: (scene as any).id, project_id: project.id, writing_mode: payload.writing_mode }
                         if (initialSceneContent) sceneData.content = initialSceneContent
 
-                        if (scene) await (supabase as any).from('scenes').insert(sceneData)
+                        if (scene) await supabase.from('scenes').insert(sceneData)
                     }
                 }
             } else {
                 const { data: chapter } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, type: 'chapter', title: 'Chapter 1', order_index: 0 }).select().single()
                 if (chapter) {
-                    const { data: scene } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (chapter as any).id, type: 'scene', title: 'Part 1', order_index: 0 }).select().single()
+                    // @ts-ignore - Supabase type inference failure
+                    const { data: scene } = await supabase.from('structure_nodes').insert({ project_id: project.id, parent_id: (chapter as any).id, type: 'scene', title: 'Scene 1', order_index: 0 }).select().single()
                     
                     const sceneData: any = { node_id: (scene as any).id, project_id: project.id, writing_mode: payload.writing_mode }
                     if (initialSceneContent) sceneData.content = initialSceneContent
 
-                    if (scene) await (supabase as any).from('scenes').insert(sceneData)
+                    // @ts-ignore - Supabase type inference failure
+                    if (scene) await supabase.from('scenes').insert(sceneData)
                 }
             }
         }
@@ -179,11 +183,15 @@ export default function NewProjectPage() {
         router.push(`/project/${project.id}/story`)
     }
 
-    const steps: Step[] = state.startMode === 'guided' 
-        ? ['title', 'type', 'start_mode', 'writing_mode', 'guided'] 
-        : state.startMode === 'import' 
-        ? ['title', 'type', 'start_mode', 'writing_mode', 'import']
-        : ['title', 'type', 'start_mode', 'writing_mode']
+    const steps: Step[] = (() => {
+        const base: Step[] = ['title', 'type', 'start_mode']
+        if (state.type !== 'novel') base.push('writing_mode')
+        
+        if (state.startMode === 'guided') base.push('guided')
+        else if (state.startMode === 'import') base.push('import')
+        
+        return base
+    })()
     const currentStepIndex = steps.indexOf(step)
     const progress = ((currentStepIndex) / (steps.length - 1)) * 100
 
@@ -223,7 +231,7 @@ export default function NewProjectPage() {
                             <StepTypeSelect
                                 value={state.type}
                                 onSelect={(type) => {
-                                    setState(s => ({ ...s, type }))
+                                    setState(s => ({ ...s, type, writingMode: type === 'novel' ? 'simple' : s.writingMode }))
                                     setStep('start_mode')
                                 }}
                                 onBack={() => setStep('title')}
@@ -236,7 +244,18 @@ export default function NewProjectPage() {
                                 projectType={state.type!}
                                 onSelect={(startMode) => {
                                     setState(s => ({ ...s, startMode }))
-                                    setStep('writing_mode')
+                                    if (state.type === 'novel') {
+                                        if (startMode === 'guided') {
+                                            setStep('guided')
+                                        } else if (startMode === 'import') {
+                                            setStep('import')
+                                        } else {
+                                            // Pre-fetch latest state to ensure writingMode is 'simple'
+                                            createProject({ writingMode: 'simple' })
+                                        }
+                                    } else {
+                                        setStep('writing_mode')
+                                    }
                                 }}
                                 onBack={() => setStep('type')}
                             />
@@ -265,7 +284,7 @@ export default function NewProjectPage() {
                                 projectType={state.type}
                                 initialTitle={state.title}
                                 onComplete={createProject}
-                                onBack={() => setStep('writing_mode')}
+                                onBack={() => setStep(state.type === 'novel' ? 'start_mode' : 'writing_mode')}
                                 creating={creating}
                             />
                         )}
@@ -274,7 +293,7 @@ export default function NewProjectPage() {
                             <ImportWizard 
                                 projectType={state.type}
                                 onComplete={(chunks) => createProject({ chunks })}
-                                onBack={() => setStep('writing_mode')}
+                                onBack={() => setStep(state.type === 'novel' ? 'start_mode' : 'writing_mode')}
                                 creating={creating}
                             />
                         )}

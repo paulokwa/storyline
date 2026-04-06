@@ -3,7 +3,7 @@
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
-import { useEffect, useCallback, useRef, useState, useImperativeHandle, forwardRef } from 'react'
+import { useEffect, useCallback, useRef, useState, useMemo, useImperativeHandle, forwardRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Database, WritingMode } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
@@ -56,7 +56,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     activeIdeas,
     setActiveIdeas
 }: SceneEditorProps, ref: React.ForwardedRef<SceneEditorRef>) => {
-    const [isSaving, setIsSaving] = useState(false)
+    const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'failed' | 'idle'>('saved')
+    const [lastSavedContent, setLastSavedContent] = useState<string>(JSON.stringify(scene.content))
     const [manualDismiss, setManualDismiss] = useState(false)
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [analyzeError, setAnalyzeError] = useState<string | null>(null)
@@ -69,58 +70,170 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     } | null>(null)
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const sceneRef = useRef(scene)
+    const prevSceneIdRef = useRef(scene.id)
     sceneRef.current = scene
 
-    const save = useCallback(async (content: object) => {
-        setIsSaving(true)
-        const supabase = createClient()
-        const { data } = await (supabase as any)
-            .from('scenes')
-            .update({ content, writing_mode: writingMode })
-            .eq('id', sceneRef.current.id)
-            .select()
-            .single()
-        
-        if (data) {
-            onUpdate({
-                ...data,
-                scene_characters: sceneRef.current.scene_characters,
-                scene_ideas: sceneRef.current.scene_ideas
-            })
+    // --- Reliability: Local Fallback Helpers ---
+    const getStorageKey = useCallback((sId: string) => `storyline_backup_${sId}`, [])
+    
+    const saveToLocal = useCallback((content: any, forceId?: string) => {
+        const targetId = forceId || sceneRef.current.id
+        try {
+            localStorage.setItem(getStorageKey(targetId), JSON.stringify({
+                content,
+                timestamp: Date.now()
+            }))
+        } catch (e) {
+            console.error('Failed to save to localStorage:', e)
+        }
+    }, [getStorageKey])
+
+    const clearLocal = useCallback((sId: string) => {
+        localStorage.removeItem(getStorageKey(sId))
+    }, [getStorageKey])
+
+    const save = useCallback(async (content: object, forceId?: string) => {
+        const targetId = forceId || sceneRef.current.id
+        const contentStr = JSON.stringify(content)
+        // Redundancy check: don't save if it matches what we last sent
+        if (contentStr === lastSavedContent) {
+            setSaveStatus('saved')
+            return
         }
 
-        setIsSaving(false)
-    }, [writingMode, onUpdate])
+        setSaveStatus('saving')
+        const supabase = createClient()
+        
+        try {
+            const { data, error } = await (supabase as any)
+                .from('scenes')
+                .update({ content, writing_mode: writingMode })
+                .eq('id', targetId)
+                .select()
+                .single()
+            
+            if (error) throw error
+
+            if (data) {
+                setLastSavedContent(contentStr)
+                clearLocal(targetId)
+                setSaveStatus('saved')
+                onUpdate({
+                    ...data,
+                    scene_characters: sceneRef.current.scene_characters,
+                    scene_ideas: sceneRef.current.scene_ideas
+                })
+            }
+        } catch (err) {
+            console.error('Save failed:', err)
+            setSaveStatus('failed')
+            saveToLocal(content, targetId)
+        }
+    }, [writingMode, onUpdate, lastSavedContent, clearLocal, saveToLocal])
+
+    // --- Editor Configuration: Memoized Extensions ---
+    const extensions = useMemo(() => [
+        StarterKit.configure({
+            heading: { levels: [1, 2, 3] },
+            bulletList: { keepMarks: true },
+            orderedList: { keepMarks: true },
+        }),
+        Placeholder.configure({
+            placeholder: writingMode === 'screenplay' ? SCREENPLAY_PLACEHOLDER : SIMPLE_PLACEHOLDER,
+            emptyEditorClass: 'is-editor-empty',
+        }),
+    ], [writingMode]);
 
     const editor = useEditor({
         immediatelyRender: false,
-        extensions: [
-            StarterKit.configure({
-                heading: { levels: [1, 2, 3] },
-                bulletList: { keepMarks: true },
-                orderedList: { keepMarks: true },
-            }),
-            Placeholder.configure({
-                placeholder: writingMode === 'screenplay' ? SCREENPLAY_PLACEHOLDER : SIMPLE_PLACEHOLDER,
-                emptyEditorClass: 'is-editor-empty',
-            }),
-        ],
+        extensions,
         content: scene.content as object ?? null,
         autofocus: 'end',
         onUpdate: ({ editor }: { editor: any }) => {
-            setIsSaving(true)
+            setSaveStatus('idle') // Mark as dirty
             if (onTextChange) onTextChange(editor.getText())
             if (saveTimer.current) clearTimeout(saveTimer.current)
+            
+            // --- Reliability: 5s Debounce (Reduced Spam) ---
             saveTimer.current = setTimeout(() => {
+                const json = editor.getJSON()
+                save(json)
+            }, 5000)
+        },
+        onBlur: ({ editor }) => {
+            // --- Reliability: Save on Blur ---
+            if (saveTimer.current) {
+                clearTimeout(saveTimer.current)
                 save(editor.getJSON())
-            }, 1000)
+            }
         },
         editorProps: {
             attributes: {
                 class: 'outline-none focus:outline-none min-h-full editor-content',
             },
         },
-    })
+    }, [extensions]) // Re-run if extensions change
+
+    // --- Reliability: BeforeUnload Protection ---
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            // Only warn if we have an active save in flight OR a failed save that needs attention.
+            // 'idle' means we just started typing but the debounce hasn't fired yet.
+            // 'saved' means we are in sync.
+            // Warn on ANY state that isn't 'saved' (covers idle, saving, and failed)
+            if (saveStatus !== 'saved') {
+                e.preventDefault()
+                e.returnValue = ''
+            }
+        }
+        window.addEventListener('beforeunload', handleBeforeUnload)
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    }, [saveStatus])
+
+    // --- Reliability: Recovery Flow ---
+    useEffect(() => {
+        if (!editor || !scene.id) return
+
+        const localData = localStorage.getItem(getStorageKey(scene.id))
+        if (localData) {
+            try {
+                const { content, timestamp } = JSON.parse(localData)
+                const localStr = JSON.stringify(content)
+                const serverStr = JSON.stringify(scene.content)
+                
+                // Only prompt if local is meaningfully different from server
+                if (localStr !== serverStr) {
+                    const confirmRecover = window.confirm(
+                        `We found unsaved changes for this scene (from ${new Date(timestamp).toLocaleTimeString()}) that aren't on the server. Recover them?`
+                    )
+                    if (confirmRecover) {
+                        editor.commands.setContent(content)
+                        save(content)
+                    } else {
+                        clearLocal(scene.id)
+                    }
+                } else {
+                    // It matches server, just clean up stale local
+                    clearLocal(scene.id)
+                }
+            } catch (e) {
+                clearLocal(scene.id)
+            }
+        }
+    }, [editor, scene.id, getStorageKey, clearLocal, save]) // Initial mount only really, but keyed to editor/scene
+
+    // --- Placeholder Dynamic Update ---
+    useEffect(() => {
+        if (!editor) return
+        editor.setOptions({
+            extensions: [
+                Placeholder.configure({
+                    placeholder: writingMode === 'screenplay' ? SCREENPLAY_PLACEHOLDER : SIMPLE_PLACEHOLDER,
+                    emptyEditorClass: 'is-editor-empty',
+                })
+            ]
+        })
+    }, [editor, writingMode])
 
     // Sync initial text to parent on mount
     useEffect(() => {
@@ -131,12 +244,42 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
     // When scene changes, update editor content
     useEffect(() => {
-        if (editor && scene.content) {
-            const currentContent = JSON.stringify(editor.getJSON())
-            const newContent = JSON.stringify(scene.content)
-            if (currentContent !== newContent) {
-                editor.commands.setContent(scene.content as object)
+        if (!editor) return
+
+        const currentContentJson = editor.getJSON()
+        const currentContentStr = JSON.stringify(currentContentJson)
+        const newContentStr = JSON.stringify(scene.content || null)
+        
+        // --- Reliability: Switch Handling ---
+        if (prevSceneIdRef.current !== scene.id) {
+            // Scene is changing! Flush old scene changes IF dirty
+            if (saveStatus !== 'saved') {
+                console.log('Switching scenes: Flushing pending changes to', prevSceneIdRef.current)
+                save(currentContentJson, prevSceneIdRef.current)
             }
+            
+            // Now load the new scene
+            if (scene.content) {
+                editor.commands.setContent(scene.content as object)
+            } else {
+                editor.commands.clearContent()
+            }
+            
+            setLastSavedContent(newContentStr)
+            setSaveStatus('saved')
+            prevSceneIdRef.current = scene.id
+            return
+        }
+
+        // Handle external updates to the SAME scene
+        if (currentContentStr !== newContentStr) {
+            if (scene.content) {
+                editor.commands.setContent(scene.content as object)
+            } else {
+                editor.commands.clearContent()
+            }
+            setLastSavedContent(newContentStr)
+            setSaveStatus('saved')
         }
     }, [scene.id, editor])
 
@@ -193,34 +336,29 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         }
     }, [editor])
 
-    // State for temporary "Saved" tag
-
-    const [justSaved, setJustSaved] = useState(false)
-    useEffect(() => {
-        if (!isSaving && editor?.commands) {
-            setJustSaved(true)
-            const timer = setTimeout(() => setJustSaved(false), 2000)
-            return () => clearTimeout(timer)
-        }
-    }, [isSaving, editor])
-
     // Guidance visibility logic
     const showGuidance = isProjectEmpty && editor?.isEmpty && !manualDismiss
 
-    // Cleanup on unmount
+    // Cleanup on unmount (Final save attempt)
     useEffect(() => {
         return () => {
-            if (saveTimer.current) clearTimeout(saveTimer.current)
+            if (saveTimer.current) {
+                clearTimeout(saveTimer.current)
+                // Note: We can't easily await here, so local fallback is critical
+            }
         }
     }, [])
 
     return (
         <div className={cn(
-            'min-h-full pt-12 pb-80 transition-all duration-700 ease-in-out px-12 md:px-24 relative',
-            writingMode === 'screenplay' ? 'screenplay-mode' : 'max-w-6xl mx-auto'
+            'min-h-full pt-12 pb-80 transition-all duration-700 ease-in-out relative',
+            writingMode === 'screenplay' ? 'bg-[#f0f0ed] py-20 px-8' : 'px-12 md:px-24 max-w-6xl mx-auto'
         )}>
             {/* Analyze Scene button — top-right, outside card so it floats above */}
-            <div className="flex items-start justify-end mb-4 gap-3">
+            <div className={cn(
+                "flex items-start justify-end mb-4 gap-3",
+                writingMode === 'screenplay' && "max-w-[80ch] mx-auto"
+            )}>
                 <div className="flex flex-col items-end gap-1">
                     <button
                         onClick={handleAnalyzeScene}
@@ -230,11 +368,18 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             "border border-slate-200 bg-white/60 backdrop-blur-sm text-slate-600",
                             "hover:border-violet-200 hover:bg-violet-50/80 hover:text-violet-700 hover:shadow-sm",
                             "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-slate-200 disabled:hover:bg-white/60 disabled:hover:text-slate-600",
-                            isAnalyzing && "border-violet-300 bg-violet-50/80 text-violet-700 animate-pulse"
+                            isAnalyzing && "border-violet-300 bg-violet-50/80 text-violet-700 animate-pulse",
+                            // Reliability: disable analysis if unsaved or saving to ensure we analyze the latest version
+                            (saveStatus === 'saving' || saveStatus === 'idle') && "opacity-50 pointer-events-none"
                         )}
                     >
-                        <span>{isAnalyzing ? '⏳' : '✨'}</span>
-                        <span>{isAnalyzing ? 'Analyzing…' : 'Analyze Scene'}</span>
+                        <span>{isAnalyzing ? (saveStatus === 'saving' || saveStatus === 'idle' ? '⌛' : '⏳') : '✨'}</span>
+                        <span>
+                            {saveStatus === 'saving' || saveStatus === 'idle' 
+                                ? 'Autosaving…' 
+                                : isAnalyzing ? 'Analyzing…' : 'Analyze Scene'
+                            }
+                        </span>
                     </button>
                     <span className="text-[10px] text-slate-400 tracking-wide">
                         Analyzes only this scene using your API key
@@ -248,8 +393,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             </div>
 
             <div className={cn(
-                "transition-all duration-700 p-8 md:p-16 rounded-[3rem] border border-slate-200 hover:border-slate-300 focus-within:border-slate-400 focus-within:shadow-[0_40px_100px_rgba(0,0,0,0.02)] relative",
-                writingMode === 'simple' && "editor-content text-[#31332f]/90 leading-[2.2] bg-white/10",
+                "transition-all duration-700 relative",
+                writingMode === 'screenplay' 
+                    ? 'screenplay-mode' 
+                    : "p-8 md:p-16 rounded-[3rem] border border-slate-200 hover:border-slate-300 focus-within:border-slate-400 focus-within:shadow-[0_40px_100px_rgba(0,0,0,0.02)] bg-white/10 text-[#31332f]/90 leading-[2.2]",
                 isAnalyzing && "border-violet-200 shadow-[0_0_0_2px_rgba(167,139,250,0.15)]"
             )}>
                 <LinkedContext 
@@ -281,16 +428,25 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             </div>
 
             {/* Auto-save indicator */}
-            <div className="fixed bottom-6 right-8 text-[10px] font-sans tracking-[0.2em] uppercase text-slate-300 pointer-events-none flex items-center gap-3 transition-all duration-500">
+            <div className="fixed bottom-6 right-8 text-[10px] font-sans tracking-[0.2em] uppercase pointer-events-none flex items-center gap-3 transition-all duration-500">
                 <div className={cn(
                     "w-1.5 h-1.5 rounded-full transition-all duration-500",
-                    isSaving ? "bg-amber-400 animate-pulse" : "bg-green-400/50"
+                    saveStatus === 'saving' && "bg-amber-400 animate-pulse",
+                    saveStatus === 'saved' && "bg-green-400/50",
+                    saveStatus === 'failed' && "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]",
+                    saveStatus === 'idle' && "bg-slate-300"
                 )} />
                 <span className={cn(
                     "transition-all duration-500",
-                    isSaving || justSaved ? "text-slate-400 font-medium" : "text-slate-300"
+                    saveStatus === 'saving' && "text-slate-500 font-medium",
+                    saveStatus === 'saved' && "text-slate-400",
+                    saveStatus === 'failed' && "text-red-500 font-bold",
+                    saveStatus === 'idle' && "text-slate-300"
                 )}>
-                {isSaving ? 'Saving…' : (justSaved ? 'Saved' : 'The Manuscript is safe')}
+                    {saveStatus === 'saving' && 'Saving…'}
+                    {saveStatus === 'saved' && 'Saved'}
+                    {saveStatus === 'failed' && 'Save Failed — Saved Locally'}
+                    {saveStatus === 'idle' && 'Unsaved Changes'}
                 </span>
             </div>
 

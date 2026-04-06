@@ -63,11 +63,11 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     }, [])
 
     const handleSceneCreated = useCallback((scene: Scene) => {
-        setScenes((prev: Scene[]) => [...prev, scene])
+        setScenes((prev: any[]) => [...prev, scene])
     }, [])
 
     const handleSceneUpdate = useCallback((updated: Scene) => {
-        setScenes((prev: Scene[]) => prev.map((s: Scene) => s.id === updated.id ? updated : s))
+        setScenes((prev: any[]) => prev.map((s: any) => s.id === updated.id ? updated : s))
     }, [])
 
     return (
@@ -104,7 +104,9 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                     </Button>
 
                     <div className="flex items-center gap-4">
-                        <WritingModeToggle mode={writingMode} onChange={handleWritingModeChange} />
+                        {project.type === 'tv_script' && (
+                            <WritingModeToggle mode={writingMode} onChange={handleWritingModeChange} />
+                        )}
                         <Button
                             variant="ghost"
                             size="sm"

@@ -1,0 +1,43 @@
+import type { ExportPayload, ExportOptions } from './buildExportPayload'
+
+function jsonToText(json: any): string {
+    if (!json || !json.content) return ''
+    
+    return json.content.map((node: any) => {
+        if (node.content) {
+            return node.content.map((c: any) => c.text).join('')
+        }
+        return '\n'
+    }).join('\n\n')
+}
+
+export function toText(payload: ExportPayload, options: ExportOptions): string {
+    const { nodes, projectTitle } = payload
+    let txt = ''
+
+    if (options.includeProjectTitle) {
+        txt += `${projectTitle.toUpperCase()}\n`
+        txt += '='.repeat(projectTitle.length) + '\n\n'
+    }
+
+    nodes.forEach(node => {
+        if (node.type === 'chapter' || node.type === 'episode') {
+            if (options.includeChapterTitles) {
+                txt += `\n${node.title.toUpperCase()}\n`
+                txt += '-'.repeat(node.title.length) + '\n\n'
+            }
+        } else if (node.type === 'act' || node.type === 'scene') {
+            if (options.includeSceneSubtitles) {
+                txt += `[ ${node.title} ]\n\n`
+            }
+            if (node.summary && (options.contentMode === 'summaries_only' || options.contentMode === 'both')) {
+                txt += `Summary: ${node.summary}\n\n`
+            }
+            if (node.content && (options.contentMode === 'prose_only' || options.contentMode === 'both')) {
+                txt += `${jsonToText(node.content)}\n\n`
+            }
+        }
+    })
+
+    return txt.trim()
+}
