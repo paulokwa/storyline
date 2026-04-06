@@ -47,7 +47,14 @@ const CHILD_TYPE: Partial<Record<NodeType, NodeType>> = {
 const CHILD_LABELS: Partial<Record<NodeType, string>> = {
     episode: 'Add Act',
     act: 'Add Scene',
-    chapter: 'Add Scene',
+    chapter: 'Add Part',
+}
+
+// Display names used when auto-titling newly created child nodes
+const CHILD_DISPLAY_NAMES: Partial<Record<NodeType, string>> = {
+    episode: 'Act',
+    act: 'Scene',
+    chapter: 'Part',
 }
 
 function buildTree(nodes: StructureNode[], parentId: string | null = null): StructureNode[] {
@@ -88,7 +95,7 @@ export default function StructureTree({
             project_id: project.id,
             parent_id: parent.id,
             type: childType,
-            title: `${childType.charAt(0).toUpperCase() + childType.slice(1)} ${siblings.length + 1}`,
+            title: `${CHILD_DISPLAY_NAMES[parent.type as keyof typeof CHILD_DISPLAY_NAMES] ?? childType.charAt(0).toUpperCase() + childType.slice(1)} ${siblings.length + 1}`,
             order_index: siblings.length,
         }).select().single()
 

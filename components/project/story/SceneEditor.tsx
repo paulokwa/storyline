@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 
 import FirstTimeGuidance from './FirstTimeGuidance'
 import LinkedContext from './LinkedContext'
+import SceneAnalysisPanel from './SceneAnalysisPanel'
 
 type Scene = Database['public']['Tables']['scenes']['Row'] & {
     scene_characters?: any[]
@@ -57,6 +58,15 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 }: SceneEditorProps, ref: React.ForwardedRef<SceneEditorRef>) => {
     const [isSaving, setIsSaving] = useState(false)
     const [manualDismiss, setManualDismiss] = useState(false)
+    const [isAnalyzing, setIsAnalyzing] = useState(false)
+    const [analyzeError, setAnalyzeError] = useState<string | null>(null)
+    const [analysisResult, setAnalysisResult] = useState<{
+        summary: string
+        tension: string
+        pacing: string
+        dialogue: string
+        suggestions: string[]
+    } | null>(null)
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const sceneRef = useRef(scene)
     sceneRef.current = scene
@@ -149,7 +159,42 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         getText: () => editor?.getText() ?? ''
     }), [editor])
 
+    const handleAnalyzeScene = useCallback(async () => {
+        if (!editor) return
+        const sceneText = editor.getText().trim()
+
+        setAnalyzeError(null)
+        setAnalysisResult(null)
+        setIsAnalyzing(true)
+
+        try {
+            const res = await fetch('/api/ai/analyze-scene', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sceneText }),
+            })
+
+            if (!res.ok) {
+                const body = await res.text()
+                if (body === 'SCENE_TOO_SHORT') setAnalyzeError('This scene is too short to analyze. Add more content first.')
+                else if (body === 'SCENE_TOO_LARGE') setAnalyzeError('This scene is too long to analyze (limit: ~2,500 words). Try a shorter section.')
+                else if (body === 'NO_API_KEY') setAnalyzeError('No API key found. Add your Gemini API key in Account Settings.')
+                else if (body === 'RATE_LIMITED') setAnalyzeError('Please wait a few seconds before analyzing again.')
+                else setAnalyzeError('Something went wrong. Please try again.')
+                return
+            }
+
+            const data = await res.json()
+            setAnalysisResult(data)
+        } catch {
+            setAnalyzeError('Network error. Please check your connection and try again.')
+        } finally {
+            setIsAnalyzing(false)
+        }
+    }, [editor])
+
     // State for temporary "Saved" tag
+
     const [justSaved, setJustSaved] = useState(false)
     useEffect(() => {
         if (!isSaving && editor?.commands) {
@@ -174,9 +219,38 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             'min-h-full pt-12 pb-80 transition-all duration-700 ease-in-out px-12 md:px-24 relative',
             writingMode === 'screenplay' ? 'screenplay-mode' : 'max-w-6xl mx-auto'
         )}>
+            {/* Analyze Scene button — top-right, outside card so it floats above */}
+            <div className="flex items-start justify-end mb-4 gap-3">
+                <div className="flex flex-col items-end gap-1">
+                    <button
+                        onClick={handleAnalyzeScene}
+                        disabled={isAnalyzing || !editor || editor.isEmpty}
+                        className={cn(
+                            "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200",
+                            "border border-slate-200 bg-white/60 backdrop-blur-sm text-slate-600",
+                            "hover:border-violet-200 hover:bg-violet-50/80 hover:text-violet-700 hover:shadow-sm",
+                            "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-slate-200 disabled:hover:bg-white/60 disabled:hover:text-slate-600",
+                            isAnalyzing && "border-violet-300 bg-violet-50/80 text-violet-700 animate-pulse"
+                        )}
+                    >
+                        <span>{isAnalyzing ? '⏳' : '✨'}</span>
+                        <span>{isAnalyzing ? 'Analyzing…' : 'Analyze Scene'}</span>
+                    </button>
+                    <span className="text-[10px] text-slate-400 tracking-wide">
+                        Analyzes only this scene using your API key
+                    </span>
+                    {analyzeError && (
+                        <span className="text-[11px] text-red-400 max-w-[240px] text-right leading-tight">
+                            {analyzeError}
+                        </span>
+                    )}
+                </div>
+            </div>
+
             <div className={cn(
                 "transition-all duration-700 p-8 md:p-16 rounded-[3rem] border border-slate-200 hover:border-slate-300 focus-within:border-slate-400 focus-within:shadow-[0_40px_100px_rgba(0,0,0,0.02)] relative",
-                writingMode === 'simple' && "editor-content text-[#31332f]/90 leading-[2.2] bg-white/10"
+                writingMode === 'simple' && "editor-content text-[#31332f]/90 leading-[2.2] bg-white/10",
+                isAnalyzing && "border-violet-200 shadow-[0_0_0_2px_rgba(167,139,250,0.15)]"
             )}>
                 <LinkedContext 
                     sceneId={scene.id}
@@ -216,9 +290,15 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                     "transition-all duration-500",
                     isSaving || justSaved ? "text-slate-400 font-medium" : "text-slate-300"
                 )}>
-                    {isSaving ? 'Saving…' : (justSaved ? 'Saved' : 'The Manuscript is safe')}
+                {isSaving ? 'Saving…' : (justSaved ? 'Saved' : 'The Manuscript is safe')}
                 </span>
             </div>
+
+            {/* Scene Analysis results panel */}
+            <SceneAnalysisPanel
+                result={analysisResult}
+                onClose={() => setAnalysisResult(null)}
+            />
         </div>
     )
 })
