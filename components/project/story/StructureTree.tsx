@@ -285,28 +285,27 @@ const NodeItem = React.memo(function NodeItem({ node, nodes, activeNodeId, depth
                     </span>
                 )}
 
-                {hovered && !editing && (
-                    <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
-                        {CHILD_TYPE[node.type as keyof typeof CHILD_TYPE] && (
-                            <Tooltip>
-                                <TooltipTrigger
-                                    onClick={() => onAddChild(node)}
-                                    className="p-1 rounded hover:bg-primary/10 text-slate-400 hover:text-primary"
-                                >
-                                    <Plus className="w-3.5 h-3.5" />
-                                </TooltipTrigger>
-                                <TooltipContent side="top">{CHILD_LABELS[node.type as keyof typeof CHILD_LABELS]}</TooltipContent>
-                            </Tooltip>
-                        )}
-                        <Tooltip>
-                            <TooltipTrigger
-                                onClick={() => onDelete(node)}
-                                className="p-1 rounded hover:bg-red-100 text-slate-400 hover:text-red-600"
+                {(!editing && (hovered || isActive || window.innerWidth < 768)) && (
+                    <div className={cn(
+                        "flex items-center gap-1 shrink-0 transition-opacity duration-300 md:opacity-0 md:group-hover:opacity-100",
+                        (isActive || window.innerWidth < 768) && "opacity-100"
+                    )} onClick={e => e.stopPropagation()}>
+                        {CHILD_TYPE[node.type as NodeType] && (
+                            <button
+                                onClick={() => onAddChild(node)}
+                                className="p-2 rounded-lg hover:bg-primary/10 text-slate-400 hover:text-primary active:scale-95 transition-all"
+                                title={CHILD_LABELS[node.type as NodeType]}
                             >
-                                <Trash2 className="w-3.5 h-3.5" />
-                            </TooltipTrigger>
-                            <TooltipContent side="top">Delete</TooltipContent>
-                        </Tooltip>
+                                <Plus className="w-4 h-4 md:w-3.5 md:h-3.5" />
+                            </button>
+                        )}
+                        <button
+                            onClick={() => onDelete(node)}
+                            className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 active:scale-95 transition-all"
+                            title="Delete"
+                        >
+                            <Trash2 className="w-4 h-4 md:w-3.5 md:h-3.5" />
+                        </button>
                     </div>
                 )}
             </div>

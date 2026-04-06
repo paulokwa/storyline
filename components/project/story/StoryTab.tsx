@@ -71,106 +71,137 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     }, [])
 
     return (
-        <div className="flex h-[calc(100vh-56px-97px)] overflow-hidden">
+        <div className="flex h-[calc(100vh-56px-97px)] overflow-hidden relative">
+            {/* Backdrop for mobile */}
+            {(sidebarOpen || aiPanelOpen) && (
+                <div 
+                    className="md:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity duration-300"
+                    onClick={() => {
+                        setSidebarOpen(false)
+                        setAiPanelOpen(false)
+                    }}
+                />
+            )}
+
             {/* Left sidebar */}
             <div className={cn(
-                'bg-[#f5f4ef] flex flex-col transition-all duration-300 overflow-hidden',
-                sidebarOpen ? 'w-72 min-w-72' : 'w-0 min-w-0'
+                'bg-[#f5f4ef] flex flex-col transition-all duration-300 overflow-hidden z-50',
+                'fixed inset-y-0 left-0 md:relative md:inset-auto',
+                sidebarOpen ? 'w-[280px] border-r border-slate-200' : 'w-0 border-none'
             )}>
-                {sidebarOpen && (
+                <div className="w-[280px] h-full flex flex-col">
                     <StructureTree
                         project={project}
                         nodes={nodes}
                         activeNodeId={activeNodeId}
-                        onNodeSelect={handleSceneSelect}
+                        onNodeSelect={(id) => {
+                            handleSceneSelect(id)
+                            if (window.innerWidth < 768) setSidebarOpen(false)
+                        }}
                         onNodesChange={handleNodesChange}
                         onSceneCreated={handleSceneCreated}
                     />
-                )}
+                </div>
             </div>
 
             {/* Main editor area */}
-            <div className="flex-1 flex flex-col overflow-hidden bg-[#fbf9f5]">
+            <div className="flex-1 flex flex-col overflow-hidden bg-[#fbf9f5] w-full">
                 {/* Editor toolbar */}
-                <div className="flex items-center justify-between px-6 py-4 bg-transparent">
+                <div className="flex items-center justify-between px-4 sm:px-6 py-4 bg-transparent border-b border-slate-100/50 md:border-none">
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setSidebarOpen((o: boolean) => !o)}
+                        onClick={() => {
+                            setSidebarOpen((o: boolean) => !o)
+                            if (aiPanelOpen) setAiPanelOpen(false)
+                        }}
                         className="text-slate-400 hover:text-[#546354] h-8 w-8 p-0"
                         title={sidebarOpen ? 'Hide structure panel' : 'Show structure panel'}
                     >
                         {sidebarOpen ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
                     </Button>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4">
                         {project.type === 'tv_script' && (
-                            <WritingModeToggle mode={writingMode} onChange={handleWritingModeChange} />
+                            <div className="scale-90 sm:scale-100 origin-right">
+                                <WritingModeToggle mode={writingMode} onChange={handleWritingModeChange} />
+                            </div>
                         )}
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setAiPanelOpen((o: boolean) => !o)}
+                            onClick={() => {
+                                setAiPanelOpen((o: boolean) => !o)
+                                if (sidebarOpen) setSidebarOpen(false)
+                            }}
                             className={cn(
                                 "h-8 px-3 gap-2 rounded-full transition-all font-serif italic",
                                 aiPanelOpen ? "bg-indigo-50 text-indigo-600 shadow-sm" : "text-slate-400 hover:text-indigo-500"
                             )}
                         >
                             <Sparkles className={cn("w-4 h-4", aiPanelOpen && "animate-pulse")} />
-                            {aiPanelOpen ? 'Helper Open' : 'AI Helper'}
+                            <span className="hidden xs:inline">{aiPanelOpen ? 'Helper Open' : 'AI Helper'}</span>
                         </Button>
                     </div>
                 </div>
 
                 {/* Editor content */}
-                <div className="flex-1 overflow-y-auto">
-                    {activeNodeId && activeScene ? (
-                        <SceneEditor
-                            ref={editorRef}
-                            scene={activeScene}
-                            writingMode={writingMode}
-                            onUpdate={handleSceneUpdate}
-                            onTextChange={setCurrentSceneText}
-                            isProjectEmpty={nodes.length <= (project.type === 'tv_script' ? 3 : 2)}
-                            projectType={project.type as any}
-                            projectCharacters={projectCharacters}
-                            projectIdeas={projectIdeas}
-                            onLinkingUpdate={() => router.refresh()}
-                            activeCharacters={activeCharacters}
-                            setActiveCharacters={setActiveCharacters}
-                            activeIdeas={activeIdeas}
-                            setActiveIdeas={setActiveIdeas}
-                        />
-                    ) : activeNodeId ? (
-                        <SceneEditorPlaceholder
-                            nodeId={activeNodeId}
-                            projectId={project.id}
-                            writingMode={writingMode}
-                            onCreated={handleSceneCreated}
-                        />
-                    ) : (
-                        <EmptyEditorState
-                            projectType={project.type as any}
-                            isProjectEmpty={nodes.length === 0}
-                        />
-                    )}
+                <div className="flex-1 overflow-y-auto w-full">
+                    <div className="max-w-full mx-auto">
+                        {activeNodeId && activeScene ? (
+                            <SceneEditor
+                                ref={editorRef}
+                                scene={activeScene}
+                                writingMode={writingMode}
+                                onUpdate={handleSceneUpdate}
+                                onTextChange={setCurrentSceneText}
+                                isProjectEmpty={nodes.length <= (project.type === 'tv_script' ? 3 : 2)}
+                                projectType={project.type as any}
+                                projectCharacters={projectCharacters}
+                                projectIdeas={projectIdeas}
+                                onLinkingUpdate={() => router.refresh()}
+                                activeCharacters={activeCharacters}
+                                setActiveCharacters={setActiveCharacters}
+                                activeIdeas={activeIdeas}
+                                setActiveIdeas={setActiveIdeas}
+                            />
+                        ) : activeNodeId ? (
+                            <SceneEditorPlaceholder
+                                nodeId={activeNodeId}
+                                projectId={project.id}
+                                writingMode={writingMode}
+                                onCreated={handleSceneCreated}
+                            />
+                        ) : (
+                            <EmptyEditorState
+                                projectType={project.type as any}
+                                isProjectEmpty={nodes.length === 0}
+                            />
+                        )}
+                    </div>
                 </div>
             </div>
 
             {/* Right AI Sidebar */}
             <div className={cn(
-                'bg-white transition-all duration-500 overflow-hidden border-l border-slate-100',
-                aiPanelOpen ? 'w-80 min-w-80' : 'w-0 min-w-0'
+                'bg-white transition-all duration-500 overflow-hidden z-50',
+                'fixed inset-y-0 right-0 md:relative md:inset-auto',
+                aiPanelOpen ? 'w-[320px] border-l border-slate-200' : 'w-0 border-none'
             )}>
-                {aiPanelOpen && (
-                    <AiHelperPanel
-                        projectId={project.id}
-                        sceneText={currentSceneText}
-                        linkedCharacters={(activeScene?.scene_characters?.map((c: any) => c.characters).filter(Boolean) || []).filter((c: any) => activeCharacters[c.id] !== false)}
-                        linkedIdeas={(activeScene?.scene_ideas?.map((i: any) => i.ideas).filter(Boolean) || []).filter((i: any) => activeIdeas[i.id] !== false)}
-                        onInsert={(text) => editorRef.current?.appendContent(text)}
-                    />
-                )}
+                <div className="w-[320px] h-full">
+                    {aiPanelOpen && (
+                        <AiHelperPanel
+                            projectId={project.id}
+                            sceneText={currentSceneText}
+                            linkedCharacters={(activeScene?.scene_characters?.map((c: any) => c.characters).filter(Boolean) || []).filter((c: any) => activeCharacters[c.id] !== false)}
+                            linkedIdeas={(activeScene?.scene_ideas?.map((i: any) => i.ideas).filter(Boolean) || []).filter((i: any) => activeIdeas[i.id] !== false)}
+                            onInsert={(text) => {
+                                editorRef.current?.appendContent(text)
+                                if (window.innerWidth < 768) setAiPanelOpen(false)
+                            }}
+                        />
+                    )}
+                </div>
             </div>
         </div>
     )

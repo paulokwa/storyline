@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { Lightbulb, Plus, Hash, Loader2, Sparkles, PenTool, Trash2, Pencil } from 'lucide-react'
+import { Lightbulb, Plus, Hash, Loader2, Sparkles, PenTool, Trash2, Pencil, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
@@ -163,9 +163,12 @@ export default function IdeasTab({
     }
 
     return (
-        <div className="flex h-[calc(100vh-56px-97px)] overflow-hidden bg-[#fbf9f5]">
+        <div className="flex h-[calc(100vh-56px-97px)] overflow-hidden bg-[#fbf9f5] relative">
             {/* Left Sidebar - Ideas List */}
-            <div className="w-80 min-w-80 bg-[#f5f4ef] flex flex-col border-r border-slate-200/50">
+            <div className={cn(
+                "w-full md:w-80 md:min-w-80 bg-[#f5f4ef] flex flex-col border-r border-slate-200/50 transition-all duration-300",
+                selectedId && "hidden md:flex"
+            )}>
                 <div className="p-6 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Lightbulb className="w-4 h-4 text-amber-500/60" />
@@ -239,7 +242,23 @@ export default function IdeasTab({
             </div>
 
             {/* Main Content - Detail view */}
-            <div className="flex-1 flex flex-col overflow-hidden bg-[#fbf9f5]">
+            <div className={cn(
+                "flex-1 flex flex-col overflow-hidden bg-[#fbf9f5]",
+                !selectedId && "hidden md:flex"
+            )}>
+                {selectedId && (
+                    <div className="md:hidden px-6 pt-6 -mb-4">
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setSelectedId(null)}
+                            className="text-amber-600 gap-2 px-0 hover:bg-transparent"
+                        >
+                            <ChevronRight className="w-4 h-4 rotate-180" />
+                            Back to Ideas
+                        </Button>
+                    </div>
+                )}
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                     {selectedIdea ? (
                         <div className="max-w-3xl mx-auto px-12 py-16 space-y-16 animate-in fade-in duration-700 slide-in-from-bottom-4">

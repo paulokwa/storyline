@@ -351,8 +351,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
     return (
         <div className={cn(
-            'min-h-full pt-12 pb-80 transition-all duration-700 ease-in-out relative',
-            writingMode === 'screenplay' ? 'bg-[#f0f0ed] py-20 px-8' : 'px-12 md:px-24 max-w-6xl mx-auto'
+            'min-h-full pt-6 sm:pt-12 pb-32 md:pb-80 transition-all duration-700 ease-in-out relative',
+            writingMode === 'screenplay' ? 'bg-[#f0f0ed] py-10 sm:py-20 px-4 sm:px-8' : 'px-4 sm:px-12 md:px-24 max-w-6xl mx-auto'
         )}>
             {/* Analyze Scene button — top-right, outside card so it floats above */}
             <div className={cn(
@@ -396,7 +396,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 "transition-all duration-700 relative",
                 writingMode === 'screenplay' 
                     ? 'screenplay-mode' 
-                    : "p-8 md:p-16 rounded-[3rem] border border-slate-200 hover:border-slate-300 focus-within:border-slate-400 focus-within:shadow-[0_40px_100px_rgba(0,0,0,0.02)] bg-white/10 text-[#31332f]/90 leading-[2.2]",
+                    : "p-4 sm:p-8 md:p-16 rounded-[2rem] sm:rounded-[3rem] border border-slate-200 hover:border-slate-300 focus-within:border-slate-400 focus-within:shadow-[0_40px_100px_rgba(0,0,0,0.02)] bg-white/10 text-[#31332f]/90 leading-[2.2]",
                 isAnalyzing && "border-violet-200 shadow-[0_0_0_2px_rgba(167,139,250,0.15)]"
             )}>
                 <LinkedContext 
@@ -414,7 +414,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 <EditorContent
                     editor={editor}
                     className={cn(
-                        "w-full min-h-[800px] selection:bg-[#ffdbcb]/40 transition-all duration-500",
+                        "w-full min-h-[40vh] md:min-h-[700px] selection:bg-[#ffdbcb]/40 transition-all duration-500",
                         showGuidance && "opacity-20 pointer-events-none blur-[1px]"
                     )}
                 />

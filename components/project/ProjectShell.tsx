@@ -95,7 +95,7 @@ export default function ProjectShell({
                         ) : (
                             <button
                                 onClick={() => { setTitleDraft(project.title); setEditingTitle(true) }}
-                                className="text-3xl font-serif text-[#31332f] hover:text-[#546354] transition-colors text-left flex-1 truncate py-2"
+                                className="text-2xl sm:text-3xl font-serif text-[#31332f] hover:text-[#546354] transition-colors text-left flex-1 truncate py-2"
                                 title="Click to rename"
                             >
                                 {project.title}
@@ -126,13 +126,13 @@ export default function ProjectShell({
                     </div>
 
                     {/* Tabs */}
-                    <div className="flex gap-1 mt-2">
+                    <div className="flex gap-1 mt-2 overflow-x-auto no-scrollbar scroll-smooth">
                         {TABS.map(({ slug, label, icon: Icon }) => (
                             <Link
                                 key={slug}
                                 href={`/project/${project.id}/${slug}`}
                                 className={cn(
-                                    'flex items-center gap-1.5 px-6 py-3 text-sm font-medium transition-all duration-300 rounded-t-xl',
+                                    'flex items-center gap-1.5 px-4 sm:px-6 py-3 text-sm font-medium transition-all duration-300 rounded-t-xl shrink-0',
                                     activeTab === slug
                                         ? 'bg-[#fbf9f5] text-[#546354] shadow-[0_-4px_12px_rgba(49,51,47,0.03)]'
                                         : 'text-slate-500 hover:text-slate-800 hover:bg-[#efeee9]'
