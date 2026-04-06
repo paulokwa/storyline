@@ -14,6 +14,7 @@ import {
     Download
 } from 'lucide-react'
 import ExportModal from '@/components/export/ExportModal'
+import ProjectSettingsModal from '@/components/project/ProjectSettingsModal'
 import { cn } from '@/lib/utils'
 import type { Database } from '@/lib/supabase/types'
 
@@ -38,6 +39,7 @@ export default function ProjectShell({
     const [editingTitle, setEditingTitle] = useState(false)
     const [titleDraft, setTitleDraft] = useState(project.title)
     const [exportModalOpen, setExportModalOpen] = useState(false)
+    const [settingsModalOpen, setSettingsModalOpen] = useState(false)
 
     const activeTab = TABS.find(t => pathname.includes(`/${t.slug}`))?.slug ?? 'story'
 
@@ -106,18 +108,19 @@ export default function ProjectShell({
                             <Button 
                                 variant="outline" 
                                 size="sm" 
-                                className="hidden sm:flex rounded-xl bg-white/50 border-[#e0ded9] text-[#546354] hover:bg-white hover:border-[#546354]/20 transition-all duration-300"
+                                className="flex rounded-xl bg-white/50 border-[#e0ded9] text-[#546354] hover:bg-white hover:border-[#546354]/20 transition-all duration-300 gap-1.5 px-2.5 sm:px-4"
                                 onClick={() => setExportModalOpen(true)}
+                                title="Export Project"
                             >
-                                <Download className="w-3.5 h-3.5 mr-1.5" />
-                                Export
+                                <Download className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">Export</span>
                             </Button>
                             
                             <Button
                                 variant="ghost"
                                 size="icon-sm"
                                 className="rounded-xl text-slate-400 hover:text-slate-600 hover:bg-[#efeee9]"
-                                onClick={() => {/* Future: Open general settings */}}
+                                onClick={() => setSettingsModalOpen(true)}
                                 title="Project Settings"
                             >
                                 <Settings className="w-4 h-4" />
@@ -156,6 +159,12 @@ export default function ProjectShell({
                 onOpenChange={setExportModalOpen}
                 projectId={project.id}
                 projectTitle={project.title}
+            />
+
+            <ProjectSettingsModal
+                open={settingsModalOpen}
+                onOpenChange={setSettingsModalOpen}
+                project={project}
             />
         </div>
     )
