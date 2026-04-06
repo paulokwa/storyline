@@ -71,7 +71,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     }, [])
 
     return (
-        <div className="flex h-[calc(100vh-56px-97px)] overflow-hidden relative">
+        <div className="flex h-[calc(100vh-56px-122px)] md:h-[calc(100vh-56px-97px)] overflow-hidden relative">
             {/* Backdrop for mobile */}
             {(sidebarOpen || aiPanelOpen) && (
                 <div 

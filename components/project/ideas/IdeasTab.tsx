@@ -163,7 +163,7 @@ export default function IdeasTab({
     }
 
     return (
-        <div className="flex h-[calc(100vh-56px-97px)] overflow-hidden bg-[#fbf9f5] relative">
+        <div className="flex h-[calc(100vh-56px-122px)] md:h-[calc(100vh-56px-97px)] overflow-hidden bg-[#fbf9f5] relative">
             {/* Left Sidebar - Ideas List */}
             <div className={cn(
                 "w-full md:w-80 md:min-w-80 bg-[#f5f4ef] flex flex-col border-r border-slate-200/50 transition-all duration-300",
@@ -261,7 +261,7 @@ export default function IdeasTab({
                 )}
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                     {selectedIdea ? (
-                        <div className="max-w-3xl mx-auto px-12 py-16 space-y-16 animate-in fade-in duration-700 slide-in-from-bottom-4">
+                        <div className="max-w-3xl mx-auto px-6 py-8 sm:px-12 sm:py-16 space-y-12 sm:space-y-16 animate-in fade-in duration-700 slide-in-from-bottom-4">
                             {/* Header section with Title */}
                             <div className="space-y-6">
                                 <div className="flex items-center gap-4">
@@ -284,7 +284,7 @@ export default function IdeasTab({
                                     type="text"
                                     value={selectedIdea.title ?? ''}
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange(selectedIdea.id, 'title', e.target.value)}
-                                    className="w-full bg-transparent text-6xl font-serif italic text-slate-800 tracking-tight leading-tight outline-none border-none placeholder:text-slate-200"
+                                    className="w-full bg-transparent text-4xl sm:text-6xl font-serif italic text-slate-800 tracking-tight leading-tight outline-none border-none placeholder:text-slate-200"
                                     placeholder="Untitled Idea"
                                 />
                             </div>
@@ -298,11 +298,11 @@ export default function IdeasTab({
                                     </div>
                                     <div className="w-10 h-px bg-stone-100" />
                                 </div>
-                                <div className="bg-white rounded-[3rem] p-12 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.02)] ring-1 ring-slate-100/50">
+                                <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-12 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.02)] ring-1 ring-slate-100/50">
                                     <textarea
                                         value={selectedIdea.content ?? ''}
                                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleFieldChange(selectedIdea.id, 'content', e.target.value)}
-                                        className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-xl italic outline-none border-none min-h-[300px] resize-none placeholder:text-stone-200 text-justify"
+                                        className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-lg sm:text-xl italic outline-none border-none min-h-[300px] resize-none placeholder:text-stone-200 text-justify"
                                         placeholder="Every great story starts with a spark. Details of your inspiration will appear here in the Idea Archive..."
                                     />
                                 </div>

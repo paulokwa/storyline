@@ -56,7 +56,7 @@ export default function ProjectShell({
     }
 
     return (
-        <div className="min-h-[calc(100vh-56px)] flex flex-col">
+        <div className="h-[calc(100vh-56px)] flex flex-col overflow-hidden">
             {/* Project header */}
             <div className="bg-[#f5f4ef] px-4 sm:px-6 lg:px-8">
                 <div className="max-w-7xl mx-auto">
@@ -147,7 +147,7 @@ export default function ProjectShell({
             </div>
 
             {/* Page content */}
-            <div className="flex-1 max-w-7xl w-full mx-auto">
+            <div className="flex-1 overflow-hidden max-w-7xl w-full mx-auto flex flex-col">
                 {children}
             </div>
 

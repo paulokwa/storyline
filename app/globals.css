@@ -93,7 +93,8 @@ body {
   font-family: 'Courier Prime', 'Courier Final Draft', 'Courier New', monospace;
   font-size: 12pt;
   line-height: 1; /* Standard screenplay line spacing is tight/single */
-  width: 8.5in;
+  width: 100%;
+  max-width: 8.5in;
   margin: 0 auto;
   background: white;
   min-height: 11in;
@@ -101,6 +102,19 @@ body {
   box-shadow: 0 40px 100px rgba(0,0,0,0.05);
   border: 1px solid #e1e4e8;
   color: black;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .screenplay-mode {
+    min-height: auto;
+    padding: 2.5rem 1.5rem;
+    font-size: 11pt;
+    max-width: 100%;
+    margin: 0;
+    border: none;
+    box-shadow: none;
+  }
 }
 
 .screenplay-slugline {
@@ -117,25 +131,45 @@ body {
 
 .screenplay-character {
   text-transform: uppercase;
-  margin-left: 2.2in;
+  margin-left: 25%;
   margin-top: 1.5em;
   margin-bottom: 0;
   width: fit-content;
 }
 
+@media (max-width: 768px) {
+  .screenplay-character {
+    margin-left: 15%;
+  }
+}
+
 .screenplay-dialogue {
-  margin-left: 1.0in;
-  width: 3.5in;
+  margin-left: 10%;
+  width: 70%;
   margin-top: 0;
   margin-bottom: 1em;
 }
 
+@media (max-width: 768px) {
+  .screenplay-dialogue {
+    margin-left: 5%;
+    width: 90%;
+  }
+}
+
 .screenplay-parenthetical {
-  margin-left: 1.6in;
-  width: 2.0in;
+  margin-left: 15%;
+  width: 50%;
   margin-top: 0;
   margin-bottom: 0;
   font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .screenplay-parenthetical {
+    margin-left: 10%;
+    width: 80%;
+  }
 }
 
 /* Transitions */

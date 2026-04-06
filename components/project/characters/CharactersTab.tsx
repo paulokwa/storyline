@@ -165,7 +165,7 @@ export default function CharactersTab({
     }
 
     return (
-        <div className="flex h-[calc(100vh-56px-97px)] overflow-hidden bg-[#fbf9f5] relative">
+        <div className="flex h-[calc(100vh-56px-122px)] md:h-[calc(100vh-56px-97px)] overflow-hidden bg-[#fbf9f5] relative">
             {/* Left Sidebar - Character List */}
             <div className={cn(
                 "w-full md:w-80 md:min-w-80 bg-[#f5f4ef] flex flex-col border-r border-slate-200/50 transition-all duration-300",
@@ -269,7 +269,7 @@ export default function CharactersTab({
                 )}
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                     {selectedCharacter ? (
-                        <div className="max-w-3xl mx-auto px-12 py-16 space-y-16 animate-in fade-in duration-700 slide-in-from-bottom-4">
+                        <div className="max-w-3xl mx-auto px-6 py-8 sm:px-12 sm:py-16 space-y-12 sm:space-y-16 animate-in fade-in duration-700 slide-in-from-bottom-4">
                             {/* Header section with Name */}
                             <div className="space-y-6">
                                 <div className="flex items-center gap-4">
@@ -288,11 +288,11 @@ export default function CharactersTab({
                                     </button>
                                 </div>
                                 
-                                <input
+                                    <input
                                     type="text"
                                     value={selectedCharacter.name}
                                     onChange={(e) => handleFieldChange(selectedCharacter.id, 'name', e.target.value)}
-                                    className="w-full bg-transparent text-6xl font-serif italic text-slate-800 tracking-tight leading-tight outline-none border-none placeholder:text-slate-200"
+                                    className="w-full bg-transparent text-4xl sm:text-6xl font-serif italic text-slate-800 tracking-tight leading-tight outline-none border-none placeholder:text-slate-200"
                                     placeholder="Character Name"
                                 />
                             </div>
@@ -309,11 +309,11 @@ export default function CharactersTab({
                                     </div>
                                     <div className="w-10 h-px bg-stone-100" />
                                 </div>
-                                <div className="bg-white rounded-[3rem] p-12 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.02)] ring-1 ring-slate-100/50">
+                                <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-12 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.02)] ring-1 ring-slate-100/50">
                                         <textarea
                                             value={selectedCharacter.description || ''}
                                             onChange={(e) => handleFieldChange(selectedCharacter.id, 'description', e.target.value)}
-                                            className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-xl italic outline-none border-none min-h-[150px] resize-none placeholder:text-stone-200"
+                                            className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-lg sm:text-xl italic outline-none border-none min-h-[150px] resize-none placeholder:text-stone-200"
                                             placeholder={projectType === 'novel' 
                                                 ? "Describe the life, history, and physical presence of this character..." 
                                                 : "Begin detailing the life and background of this cast member..."}
