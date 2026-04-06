@@ -81,6 +81,42 @@ export default function NewProjectPage() {
             return
         }
 
+        const firstCharacterName = extras?.firstCharacterName?.trim()
+        const firstIdea = extras?.firstIdea?.trim()
+
+        if (firstCharacterName) {
+            const { error: charError } = await (supabase as any).from('characters').insert({
+                project_id: project.id,
+                name: firstCharacterName,
+                description: 'Protagonist', // Adding a basic description
+                order_index: 0
+            })
+            if (charError) {
+                console.error("Failed to insert character:", charError)
+            }
+        }
+
+        let initialSceneContent: any = null
+        if (firstIdea) {
+            const { error: ideaError } = await (supabase as any).from('ideas').insert({
+                project_id: project.id,
+                title: 'Initial Vision',
+                content: firstIdea,
+                order_index: 0
+            })
+            if (ideaError) {
+                console.error("Failed to insert idea:", ideaError)
+            }
+
+            // Convert firstIdea into TipTap JSON to seed the initial scene.
+            // This is intentional duplication: firstIdea is saved as an idea AND prefilled into the first writing unit.
+            const paragraphs = firstIdea.split('\n')
+                .filter(l => l.trim() !== '')
+                .map(l => ({ type: 'paragraph', content: [{ type: 'text', text: l }] }))
+            
+            initialSceneContent = { type: 'doc', content: paragraphs.length ? paragraphs : [{ type: 'paragraph' }] }
+        }
+
         if (extras?.chunks && extras.chunks.length > 0) {
             // Scaffold imported structure
             const chunks = extras.chunks
@@ -120,14 +156,22 @@ export default function NewProjectPage() {
                     const { data: act } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (episode as any).id, type: 'act', title: 'Act 1', order_index: 0 }).select().single()
                     if (act) {
                         const { data: scene } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (act as any).id, type: 'scene', title: 'Scene 1', order_index: 0 }).select().single()
-                        if (scene) await (supabase as any).from('scenes').insert({ node_id: (scene as any).id, project_id: project.id, writing_mode: payload.writing_mode })
+                        
+                        const sceneData: any = { node_id: (scene as any).id, project_id: project.id, writing_mode: payload.writing_mode }
+                        if (initialSceneContent) sceneData.content = initialSceneContent
+
+                        if (scene) await (supabase as any).from('scenes').insert(sceneData)
                     }
                 }
             } else {
                 const { data: chapter } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, type: 'chapter', title: 'Chapter 1', order_index: 0 }).select().single()
                 if (chapter) {
-                    const { data: scene } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (chapter as any).id, type: 'scene', title: 'Scene 1', order_index: 0 }).select().single()
-                    if (scene) await (supabase as any).from('scenes').insert({ node_id: (scene as any).id, project_id: project.id, writing_mode: payload.writing_mode })
+                    const { data: scene } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (chapter as any).id, type: 'scene', title: 'Part 1', order_index: 0 }).select().single()
+                    
+                    const sceneData: any = { node_id: (scene as any).id, project_id: project.id, writing_mode: payload.writing_mode }
+                    if (initialSceneContent) sceneData.content = initialSceneContent
+
+                    if (scene) await (supabase as any).from('scenes').insert(sceneData)
                 }
             }
         }
