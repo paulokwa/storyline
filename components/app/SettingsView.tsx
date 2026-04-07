@@ -50,6 +50,12 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
         message: string;
         details?: any;
     } | null>(null)
+    const [geminiStatus, setGeminiStatus] = useState<{
+        success: boolean;
+        message: string;
+        details?: any;
+    } | null>(null)
+    const [testingGemini, setTestingGemini] = useState(false)
 
     // Existing data
     const existingApiKey = maskedApiKey
@@ -176,18 +182,92 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
         router.refresh()
     }
 
+    const handleTestGeminiConnection = async () => {
+        setTestingGemini(true)
+        setGeminiStatus(null)
+
+        try {
+            // Case 1: Testing a newly typed key (client-side check)
+            if (apiKey) {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
+                    method: 'GET'
+                })
+
+                const data = await response.json()
+
+                if (!response.ok) {
+                    throw new Error(data?.error?.message || `API responded with ${response.status}`)
+                }
+
+                setGeminiStatus({
+                    success: true,
+                    message: "Newly entered API Key is valid!"
+                })
+            } 
+            // Case 2: Testing the existing key stored in DB (secure server-side proxy)
+            else if (existingApiKey) {
+                const response = await fetch('/api/ai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'heartbeat' })
+                })
+
+                const data = await response.json()
+
+                if (!data.ok) {
+                    throw new Error(data.error || "Stored API Key failed connection test.")
+                }
+
+                setGeminiStatus({
+                    success: true,
+                    message: "Saved API Key is connected and working!"
+                })
+            } else {
+                setGeminiStatus({
+                    success: false,
+                    message: "No API Key to test.",
+                    details: "Please enter a key or ensure you have one saved."
+                })
+            }
+        } catch (err: any) {
+            setGeminiStatus({
+                success: false,
+                message: "Gemini Cloud connection failed.",
+                details: err.message || "Invalid API key or network error."
+            })
+        } finally {
+            setTestingGemini(false)
+        }
+    }
+
     const handleTestOllamaConnection = async () => {
         setTestingConnection(true)
         setConnectionStatus(null)
         setSuccessMessage(null)
         setErrorMessage(null)
 
-        try {
-            // Heartbeat check using /api/tags - lightweight and confirms server is up
-            const response = await fetch(`${ollamaUrl}/api/tags`, {
-                method: 'GET',
-                signal: AbortSignal.timeout(5000) // 5 second timeout
+        // Ensure URL is at least somewhat valid before trying
+        if (!ollamaUrl || !ollamaUrl.startsWith('http')) {
+            setConnectionStatus({
+                success: false,
+                message: "Invalid URL format.",
+                details: "Please provide a valid URL starting with http:// or https://"
             })
+            setTestingConnection(false)
+            return
+        }
+
+        try {
+            // Use a manual abort controller for maximum compatibility and control
+            const controller = new AbortController()
+            const id = setTimeout(() => controller.abort(), 5000)
+
+            const response = await fetch(`${ollamaUrl.replace(/\/$/, '')}/api/tags`, {
+                method: 'GET',
+                signal: controller.signal,
+                // 'no-cache' and 'no-cors' settings can sometimes help with local dev quirks
+                cache: 'no-cache',
+            }).finally(() => clearTimeout(id))
 
             if (!response.ok) {
                 throw new Error(`Server responded with ${response.status}`)
@@ -195,31 +275,40 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
 
             const data = await response.json()
             const models = data.models || []
+            const modelName = ollamaModel.trim()
+            
             const modelFound = models.some((m: any) => 
-                m.name === ollamaModel || 
-                m.name === `${ollamaModel}:latest` ||
-                m.model === ollamaModel
+                m.name === modelName || 
+                m.name === `${modelName}:latest` ||
+                m.model === modelName
             )
 
             if (modelFound) {
                 setConnectionStatus({
                     success: true,
-                    message: `Successfully connected to Ollama! Found model: ${ollamaModel}`
+                    message: `Successfully connected to Ollama! Found model: ${modelName}`
                 })
             } else {
                 setConnectionStatus({
                     success: false,
-                    message: `Connected to Ollama, but model "${ollamaModel}" was not found locally.`,
-                    details: models.length > 0 ? `Available models: ${models.map((m: any) => m.name).join(', ')}` : "No models found. Please run 'ollama pull " + ollamaModel + "'"
+                    message: `Connected to Ollama, but model "${modelName}" was not found.`,
+                    details: models.length > 0 ? `Available models: ${models.map((m: any) => m.name).join(', ')}` : "No models found. Please run 'ollama pull " + modelName + "'"
                 })
             }
         } catch (err: any) {
-            console.error('Ollama Connection Test Failed:', err)
+            // We catch everything here so it doesn't bubble up to the Next.js/Turbopack error overlay
+            const isTimeout = err.name === 'AbortError'
+            
             setConnectionStatus({
                 success: false,
-                message: `Could not connect to Ollama at ${ollamaUrl}.`,
-                details: "Make sure Ollama is running and that the URL is correct. (Error: " + err.message + ")"
+                message: isTimeout ? 'Connection timed out.' : 'Ollama is offline or unreachable.',
+                details: isTimeout 
+                    ? "The server took too long to respond. Is it running?" 
+                    : `Could not connect to ${ollamaUrl}. Make sure Ollama is running in your system tray or terminal.`
             })
+            
+            // Log to console for debugging, but don't rethrow
+            console.warn('Ollama check failed (Expected if offline):', err.message)
         } finally {
             setTestingConnection(false)
         }
@@ -321,6 +410,40 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
                                         <div className="space-y-2">
                                             <Label htmlFor="apiKey">{existingApiKey ? 'Update API Key' : 'Enter Google Gemini API Key'}</Label>
                                             <Input id="apiKey" type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="AIzaSy..." className="bg-white" />
+                                        </div>
+
+                                        <div className="pt-2">
+                                            <Button 
+                                                type="button" 
+                                                variant="outline" 
+                                                size="sm"
+                                                onClick={handleTestGeminiConnection}
+                                                disabled={testingGemini || (!apiKey && !existingApiKey)}
+                                                className="w-full gap-2 border-slate-300 hover:bg-white"
+                                            >
+                                                {testingGemini ? (
+                                                    <>
+                                                        <span className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                                                        Testing Cloud Connection...
+                                                    </>
+                                                ) : 'Test Cloud Connection'}
+                                            </Button>
+
+                                            {geminiStatus && (
+                                                <div className={`mt-3 p-3 rounded-lg text-xs animate-in fade-in slide-in-from-top-1 duration-300 ${
+                                                    geminiStatus.success 
+                                                        ? 'bg-green-100/50 border border-green-200 text-green-800' 
+                                                        : 'bg-amber-100/50 border border-amber-200 text-amber-800'
+                                                }`}>
+                                                    <div className="font-bold flex items-center gap-1.5 mb-1">
+                                                        <div className={`w-1.5 h-1.5 rounded-full ${geminiStatus.success ? 'bg-green-500' : 'bg-amber-500'}`} />
+                                                        {geminiStatus.message}
+                                                    </div>
+                                                    {geminiStatus.details && (
+                                                        <p className="opacity-80 italic">{geminiStatus.details}</p>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}

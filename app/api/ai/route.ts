@@ -70,6 +70,29 @@ export async function POST(req: Request) {
         storyContext?: any[]
     }
 
+    if (action === 'heartbeat') {
+        const { data: keyRecord } = (await supabase
+            .from('user_api_keys')
+            .select('api_key')
+            .eq('user_id', user.id)
+            .single()) as { data: { api_key: string } | null }
+
+        const apiKey = keyRecord?.api_key
+        if (!apiKey) return new Response(JSON.stringify({ ok: false, error: 'NO_API_KEY' }), { status: 200 })
+        
+        try {
+            const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, { method: 'GET' })
+            const data = await resp.json()
+            return new Response(JSON.stringify({ 
+                ok: resp.ok, 
+                status: resp.status,
+                error: !resp.ok ? data?.error?.message : null
+            }), { status: 200 })
+        } catch (e) {
+            return new Response(JSON.stringify({ ok: false, error: 'FETCH_FAILED' }), { status: 200 })
+        }
+    }
+
     const systemPrompt = SYSTEM_PROMPTS[action]
     if (!systemPrompt || typeof action !== 'string') {
         return new Response('Unknown or invalid action', { status: 400 })

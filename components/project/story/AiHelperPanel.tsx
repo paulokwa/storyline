@@ -96,6 +96,7 @@ export default function AiHelperPanel({
     const [promptMode, setPromptMode] = useState('Review / Chat')
     const [isOllamaLoading, setIsOllamaLoading] = useState(false)
     const [ollamaStatus, setOllamaStatus] = useState<'checking' | 'online' | 'offline'>('checking')
+    const [geminiStatus, setGeminiStatus] = useState<'checking' | 'online' | 'offline'>('checking')
     const [lastUsedProvider, setLastUsedProvider] = useState<'gemini' | 'ollama' | null>(null)
 
     // Snapshot scene text at submit time so the hook body stays stable during streaming
@@ -368,6 +369,29 @@ export default function AiHelperPanel({
         checkStatus()
     }, [aiSettings.ai_provider, aiSettings.ollama_url])
 
+    // Check Gemini status on mount
+    useEffect(() => {
+        const checkStatus = async () => {
+            if (aiSettings.ai_provider !== 'gemini') return
+            if (!aiSettings.api_key) {
+                setGeminiStatus('offline')
+                return
+            }
+            
+            try {
+                // Heartbeat to models list
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${aiSettings.api_key}`, {
+                    method: 'GET',
+                    signal: AbortSignal.timeout(5000)
+                })
+                setGeminiStatus(response.ok ? 'online' : 'offline')
+            } catch {
+                setGeminiStatus('offline')
+            }
+        }
+        checkStatus()
+    }, [aiSettings.ai_provider, aiSettings.api_key])
+
     // Pick a random hint on mount
     const [hint, setHint] = useState('')
     useEffect(() => {
@@ -387,22 +411,20 @@ export default function AiHelperPanel({
                         <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">
                             {aiSettings.ai_provider === 'ollama' ? `Ollama (${aiSettings.ollama_model})` : 'Gemini'}
                         </p>
-                        {aiSettings.ai_provider === 'ollama' && (
-                            <div className="flex items-center gap-1">
-                                <div className={cn(
-                                    "w-1.5 h-1.5 rounded-full",
-                                    ollamaStatus === 'online' ? "bg-green-400 shadow-[0_0_5px_rgba(74,222,128,0.5)]" : 
-                                    ollamaStatus === 'checking' ? "bg-slate-300 animate-pulse" : "bg-red-400"
-                                )} />
-                                <span className={cn(
-                                    "text-[9px] font-bold uppercase tracking-tight",
-                                    ollamaStatus === 'online' ? "text-green-600" : 
-                                    ollamaStatus === 'checking' ? "text-slate-400" : "text-red-500"
-                                )}>
-                                    {ollamaStatus}
-                                </span>
-                            </div>
-                        )}
+                        <div className="flex items-center gap-1">
+                            <div className={cn(
+                                "w-1.5 h-1.5 rounded-full",
+                                (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'online' ? "bg-green-400 shadow-[0_0_5px_rgba(74,222,128,0.5)]" : 
+                                (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'checking' ? "bg-slate-300 animate-pulse" : "bg-red-400"
+                            )} />
+                            <span className={cn(
+                                "text-[9px] font-bold uppercase tracking-tight",
+                                (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'online' ? "text-green-600" : 
+                                (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'checking' ? "text-slate-400" : "text-red-500"
+                            )}>
+                                {(aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus)}
+                            </span>
+                        </div>
                     </div>
                 </div>
                 {(completion || previousCompletion) && !isLoading && (
