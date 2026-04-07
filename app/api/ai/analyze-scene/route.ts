@@ -129,12 +129,15 @@ export async function POST(req: Request) {
                 contents: [
                     { role: 'user', parts: [{ text: delimitedScene }] },
                 ],
-                systemInstruction: {
+                system_instruction: {
                     parts: [{ text: SYSTEM_PROMPT }],
                 },
                 generationConfig: {
-                    maxOutputTokens: 800,
-                    responseMimeType: 'application/json'
+                    maxOutputTokens: 2000,
+                    responseMimeType: 'application/json',
+                    thinkingConfig: {
+                        thinkingBudget: 0,
+                    },
                 },
             }),
         })
@@ -146,14 +149,23 @@ export async function POST(req: Request) {
     if (!geminiResponse.ok) {
         const errBody = await geminiResponse.text()
         console.error('[analyze-scene] Gemini error response:', geminiResponse.status, trunc(errBody))
-        return new Response('AI_SERVICE_ERROR', { status: 502 })
+        return new Response(`AI_SERVICE_ERROR: ${geminiResponse.status} ${trunc(errBody, 100)}`, { status: 502 })
     }
 
     // ── Parse Gemini response ────────────────────────────────────────────────
-    let rawText: string
+    let rawText = ''
     try {
         const geminiData = await geminiResponse.json()
-        rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+        const candidate = geminiData?.candidates?.[0]
+        
+        // Log finish reason to help debug future truncation issues
+        if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+            console.warn('[analyze-scene] AI finished with non-STOP reason:', candidate.finishReason)
+        }
+
+        // Robustly collect all parts (sometimes long responses are segmented)
+        const parts = candidate?.content?.parts || []
+        rawText = parts.map((p: any) => p.text || '').join('').trim()
     } catch (err) {
         console.error('[analyze-scene] Failed to parse Gemini JSON envelope:', err)
         return new Response('INVALID_AI_RESPONSE', { status: 502 })

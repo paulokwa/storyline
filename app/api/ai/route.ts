@@ -213,7 +213,7 @@ export async function POST(req: Request) {
             contents: [
                 { role: 'user', parts: [{ text: userMessage }] },
             ],
-            systemInstruction: {
+            system_instruction: {
                 parts: [{ text: systemPrompt + projectContext }],
             },
             generationConfig: {
@@ -228,7 +228,7 @@ export async function POST(req: Request) {
     if (!geminiResponse.ok) {
         const errBody = await geminiResponse.text()
         console.error('Gemini API error:', errBody)
-        return new Response(`AI service error: ${geminiResponse.status}`, { status: 502 })
+        return new Response(`AI service error: ${geminiResponse.status} ${errBody.slice(0, 100)}`, { status: 502 })
     }
 
     // Transform the Gemini SSE stream into a plain text stream for useCompletion
