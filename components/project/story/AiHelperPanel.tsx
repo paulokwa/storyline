@@ -220,23 +220,28 @@ export default function AiHelperPanel({
         const fullInternalPrompt = `${projectContext}${charactersContext}${ideasContext}${locationsContext}\n\n${storyContextString}SCENE:\n${sceneTextRef.current.slice(-6000)}\n\nUSER REQUEST: ${finalPrompt}`
 
         setIsOllamaLoading(true)
+        const abortController = new AbortController()
+        
         try {
-            const response = await fetch(`${aiSettings.ollama_url}/api/generate`, {
+            const response = await fetch(`${aiSettings.ollama_url.replace(/\/$/, '')}/api/generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: aiSettings.ollama_model,
                     prompt: fullInternalPrompt,
                     stream: true
-                })
+                }),
+                signal: abortController.signal
             })
 
             if (!response.ok || !response.body) {
+                setOllamaStatus('offline')
                 throw new Error(response.status === 404 ? 'Ollama model not found' : 'Ollama connection failed')
             }
 
+            setOllamaStatus('online')
             setLastUsedProvider('ollama')
-            const reader = response.body.getReader()
+            const reader = response.body!.getReader()
             const decoder = new TextDecoder()
             let accumulated = ''
             let buffer = ''
