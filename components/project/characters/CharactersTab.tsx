@@ -168,7 +168,7 @@ export default function CharactersTab({
     }
 
     return (
-        <div className="flex h-[calc(100vh-56px-122px)] md:h-[calc(100vh-56px-97px)] overflow-hidden bg-[#fbf9f5] relative">
+        <div className="flex-1 flex overflow-hidden bg-[#fbf9f5] relative">
             {/* Left Sidebar - Character List */}
             <div className={cn(
                 "w-full md:w-80 md:min-w-80 bg-[#f5f4ef] flex flex-col border-r border-slate-200/50 transition-all duration-300",

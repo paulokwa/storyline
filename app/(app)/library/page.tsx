@@ -24,7 +24,7 @@ export default async function LibraryPage() {
     }
 
     return (
-        <div className="fade-in">
+        <div className="fade-in max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
             <div className="flex items-center justify-between mb-8">
                 <div>
                     <h1 className="text-2xl font-semibold text-slate-800">My Projects</h1>

@@ -121,7 +121,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     }, [])
 
     return (
-        <div className="flex h-[calc(100vh-56px-122px)] md:h-[calc(100vh-56px-97px)] overflow-hidden relative">
+        <div className="flex flex-1 overflow-hidden relative">
             {/* Backdrop for mobile */}
             {(sidebarOpen || aiPanelOpen) && (
                 <div 
@@ -135,8 +135,8 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
 
             {/* Left sidebar */}
             <div className={cn(
-                'bg-[#f5f4ef] flex flex-col transition-all duration-300 overflow-hidden z-50',
-                'fixed inset-y-0 left-0 md:relative md:inset-auto',
+                'bg-[#f5f4ef] flex flex-col transition-all duration-300 overflow-hidden z-30 md:z-20',
+                'fixed top-14 bottom-0 left-0 md:relative md:inset-auto md:h-full',
                 sidebarOpen ? 'w-[280px] border-r border-slate-200' : 'w-0 border-none'
             )}>
                 <div className="w-[280px] h-full flex flex-col">
@@ -291,8 +291,8 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
 
             {/* Right AI Sidebar */}
             <div className={cn(
-                'bg-white transition-all duration-500 overflow-hidden z-50',
-                'fixed inset-y-0 right-0 md:relative md:inset-auto',
+                'bg-white transition-all duration-500 overflow-hidden z-30 md:z-20',
+                'fixed top-14 bottom-0 right-0 md:relative md:inset-auto md:h-full',
                 aiPanelOpen ? 'w-[320px] border-l border-slate-200' : 'w-0 border-none'
             )}>
                 <div className="w-[320px] h-full">
