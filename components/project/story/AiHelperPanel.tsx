@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useRef } from 'react'
+import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { useCompletion } from '@ai-sdk/react'
 import Link from 'next/link'
 import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Package } from 'lucide-react'
@@ -343,7 +343,10 @@ export default function AiHelperPanel({
     }
 
     // Pick a random hint on mount
-    const hint = useMemo(() => EMPTY_HINTS[Math.floor(Math.random() * EMPTY_HINTS.length)], [])
+    const [hint, setHint] = useState('')
+    useEffect(() => {
+        setHint(EMPTY_HINTS[Math.floor(Math.random() * EMPTY_HINTS.length)])
+    }, [])
 
     return (
         <div className="flex flex-col h-full bg-[#fcfbf9] border-l border-slate-200/60 shadow-[-20px_0_50px_rgba(0,0,0,0.02)]">

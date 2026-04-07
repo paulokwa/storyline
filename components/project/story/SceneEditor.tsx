@@ -1,516 +1,201 @@
 'use client'
 
+import { useState, useCallback, useEffect, useImperativeHandle, forwardRef, useRef } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
-import { useEffect, useCallback, useRef, useState, useMemo, useImperativeHandle, forwardRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Database, WritingMode } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
 
-import FirstTimeGuidance from './FirstTimeGuidance'
-import LinkedContext from './LinkedContext'
-import SceneAnalysisPanel from './SceneAnalysisPanel'
-
-type Scene = Database['public']['Tables']['scenes']['Row'] & {
-    scene_characters: any[]
-    scene_ideas: any[]
-    scene_locations: any[]
-    scene_objects: any[]
-}
-
-export interface SceneEditorRef {
-    appendContent: (text: string) => void
-    getText: () => string
-    getSelectionText: () => string
-}
-
 interface SceneEditorProps {
-    scene: Scene
+    scene: any
+    title: string
     writingMode: WritingMode
-    onUpdate: (scene: Scene) => void
+    onUpdate: (updated: any) => void
+    onTitleUpdate?: (newTitle: string) => void
     onTextChange?: (text: string) => void
     isProjectEmpty?: boolean
-    projectType?: 'tv_script' | 'novel'
+    projectType?: 'novel' | 'tv_script'
     projectCharacters: any[]
     projectIdeas: any[]
     projectLocations: any[]
     projectObjects: any[]
-    onLinkingUpdate?: () => void
-    activeCharacters: Record<string, boolean>
-    setActiveCharacters: (action: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => void
-    activeIdeas: Record<string, boolean>
-    setActiveIdeas: (action: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => void
-    activeLocations: Record<string, boolean>
-    setActiveLocations: (action: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => void
-    activeObjects: Record<string, boolean>
-    setActiveObjects: (action: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => void
-    aiSettings: {
-        ai_enabled: boolean
-        ai_provider: string
-        ai_fallback_enabled: boolean
-        ollama_model: string
-        ollama_url: string
-        api_key: string | null
-    }
-    selectedNodeIds?: string[]
-    onToggleNodeSelection?: (nodeId: string) => void
-    allNodes?: any[]
+    aiSettings: any
 }
 
-const SIMPLE_PLACEHOLDER = 'Start your story here. Use the panel on the left to add episodes and scenes, or begin writing in this scene.'
-const SCREENPLAY_PLACEHOLDER = 'INT. LOCATION — DAY\n\nAction begins here.'
+export interface SceneEditorRef {
+    getText: () => string
+    getSelectionText: () => string
+}
 
-const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({ 
-    scene, 
-    writingMode, 
-    onUpdate, 
-    onTextChange, 
-    isProjectEmpty, 
+const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
+    scene,
+    title: initialTitle,
+    writingMode,
+    onUpdate,
+    onTitleUpdate,
+    onTextChange,
+    isProjectEmpty,
     projectType,
     projectCharacters,
     projectIdeas,
     projectLocations,
     projectObjects,
-    onLinkingUpdate,
-    activeCharacters,
-    setActiveCharacters,
-    activeIdeas,
-    setActiveIdeas,
-    activeLocations,
-    setActiveLocations,
-    activeObjects,
-    setActiveObjects,
-    aiSettings,
-    selectedNodeIds = [],
-    onToggleNodeSelection,
-    allNodes
-}: SceneEditorProps, ref: React.ForwardedRef<SceneEditorRef>) => {
-    const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'failed' | 'idle'>('saved')
-    const [lastSavedContent, setLastSavedContent] = useState<string>(JSON.stringify(scene.content))
-    const [manualDismiss, setManualDismiss] = useState(false)
-    const [isAnalyzing, setIsAnalyzing] = useState(false)
-    const [analyzeError, setAnalyzeError] = useState<string | null>(null)
-    const [analysisResult, setAnalysisResult] = useState<{
-        summary: string
-        tension: string
-        pacing: string
-        dialogue: string
-        suggestions: string[]
-    } | null>(null)
-    const isNovel = projectType === 'novel'
-    const label = isNovel ? 'Chapter/Part' : 'Scene'
+    aiSettings
+}, ref) => {
+    const [title, setTitle] = useState(initialTitle)
+    const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
-    const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-    const sceneRef = useRef(scene)
-    const prevSceneIdRef = useRef(scene.id)
-    sceneRef.current = scene
+    // Sync with external title (StructureTree changes)
+    useEffect(() => {
+        setTitle(initialTitle)
+    }, [initialTitle])
 
-    // --- Reliability: Local Fallback Helpers ---
-    const getStorageKey = useCallback((sId: string) => `storyline_backup_${sId}`, [])
-    
-    const saveToLocal = useCallback((content: any, forceId?: string) => {
-        const targetId = forceId || sceneRef.current.id
-        try {
-            localStorage.setItem(getStorageKey(targetId), JSON.stringify({
-                content,
-                timestamp: Date.now()
-            }))
-        } catch (e) {
-            console.error('Failed to save to localStorage:', e)
-        }
-    }, [getStorageKey])
+    const editor = useEditor({
+        immediatelyRender: false,
+        extensions: [
+            StarterKit,
+            Placeholder.configure({
+                placeholder: writingMode === 'screenplay' ? 'Start your script...' : 'Once upon a time...',
+            }),
+        ],
+        content: scene.content || '',
+        editorProps: {
+            attributes: {
+                class: cn(
+                    'prose prose-slate max-w-none focus:outline-none min-h-[500px]',
+                    writingMode === 'screenplay' ? 'font-mono' : 'font-serif text-lg leading-relaxed'
+                ),
+            },
+        },
+        onUpdate: ({ editor }) => {
+            const text = editor.getText()
+            onTextChange?.(text)
+            setSaveStatus('idle') 
+        },
+    })
 
-    const clearLocal = useCallback((sId: string) => {
-        localStorage.removeItem(getStorageKey(sId))
-    }, [getStorageKey])
-
-    const save = useCallback(async (content: object, forceId?: string) => {
-        const targetId = forceId || sceneRef.current.id
-        const contentStr = JSON.stringify(content)
-        // Redundancy check: don't save if it matches what we last sent
-        if (contentStr === lastSavedContent) {
-            setSaveStatus('saved')
+    const saveContent = useCallback(async () => {
+        if (!editor) return
+        const currentTitle = title
+        const newContent = editor.getHTML()
+        
+        // Skip if same as scene/node (using initialTitle for current on-disk title)
+        if (currentTitle === initialTitle && newContent === (scene.content || '')) {
             return
         }
 
         setSaveStatus('saving')
         const supabase = createClient()
         
-        try {
-            const { data, error } = await (supabase as any)
-                .from('scenes')
-                .update({ content, writing_mode: writingMode })
-                .eq('id', targetId)
-                .select()
-                .single()
-            
-            if (error) throw error
+        // 1. Update scene content
+        const { error: sceneError } = await (supabase
+            .from('scenes') as any)
+            .update({ 
+                content: newContent,
+                updated_at: new Date().toISOString() 
+            })
+            .eq('id', scene.id)
 
-            if (data) {
-                setLastSavedContent(contentStr)
-                clearLocal(targetId)
-                setSaveStatus('saved')
-                onUpdate({
-                    ...data,
-                    scene_characters: sceneRef.current.scene_characters,
-                    scene_ideas: sceneRef.current.scene_ideas,
-                    scene_locations: sceneRef.current.scene_locations,
-                    scene_objects: sceneRef.current.scene_objects
-                })
-            }
-        } catch (err) {
-            console.error('Save failed:', err)
-            setSaveStatus('failed')
-            saveToLocal(content, targetId)
+        // 2. Update structure_node title if changed
+        let nodeErrorResult = null
+        if (currentTitle !== initialTitle) {
+            const { error: nodeError } = await (supabase as any)
+                .from('structure_nodes')
+                .update({ title: currentTitle })
+                .eq('id', scene.node_id)
+            nodeErrorResult = nodeError
         }
-    }, [writingMode, onUpdate, lastSavedContent, clearLocal, saveToLocal])
 
-    // --- Editor Configuration: Memoized Extensions ---
-    const extensions = useMemo(() => [
-        StarterKit.configure({
-            heading: { levels: [1, 2, 3] },
-            bulletList: { keepMarks: true },
-            orderedList: { keepMarks: true },
-        }),
-        Placeholder.configure({
-            placeholder: writingMode === 'screenplay' ? SCREENPLAY_PLACEHOLDER : SIMPLE_PLACEHOLDER,
-            emptyEditorClass: 'is-editor-empty',
-        }),
-    ], [writingMode]);
-
-    const editor = useEditor({
-        immediatelyRender: false,
-        extensions,
-        content: scene.content as object ?? null,
-        autofocus: 'end',
-        onUpdate: ({ editor }: { editor: any }) => {
-            setSaveStatus('idle') // Mark as dirty
-            if (onTextChange) onTextChange(editor.getText())
-            if (saveTimer.current) clearTimeout(saveTimer.current)
-            
-            // --- Reliability: 5s Debounce (Reduced Spam) ---
-            saveTimer.current = setTimeout(() => {
-                const json = editor.getJSON()
-                save(json)
-            }, 5000)
-        },
-        onBlur: ({ editor }) => {
-            // --- Reliability: Save on Blur ---
-            if (saveTimer.current) {
-                clearTimeout(saveTimer.current)
-                save(editor.getJSON())
-            }
-        },
-        editorProps: {
-            attributes: {
-                class: 'outline-none focus:outline-none min-h-full editor-content',
-            },
-        },
-    }, [extensions]) // Re-run if extensions change
-
-    // --- Reliability: BeforeUnload Protection ---
-    useEffect(() => {
-        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            // Only warn if we have an active save in flight OR a failed save that needs attention.
-            // 'idle' means we just started typing but the debounce hasn't fired yet.
-            // 'saved' means we are in sync.
-            // Warn on ANY state that isn't 'saved' (covers idle, saving, and failed)
-            if (saveStatus !== 'saved') {
-                e.preventDefault()
-                e.returnValue = ''
-            }
-        }
-        window.addEventListener('beforeunload', handleBeforeUnload)
-        return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-    }, [saveStatus])
-
-    // --- Reliability: Recovery Flow ---
-    useEffect(() => {
-        if (!editor || !scene.id) return
-
-        const localData = localStorage.getItem(getStorageKey(scene.id))
-        if (localData) {
-            try {
-                const { content, timestamp } = JSON.parse(localData)
-                const localStr = JSON.stringify(content)
-                const serverStr = JSON.stringify(scene.content)
-                
-                // Only prompt if local is meaningfully different from server
-                if (localStr !== serverStr) {
-                    const confirmRecover = window.confirm(
-                        `We found unsaved changes for this scene (from ${new Date(timestamp).toLocaleTimeString()}) that aren't on the server. Recover them?`
-                    )
-                    if (confirmRecover) {
-                        editor.commands.setContent(content)
-                        save(content)
-                    } else {
-                        clearLocal(scene.id)
-                    }
-                } else {
-                    // It matches server, just clean up stale local
-                    clearLocal(scene.id)
-                }
-            } catch (e) {
-                clearLocal(scene.id)
-            }
-        }
-    }, [editor, scene.id, getStorageKey, clearLocal, save]) // Initial mount only really, but keyed to editor/scene
-
-    // --- Placeholder Dynamic Update ---
-    useEffect(() => {
-        if (!editor) return
-        editor.setOptions({
-            extensions: [
-                Placeholder.configure({
-                    placeholder: writingMode === 'screenplay' ? SCREENPLAY_PLACEHOLDER : SIMPLE_PLACEHOLDER,
-                    emptyEditorClass: 'is-editor-empty',
-                })
-            ]
-        })
-    }, [editor, writingMode])
-
-    // Sync initial text to parent on mount
-    useEffect(() => {
-        if (editor && onTextChange) {
-            onTextChange(editor.getText())
-        }
-    }, [editor, onTextChange])
-
-    // When scene changes, update editor content
-    useEffect(() => {
-        if (!editor) return
-
-        const currentContentJson = editor.getJSON()
-        const currentContentStr = JSON.stringify(currentContentJson)
-        const newContentStr = JSON.stringify(scene.content || null)
-        
-        // --- Reliability: Switch Handling ---
-        if (prevSceneIdRef.current !== scene.id) {
-            // Scene is changing! Flush old scene changes IF dirty
-            if (saveStatus !== 'saved') {
-                console.log('Switching scenes: Flushing pending changes to', prevSceneIdRef.current)
-                save(currentContentJson, prevSceneIdRef.current)
-            }
-            
-            // Now load the new scene
-            if (scene.content) {
-                editor.commands.setContent(scene.content as object)
-            } else {
-                editor.commands.clearContent()
-            }
-            
-            setLastSavedContent(newContentStr)
+        if (sceneError || nodeErrorResult) {
+            console.error('Save error (scene/node):', sceneError || nodeErrorResult)
+            setSaveStatus('error')
+        } else {
             setSaveStatus('saved')
-            prevSceneIdRef.current = scene.id
-            return
+            if (currentTitle !== initialTitle) onTitleUpdate?.(currentTitle)
+            onUpdate({ ...scene, title: currentTitle, content: newContent })
         }
+    }, [scene.id, scene.node_id, title, initialTitle, editor, onUpdate, onTitleUpdate])
 
-        // Handle external updates to the SAME scene
-        if (currentContentStr !== newContentStr) {
-            if (scene.content) {
-                editor.commands.setContent(scene.content as object)
-            } else {
-                editor.commands.clearContent()
-            }
-            setLastSavedContent(newContentStr)
-            setSaveStatus('saved')
+    // Effect for autosave
+    useEffect(() => {
+        if (saveStatus !== 'idle') return
+        const timeout = setTimeout(saveContent, 1500)
+        return () => clearTimeout(timeout)
+    }, [title, editor?.getHTML(), saveStatus, saveContent])
+
+    // Keep editor in sync when scene ID changes
+    useEffect(() => {
+        if (editor && scene.id !== (editor as any)._lastSceneId) {
+            editor.commands.setContent(scene.content || '')
+            ;(editor as any)._lastSceneId = scene.id
         }
     }, [scene.id, editor])
 
     useImperativeHandle(ref, () => ({
-        appendContent: (text: string) => {
-            if (editor) {
-                editor.commands.focus('end')
-                // Build proper paragraph nodes for each line to preserve structure
-                const paragraphs = text
-                    .split('\n')
-                    .filter(line => line.trim() !== '')
-                    .map(line => ({ type: 'paragraph', content: [{ type: 'text', text: line }] }))
-                if (paragraphs.length === 0) return
-                editor.commands.insertContent([
-                    { type: 'paragraph' }, // blank line separator
-                    ...paragraphs,
-                ])
-            }
-        },
-        getText: () => editor?.getText() ?? '',
+        getText: () => editor?.getText() || '',
         getSelectionText: () => {
             if (!editor) return ''
             const { from, to } = editor.state.selection
-            if (from === to) return ''
             return editor.state.doc.textBetween(from, to, ' ')
         }
-    }), [editor])
+    }))
 
-    const handleAnalyzeScene = useCallback(async () => {
-        if (!editor) return
-        const sceneText = editor.getText().trim()
-
-        setAnalyzeError(null)
-        setAnalysisResult(null)
-        setIsAnalyzing(true)
-
-        try {
-            const res = await fetch('/api/ai/analyze-scene', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sceneText }),
-            })
-
-            if (!res.ok) {
-                const body = await res.text()
-                if (body === 'SCENE_TOO_SHORT') setAnalyzeError(`This ${label.toLowerCase()} is too short to analyze. Add more content first.`)
-                else if (body === 'SCENE_TOO_LARGE') setAnalyzeError(`This ${label.toLowerCase()} is too long to analyze (limit: ~2,500 words). Try a shorter section.`)
-                else if (body === 'NO_API_KEY') setAnalyzeError('No API key found. Add your Gemini API key in Account Settings.')
-                else if (body === 'RATE_LIMITED') setAnalyzeError('Please wait a few seconds before analyzing again.')
-                else setAnalyzeError('Something went wrong. Please try again.')
-                return
-            }
-
-            const data = await res.json()
-            setAnalysisResult(data)
-        } catch {
-            setAnalyzeError('Network error. Please check your connection and try again.')
-        } finally {
-            setIsAnalyzing(false)
-        }
-    }, [editor])
-
-    // Guidance visibility logic
-    const showGuidance = isProjectEmpty && editor?.isEmpty && !manualDismiss
-
-    // Cleanup on unmount (Final save attempt)
-    useEffect(() => {
-        return () => {
-            if (saveTimer.current) {
-                clearTimeout(saveTimer.current)
-                // Note: We can't easily await here, so local fallback is critical
-            }
-        }
-    }, [])
+    const label = projectType === 'tv_script' ? 'Episode' : 'Scene'
 
     return (
         <div className={cn(
-            'min-h-full pt-6 sm:pt-12 pb-32 md:pb-80 transition-all duration-700 ease-in-out relative',
-            writingMode === 'screenplay' ? 'bg-[#f0f0ed] py-10 sm:py-20 px-4 sm:px-8' : 'px-4 sm:px-12 md:px-24 max-w-6xl mx-auto'
+            'min-h-full pb-32 md:pb-80 transition-all duration-700 ease-in-out relative',
+            writingMode === 'screenplay' ? 'bg-[#f0f0ed] py-10 px-4 sm:px-8' : 'px-4 sm:px-12 md:px-24 max-w-6xl mx-auto pt-4'
         )}>
-            {aiSettings.ai_enabled && (
-                <div className={cn(
-                    "flex items-start justify-end mb-4 gap-3",
-                    writingMode === 'screenplay' && "max-w-[80ch] mx-auto"
-                )}>
-                    <div className="flex flex-col items-end gap-1">
-                        <button
-                            onClick={handleAnalyzeScene}
-                            disabled={isAnalyzing || !editor || editor.isEmpty}
-                            className={cn(
-                                "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200",
-                                "border border-slate-200 bg-white/60 backdrop-blur-sm text-slate-600",
-                                "hover:border-violet-200 hover:bg-violet-50/80 hover:text-violet-700 hover:shadow-sm",
-                                "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-slate-200 disabled:hover:bg-white/60 disabled:hover:text-slate-600",
-                                isAnalyzing && "border-violet-300 bg-violet-50/80 text-violet-700 animate-pulse",
-                                // Reliability: disable analysis if unsaved or saving to ensure we analyze the latest version
-                                (saveStatus === 'saving' || saveStatus === 'idle') && "opacity-50 pointer-events-none"
-                            )}
-                        >
-                            <span>{isAnalyzing ? (saveStatus === 'saving' || saveStatus === 'idle' ? '⌛' : '⏳') : '✨'}</span>
-                            <span>
-                                {saveStatus === 'saving' || saveStatus === 'idle' 
-                                    ? 'Autosaving…' 
-                                    : isAnalyzing ? 'Analyzing…' : `Analyze ${label}`
-                                }
-                            </span>
-                        </button>
-                        <span className="text-[10px] text-slate-400 tracking-wide">
-                            {aiSettings.ai_enabled && aiSettings.ai_provider === 'ollama' 
-                                ? `${label} Analysis requires Gemini Cloud` 
-                                : `Analyzes only this ${label.toLowerCase()} using your API key`}
+            {/* Header info bar */}
+            <div className="flex flex-col mb-10">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 font-sans">
+                        {writingMode === 'screenplay' ? 'Script' : 'Draft'} — {label}
+                    </span>
+                    <div className="flex items-center gap-2">
+                         <span className={cn(
+                            "text-[10px] font-bold uppercase tracking-wider transition-colors duration-300 font-sans",
+                            saveStatus === 'saving' ? "text-amber-500" : 
+                            saveStatus === 'saved' ? "text-emerald-500" : 
+                            saveStatus === 'error' ? "text-red-500" : "text-slate-300"
+                        )}>
+                            {saveStatus === 'saving' ? 'Autosaving...' : saveStatus === 'saved' ? 'Saved' : ''}
                         </span>
-                        {analyzeError && (
-                            <span className="text-[11px] text-red-400 max-w-[240px] text-right leading-tight">
-                                {analyzeError}
-                            </span>
-                        )}
                     </div>
                 </div>
-            )}
+                
+                <input
+                    value={title}
+                    onChange={(e) => {
+                        setTitle(e.target.value)
+                        setSaveStatus('idle')
+                    }}
+                    placeholder={`Untitled ${label}`}
+                    className={cn(
+                        "w-full bg-transparent border-none focus:outline-none focus:ring-0 p-0 transition-all placeholder:text-slate-300",
+                        writingMode === 'screenplay' 
+                            ? "font-mono uppercase text-xl font-bold tracking-widest text-slate-700" 
+                            : "font-serif text-3xl sm:text-4xl text-[#31332f]"
+                    )}
+                />
+            </div>
 
             <div className={cn(
                 "transition-all duration-700 relative",
-                writingMode === 'screenplay' 
-                    ? 'screenplay-mode' 
-                    : "p-4 sm:p-8 md:p-16 rounded-[2rem] sm:rounded-[3rem] border border-slate-200 hover:border-slate-300 focus-within:border-slate-400 focus-within:shadow-[0_40px_100px_rgba(0,0,0,0.02)] bg-white/10 text-[#31332f]/90 leading-[2.2]",
-                isAnalyzing && "border-violet-200 shadow-[0_0_0_2px_rgba(167,139,250,0.15)]"
+                writingMode === 'screenplay' ? "max-w-[80ch] mx-auto bg-white shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] p-12 sm:p-20 min-h-[11in] border border-slate-200/50" : ""
             )}>
-                <LinkedContext 
-                    sceneId={scene.id}
-                    sceneCharacters={scene.scene_characters || []}
-                    sceneIdeas={scene.scene_ideas || []}
-                    sceneLocations={scene.scene_locations || []}
-                    sceneObjects={scene.scene_objects || []}
-                    projectCharacters={projectCharacters}
-                    projectIdeas={projectIdeas}
-                    projectLocations={projectLocations}
-                    projectObjects={projectObjects}
-                    onUpdate={() => onLinkingUpdate?.()}
-                    activeCharacters={activeCharacters}
-                    setActiveCharacters={setActiveCharacters}
-                    activeIdeas={activeIdeas}
-                    setActiveIdeas={setActiveIdeas}
-                    activeLocations={activeLocations}
-                    setActiveLocations={setActiveLocations}
-                    activeObjects={activeObjects}
-                    setActiveObjects={setActiveObjects}
-                    selectedNodeIds={selectedNodeIds}
-                    onToggleNodeSelection={onToggleNodeSelection}
-                    allNodes={allNodes}
-                />
-                <EditorContent
-                    editor={editor}
-                    className={cn(
-                        "w-full min-h-[40vh] md:min-h-[700px] selection:bg-[#ffdbcb]/40 transition-all duration-500",
-                        showGuidance && "opacity-20 pointer-events-none blur-[1px]"
-                    )}
-                />
-
-                {showGuidance && (
-                    <FirstTimeGuidance
-                        projectType={projectType || 'tv_script'}
-                        onDismiss={() => setManualDismiss(true)}
-                    />
-                )}
+                <EditorContent editor={editor} />
             </div>
 
-            {/* Auto-save indicator */}
-            <div className="fixed bottom-6 right-8 text-[10px] font-sans tracking-[0.2em] uppercase pointer-events-none flex items-center gap-3 transition-all duration-500">
-                <div className={cn(
-                    "w-1.5 h-1.5 rounded-full transition-all duration-500",
-                    saveStatus === 'saving' && "bg-amber-400 animate-pulse",
-                    saveStatus === 'saved' && "bg-green-400/50",
-                    saveStatus === 'failed' && "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]",
-                    saveStatus === 'idle' && "bg-slate-300"
-                )} />
-                <span className={cn(
-                    "transition-all duration-500",
-                    saveStatus === 'saving' && "text-slate-500 font-medium",
-                    saveStatus === 'saved' && "text-slate-400",
-                    saveStatus === 'failed' && "text-red-500 font-bold",
-                    saveStatus === 'idle' && "text-slate-300"
-                )}>
-                    {saveStatus === 'saving' && 'Saving…'}
-                    {saveStatus === 'saved' && 'Saved'}
-                    {saveStatus === 'failed' && 'Save Failed — Saved Locally'}
-                    {saveStatus === 'idle' && 'Unsaved Changes'}
-                </span>
-            </div>
-
-            {/* Scene Analysis results panel */}
-            <SceneAnalysisPanel
-                result={analysisResult}
-                onClose={() => setAnalysisResult(null)}
-                projectType={projectType}
-            />
+            {isProjectEmpty && (
+                <div className="mt-12 p-8 rounded-3xl bg-amber-50/50 border border-amber-100 border-dashed text-center">
+                    <p className="text-amber-700 font-serif italic text-lg mb-2">Your journey begins with a single word.</p>
+                    <p className="text-amber-600/60 text-sm">Use the AI Helper on the right if you need a spark of inspiration.</p>
+                </div>
+            )}
         </div>
     )
 })

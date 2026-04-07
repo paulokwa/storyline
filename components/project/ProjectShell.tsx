@@ -6,21 +6,25 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import {
     BookOpen, Users, Lightbulb,
     ChevronLeft, Settings, Check, X,
     Tv,
     Download,
     MapPin,
-    Package
+    Package,
+    PanelLeft,
+    Sparkles,
+    Volume2,
+    Wand2
 } from 'lucide-react'
 import ExportModal from '@/components/export/ExportModal'
 import ProjectSettingsModal from '@/components/project/ProjectSettingsModal'
 import { cn } from '@/lib/utils'
 import type { Database } from '@/lib/supabase/types'
-import { ReaderProvider } from '@/hooks/useSpeech'
+import { ReaderProvider, useSpeech } from '@/hooks/useSpeech'
 import { FloatingPlayer } from '@/components/project/story/ReaderMode'
+import { ProjectProvider, useProjectActions } from '@/components/project/ProjectContext'
 
 type Project = Database['public']['Tables']['projects']['Row']
 
@@ -47,8 +51,6 @@ export default function ProjectShell({
     const [exportModalOpen, setExportModalOpen] = useState(false)
     const [settingsModalOpen, setSettingsModalOpen] = useState(false)
 
-    const activeTab = TABS.find(t => pathname.includes(`/${t.slug}`))?.slug ?? 'story'
-
     async function saveTitle() {
         if (!titleDraft.trim()) return setEditingTitle(false)
         const supabase = createClient()
@@ -64,10 +66,72 @@ export default function ProjectShell({
     }
 
     return (
+        <ProjectProvider>
+            <ReaderProvider>
+                <ProjectShellInner 
+                    project={project} 
+                    editingTitle={editingTitle} 
+                    setEditingTitle={setEditingTitle} 
+                    titleDraft={titleDraft} 
+                    setTitleDraft={setTitleDraft} 
+                    saveTitle={saveTitle} 
+                    exportModalOpen={exportModalOpen}
+                    setExportModalOpen={setExportModalOpen}
+                    settingsModalOpen={settingsModalOpen}
+                    setSettingsModalOpen={setSettingsModalOpen}
+                    pathname={pathname} 
+                >
+                    {children}
+                </ProjectShellInner>
+                
+                <ExportModal 
+                    open={exportModalOpen} 
+                    onOpenChange={setExportModalOpen} 
+                    projectId={project.id}
+                    projectTitle={project.title ?? 'Untitled'}
+                />
+                
+                <ProjectSettingsModal 
+                    open={settingsModalOpen} 
+                    onOpenChange={setSettingsModalOpen} 
+                    project={project} 
+                />
+                <FloatingPlayer />
+            </ReaderProvider>
+        </ProjectProvider>
+    )
+}
+
+function ProjectShellInner({ 
+    project, 
+    editingTitle, 
+    setEditingTitle, 
+    titleDraft, 
+    setTitleDraft, 
+    saveTitle, 
+    exportModalOpen,
+    setExportModalOpen, 
+    settingsModalOpen,
+    setSettingsModalOpen, 
+    pathname, 
+    children 
+}: any) {
+    const { 
+        sidebarOpen, setSidebarOpen, 
+        aiPanelOpen, setAiPanelOpen, 
+        currentSceneText, 
+        analyzeScene, isAnalyzing 
+    } = useProjectActions()
+    const { speak, speechState } = useSpeech()
+    const isReading = speechState === 'speaking'
+    const isStoryTab = pathname.includes('/story')
+    const activeTab = TABS.find(t => pathname.includes(`/${t.slug}`))?.slug ?? 'story'
+
+    return (
         <div className="flex-1 flex flex-col overflow-hidden">
             {/* Project header */}
             <div className="bg-[#f5f4ef] px-4 sm:px-6 lg:px-8">
-                <div className="max-w-7xl mx-auto">
+                <div className="max-w-[1440px] mx-auto">
                     {/* Top row */}
                     <div className="flex items-center gap-3 pt-4 pb-3">
                         <Link href="/library" className="text-slate-400 hover:text-slate-700 transition-colors shrink-0">
@@ -111,6 +175,67 @@ export default function ProjectShell({
                         )}
 
                         <div className="flex items-center gap-2">
+                             {/* Tab Actions (Dynamic) */}
+                             {isStoryTab && (
+                                <div className="flex items-center gap-1.5 mr-2 pr-2 border-r border-[#e0ded9]">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setSidebarOpen(!sidebarOpen)}
+                                        className={cn(
+                                            "rounded-xl transition-all h-9 px-2.5",
+                                            sidebarOpen ? "bg-[#546354]/10 text-[#546354] hover:bg-[#546354]/20" : "text-slate-500 hover:bg-[#efeee9]"
+                                        )}
+                                        title="Toggle structure panel"
+                                    >
+                                        <PanelLeft className="w-4 h-4" />
+                                    </Button>
+
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => speak(currentSceneText, 'Scene')}
+                                        className={cn(
+                                            "rounded-xl transition-all h-9 px-2.5 gap-2",
+                                            isReading ? "bg-amber-100 text-amber-700 animate-pulse" : "text-slate-500 hover:bg-[#efeee9]"
+                                        )}
+                                        title="Read aloud"
+                                    >
+                                        <Volume2 className={cn("w-4 h-4", isReading && "animate-bounce")} />
+                                        <span className="text-xs font-medium hidden md:inline">Read Aloud</span>
+                                    </Button>
+
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => analyzeScene()}
+                                        disabled={isAnalyzing || !currentSceneText}
+                                        className={cn(
+                                            "rounded-xl transition-all h-9 px-2.5 gap-2",
+                                            isAnalyzing ? "bg-violet-100 text-violet-700 animate-pulse" : "text-slate-500 hover:bg-[#efeee9]"
+                                        )}
+                                        title="Analyze scene"
+                                    >
+                                        <Wand2 className="w-4 h-4" />
+                                        <span className="text-xs font-medium hidden md:inline">Analyze</span>
+                                    </Button>
+
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setAiPanelOpen(!aiPanelOpen)}
+                                        className={cn(
+                                            "rounded-xl transition-all h-9 px-2.5 gap-2",
+                                            aiPanelOpen ? "bg-violet-100 text-violet-700 hover:bg-violet-200" : "text-slate-500 hover:bg-[#efeee9]"
+                                        )}
+                                        title="Toggle AI helper"
+                                    >
+                                        <Sparkles className="w-4 h-4" />
+                                        <span className="text-xs font-medium hidden md:inline">AI Helper</span>
+                                    </Button>
+                                </div>
+                            )}
+
                             <Button 
                                 variant="outline" 
                                 size="sm" 
@@ -156,25 +281,9 @@ export default function ProjectShell({
             </div>
 
             {/* Page content */}
-            <ReaderProvider>
-                <div className="flex-1 overflow-hidden max-w-7xl w-full mx-auto flex flex-col">
-                    {children}
-                </div>
-                <FloatingPlayer />
-            </ReaderProvider>
-
-            <ExportModal 
-                open={exportModalOpen}
-                onOpenChange={setExportModalOpen}
-                projectId={project.id}
-                projectTitle={project.title ?? ''}
-            />
-
-            <ProjectSettingsModal
-                open={settingsModalOpen}
-                onOpenChange={setSettingsModalOpen}
-                project={project}
-            />
+            <div className="flex-1 overflow-hidden max-w-[1440px] w-full mx-auto flex flex-col">
+                {children}
+            </div>
         </div>
     )
 }

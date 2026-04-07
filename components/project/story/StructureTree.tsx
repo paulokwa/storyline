@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
     ChevronRight, ChevronDown, Plus, Trash2,
-    Film, Layers, FileText, BookOpen, Check
+    Film, Layers, FileText, BookOpen, Check, Pencil
 } from 'lucide-react'
 import {
     Tooltip,
@@ -344,6 +344,13 @@ const NodeItem = React.memo(function NodeItem({ node, nodes, activeNodeId, selec
                                 <Plus className="w-4 h-4 md:w-3.5 md:h-3.5" />
                             </button>
                         )}
+                        <button
+                            onClick={e => { e.stopPropagation(); setEditing(true) }}
+                            className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 active:scale-95 transition-all"
+                            title="Rename"
+                        >
+                            <Pencil className="w-4 h-4 md:w-3.5 md:h-3.5" />
+                        </button>
                         <button
                             onClick={e => { e.stopPropagation(); onRequestDelete(node.id) }}
                             className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 active:scale-95 transition-all"
