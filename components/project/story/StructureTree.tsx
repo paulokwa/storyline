@@ -72,6 +72,7 @@ export default function StructureTree({
 }: StructureTreeProps) {
     const rootType: NodeType = project.type === 'tv_script' ? 'episode' : 'chapter'
     const rootLabel = project.type === 'tv_script' ? 'Episode' : 'Chapter'
+    const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
 
     async function addRootNode() {
         const supabase = createClient()
@@ -116,7 +117,6 @@ export default function StructureTree({
     }
 
     async function deleteNode(node: StructureNode) {
-        if (!confirm(`Delete "${node.title}"? All content inside will be lost.`)) return
         const supabase = createClient()
         await (supabase as any).from('structure_nodes').delete().eq('id', node.id)
         const idsToRemove = getDescendantIds(nodes, node.id)
@@ -125,6 +125,7 @@ export default function StructureTree({
             const firstScene = nodes.find(n => n.type === 'scene' && !idsToRemove.includes(n.id) && n.id !== node.id)
             onNodeSelect(firstScene?.id ?? '')
         }
+        setConfirmingDeleteId(null)
     }
 
     async function renameNode(node: StructureNode, title: string) {
@@ -172,6 +173,8 @@ export default function StructureTree({
                                 onAddChild={addChild}
                                 onDelete={deleteNode}
                                 onRename={renameNode}
+                                confirmingDeleteId={confirmingDeleteId}
+                                onRequestDelete={setConfirmingDeleteId}
                             />
                         ))
                     )}
@@ -203,9 +206,11 @@ interface NodeItemProps {
     onAddChild: (n: StructureNode) => void
     onDelete: (n: StructureNode) => void
     onRename: (n: StructureNode, title: string) => void
+    confirmingDeleteId: string | null
+    onRequestDelete: (id: string | null) => void
 }
 
-const NodeItem = React.memo(function NodeItem({ node, nodes, activeNodeId, selectedNodeIds = [], depth, onSelect, onToggleSelection, onAddChild, onDelete, onRename }: NodeItemProps) {
+const NodeItem = React.memo(function NodeItem({ node, nodes, activeNodeId, selectedNodeIds = [], depth, onSelect, onToggleSelection, onAddChild, onDelete, onRename, confirmingDeleteId, onRequestDelete }: NodeItemProps) {
     const [expanded, setExpanded] = useState(true)
     const [hovered, setHovered] = useState(false)
     const [editing, setEditing] = useState(false)
@@ -310,7 +315,22 @@ const NodeItem = React.memo(function NodeItem({ node, nodes, activeNodeId, selec
                     </span>
                 )}
 
-                {(!editing && (hovered || isActive || (typeof window !== 'undefined' && window.innerWidth < 768))) && (
+                {/* Confirm delete — always visible when active, outside hover conditional */}
+                {confirmingDeleteId === node.id && !editing && (
+                    <div className="flex items-center gap-1 shrink-0 animate-in fade-in duration-150" onClick={e => e.stopPropagation()}>
+                        <button
+                            onClick={e => { e.stopPropagation(); onRequestDelete(null) }}
+                            className="px-2 py-1 text-[9px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider rounded"
+                        >No</button>
+                        <button
+                            onClick={e => { e.stopPropagation(); onDelete(node) }}
+                            className="px-2 py-1 text-[9px] font-bold bg-red-500 hover:bg-red-600 text-white rounded uppercase tracking-wider transition-colors"
+                        >Delete</button>
+                    </div>
+                )}
+
+                {/* Hover actions — only when not confirming */}
+                {(!editing && confirmingDeleteId !== node.id && (hovered || isActive || (typeof window !== 'undefined' && window.innerWidth < 768))) && (
                     <div className={cn(
                         "flex items-center gap-1 shrink-0 transition-opacity duration-300 md:opacity-0 md:group-hover:opacity-100",
                         (isActive || (typeof window !== 'undefined' && window.innerWidth < 768)) && "opacity-100"
@@ -325,7 +345,7 @@ const NodeItem = React.memo(function NodeItem({ node, nodes, activeNodeId, selec
                             </button>
                         )}
                         <button
-                            onClick={() => onDelete(node)}
+                            onClick={e => { e.stopPropagation(); onRequestDelete(node.id) }}
                             className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 active:scale-95 transition-all"
                             title="Delete"
                         >
@@ -350,6 +370,8 @@ const NodeItem = React.memo(function NodeItem({ node, nodes, activeNodeId, selec
                             onAddChild={onAddChild}
                             onDelete={onDelete}
                             onRename={onRename}
+                            confirmingDeleteId={confirmingDeleteId}
+                            onRequestDelete={onRequestDelete}
                         />
                     ))}
                 </div>
@@ -362,11 +384,13 @@ const NodeItem = React.memo(function NodeItem({ node, nodes, activeNodeId, selec
     // 2. The global active status changed (need to propagate this down the tree)
     // 3. Selection state changed
     // 4. Global nodes list changed (new children)
+    // 5. Delete confirmation state changed
     if (prev.activeNodeId !== next.activeNodeId) return false;
     if (prev.selectedNodeIds !== next.selectedNodeIds) return false;
     if (prev.node !== next.node) return false;
     if (prev.nodes !== next.nodes) return false;
     if (prev.depth !== next.depth) return false;
-    
+    if (prev.confirmingDeleteId !== next.confirmingDeleteId) return false;
+
     return true;
 });

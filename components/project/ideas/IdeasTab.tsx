@@ -23,6 +23,7 @@ export default function IdeasTab({
     const [justSaved, setJustSaved] = useState(false)
     const [renamingId, setRenamingId] = useState<string | null>(null)
     const [renameValue, setRenameValue] = useState('')
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const renameInputRef = useRef<HTMLInputElement>(null)
@@ -81,8 +82,6 @@ export default function IdeasTab({
 
     async function handleDeleteIdea() {
         if (!selectedId) return
-        if (!window.confirm('Are you sure you want to delete this fragment? It will be permanently removed from your archive.')) return
-
         setIsSaving(true)
         const supabase = createClient() as any
         const { error } = await supabase
@@ -105,6 +104,7 @@ export default function IdeasTab({
         } else {
             console.error('Error deleting idea:', error)
         }
+        setShowDeleteConfirm(false)
         setIsSaving(false)
     }
 
@@ -271,13 +271,19 @@ export default function IdeasTab({
                                         <span>Fragment</span>
                                     </div>
                                     <div className="h-px flex-1 bg-stone-200/50" />
-                                    <button 
-                                        onClick={handleDeleteIdea}
-                                        className="p-2 hover:bg-red-50 text-stone-300 hover:text-red-400 rounded-full transition-all duration-300 active:scale-90"
-                                        title="Delete fragment"
-                                    >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
+                                    {showDeleteConfirm ? (
+                                        <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200">
+                                            <span className="text-[10px] text-red-400 font-medium">Delete fragment?</span>
+                                            <button onClick={() => setShowDeleteConfirm(false)} className="px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider">Cancel</button>
+                                            <button onClick={handleDeleteIdea} disabled={isSaving} className="px-3 py-1 text-[10px] font-bold bg-red-500 hover:bg-red-600 text-white rounded-full uppercase tracking-wider transition-colors disabled:opacity-50">
+                                                {isSaving ? 'Deleting...' : 'Delete'}
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button onClick={() => setShowDeleteConfirm(true)} className="p-2 hover:bg-red-50 text-stone-300 hover:text-red-400 rounded-full transition-all duration-300 active:scale-90" title="Delete fragment">
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    )}
                                 </div>
                                 
                                 <input
@@ -313,7 +319,7 @@ export default function IdeasTab({
                                 <div className="flex items-center gap-6">
                                     <div className="flex flex-col gap-1">
                                         <span className="text-[9px] uppercase tracking-widest text-slate-300 font-bold">Captured</span>
-                                        <span className="text-[10px] font-serif italic text-slate-400">{new Date(selectedIdea.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                        <span className="text-[10px] font-serif italic text-slate-400">{new Date(selectedIdea.created_at || new Date().toISOString()).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                                     </div>
                                     <div className="w-px h-8 bg-stone-100" />
                                     <div className="flex flex-col gap-1">

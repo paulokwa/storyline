@@ -23,6 +23,7 @@ export default function LocationsTab({
     const [justSaved, setJustSaved] = useState(false)
     const [renamingId, setRenamingId] = useState<string | null>(null)
     const [renameValue, setRenameValue] = useState('')
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const renameInputRef = useRef<HTMLInputElement>(null)
@@ -72,8 +73,6 @@ export default function LocationsTab({
 
     async function handleDeleteLocation() {
         if (!selectedId) return
-        if (!window.confirm('Are you sure you want to delete this location?')) return
-
         setIsSaving(true)
         const supabase = createClient()
         const { error } = await supabase.from('locations' as any).delete().eq('id', selectedId)
@@ -89,6 +88,7 @@ export default function LocationsTab({
                 setSelectedId(null)
             }
         }
+        setShowDeleteConfirm(false)
         setIsSaving(false)
     }
 
@@ -109,9 +109,10 @@ export default function LocationsTab({
             .single()
 
         if (data) {
-            setLocalLocations((prev: any[]) => [...prev, data])
-            setSelectedId(data.id)
-            setRenamingId(data.id)
+            const loc = data as any
+            setLocalLocations((prev: any[]) => [...prev, loc])
+            setSelectedId(loc.id)
+            setRenamingId(loc.id)
             setRenameValue('New Location')
         }
         setIsCreating(false)
@@ -187,7 +188,17 @@ export default function LocationsTab({
                                     <div className="h-px w-8 bg-stone-200" />
                                     <div className="flex items-center gap-2 text-[11px] font-sans tracking-[0.25em] uppercase text-stone-400 font-bold"><Hash className="w-3.5 h-3.5" /><span>Location Atlas</span></div>
                                     <div className="h-px flex-1 bg-stone-200/50" />
-                                    <button onClick={handleDeleteLocation} className="p-2 hover:bg-red-50 text-stone-300 hover:text-red-400 rounded-full transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
+                                    {showDeleteConfirm ? (
+                                        <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200">
+                                            <span className="text-[10px] text-red-400 font-medium">Delete location?</span>
+                                            <button onClick={() => setShowDeleteConfirm(false)} className="px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider">Cancel</button>
+                                            <button onClick={handleDeleteLocation} disabled={isSaving} className="px-3 py-1 text-[10px] font-bold bg-red-500 hover:bg-red-600 text-white rounded-full uppercase tracking-wider transition-colors disabled:opacity-50">
+                                                {isSaving ? 'Deleting...' : 'Delete'}
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button onClick={() => setShowDeleteConfirm(true)} className="p-2 hover:bg-red-50 text-stone-300 hover:text-red-400 rounded-full transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
+                                    )}
                                 </div>
                                 <input type="text" value={selectedLocation.name} onChange={(e) => handleFieldChange(selectedLocation.id, 'name', e.target.value)} className="w-full bg-transparent text-4xl sm:text-6xl font-serif italic text-slate-800 outline-none placeholder:text-slate-200" placeholder="Location Name" />
                             </div>
@@ -218,7 +229,7 @@ export default function LocationsTab({
 
                             <div className="pt-16 flex items-center justify-between border-t border-stone-50">
                                 <div className="flex items-center gap-6">
-                                    <div className="flex flex-col gap-1 text-slate-300 font-bold uppercase text-[9px] tracking-widest"><span>Discovery</span><span suppressHydrationWarning className="text-[10px] font-serif italic text-slate-400 normal-case font-normal">{new Date(selectedLocation.created_at).toLocaleDateString()}</span></div>
+                                    <div className="flex flex-col gap-1 text-slate-300 font-bold uppercase text-[9px] tracking-widest"><span>Discovery</span><span className="text-[10px] font-serif italic text-slate-400 normal-case font-normal">{new Date(selectedLocation.created_at || new Date().toISOString()).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span></div>
                                     <div className="w-px h-8 bg-stone-100" />
                                     <div className="flex flex-col gap-1 text-slate-300 font-bold uppercase text-[9px] tracking-widest"><span>Ref Reference</span><span className="text-[10px] font-mono text-slate-400 opacity-60 uppercase">{selectedLocation.id.slice(0, 8)}</span></div>
                                 </div>
