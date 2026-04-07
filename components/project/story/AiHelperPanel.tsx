@@ -297,25 +297,28 @@ export default function AiHelperPanel({
         const currentPrompt = prompt.trim()
         if (actualLoading || isContextTooLarge) return
 
-        const STRICT_PROSE_RULES = `\n\nWrite in narrative prose.\nDo not give advice, suggestions, or explanations.\nOutput only the story.`
+        const modeRules = projectType === 'tv_script'
+            ? `\n\nWrite in professional screenplay format (scene headings, character names in caps, dialogue, etc.).\nDo not give advice, suggestions, or explanations.\nOutput only the script.`
+            : `\n\nWrite in narrative prose.\nDo not give advice, suggestions, or explanations.\nOutput only the story.`
+        
         let finalPrompt = ''
 
         if (promptMode === 'Continue Writing') {
             finalPrompt = currentPrompt 
-                ? `Continue the scene based on these instructions: ${currentPrompt}${STRICT_PROSE_RULES}`
-                : `Continue the scene.${STRICT_PROSE_RULES}`
+                ? `Continue the scene based on these instructions: ${currentPrompt}${modeRules}`
+                : `Continue the scene.${modeRules}`
         } else if (promptMode === 'Improve Scene') {
             finalPrompt = currentPrompt 
-                ? `Continue the scene by improving clarity, flow, and quality.\n\nUser instructions: ${currentPrompt}${STRICT_PROSE_RULES}`
-                : `Continue the scene by improving clarity, flow, and quality.${STRICT_PROSE_RULES}`
+                ? `Continue the scene by improving clarity, flow, and quality.\n\nUser instructions: ${currentPrompt}${modeRules}`
+                : `Continue the scene by improving clarity, flow, and quality.${modeRules}`
         } else if (promptMode === 'Add Conflict') {
             finalPrompt = currentPrompt 
-                ? `Continue the scene by introducing tension, stakes, or conflict.\n\nUser instructions: ${currentPrompt}${STRICT_PROSE_RULES}`
-                : `Continue the scene by introducing tension, stakes, or conflict.${STRICT_PROSE_RULES}`
+                ? `Continue the scene by introducing tension, stakes, or conflict.\n\nUser instructions: ${currentPrompt}${modeRules}`
+                : `Continue the scene by introducing tension, stakes, or conflict.${modeRules}`
         } else if (promptMode === 'Rewrite with Emotion') {
             finalPrompt = currentPrompt 
-                ? `Continue the scene by enhancing emotional depth and character expression.\n\nUser instructions: ${currentPrompt}${STRICT_PROSE_RULES}`
-                : `Continue the scene by enhancing emotional depth and character expression.${STRICT_PROSE_RULES}`
+                ? `Continue the scene by enhancing emotional depth and character expression.\n\nUser instructions: ${currentPrompt}${modeRules}`
+                : `Continue the scene by enhancing emotional depth and character expression.${modeRules}`
         } else if (promptMode === 'Review / Chat') {
             finalPrompt = currentPrompt || 'Review the selected context and offer thoughtful insights.'
         }

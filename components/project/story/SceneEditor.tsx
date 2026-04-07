@@ -27,6 +27,7 @@ interface SceneEditorProps {
 export interface SceneEditorRef {
     getText: () => string
     getSelectionText: () => string
+    insertText: (text: string) => void
 }
 
 const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
@@ -68,6 +69,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                     writingMode === 'screenplay' ? 'font-mono' : 'font-serif text-lg leading-relaxed'
                 ),
             },
+        },
+        onCreate: ({ editor }) => {
+            onTextChange?.(editor.getText())
         },
         onUpdate: ({ editor }) => {
             const text = editor.getText()
@@ -139,6 +143,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             if (!editor) return ''
             const { from, to } = editor.state.selection
             return editor.state.doc.textBetween(from, to, ' ')
+        },
+        insertText: (text: string) => {
+            if (!editor) return
+            editor.commands.insertContent(text)
         }
     }))
 

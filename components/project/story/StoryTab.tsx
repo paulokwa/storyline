@@ -221,8 +221,13 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                         linkedLocations={projectLocations.filter(l => activeLocations[l.id] !== false && activeScene?.scene_locations?.some((sl: any) => sl.location_id === l.id))}
                         linkedObjects={projectObjects.filter(o => activeObjects[o.id] !== false && activeScene?.scene_objects?.some((so: any) => so.object_id === o.id))}
                         selectedNodes={nodes.filter(n => selectedNodeIds.includes(n.id))}
+                        allNodes={nodes}
+                        allScenes={scenes}
+                        projectRelationships={projectRelationships}
+                        projectType={project.type as any}
                         aiSettings={aiSettings}
-                        onInsert={(text) => editorRef.current?.getText() /* Logic for insert depends on editor instance */}
+                        onClearSelection={() => setSelectedNodeIds([])}
+                        onInsert={(text) => editorRef.current?.insertText(text)}
                     />
                 </div>
             </div>
