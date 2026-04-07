@@ -20,15 +20,19 @@ export default async function SettingsPage() {
         maskedApiKey = raw.length > 8 ? `sk-••••••••••••${raw.slice(-4)}` : 'sk-••••'
     }
 
-    return <SettingsView 
-        user={user} 
-        maskedApiKey={maskedApiKey} 
-        aiSettings={{
-            ai_enabled: aiSettings?.ai_enabled ?? true,
-            ai_provider: aiSettings?.ai_provider ?? 'gemini',
-            ai_fallback_enabled: aiSettings?.ai_fallback_enabled ?? false,
-            ollama_model: aiSettings?.ollama_model ?? 'llama3',
-            ollama_url: aiSettings?.ollama_url ?? 'http://127.0.0.1:11434'
-        }} 
-    />
+    return (
+        <div className="flex-1 overflow-y-auto min-h-0 bg-slate-50/50">
+            <SettingsView 
+                user={user} 
+                maskedApiKey={maskedApiKey} 
+                aiSettings={{
+                    ai_enabled: aiSettings?.ai_enabled ?? true,
+                    ai_provider: aiSettings?.ai_provider ?? 'gemini',
+                    ai_fallback_enabled: aiSettings?.ai_fallback_enabled ?? false,
+                    ollama_model: aiSettings?.ollama_model ?? 'llama3',
+                    ollama_url: aiSettings?.ollama_url ?? 'http://127.0.0.1:11434'
+                }} 
+            />
+        </div>
+    )
 }

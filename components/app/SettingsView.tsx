@@ -169,7 +169,7 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
     }
 
     return (
-        <div className="max-w-2xl mx-auto space-y-8 py-8 md:py-12 px-4 w-full">
+        <div className="fade-in max-w-2xl mx-auto space-y-8 py-8 md:py-12 px-4 w-full">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-800">Settings</h1>
