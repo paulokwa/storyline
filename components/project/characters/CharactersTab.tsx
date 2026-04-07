@@ -191,11 +191,19 @@ export default function CharactersTab({
 
                 <div className="flex-1 overflow-y-auto px-4 pb-10 space-y-1 custom-scrollbar">
                     {localCharacters.map((char: Character) => (
-                        <button
+                        <div
                             key={char.id}
+                            role="button"
+                            tabIndex={0}
                             onClick={() => setSelectedId(char.id)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault()
+                                    setSelectedId(char.id)
+                                }
+                            }}
                             className={cn(
-                                "w-full flex items-center gap-3 px-4 py-4 rounded-2xl transition-all duration-300 text-left group",
+                                "w-full flex items-center gap-3 px-4 py-4 rounded-2xl transition-all duration-300 text-left group cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#546354]/20",
                                 selectedId === char.id
                                     ? "bg-white shadow-[0_10px_30px_rgba(0,0,0,0.03)] ring-1 ring-slate-100"
                                     : "hover:bg-white/40 text-slate-500 hover:text-slate-800"
@@ -244,7 +252,7 @@ export default function CharactersTab({
                             ) : selectedId === char.id && (
                                 <div className="w-1.5 h-1.5 rounded-full bg-[#546354]/40 flex-shrink-0" />
                             )}
-                        </button>
+                        </div>
                     ))}
                 </div>
             </div>
