@@ -43,6 +43,14 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [deleteConfirmText, setDeleteConfirmText] = useState('')
 
+    // Connection testing state
+    const [testingConnection, setTestingConnection] = useState(false)
+    const [connectionStatus, setConnectionStatus] = useState<{
+        success: boolean;
+        message: string;
+        details?: any;
+    } | null>(null)
+
     // Existing data
     const existingApiKey = maskedApiKey
 
@@ -168,6 +176,55 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
         router.refresh()
     }
 
+    const handleTestOllamaConnection = async () => {
+        setTestingConnection(true)
+        setConnectionStatus(null)
+        setSuccessMessage(null)
+        setErrorMessage(null)
+
+        try {
+            // Heartbeat check using /api/tags - lightweight and confirms server is up
+            const response = await fetch(`${ollamaUrl}/api/tags`, {
+                method: 'GET',
+                signal: AbortSignal.timeout(5000) // 5 second timeout
+            })
+
+            if (!response.ok) {
+                throw new Error(`Server responded with ${response.status}`)
+            }
+
+            const data = await response.json()
+            const models = data.models || []
+            const modelFound = models.some((m: any) => 
+                m.name === ollamaModel || 
+                m.name === `${ollamaModel}:latest` ||
+                m.model === ollamaModel
+            )
+
+            if (modelFound) {
+                setConnectionStatus({
+                    success: true,
+                    message: `Successfully connected to Ollama! Found model: ${ollamaModel}`
+                })
+            } else {
+                setConnectionStatus({
+                    success: false,
+                    message: `Connected to Ollama, but model "${ollamaModel}" was not found locally.`,
+                    details: models.length > 0 ? `Available models: ${models.map((m: any) => m.name).join(', ')}` : "No models found. Please run 'ollama pull " + ollamaModel + "'"
+                })
+            }
+        } catch (err: any) {
+            console.error('Ollama Connection Test Failed:', err)
+            setConnectionStatus({
+                success: false,
+                message: `Could not connect to Ollama at ${ollamaUrl}.`,
+                details: "Make sure Ollama is running and that the URL is correct. (Error: " + err.message + ")"
+            })
+        } finally {
+            setTestingConnection(false)
+        }
+    }
+
     return (
         <div className="fade-in max-w-2xl mx-auto space-y-8 py-8 md:py-12 px-4 w-full">
             <div className="flex items-center justify-between">
@@ -282,6 +339,41 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
                                             <Input id="ollamaModel" type="text" value={ollamaModel} onChange={(e) => setOllamaModel(e.target.value)} placeholder="llama3" className="bg-white" />
                                             <p className="text-xs text-slate-500">Make sure this model is pulled via your terminal: `ollama pull {ollamaModel || 'llama3'}`</p>
                                         </div>
+
+                                        <div className="pt-2">
+                                            <Button 
+                                                type="button" 
+                                                variant="outline" 
+                                                size="sm"
+                                                onClick={handleTestOllamaConnection}
+                                                disabled={testingConnection || !ollamaUrl}
+                                                className="w-full gap-2 border-slate-300 hover:bg-white"
+                                            >
+                                                {testingConnection ? (
+                                                    <>
+                                                        <span className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                                                        Testing Connection...
+                                                    </>
+                                                ) : 'Test Local Connection'}
+                                            </Button>
+
+                                            {connectionStatus && (
+                                                <div className={`mt-3 p-3 rounded-lg text-xs animate-in fade-in slide-in-from-top-1 duration-300 ${
+                                                    connectionStatus.success 
+                                                        ? 'bg-green-100/50 border border-green-200 text-green-800' 
+                                                        : 'bg-amber-100/50 border border-amber-200 text-amber-800'
+                                                }`}>
+                                                    <div className="font-bold flex items-center gap-1.5 mb-1">
+                                                        <div className={`w-1.5 h-1.5 rounded-full ${connectionStatus.success ? 'bg-green-500' : 'bg-amber-500'}`} />
+                                                        {connectionStatus.message}
+                                                    </div>
+                                                    {connectionStatus.details && (
+                                                        <p className="opacity-80 italic">{connectionStatus.details}</p>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+
                                         <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-200">
                                             <input type="checkbox" id="aiFallback" checked={aiFallback} onChange={(e) => setAiFallback(e.target.checked)} className="rounded bg-white border-slate-300 text-indigo-600 focus:ring-indigo-500" />
                                             <Label htmlFor="aiFallback" className="font-normal cursor-pointer text-sm">Allow fallback to Gemini if Local Ollama is unreachable</Label>

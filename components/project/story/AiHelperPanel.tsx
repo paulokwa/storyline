@@ -95,6 +95,8 @@ export default function AiHelperPanel({
     const [previewOpen, setPreviewOpen] = useState(false)
     const [promptMode, setPromptMode] = useState('Review / Chat')
     const [isOllamaLoading, setIsOllamaLoading] = useState(false)
+    const [ollamaStatus, setOllamaStatus] = useState<'checking' | 'online' | 'offline'>('checking')
+    const [lastUsedProvider, setLastUsedProvider] = useState<'gemini' | 'ollama' | null>(null)
 
     // Snapshot scene text at submit time so the hook body stays stable during streaming
     const sceneTextRef = useRef(sceneText)
@@ -153,6 +155,7 @@ export default function AiHelperPanel({
 
     // --- Provider Orchestration ---
     const runGeminiCloud = async (finalPrompt: string) => {
+        setLastUsedProvider('gemini')
         await complete(finalPrompt, {
             body: {
                 action: 'helper',
@@ -231,6 +234,7 @@ export default function AiHelperPanel({
                 throw new Error(response.status === 404 ? 'Ollama model not found' : 'Ollama connection failed')
             }
 
+            setLastUsedProvider('ollama')
             const reader = response.body.getReader()
             const decoder = new TextDecoder()
             let accumulated = ''
@@ -327,6 +331,7 @@ export default function AiHelperPanel({
         setPrompt('')
         setCopied(false)
         setCompletion('') // Clear for new run
+        setLastUsedProvider(null)
         
         if (displayedCompletion) setPreviousCompletion(displayedCompletion)
         
@@ -345,6 +350,24 @@ export default function AiHelperPanel({
         }
     }
 
+    // Check Ollama status on mount
+    useEffect(() => {
+        const checkStatus = async () => {
+            if (aiSettings.ai_provider !== 'ollama') return
+            
+            try {
+                const response = await fetch(`${aiSettings.ollama_url}/api/tags`, {
+                    method: 'GET',
+                    signal: AbortSignal.timeout(3000)
+                })
+                setOllamaStatus(response.ok ? 'online' : 'offline')
+            } catch {
+                setOllamaStatus('offline')
+            }
+        }
+        checkStatus()
+    }, [aiSettings.ai_provider, aiSettings.ollama_url])
+
     // Pick a random hint on mount
     const [hint, setHint] = useState('')
     useEffect(() => {
@@ -360,9 +383,27 @@ export default function AiHelperPanel({
                 </div>
                 <div className="flex-1">
                     <h3 className="text-sm font-serif font-bold text-slate-800">{label} Helper</h3>
-                    <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">
-                        Powered by {aiSettings.ai_provider === 'ollama' ? `Ollama (${aiSettings.ollama_model})` : 'Gemini'}
-                    </p>
+                    <div className="flex items-center gap-2">
+                        <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">
+                            {aiSettings.ai_provider === 'ollama' ? `Ollama (${aiSettings.ollama_model})` : 'Gemini'}
+                        </p>
+                        {aiSettings.ai_provider === 'ollama' && (
+                            <div className="flex items-center gap-1">
+                                <div className={cn(
+                                    "w-1.5 h-1.5 rounded-full",
+                                    ollamaStatus === 'online' ? "bg-green-400 shadow-[0_0_5px_rgba(74,222,128,0.5)]" : 
+                                    ollamaStatus === 'checking' ? "bg-slate-300 animate-pulse" : "bg-red-400"
+                                )} />
+                                <span className={cn(
+                                    "text-[9px] font-bold uppercase tracking-tight",
+                                    ollamaStatus === 'online' ? "text-green-600" : 
+                                    ollamaStatus === 'checking' ? "text-slate-400" : "text-red-500"
+                                )}>
+                                    {ollamaStatus}
+                                </span>
+                            </div>
+                        )}
+                    </div>
                 </div>
                 {(completion || previousCompletion) && !isLoading && (
                     <button
@@ -483,9 +524,21 @@ export default function AiHelperPanel({
                     <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
                         {/* Prompt label */}
                         {lastPrompt && (
-                            <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold px-1">
-                                {lastPrompt.length > 50 ? lastPrompt.slice(0, 50) + '…' : lastPrompt}
-                            </p>
+                            <div className="flex items-center justify-between px-1">
+                                <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">
+                                    {lastPrompt.length > 50 ? lastPrompt.slice(0, 50) + '…' : lastPrompt}
+                                </p>
+                                {lastUsedProvider && !actualLoading && (
+                                    <div className={cn(
+                                        "text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-md border",
+                                        lastUsedProvider === 'ollama' 
+                                            ? "bg-indigo-50 border-indigo-100 text-indigo-400" 
+                                            : "bg-blue-50 border-blue-100 text-blue-400"
+                                    )}>
+                                        {lastUsedProvider}
+                                    </div>
+                                )}
+                            </div>
                         )}
 
                         {/* Response bubble — dimmed when showing previous while new loads */}
