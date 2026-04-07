@@ -46,7 +46,7 @@ export async function POST(req: Request) {
         return new Response('Unauthorized', { status: 401 })
     }
 
-    const { action, input, format, projectId, prompt, linkedCharacters, linkedIdeas } = await req.json() as {
+    const { action, input, format, projectId, prompt, linkedCharacters, linkedIdeas, storyContext } = await req.json() as {
         action: string
         input: string
         format?: string
@@ -54,6 +54,7 @@ export async function POST(req: Request) {
         prompt?: string
         linkedCharacters?: any[]
         linkedIdeas?: any[]
+        storyContext?: any[]
     }
 
     const systemPrompt = SYSTEM_PROMPTS[action]
@@ -100,6 +101,13 @@ export async function POST(req: Request) {
                 if (i.content) contextBlock += `  Content: ${i.content}\n`
             })
             contextBlock += '\n'
+        }
+
+        if (storyContext && storyContext.length > 0) {
+            contextBlock += `STORY CONTEXT (OTHER SCENES/CHAPTERS):\n`
+            storyContext.forEach(s => {
+                contextBlock += `[${s.title}]\n${s.content}\n\n`
+            })
         }
 
         userMessage = `${contextBlock}USER REQUEST: ${prompt}`

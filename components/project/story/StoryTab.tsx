@@ -56,6 +56,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     const [currentSceneText, setCurrentSceneText] = useState('')
     const [activeCharacters, setActiveCharacters] = useState<Record<string, boolean>>({})
     const [activeIdeas, setActiveIdeas] = useState<Record<string, boolean>>({})
+    const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([])
     const editorRef = useRef<SceneEditorRef>(null)
 
     const activeScene = scenes.find((s: Scene) => s.node_id === activeNodeId)
@@ -83,6 +84,32 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     const handleSceneCreated = useCallback((scene: Scene) => {
         setScenes((prev: any[]) => [...prev, scene])
     }, [])
+
+    const handleNodeToggleSelection = useCallback((nodeId: string) => {
+        setSelectedNodeIds(prev => {
+            const isSelected = prev.includes(nodeId)
+            
+            // Helper to get all child/grandchild IDs
+            const getDescendantIds = (parentId: string): string[] => {
+                const children = nodes.filter(n => n.parent_id === parentId)
+                return children.flatMap(c => [c.id, ...getDescendantIds(c.id)])
+            }
+            
+            const targetIds = [nodeId, ...getDescendantIds(nodeId)]
+            
+            if (isSelected) {
+                // Deselect everything in this branch
+                return prev.filter(id => !targetIds.includes(id))
+            } else {
+                // Select everything in this branch (avoiding duplicates)
+                const newSelected = [...prev]
+                targetIds.forEach(id => {
+                    if (!newSelected.includes(id)) newSelected.push(id)
+                })
+                return newSelected
+            }
+        })
+    }, [nodes])
 
     const handleSceneUpdate = useCallback((updated: Scene) => {
         setScenes((prev: any[]) => prev.map((s: any) => s.id === updated.id ? updated : s))
@@ -112,10 +139,12 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                         project={project}
                         nodes={nodes}
                         activeNodeId={activeNodeId}
+                        selectedNodeIds={selectedNodeIds}
                         onNodeSelect={(id) => {
                             handleSceneSelect(id)
                             if (window.innerWidth < 768) setSidebarOpen(false)
                         }}
+                        onNodeToggleSelection={handleNodeToggleSelection}
                         onNodesChange={handleNodesChange}
                         onSceneCreated={handleSceneCreated}
                     />
@@ -228,6 +257,9 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                 activeIdeas={activeIdeas}
                                 setActiveIdeas={setActiveIdeas}
                                 aiSettings={aiSettings}
+                                selectedNodeIds={selectedNodeIds}
+                                onToggleNodeSelection={handleNodeToggleSelection}
+                                allNodes={nodes}
                             />
                         ) : activeNodeId ? (
                             <SceneEditorPlaceholder
@@ -259,6 +291,10 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                             sceneText={currentSceneText}
                             linkedCharacters={(activeScene?.scene_characters?.map((c: any) => c.characters).filter(Boolean) || []).filter((c: any) => activeCharacters[c.id] !== false)}
                             linkedIdeas={(activeScene?.scene_ideas?.map((i: any) => i.ideas).filter(Boolean) || []).filter((i: any) => activeIdeas[i.id] !== false)}
+                            selectedNodes={nodes.filter(n => selectedNodeIds.includes(n.id))}
+                            allNodes={nodes}
+                            allScenes={scenes}
+                            onClearSelection={() => setSelectedNodeIds([])}
                             aiSettings={aiSettings}
                             onInsert={(text) => {
                                 editorRef.current?.appendContent(text)

@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
     ChevronRight, ChevronDown, Plus, Trash2,
-    Film, Layers, FileText, BookOpen
+    Film, Layers, FileText, BookOpen, Check
 } from 'lucide-react'
 import {
     Tooltip,
@@ -24,7 +24,9 @@ interface StructureTreeProps {
     project: Project
     nodes: StructureNode[]
     activeNodeId: string | null
+    selectedNodeIds?: string[]
     onNodeSelect: (id: string) => void
+    onNodeToggleSelection?: (id: string) => void
     onNodesChange: (nodes: StructureNode[]) => void
     onSceneCreated: (scene: Scene) => void
 }
@@ -66,7 +68,7 @@ function getDescendantIds(nodes: StructureNode[], parentId: string): string[] {
 }
 
 export default function StructureTree({
-    project, nodes, activeNodeId, onNodeSelect, onNodesChange, onSceneCreated
+    project, nodes, activeNodeId, selectedNodeIds = [], onNodeSelect, onNodeToggleSelection, onNodesChange, onSceneCreated
 }: StructureTreeProps) {
     const rootType: NodeType = project.type === 'tv_script' ? 'episode' : 'chapter'
     const rootLabel = project.type === 'tv_script' ? 'Episode' : 'Chapter'
@@ -165,6 +167,8 @@ export default function StructureTree({
                                 activeNodeId={activeNodeId}
                                 depth={0}
                                 onSelect={onNodeSelect}
+                                onToggleSelection={onNodeToggleSelection}
+                                selectedNodeIds={selectedNodeIds}
                                 onAddChild={addChild}
                                 onDelete={deleteNode}
                                 onRename={renameNode}
@@ -192,14 +196,16 @@ interface NodeItemProps {
     node: StructureNode
     nodes: StructureNode[]
     activeNodeId: string | null
+    selectedNodeIds?: string[]
     depth: number
     onSelect: (id: string) => void
+    onToggleSelection?: (id: string) => void
     onAddChild: (n: StructureNode) => void
     onDelete: (n: StructureNode) => void
     onRename: (n: StructureNode, title: string) => void
 }
 
-const NodeItem = React.memo(function NodeItem({ node, nodes, activeNodeId, depth, onSelect, onAddChild, onDelete, onRename }: NodeItemProps) {
+const NodeItem = React.memo(function NodeItem({ node, nodes, activeNodeId, selectedNodeIds = [], depth, onSelect, onToggleSelection, onAddChild, onDelete, onRename }: NodeItemProps) {
     const [expanded, setExpanded] = useState(true)
     const [hovered, setHovered] = useState(false)
     const [editing, setEditing] = useState(false)
@@ -211,6 +217,7 @@ const NodeItem = React.memo(function NodeItem({ node, nodes, activeNodeId, depth
     const isAct = node.type === 'act'
     const isRoot = node.type === 'episode' || node.type === 'chapter'
     const isActive = isScene && activeNodeId === node.id
+    const isSelected = selectedNodeIds.includes(node.id)
 
     function handleClick(e: React.MouseEvent) {
         e.stopPropagation()
@@ -234,7 +241,8 @@ const NodeItem = React.memo(function NodeItem({ node, nodes, activeNodeId, depth
                         : 'text-slate-500 hover:bg-white/60',
                     isRoot && 'font-serif italic text-base py-4 bg-white/30 backdrop-blur-sm border-white/40 mb-2 mt-2 shadow-[0_2px_8px_rgba(0,0,0,0.02)]',
                     isAct && 'font-semibold text-slate-700 py-2.5',
-                    isScene && 'text-slate-500 py-2'
+                    isScene && 'text-slate-500 py-2',
+                    isSelected && 'bg-indigo-50/40 border-indigo-200/50'
                 )}
                 style={{ paddingLeft: `${16 + depth * 24}px` }}
                 onMouseEnter={() => setHovered(true)}
@@ -251,6 +259,23 @@ const NodeItem = React.memo(function NodeItem({ node, nodes, activeNodeId, depth
                     </span>
                 )}
                 {isScene && <div className="w-4" />}
+
+                {onToggleSelection && (
+                    <div 
+                        className={cn(
+                            "w-4 h-4 border-2 rounded-md flex items-center justify-center transition-all duration-200",
+                            isSelected 
+                                ? "bg-indigo-500 border-indigo-500" 
+                                : "border-slate-300 group-hover:border-slate-400"
+                        )}
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            onToggleSelection(node.id)
+                        }}
+                    >
+                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                )}
 
                 <Icon className={cn(
                     'shrink-0 transition-transform duration-300',
@@ -318,8 +343,10 @@ const NodeItem = React.memo(function NodeItem({ node, nodes, activeNodeId, depth
                             node={child}
                             nodes={nodes}
                             activeNodeId={activeNodeId}
+                            selectedNodeIds={selectedNodeIds}
                             depth={depth + 1}
                             onSelect={onSelect}
+                            onToggleSelection={onToggleSelection}
                             onAddChild={onAddChild}
                             onDelete={onDelete}
                             onRename={onRename}
@@ -330,15 +357,13 @@ const NodeItem = React.memo(function NodeItem({ node, nodes, activeNodeId, depth
         </div>
     )
 }, (prev, next) => {
-    // Custom comparison to reduce tree re-renders
-    // Only re-render if:
+    // Re-render if:
     // 1. The specific node data changed (title, etc)
-    // 2. The active status of this node changed
-    // 3. The global nodes list changed (which might contain new children)
-    const wasActive = prev.activeNodeId === prev.node.id;
-    const isActive = next.activeNodeId === next.node.id;
-    
-    if (wasActive !== isActive) return false;
+    // 2. The global active status changed (need to propagate this down the tree)
+    // 3. Selection state changed
+    // 4. Global nodes list changed (new children)
+    if (prev.activeNodeId !== next.activeNodeId) return false;
+    if (prev.selectedNodeIds !== next.selectedNodeIds) return false;
     if (prev.node !== next.node) return false;
     if (prev.nodes !== next.nodes) return false;
     if (prev.depth !== next.depth) return false;

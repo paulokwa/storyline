@@ -22,5 +22,10 @@ export default async function ProjectLayout({
 
     if (!project) notFound()
 
+    // Update last accessed time asynchronously (we don't need to wait for this to show the page)
+    supabase.from('projects').update({ last_accessed_at: new Date().toISOString() }).eq('id', id).then(({ error }) => {
+        if (error) console.error('Failed to update last_accessed_at:', error)
+    })
+
     return <ProjectShell project={project}>{children}</ProjectShell>
 }

@@ -13,6 +13,10 @@ interface AiHelperPanelProps {
     sceneText: string
     linkedCharacters?: any[]
     linkedIdeas?: any[]
+    selectedNodes?: any[]
+    allNodes?: any[]
+    allScenes?: any[]
+    onClearSelection?: () => void
     onInsert: (text: string) => void
     aiSettings: {
         ai_enabled: boolean
@@ -22,6 +26,30 @@ interface AiHelperPanelProps {
         ollama_url: string
         api_key: string | null
     }
+}
+
+function extractTextFromJson(content: any): string {
+    if (typeof content === 'string') return content
+    if (!content) return ''
+    if (content.content && Array.isArray(content.content)) {
+        return content.content.map((c: any) => extractTextFromJson(c)).join('\n')
+    }
+    if (content.type === 'text') return content.text || ''
+    if (Array.isArray(content)) {
+        return content.map((c: any) => extractTextFromJson(c)).join('\n')
+    }
+    return ''
+}
+
+function getDescendantScenes(nodeId: string, allNodes: any[], allScenes: any[]): any[] {
+    const node = allNodes.find(n => n.id === nodeId)
+    if (!node) return []
+    if (node.type === 'scene') {
+        const scene = allScenes.find(s => s.node_id === nodeId)
+        return scene ? [scene] : []
+    }
+    const children = allNodes.filter(n => n.parent_id === nodeId)
+    return children.flatMap(c => getDescendantScenes(c.id, allNodes, allScenes))
 }
 
 const EMPTY_HINTS = [
@@ -35,7 +63,8 @@ const MODE_EXPLANATIONS: Record<string, string> = {
     'Continue Writing': 'Seamlessly continues the scene based on your prompt.',
     'Improve Scene': 'Refines the clarity, flow, and overall prose quality.',
     'Add Conflict': 'Introduces new tension, higher stakes, or drama.',
-    'Rewrite with Emotion': 'Deepens emotional resonance and character expressions.'
+    'Rewrite with Emotion': 'Deepens emotional resonance and character expressions.',
+    'Review / Chat': 'Ask questions about your story elements or critique your work.'
 }
 
 const PROMPT_TEMPLATES = [
@@ -46,18 +75,50 @@ const PROMPT_TEMPLATES = [
     { label: 'How to end it?', value: 'How could I end this scene effectively?' },
 ]
 
-export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCharacters = [], linkedIdeas = [], aiSettings }: AiHelperPanelProps) {
+export default function AiHelperPanel({
+    projectId, sceneText, onInsert, linkedCharacters = [], linkedIdeas = [],
+    selectedNodes = [], allNodes = [], allScenes = [], onClearSelection, aiSettings
+}: AiHelperPanelProps) {
     const [prompt, setPrompt] = useState('')
     const [lastPrompt, setLastPrompt] = useState('')
     const [copied, setCopied] = useState(false)
     // Holds the previous response while a new one is loading — avoids blank flash
     const [previousCompletion, setPreviousCompletion] = useState('')
     const [previewOpen, setPreviewOpen] = useState(false)
-    const [promptMode, setPromptMode] = useState('Continue Writing')
+    const [promptMode, setPromptMode] = useState('Review / Chat')
+    const [isOllamaLoading, setIsOllamaLoading] = useState(false)
 
     // Snapshot scene text at submit time so the hook body stays stable during streaming
     const sceneTextRef = useRef(sceneText)
     sceneTextRef.current = sceneText
+
+    const storySelectionContext = useMemo(() => {
+        if (!selectedNodes?.length || !allNodes?.length || !allScenes?.length) return []
+        const sceneIds = new Set<string>()
+        const results: { title: string, content: string, node_id: string }[] = []
+        
+        for (const node of selectedNodes) {
+             const scenesInside = getDescendantScenes(node.id, allNodes, allScenes)
+             for (const s of scenesInside) {
+                  if (!sceneIds.has(s.id)) {
+                       sceneIds.add(s.id)
+                       const nodeRef = allNodes.find(n => n.id === s.node_id)
+                       results.push({
+                           title: nodeRef?.title || 'Unknown Scene',
+                           content: extractTextFromJson(s.content),
+                           node_id: s.node_id
+                       })
+                  }
+             }
+        }
+        return results
+    }, [selectedNodes, allNodes, allScenes])
+
+    const contextSizeChars = useMemo(() => {
+        return storySelectionContext.reduce((acc, s) => acc + s.title.length + s.content.length, 0)
+    }, [storySelectionContext])
+
+    const isContextTooLarge = contextSizeChars > 30000 // Blocking over 30k chars
 
     const { completion, complete, isLoading, error, setCompletion } = useCompletion({
         api: '/api/ai',
@@ -69,8 +130,9 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
     })
 
     // What to display: live completion takes priority; fall back to previous while loading
-    const displayedCompletion = completion || (isLoading ? previousCompletion : '')
-    const isShowingPrevious = isLoading && !completion && !!previousCompletion
+    const actualLoading = isLoading || isOllamaLoading
+    const displayedCompletion = completion || (actualLoading ? previousCompletion : '')
+    const isShowingPrevious = actualLoading && !completion && !!previousCompletion
 
     const handleInsert = () => {
         onInsert(displayedCompletion)
@@ -96,6 +158,10 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
                 linkedIdeas: linkedIdeas.map((i: any) => ({
                     title: i.title,
                     content: i.content
+                })),
+                storyContext: storySelectionContext.map(s => ({
+                    title: s.title,
+                    content: s.content.slice(0, 10000) // Safety truncation per scene
                 }))
             }
         })
@@ -111,8 +177,13 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
             ? `Ideas: ${linkedIdeas.map(i => i.title).join(', ')}. ` 
             : ''
         
-        const fullInternalPrompt = `${projectContext}${charactersContext}${ideasContext}\n\nSCENE:\n${sceneTextRef.current.slice(-6000)}\n\nUSER REQUEST: ${finalPrompt}`
+        const storyContextString = storySelectionContext.length > 0
+            ? `STORY CONTEXT:\n${storySelectionContext.map(s => `[${s.title}]\n${s.content.slice(0, 5000)}`).join('\n\n')}\n\n`
+            : ''
+        
+        const fullInternalPrompt = `${projectContext}${charactersContext}${ideasContext}\n\n${storyContextString}SCENE:\n${sceneTextRef.current.slice(-6000)}\n\nUSER REQUEST: ${finalPrompt}`
 
+        setIsOllamaLoading(true)
         try {
             const response = await fetch(`${aiSettings.ollama_url}/api/generate`, {
                 method: 'POST',
@@ -131,14 +202,19 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
             const reader = response.body.getReader()
             const decoder = new TextDecoder()
             let accumulated = ''
+            let buffer = ''
 
-            // Simple manual stream handler for Ollama's non-standard NDJSON stream
+            // Better stream handling for Ollama's NDJSON
             while (true) {
                 const { done, value } = await reader.read()
                 if (done) break
 
                 const chunk = decoder.decode(value, { stream: true })
-                const lines = chunk.split('\n')
+                buffer += chunk
+                
+                const lines = buffer.split('\n')
+                // Keep the last partial line in the buffer
+                buffer = lines.pop() || ''
                 
                 for (const line of lines) {
                     if (!line.trim()) continue
@@ -149,7 +225,7 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
                             setCompletion(accumulated)
                         }
                     } catch (e) {
-                        // Partial JSON chunk
+                        // Malformed line - usually shouldn't happen with .pop() strategy
                     }
                 }
             }
@@ -160,6 +236,8 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
             } else {
                 throw err
             }
+        } finally {
+            setIsOllamaLoading(false)
         }
     }
 
@@ -185,7 +263,7 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
         e.preventDefault()
         if (!aiSettings.ai_enabled) return
         const currentPrompt = prompt.trim()
-        if (isLoading) return
+        if (actualLoading || isContextTooLarge) return
 
         const STRICT_PROSE_RULES = `\n\nWrite in narrative prose.\nDo not give advice, suggestions, or explanations.\nOutput only the story.`
         let finalPrompt = ''
@@ -206,6 +284,8 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
             finalPrompt = currentPrompt 
                 ? `Continue the scene by enhancing emotional depth and character expression.\n\nUser instructions: ${currentPrompt}${STRICT_PROSE_RULES}`
                 : `Continue the scene by enhancing emotional depth and character expression.${STRICT_PROSE_RULES}`
+        } else if (promptMode === 'Review / Chat') {
+            finalPrompt = currentPrompt || 'Review the selected context and offer thoughtful insights.'
         }
 
         setLastPrompt(currentPrompt || promptMode)
@@ -258,19 +338,19 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
             </div>
 
             {/* Context Indicator */}
-            <div className="bg-[#fcfbf9] px-6 py-2 border-b border-slate-200/60 flex items-center gap-2 text-xs text-slate-400 font-medium">
-                <span>Using current scene</span>
+            <div className="bg-[#fcfbf9] px-6 py-2 border-b border-slate-200/60 flex flex-wrap items-center gap-2 text-[10px] text-slate-400 font-medium">
+                <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-slate-200 rounded-full"></div>Current scene</span>
                 {linkedCharacters.length > 0 && (
-                    <>
-                        <span className="w-1 h-1 bg-slate-200 rounded-full mx-1"></span>
-                        <span>{linkedCharacters.length} linked character{linkedCharacters.length !== 1 ? 's' : ''}</span>
-                    </>
+                    <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-indigo-200 rounded-full"></div>{linkedCharacters.length} character{linkedCharacters.length !== 1 ? 's' : ''}</span>
                 )}
                 {linkedIdeas.length > 0 && (
-                    <>
-                        <span className="w-1 h-1 bg-slate-200 rounded-full mx-1"></span>
-                        <span>{linkedIdeas.length} linked idea{linkedIdeas.length !== 1 ? 's' : ''}</span>
-                    </>
+                    <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-amber-200 rounded-full"></div>{linkedIdeas.length} idea{linkedIdeas.length !== 1 ? 's' : ''}</span>
+                )}
+                {selectedNodes.length > 0 && (
+                    <span className="flex items-center gap-1.5 text-indigo-500 bg-indigo-50/50 px-2 py-0.5 rounded-full border border-indigo-100">
+                        <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></div>
+                        {selectedNodes.length} story element{selectedNodes.length !== 1 ? 's' : ''}
+                    </span>
                 )}
             </div>
 
@@ -461,6 +541,35 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
                                     </ul>
                                 </div>
                             )}
+
+                            {storySelectionContext.length > 0 && (
+                                <div>
+                                    <div className="font-bold text-slate-400 mb-1 flex items-center justify-between">
+                                        <span>STORY CONTEXT ({storySelectionContext.length} scenes):</span>
+                                        {onClearSelection && (
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); onClearSelection() }} 
+                                                className="text-indigo-500 hover:text-indigo-600 transition-colors"
+                                            >
+                                                Clear
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="space-y-2 bg-white p-2 border border-slate-100 rounded-lg">
+                                        {storySelectionContext.slice(0, 3).map(s => (
+                                            <div key={s.node_id} className="border-b border-slate-50 last:border-0 pb-1.5 mb-1.5">
+                                                <div className="font-bold text-slate-700 truncate">{s.title}</div>
+                                                <div className="line-clamp-2 text-slate-400 italic text-[10px]">
+                                                    {s.content || '(No text yet)'}
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {storySelectionContext.length > 3 && (
+                                            <div className="text-center py-1 text-slate-300 italic">+ {storySelectionContext.length - 3} more elements</div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -481,7 +590,25 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
 
                 <div className="px-4 pb-4">
                     <form onSubmit={handleSubmit} className="space-y-3">
-                        <div className="relative">
+                        {isContextTooLarge && (
+                            <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 text-[10px] leading-snug animate-in fade-in zoom-in duration-300">
+                                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                <p>This selection is too large to send directly. Reduce the selection or use summarized context.</p>
+                            </div>
+                        )}
+                        {actualLoading && (
+                            <div className="flex items-center gap-2 mb-2 px-2 text-[10px] text-indigo-500/80 font-bold uppercase tracking-wider animate-in slide-in-from-top-1 duration-500">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></span>
+                                </span>
+                                {aiSettings.ai_provider === 'ollama' ? "Thinking with Ollama..." : "Generating with Gemini..."}
+                            </div>
+                        )}
+                        <div className={cn(
+                            "relative group transition-all duration-500",
+                            actualLoading && "ring-2 ring-indigo-500/10 rounded-2xl animate-pulse"
+                        )}>
                             <textarea
                                 value={prompt}
                                 onChange={(e) => setPrompt(e.target.value)}
@@ -491,24 +618,27 @@ export default function AiHelperPanel({ projectId, sceneText, onInsert, linkedCh
                                         handleSubmit(e as any)
                                     }
                                 }}
-                                placeholder="Ask anything about this scene…"
+                                placeholder={actualLoading ? "" : "Ask anything about this scene…"}
                                 rows={3}
-                                className="w-full bg-slate-50 border border-slate-300 rounded-2xl py-3.5 pl-4 pr-12 text-sm focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all resize-none outline-none placeholder:text-slate-400 font-serif leading-relaxed"
+                                className={cn(
+                                    "w-full border border-slate-200 rounded-2xl py-3.5 pl-4 pr-12 text-sm focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all resize-none outline-none placeholder:text-slate-400 font-serif leading-relaxed shadow-sm",
+                                    actualLoading ? "bg-white cursor-wait" : "bg-slate-50"
+                                )}
                             ></textarea>
                             <button
                                 type="submit"
-                                disabled={isLoading}
+                                disabled={actualLoading || (!prompt.trim() && promptMode !== 'Review / Chat') || isContextTooLarge}
                                 className={cn(
-                                    "absolute bottom-3.5 right-3.5 p-2 rounded-xl transition-all active:scale-90",
-                                    !isLoading
-                                        ? "bg-indigo-500 text-white hover:bg-indigo-600 shadow-md shadow-indigo-200"
-                                        : "bg-slate-100 text-slate-300 cursor-not-allowed"
+                                    "absolute bottom-3.5 right-3.5 p-2 rounded-xl transition-all active:scale-95 flex items-center justify-center min-w-[34px] min-h-[34px]",
+                                    !actualLoading && !isContextTooLarge && (prompt.trim() || promptMode === 'Review / Chat')
+                                        ? "bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-100"
+                                        : "bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200"
                                 )}
                             >
-                                {isLoading ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                {actualLoading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
                                 ) : (
-                                    <Send className="w-3.5 h-3.5" />
+                                    <Send className="w-4 h-4" />
                                 )}
                             </button>
                         </div>

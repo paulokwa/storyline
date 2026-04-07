@@ -1,6 +1,6 @@
 import { useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, X, Users, Lightbulb } from 'lucide-react'
+import { Plus, X, Users, Lightbulb, FileText, Folder } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Entity {
@@ -20,6 +20,9 @@ interface LinkedContextProps {
     setActiveCharacters?: (action: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => void
     activeIdeas?: Record<string, boolean>
     setActiveIdeas?: (action: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => void
+    selectedNodeIds?: string[]
+    onToggleNodeSelection?: (nodeId: string) => void
+    allNodes?: any[]
 }
 
 export default function LinkedContext({ 
@@ -32,7 +35,10 @@ export default function LinkedContext({
     activeCharacters,
     setActiveCharacters,
     activeIdeas,
-    setActiveIdeas
+    setActiveIdeas,
+    selectedNodeIds = [],
+    onToggleNodeSelection,
+    allNodes = []
 }: LinkedContextProps) {
     const supabase = createClient()
     const [isPending, startTransition] = useTransition()
@@ -119,6 +125,33 @@ export default function LinkedContext({
                             <Lightbulb className="w-3.5 h-3.5 opacity-60" />
                             {idea.title}
                             <button onClick={() => removeIdea(idea.id)} className="ml-1 opacity-50 hover:opacity-100 transition-opacity" disabled={isPending}>
+                                <X className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    )
+                })}
+
+                {/* Selected Story Context */}
+                {selectedNodeIds.map(nodeId => {
+                    const node = allNodes.find(n => n.id === nodeId)
+                    if (!node) return null
+                    const Icon = node.type === 'scene' ? FileText : Folder
+                    
+                    return (
+                        <div key={nodeId} className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border bg-indigo-50/80 text-indigo-700 border-indigo-200">
+                            <input
+                                type="checkbox"
+                                checked={true}
+                                onChange={() => onToggleNodeSelection?.(nodeId)}
+                                className="w-3 h-3 rounded-sm cursor-pointer accent-indigo-600"
+                                title="Include in AI generation"
+                            />
+                            <Icon className="w-3.5 h-3.5 opacity-60" />
+                            {node.title}
+                            <button 
+                                onClick={() => onToggleNodeSelection?.(nodeId)} 
+                                className="ml-1 opacity-50 hover:opacity-100 transition-opacity"
+                            >
                                 <X className="w-3.5 h-3.5" />
                             </button>
                         </div>

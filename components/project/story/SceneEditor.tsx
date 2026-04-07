@@ -45,6 +45,9 @@ interface SceneEditorProps {
         ollama_url: string
         api_key: string | null
     }
+    selectedNodeIds?: string[]
+    onToggleNodeSelection?: (nodeId: string) => void
+    allNodes?: any[]
 }
 
 const SIMPLE_PLACEHOLDER = 'Start your story here. Use the panel on the left to add episodes and scenes, or begin writing in this scene.'
@@ -64,7 +67,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     setActiveCharacters,
     activeIdeas,
     setActiveIdeas,
-    aiSettings
+    aiSettings,
+    selectedNodeIds,
+    onToggleNodeSelection,
+    allNodes
 }: SceneEditorProps, ref: React.ForwardedRef<SceneEditorRef>) => {
     const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'failed' | 'idle'>('saved')
     const [lastSavedContent, setLastSavedContent] = useState<string>(JSON.stringify(scene.content))
@@ -429,6 +435,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                     setActiveCharacters={setActiveCharacters}
                     activeIdeas={activeIdeas}
                     setActiveIdeas={setActiveIdeas}
+                    selectedNodeIds={selectedNodeIds}
+                    onToggleNodeSelection={onToggleNodeSelection}
+                    allNodes={allNodes}
                 />
                 <EditorContent
                     editor={editor}

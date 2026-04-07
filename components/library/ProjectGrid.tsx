@@ -111,9 +111,9 @@ function ProjectCard({ project }: { project: Project }) {
                         <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 bg-slate-50 px-2.5 py-1 rounded-md group-hover:bg-primary/5 group-hover:text-primary/60 transition-colors">
                             {isTV ? 'TV Script' : 'Novel'}
                         </span>
-                        <span className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
+                        <span className="text-xs text-slate-400 font-medium flex items-center gap-1.5" title={`Last updated: ${formatDistanceToNow(project.updated_at)}`}>
                             <Clock className="w-3.5 h-3.5" />
-                            {formatDistanceToNow(project.updated_at)}
+                            {formatDistanceToNow(project.last_accessed_at)}
                         </span>
                     </div>
                 </div>

@@ -17,7 +17,7 @@ export default async function LibraryPage() {
     const { data: projects, error } = await supabase
         .from('projects')
         .select('*')
-        .order('updated_at', { ascending: false })
+        .order('last_accessed_at', { ascending: false })
 
     if (error) {
         console.error('Error fetching projects:', error)
