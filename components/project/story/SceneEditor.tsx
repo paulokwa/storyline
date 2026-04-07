@@ -98,6 +98,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         dialogue: string
         suggestions: string[]
     } | null>(null)
+    const isNovel = projectType === 'novel'
+    const label = isNovel ? 'Chapter/Part' : 'Scene'
+
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const sceneRef = useRef(scene)
     const prevSceneIdRef = useRef(scene.id)
@@ -357,8 +360,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
             if (!res.ok) {
                 const body = await res.text()
-                if (body === 'SCENE_TOO_SHORT') setAnalyzeError('This scene is too short to analyze. Add more content first.')
-                else if (body === 'SCENE_TOO_LARGE') setAnalyzeError('This scene is too long to analyze (limit: ~2,500 words). Try a shorter section.')
+                if (body === 'SCENE_TOO_SHORT') setAnalyzeError(`This ${label.toLowerCase()} is too short to analyze. Add more content first.`)
+                else if (body === 'SCENE_TOO_LARGE') setAnalyzeError(`This ${label.toLowerCase()} is too long to analyze (limit: ~2,500 words). Try a shorter section.`)
                 else if (body === 'NO_API_KEY') setAnalyzeError('No API key found. Add your Gemini API key in Account Settings.')
                 else if (body === 'RATE_LIMITED') setAnalyzeError('Please wait a few seconds before analyzing again.')
                 else setAnalyzeError('Something went wrong. Please try again.')
@@ -415,14 +418,14 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             <span>
                                 {saveStatus === 'saving' || saveStatus === 'idle' 
                                     ? 'Autosaving…' 
-                                    : isAnalyzing ? 'Analyzing…' : 'Analyze Scene'
+                                    : isAnalyzing ? 'Analyzing…' : `Analyze ${label}`
                                 }
                             </span>
                         </button>
                         <span className="text-[10px] text-slate-400 tracking-wide">
                             {aiSettings.ai_enabled && aiSettings.ai_provider === 'ollama' 
-                                ? 'Scene Analysis requires Gemini Cloud' 
-                                : 'Analyzes only this scene using your API key'}
+                                ? `${label} Analysis requires Gemini Cloud` 
+                                : `Analyzes only this ${label.toLowerCase()} using your API key`}
                         </span>
                         {analyzeError && (
                             <span className="text-[11px] text-red-400 max-w-[240px] text-right leading-tight">
@@ -506,6 +509,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             <SceneAnalysisPanel
                 result={analysisResult}
                 onClose={() => setAnalysisResult(null)}
+                projectType={projectType}
             />
         </div>
     )

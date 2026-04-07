@@ -21,6 +21,7 @@ interface AiHelperPanelProps {
     allScenes?: any[]
     onClearSelection?: () => void
     onInsert: (text: string) => void
+    projectType?: 'tv_script' | 'novel'
     aiSettings: {
         ai_enabled: boolean
         ai_provider: string
@@ -81,8 +82,11 @@ const PROMPT_TEMPLATES = [
 export default function AiHelperPanel({
     projectId, sceneText, onInsert, linkedCharacters = [], linkedIdeas = [], linkedLocations = [], linkedObjects = [],
     projectRelationships = [],
-    selectedNodes = [], allNodes = [], allScenes = [], onClearSelection, aiSettings
+    selectedNodes = [], allNodes = [], allScenes = [], onClearSelection, aiSettings, projectType
 }: AiHelperPanelProps) {
+    const isNovel = projectType === 'novel'
+    const label = isNovel ? 'Chapter' : 'Scene'
+
     const [prompt, setPrompt] = useState('')
     const [lastPrompt, setLastPrompt] = useState('')
     const [copied, setCopied] = useState(false)
@@ -349,7 +353,7 @@ export default function AiHelperPanel({
                     <Sparkles className="w-4 h-4 text-indigo-500" />
                 </div>
                 <div className="flex-1">
-                    <h3 className="text-sm font-serif font-bold text-slate-800">Scene Helper</h3>
+                    <h3 className="text-sm font-serif font-bold text-slate-800">{label} Helper</h3>
                     <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">
                         Powered by {aiSettings.ai_provider === 'ollama' ? `Ollama (${aiSettings.ollama_model})` : 'Gemini'}
                     </p>
@@ -367,7 +371,7 @@ export default function AiHelperPanel({
 
             {/* Context Indicator */}
             <div className="bg-[#fcfbf9] px-6 py-2 border-b border-slate-200/60 flex flex-wrap items-center gap-2 text-[10px] text-slate-400 font-medium">
-                <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-slate-200 rounded-full"></div>Current scene</span>
+                <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-slate-200 rounded-full"></div>Current {label.toLowerCase()}</span>
                 {linkedCharacters.length > 0 && (
                     <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-indigo-200 rounded-full"></div>{linkedCharacters.length} character{linkedCharacters.length !== 1 ? 's' : ''}</span>
                 )}
@@ -538,14 +542,14 @@ export default function AiHelperPanel({
                         onClick={() => setPreviewOpen(!previewOpen)}
                         className="w-full px-4 py-2 flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
                     >
-                        <span>AI Context Preview</span>
+                        <span>AI {label} Context Preview</span>
                         {previewOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
                     </button>
                     
                     {previewOpen && (
                         <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 max-h-48 overflow-y-auto text-[11px] font-mono whitespace-pre-wrap text-slate-600 space-y-4">
                             <div>
-                                <div className="font-bold text-slate-400 mb-1">SCENE:</div>
+                                <div className="font-bold text-slate-400 mb-1">{label.toUpperCase()}:</div>
                                 <div className="line-clamp-4 hover:line-clamp-none italic bg-white p-2 border border-slate-100 rounded-lg">{sceneTextRef.current.slice(-1000) || '(empty)'}</div>
                             </div>
                             
@@ -613,7 +617,7 @@ export default function AiHelperPanel({
                                 
                                 return (
                                     <div className="animate-in fade-in slide-in-from-top-1 duration-500">
-                                        <div className="font-bold text-indigo-400 mb-1">WORLD TIES (Scene Relevant):</div>
+                                        <div className="font-bold text-indigo-400 mb-1">WORLD TIES ({label} Relevant):</div>
                                         <ul className="list-disc pl-4 space-y-1 bg-indigo-50/30 p-2 border border-indigo-100 rounded-lg text-indigo-900 italic">
                                             {ties.map(t => {
                                                 const source = [...linkedCharacters, ...linkedLocations, ...linkedObjects].find(e => e.id === t.source_id)
@@ -708,7 +712,7 @@ export default function AiHelperPanel({
                                         handleSubmit(e as any)
                                     }
                                 }}
-                                placeholder={actualLoading ? "" : "Ask anything about this scene…"}
+                                placeholder={actualLoading ? "" : `Ask anything about this ${label.toLowerCase()}…`}
                                 rows={3}
                                 className={cn(
                                     "w-full border border-slate-200 rounded-2xl py-3.5 pl-4 pr-12 text-sm focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all resize-none outline-none placeholder:text-slate-400 font-serif leading-relaxed shadow-sm",

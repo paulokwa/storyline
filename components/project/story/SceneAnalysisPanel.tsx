@@ -15,6 +15,7 @@ interface AnalysisResult {
 interface SceneAnalysisPanelProps {
     result: AnalysisResult | null
     onClose: () => void
+    projectType?: 'tv_script' | 'novel'
 }
 
 const SECTIONS = [
@@ -24,7 +25,10 @@ const SECTIONS = [
     { key: 'dialogue',  label: 'Dialogue',   icon: MessageSquare, color: 'text-violet-500',  bg: 'bg-violet-50/60',border: 'border-violet-100' },
 ] as const
 
-export default function SceneAnalysisPanel({ result, onClose }: SceneAnalysisPanelProps) {
+export default function SceneAnalysisPanel({ result, onClose, projectType }: SceneAnalysisPanelProps) {
+    const isNovel = projectType === 'novel'
+    const label = isNovel ? 'Chapter/Part' : 'Scene'
+    
     // Close on Escape key
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
@@ -66,7 +70,7 @@ export default function SceneAnalysisPanel({ result, onClose }: SceneAnalysisPan
                         <Sparkles className="w-4 h-4 text-violet-500" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-serif font-bold text-slate-800">Scene Analysis</h3>
+                        <h3 className="text-sm font-serif font-bold text-slate-800">{label} Analysis</h3>
                         <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">AI Suggestions · Not Directives</p>
                     </div>
                     <button
@@ -134,7 +138,7 @@ export default function SceneAnalysisPanel({ result, onClose }: SceneAnalysisPan
 
                             {/* Footer note */}
                             <p className="text-[10px] text-slate-300 text-center pb-2 font-medium tracking-wide">
-                                Analysis used {result.summary.length + result.tension.length + result.pacing.length + result.dialogue.length} characters · Scene text only
+                                Analysis used {result.summary.length + result.tension.length + result.pacing.length + result.dialogue.length} characters · {label} text only
                             </p>
                         </div>
                     )}

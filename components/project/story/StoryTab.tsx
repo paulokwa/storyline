@@ -299,6 +299,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                     {aiPanelOpen && (
                         <AiHelperPanel
                             projectId={project.id}
+                            projectType={project.type as any}
                             sceneText={currentSceneText}
                             linkedCharacters={(activeScene?.scene_characters?.map((c: any) => c.characters).filter(Boolean) || []).filter((c: any) => activeCharacters[c.id] !== false)}
                             linkedIdeas={(activeScene?.scene_ideas?.map((i: any) => i.ideas).filter(Boolean) || []).filter((i: any) => activeIdeas[i.id] !== false)}
