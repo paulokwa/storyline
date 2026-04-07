@@ -46,7 +46,18 @@ export async function POST(req: Request) {
         return new Response('Unauthorized', { status: 401 })
     }
 
-    const { action, input, format, projectId, prompt, linkedCharacters, linkedIdeas, storyContext } = await req.json() as {
+    const { 
+        action, 
+        input, 
+        format, 
+        projectId, 
+        prompt, 
+        linkedCharacters, 
+        linkedIdeas, 
+        linkedLocations, 
+        linkedObjects, 
+        storyContext 
+    } = await req.json() as {
         action: string
         input: string
         format?: string
@@ -54,6 +65,8 @@ export async function POST(req: Request) {
         prompt?: string
         linkedCharacters?: any[]
         linkedIdeas?: any[]
+        linkedLocations?: any[]
+        linkedObjects?: any[]
         storyContext?: any[]
     }
 
@@ -82,8 +95,40 @@ export async function POST(req: Request) {
     if (action === 'bridge' && format) {
         userMessage = `Format requested: ${format}\n\n${input}`
     } else if (action === 'helper' && prompt) {
+        // Collect all linked entity IDs to filter for relevant relationships
+        const relevantEntityIds = [
+            ...(linkedCharacters || []).map((c: any) => c.id),
+            ...(linkedLocations || []).map((l: any) => l.id),
+            ...(linkedObjects || []).map((o: any) => o.id)
+        ]
+
+        // Fetch relationships for this project
+        const { data: allRelationships } = await supabase
+            .from('entity_relationships')
+            .select('*')
+            .eq('project_id', projectId)
+
+        // Filter for relationships where BOTH source and target are relevant to the current scene
+        const sceneRelationships = (allRelationships || [])
+            .filter((rel: any) => 
+                relevantEntityIds.includes(rel.source_id) && 
+                relevantEntityIds.includes(rel.target_id)
+            )
+            .slice(0, 10)
+
+        // Helper to get name from linked lists
+        const getEntityName = (id: string) => {
+            const match = [
+                ...(linkedCharacters || []),
+                ...(linkedLocations || []),
+                ...(linkedObjects || [])
+            ].find((e: any) => e.id === id)
+            return match?.name || 'Unknown'
+        }
+
         let contextBlock = `CURRENT SCENE:\n${input}\n\n`
         
+
         if (linkedCharacters && linkedCharacters.length > 0) {
             contextBlock += `LINKED CHARACTERS:\n`
             linkedCharacters.forEach(c => {
@@ -99,6 +144,40 @@ export async function POST(req: Request) {
             linkedIdeas.forEach(i => {
                 contextBlock += `- ${i.title || 'Untitled'}\n`
                 if (i.content) contextBlock += `  Content: ${i.content}\n`
+            })
+            contextBlock += '\n'
+        }
+
+        if (linkedLocations && linkedLocations.length > 0) {
+            contextBlock += `LINKED LOCATIONS:\n`
+            linkedLocations.forEach(l => {
+                contextBlock += `- ${l.name || 'Unnamed Location'}\n`
+                if (l.atmosphere) contextBlock += `  Atmosphere: ${l.atmosphere}\n`
+                if (l.description) contextBlock += `  Description: ${l.description}\n`
+            })
+            contextBlock += '\n'
+        }
+
+        if (linkedObjects && linkedObjects.length > 0) {
+            contextBlock += `LINKED OBJECTS/ITEMS:\n`
+            linkedObjects.forEach(o => {
+                contextBlock += `- ${o.name || 'Unnamed Object'}\n`
+                if (o.significance) contextBlock += `  Significance: ${o.significance}\n`
+                if (o.description) contextBlock += `  Description: ${o.description}\n`
+            })
+            contextBlock += '\n'
+        }
+
+        if (sceneRelationships.length > 0) {
+            contextBlock += `ESTABLISHED WORLD TIES (Scene-linked entities only):\n`
+            sceneRelationships.forEach((rel: any) => {
+                const sName = getEntityName(rel.source_id)
+                const tName = getEntityName(rel.target_id)
+                if (rel.is_symmetrical) {
+                    contextBlock += `- ${sName} and ${tName} are ${rel.relation_label}\n`
+                } else {
+                    contextBlock += `- ${sName} is ${rel.relation_label} to ${tName}\n`
+                }
             })
             contextBlock += '\n'
         }

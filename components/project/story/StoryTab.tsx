@@ -33,6 +33,9 @@ interface StoryTabProps {
     initialScenes: any[] // any[] to handle joined scenes with linked ideas/characters temporarily
     projectCharacters: any[]
     projectIdeas: any[]
+    projectLocations: any[]
+    projectObjects: any[]
+    projectRelationships: any[]
     aiSettings: {
         ai_enabled: boolean
         ai_provider: string
@@ -43,7 +46,7 @@ interface StoryTabProps {
     }
 }
 
-export default function StoryTab({ project, initialNodes, initialScenes, projectCharacters, projectIdeas, aiSettings }: StoryTabProps) {
+export default function StoryTab({ project, initialNodes, initialScenes, projectCharacters, projectIdeas, projectLocations, projectObjects, projectRelationships, aiSettings }: StoryTabProps) {
     const router = useRouter()
     const [nodes, setNodes] = useState(initialNodes)
     const [scenes, setScenes] = useState(initialScenes)
@@ -56,6 +59,8 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     const [currentSceneText, setCurrentSceneText] = useState('')
     const [activeCharacters, setActiveCharacters] = useState<Record<string, boolean>>({})
     const [activeIdeas, setActiveIdeas] = useState<Record<string, boolean>>({})
+    const [activeLocations, setActiveLocations] = useState<Record<string, boolean>>({})
+    const [activeObjects, setActiveObjects] = useState<Record<string, boolean>>({})
     const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([])
     const editorRef = useRef<SceneEditorRef>(null)
 
@@ -251,11 +256,17 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                 projectType={project.type as any}
                                 projectCharacters={projectCharacters}
                                 projectIdeas={projectIdeas}
+                                projectLocations={projectLocations}
+                                projectObjects={projectObjects}
                                 onLinkingUpdate={() => router.refresh()}
                                 activeCharacters={activeCharacters}
                                 setActiveCharacters={setActiveCharacters}
                                 activeIdeas={activeIdeas}
                                 setActiveIdeas={setActiveIdeas}
+                                activeLocations={activeLocations}
+                                setActiveLocations={setActiveLocations}
+                                activeObjects={activeObjects}
+                                setActiveObjects={setActiveObjects}
                                 aiSettings={aiSettings}
                                 selectedNodeIds={selectedNodeIds}
                                 onToggleNodeSelection={handleNodeToggleSelection}
@@ -291,9 +302,12 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                             sceneText={currentSceneText}
                             linkedCharacters={(activeScene?.scene_characters?.map((c: any) => c.characters).filter(Boolean) || []).filter((c: any) => activeCharacters[c.id] !== false)}
                             linkedIdeas={(activeScene?.scene_ideas?.map((i: any) => i.ideas).filter(Boolean) || []).filter((i: any) => activeIdeas[i.id] !== false)}
+                            linkedLocations={(activeScene?.scene_locations?.map((l: any) => l.locations).filter(Boolean) || []).filter((l: any) => activeLocations[l.id] !== false)}
+                            linkedObjects={(activeScene?.scene_objects?.map((o: any) => o.objects).filter(Boolean) || []).filter((o: any) => activeObjects[o.id] !== false)}
                             selectedNodes={nodes.filter(n => selectedNodeIds.includes(n.id))}
                             allNodes={nodes}
                             allScenes={scenes}
+                            projectRelationships={projectRelationships}
                             onClearSelection={() => setSelectedNodeIds([])}
                             aiSettings={aiSettings}
                             onInsert={(text) => {

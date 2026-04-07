@@ -13,8 +13,10 @@ import LinkedContext from './LinkedContext'
 import SceneAnalysisPanel from './SceneAnalysisPanel'
 
 type Scene = Database['public']['Tables']['scenes']['Row'] & {
-    scene_characters?: any[]
-    scene_ideas?: any[]
+    scene_characters: any[]
+    scene_ideas: any[]
+    scene_locations: any[]
+    scene_objects: any[]
 }
 
 export interface SceneEditorRef {
@@ -30,13 +32,19 @@ interface SceneEditorProps {
     onTextChange?: (text: string) => void
     isProjectEmpty?: boolean
     projectType?: 'tv_script' | 'novel'
-    projectCharacters?: any[]
-    projectIdeas?: any[]
+    projectCharacters: any[]
+    projectIdeas: any[]
+    projectLocations: any[]
+    projectObjects: any[]
     onLinkingUpdate?: () => void
-    activeCharacters?: Record<string, boolean>
-    setActiveCharacters?: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
-    activeIdeas?: Record<string, boolean>
-    setActiveIdeas?: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
+    activeCharacters: Record<string, boolean>
+    setActiveCharacters: (action: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => void
+    activeIdeas: Record<string, boolean>
+    setActiveIdeas: (action: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => void
+    activeLocations: Record<string, boolean>
+    setActiveLocations: (action: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => void
+    activeObjects: Record<string, boolean>
+    setActiveObjects: (action: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => void
     aiSettings: {
         ai_enabled: boolean
         ai_provider: string
@@ -60,15 +68,21 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     onTextChange, 
     isProjectEmpty, 
     projectType,
-    projectCharacters = [],
-    projectIdeas = [],
+    projectCharacters,
+    projectIdeas,
+    projectLocations,
+    projectObjects,
     onLinkingUpdate,
     activeCharacters,
     setActiveCharacters,
     activeIdeas,
     setActiveIdeas,
+    activeLocations,
+    setActiveLocations,
+    activeObjects,
+    setActiveObjects,
     aiSettings,
-    selectedNodeIds,
+    selectedNodeIds = [],
     onToggleNodeSelection,
     allNodes
 }: SceneEditorProps, ref: React.ForwardedRef<SceneEditorRef>) => {
@@ -137,7 +151,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 onUpdate({
                     ...data,
                     scene_characters: sceneRef.current.scene_characters,
-                    scene_ideas: sceneRef.current.scene_ideas
+                    scene_ideas: sceneRef.current.scene_ideas,
+                    scene_locations: sceneRef.current.scene_locations,
+                    scene_objects: sceneRef.current.scene_objects
                 })
             }
         } catch (err) {
@@ -428,13 +444,21 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                     sceneId={scene.id}
                     sceneCharacters={scene.scene_characters || []}
                     sceneIdeas={scene.scene_ideas || []}
+                    sceneLocations={scene.scene_locations || []}
+                    sceneObjects={scene.scene_objects || []}
                     projectCharacters={projectCharacters}
                     projectIdeas={projectIdeas}
-                    onUpdate={onLinkingUpdate || (() => {})}
+                    projectLocations={projectLocations}
+                    projectObjects={projectObjects}
+                    onUpdate={() => onLinkingUpdate?.()}
                     activeCharacters={activeCharacters}
                     setActiveCharacters={setActiveCharacters}
                     activeIdeas={activeIdeas}
                     setActiveIdeas={setActiveIdeas}
+                    activeLocations={activeLocations}
+                    setActiveLocations={setActiveLocations}
+                    activeObjects={activeObjects}
+                    setActiveObjects={setActiveObjects}
                     selectedNodeIds={selectedNodeIds}
                     onToggleNodeSelection={onToggleNodeSelection}
                     allNodes={allNodes}

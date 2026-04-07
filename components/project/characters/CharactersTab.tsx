@@ -7,17 +7,20 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
+import RelationshipManager from './RelationshipManager'
 
 type Character = Database['public']['Tables']['characters']['Row']
 
 export default function CharactersTab({
     projectId,
     projectType = 'novel',
-    characters: initialCharacters = []
+    characters: initialCharacters = [],
+    availableEntities = []
 }: {
     projectId: string
     projectType?: string
     characters?: Character[]
+    availableEntities?: { id: string; name: string; type: 'character' | 'location' | 'object' }[]
 }) {
     const [localCharacters, setLocalCharacters] = useState<Character[]>(initialCharacters)
     const [selectedId, setSelectedId] = useState<string | null>(initialCharacters[0]?.id ?? null)
@@ -351,12 +354,20 @@ export default function CharactersTab({
                                 </div>
                             </div>
 
+                            {/* Relationships Section */}
+                            <RelationshipManager 
+                                projectId={projectId}
+                                charId={selectedCharacter.id}
+                                charName={selectedCharacter.name}
+                                availableEntities={availableEntities}
+                            />
+
                             {/* Stats/Metatadata section */}
                             <div className="pt-16 flex items-center justify-between relative">
                                 <div className="flex items-center gap-6">
                                     <div className="flex flex-col gap-1">
                                         <span className="text-[9px] uppercase tracking-widest text-slate-300 font-bold">Registration</span>
-                                        <span className="text-[10px] font-serif italic text-slate-400">{new Date(selectedCharacter.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                        <span className="text-[10px] font-serif italic text-slate-400" suppressHydrationWarning>{new Date(selectedCharacter.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                                     </div>
                                     <div className="w-px h-8 bg-stone-100" />
                                     <div className="flex flex-col gap-1">

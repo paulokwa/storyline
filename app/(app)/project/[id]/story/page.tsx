@@ -14,26 +14,28 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
         .select('*')
         .eq('project_id', id)
         .order('order_index')
-    const { data: scenes } = await supabase
-        .from('scenes')
-        .select(`
+
+    const [
+        { data: projectCharacters },
+        { data: projectIdeas },
+        { data: projectLocations },
+        { data: projectObjects },
+        { data: allScenes },
+        { data: projectRelationships }
+    ] = await Promise.all([
+        supabase.from('characters').select('*').eq('project_id', id).order('order_index'),
+        supabase.from('ideas').select('*').eq('project_id', id).order('order_index'),
+        supabase.from('locations').select('*').eq('project_id', id).order('order_index'),
+        supabase.from('objects').select('*').eq('project_id', id).order('order_index'),
+        supabase.from('scenes').select(`
             *,
             scene_characters(characters(*)),
-            scene_ideas(ideas(*))
-        `)
-        .eq('project_id', id)
-
-    const { data: projectCharacters } = await supabase
-        .from('characters')
-        .select('*')
-        .eq('project_id', id)
-        .order('order_index')
-
-    const { data: projectIdeas } = await supabase
-        .from('ideas')
-        .select('*')
-        .eq('project_id', id)
-        .order('order_index')
+            scene_ideas(ideas(*)),
+            scene_locations(locations(*)),
+            scene_objects(objects(*))
+        `).eq('project_id', id),
+        supabase.from('entity_relationships').select('*').eq('project_id', id)
+    ])
 
     const { data: aiSettings } = (await supabase
         .from('user_api_keys')
@@ -45,9 +47,12 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
         <StoryTab
             project={project!}
             initialNodes={nodes ?? []}
-            initialScenes={scenes as any ?? []}
+            initialScenes={allScenes as any ?? []}
             projectCharacters={projectCharacters ?? []}
             projectIdeas={projectIdeas ?? []}
+            projectLocations={projectLocations ?? []}
+            projectObjects={projectObjects ?? []}
+            projectRelationships={projectRelationships ?? []}
             aiSettings={aiSettings ?? { ai_enabled: false }}
         />
     )

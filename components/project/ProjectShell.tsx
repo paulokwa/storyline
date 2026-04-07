@@ -11,7 +11,9 @@ import {
     BookOpen, Users, Lightbulb,
     ChevronLeft, Settings, Check, X,
     Tv,
-    Download
+    Download,
+    MapPin,
+    Package
 } from 'lucide-react'
 import ExportModal from '@/components/export/ExportModal'
 import ProjectSettingsModal from '@/components/project/ProjectSettingsModal'
@@ -26,6 +28,8 @@ const TABS = [
     { slug: 'story', label: 'Story', icon: BookOpen },
     { slug: 'characters', label: 'Characters', icon: Users },
     { slug: 'ideas', label: 'Ideas', icon: Lightbulb },
+    { slug: 'locations', label: 'Locations', icon: MapPin },
+    { slug: 'objects', label: 'Objects', icon: Package },
 ] as const
 
 export default function ProjectShell({

@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useRef } from 'react'
 import { useCompletion } from '@ai-sdk/react'
 import Link from 'next/link'
-import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings } from 'lucide-react'
+import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -13,6 +13,9 @@ interface AiHelperPanelProps {
     sceneText: string
     linkedCharacters?: any[]
     linkedIdeas?: any[]
+    linkedLocations?: any[]
+    linkedObjects?: any[]
+    projectRelationships?: any[]
     selectedNodes?: any[]
     allNodes?: any[]
     allScenes?: any[]
@@ -76,7 +79,8 @@ const PROMPT_TEMPLATES = [
 ]
 
 export default function AiHelperPanel({
-    projectId, sceneText, onInsert, linkedCharacters = [], linkedIdeas = [],
+    projectId, sceneText, onInsert, linkedCharacters = [], linkedIdeas = [], linkedLocations = [], linkedObjects = [],
+    projectRelationships = [],
     selectedNodes = [], allNodes = [], allScenes = [], onClearSelection, aiSettings
 }: AiHelperPanelProps) {
     const [prompt, setPrompt] = useState('')
@@ -151,13 +155,34 @@ export default function AiHelperPanel({
                 projectId,
                 input: sceneTextRef.current.slice(-10000),
                 linkedCharacters: linkedCharacters.map((c: any) => ({
+                    id: c.id,
                     name: c.name,
                     description: c.description,
                     notes: c.notes
                 })),
                 linkedIdeas: linkedIdeas.map((i: any) => ({
+                    id: i.id,
                     title: i.title,
                     content: i.content
+                })),
+                linkedLocations: linkedLocations.map((l: any) => ({
+                    id: l.id,
+                    name: l.name,
+                    description: l.description,
+                    atmosphere: l.atmosphere
+                })),
+                linkedObjects: linkedObjects.map((o: any) => ({
+                    id: o.id,
+                    name: o.name,
+                    description: o.description,
+                    significance: o.significance
+                })),
+                projectRelationships: projectRelationships.map((r: any) => ({
+                    id: r.id,
+                    source_id: r.source_id,
+                    target_id: r.target_id,
+                    relation_label: r.relation_label,
+                    is_symmetrical: r.is_symmetrical
                 })),
                 storyContext: storySelectionContext.map(s => ({
                     title: s.title,
@@ -176,12 +201,15 @@ export default function AiHelperPanel({
         const ideasContext = linkedIdeas.length > 0 
             ? `Ideas: ${linkedIdeas.map(i => i.title).join(', ')}. ` 
             : ''
+        const locationsContext = linkedLocations.length > 0 
+            ? `Locations: ${linkedLocations.map(l => l.name).join(', ')}. ` 
+            : ''
         
         const storyContextString = storySelectionContext.length > 0
             ? `STORY CONTEXT:\n${storySelectionContext.map(s => `[${s.title}]\n${s.content.slice(0, 5000)}`).join('\n\n')}\n\n`
             : ''
         
-        const fullInternalPrompt = `${projectContext}${charactersContext}${ideasContext}\n\n${storyContextString}SCENE:\n${sceneTextRef.current.slice(-6000)}\n\nUSER REQUEST: ${finalPrompt}`
+        const fullInternalPrompt = `${projectContext}${charactersContext}${ideasContext}${locationsContext}\n\n${storyContextString}SCENE:\n${sceneTextRef.current.slice(-6000)}\n\nUSER REQUEST: ${finalPrompt}`
 
         setIsOllamaLoading(true)
         try {
@@ -345,6 +373,12 @@ export default function AiHelperPanel({
                 )}
                 {linkedIdeas.length > 0 && (
                     <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-amber-200 rounded-full"></div>{linkedIdeas.length} idea{linkedIdeas.length !== 1 ? 's' : ''}</span>
+                )}
+                {linkedLocations.length > 0 && (
+                    <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-emerald-200 rounded-full"></div>{linkedLocations.length} location{linkedLocations.length !== 1 ? 's' : ''}</span>
+                )}
+                {linkedObjects.length > 0 && (
+                    <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-blue-200 rounded-full"></div>{linkedObjects.length} object{linkedObjects.length !== 1 ? 's' : ''}</span>
                 )}
                 {selectedNodes.length > 0 && (
                     <span className="flex items-center gap-1.5 text-indigo-500 bg-indigo-50/50 px-2 py-0.5 rounded-full border border-indigo-100">
@@ -541,6 +575,62 @@ export default function AiHelperPanel({
                                     </ul>
                                 </div>
                             )}
+
+                            {linkedLocations.length > 0 && (
+                                <div>
+                                    <div className="font-bold text-slate-400 mb-1">LOCATIONS:</div>
+                                    <ul className="list-disc pl-4 space-y-1 bg-white p-2 border border-slate-100 rounded-lg">
+                                        {linkedLocations.map(l => (
+                                            <li key={l.id}>
+                                                <span className="font-bold">{l.name}</span>: {l.atmosphere || l.description || 'No description'}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {linkedObjects.length > 0 && (
+                                <div>
+                                    <div className="font-bold text-slate-400 mb-1">OBJECTS/ITEMS:</div>
+                                    <ul className="list-disc pl-4 space-y-1 bg-white p-2 border border-slate-100 rounded-lg">
+                                        {linkedObjects.map(o => (
+                                            <li key={o.id}>
+                                                <span className="font-bold">{o.name}</span>: {o.significance || o.description || 'No description'}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {(() => {
+                                const relevantIds = [
+                                    ...linkedCharacters.map(c => c.id),
+                                    ...linkedLocations.map(l => l.id),
+                                    ...linkedObjects.map(o => o.id)
+                                ]
+                                const ties = projectRelationships.filter(r => relevantIds.includes(r.source_id) && relevantIds.includes(r.target_id)).slice(0, 5)
+                                if (ties.length === 0) return null
+                                
+                                return (
+                                    <div className="animate-in fade-in slide-in-from-top-1 duration-500">
+                                        <div className="font-bold text-indigo-400 mb-1">WORLD TIES (Scene Relevant):</div>
+                                        <ul className="list-disc pl-4 space-y-1 bg-indigo-50/30 p-2 border border-indigo-100 rounded-lg text-indigo-900 italic">
+                                            {ties.map(t => {
+                                                const source = [...linkedCharacters, ...linkedLocations, ...linkedObjects].find(e => e.id === t.source_id)
+                                                const target = [...linkedCharacters, ...linkedLocations, ...linkedObjects].find(e => e.id === t.target_id)
+                                                return (
+                                                    <li key={t.id}>
+                                                        <span className="font-bold not-italic">{source?.name || 'Unknown'}</span> 
+                                                        {t.is_symmetrical ? ' and ' : ` is ${t.relation_label} to `}
+                                                        <span className="font-bold not-italic">{target?.name || 'Unknown'}</span>
+                                                        {t.is_symmetrical && ` are ${t.relation_label}`}
+                                                    </li>
+                                                )
+                                            })}
+                                        </ul>
+                                    </div>
+                                )
+                            })()}
 
                             {storySelectionContext.length > 0 && (
                                 <div>
