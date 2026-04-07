@@ -43,7 +43,7 @@ export default function ProjectShell({
     const router = useRouter()
     const [project, setProject] = useState(initialProject)
     const [editingTitle, setEditingTitle] = useState(false)
-    const [titleDraft, setTitleDraft] = useState(project.title)
+    const [titleDraft, setTitleDraft] = useState(project.title ?? '')
     const [exportModalOpen, setExportModalOpen] = useState(false)
     const [settingsModalOpen, setSettingsModalOpen] = useState(false)
 
@@ -102,7 +102,7 @@ export default function ProjectShell({
                             </div>
                         ) : (
                             <button
-                                onClick={() => { setTitleDraft(project.title); setEditingTitle(true) }}
+                                onClick={() => { setTitleDraft(project.title ?? ''); setEditingTitle(true) }}
                                 className="text-2xl sm:text-3xl font-serif text-[#31332f] hover:text-[#546354] transition-colors text-left flex-1 truncate py-2"
                                 title="Click to rename"
                             >
@@ -167,7 +167,7 @@ export default function ProjectShell({
                 open={exportModalOpen}
                 onOpenChange={setExportModalOpen}
                 projectId={project.id}
-                projectTitle={project.title}
+                projectTitle={project.title ?? ''}
             />
 
             <ProjectSettingsModal
