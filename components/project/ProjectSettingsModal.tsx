@@ -35,7 +35,7 @@ export default function ProjectSettingsModal({
     const [loading, setLoading] = useState(false)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-    const [title, setTitle] = useState(project.title)
+    const [title, setTitle] = useState(project.title ?? '')
     const [type, setType] = useState(project.type)
     const [premise, setPremise] = useState(project.premise || '')
 
