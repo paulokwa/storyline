@@ -53,7 +53,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     const [activeNodeId, setActiveNodeId] = useState<string | null>(
         initialNodes.find(n => n.type === 'scene')?.id ?? null
     )
-    const [writingMode, setWritingMode] = useState<WritingMode>(project.writing_mode)
+    const [writingMode, setWritingMode] = useState<WritingMode>(project.writing_mode ?? 'simple')
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [aiPanelOpen, setAiPanelOpen] = useState(false)
     const [currentSceneText, setCurrentSceneText] = useState('')

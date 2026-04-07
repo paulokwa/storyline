@@ -107,7 +107,7 @@ export default function StructureTree({
             const { data: scene } = await (supabase as any).from('scenes').insert({
                 node_id: (newNode as any).id,
                 project_id: project.id,
-                writing_mode: project.writing_mode,
+                writing_mode: project.writing_mode ?? 'simple',
             }).select().single()
             if (scene) {
                 onSceneCreated(scene as any)
