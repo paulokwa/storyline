@@ -2,12 +2,37 @@
 
 import { useState, useCallback, useEffect, useImperativeHandle, forwardRef, useRef } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
+import { BubbleMenu } from '@tiptap/react/menus'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
+import Underline from '@tiptap/extension-underline'
+import Highlight from '@tiptap/extension-highlight'
+import BubbleMenuExtension from '@tiptap/extension-bubble-menu'
 import { createClient } from '@/lib/supabase/client'
 import type { Database, WritingMode } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
-import { Trash2, RotateCcw, Loader2, History as HistoryIcon } from 'lucide-react'
+import { 
+    Trash2, 
+    RotateCcw, 
+    Loader2, 
+    History as HistoryIcon,
+    Bold,
+    Italic,
+    Underline as UnderlineIcon,
+    Strikethrough,
+    Highlighter,
+    Heading1,
+    Heading2,
+    List,
+    ListOrdered,
+    Quote,
+    Type,
+    AlignLeft,
+    AlignJustify,
+    MoveHorizontal,
+    Maximize2,
+    Settings2
+} from 'lucide-react'
 import { restoreStructureNode, captureSceneVersion } from '@/lib/supabase/recovery'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
@@ -34,6 +59,36 @@ export interface SceneEditorRef {
     insertText: (text: string) => void
 }
 
+const ToolbarButton = ({ 
+    onClick, 
+    active, 
+    icon: Icon, 
+    tooltip 
+}: { 
+    onClick: (e: React.MouseEvent) => void, 
+    active?: boolean, 
+    icon: any, 
+    tooltip: string 
+}) => (
+    <button
+        type="button"
+        onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onClick(e)
+        }}
+        className={cn(
+            "p-1.5 rounded-lg transition-all duration-200",
+            active 
+                ? "bg-slate-800 text-white shadow-md scale-105" 
+                : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+        )}
+        title={tooltip}
+    >
+        <Icon className="w-3.5 h-3.5" />
+    </button>
+)
+
 const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     scene,
     title: initialTitle,
@@ -53,6 +108,33 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [title, setTitle] = useState(initialTitle)
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
     const [isRestoring, setIsRestoring] = useState(false)
+    const [isMounted, setIsMounted] = useState(false)
+    const [showViewSettings, setShowViewSettings] = useState(false)
+
+    const [viewSettings, setViewSettings] = useState({
+        fontSize: '18px',
+        lineHeight: '1.8',
+        maxWidth: '1152px',
+        textAlign: 'left'
+    })
+
+    useEffect(() => {
+        setIsMounted(true)
+        const saved = localStorage.getItem('storyline_editor_prefs')
+        if (saved) {
+            try {
+                setViewSettings(JSON.parse(saved))
+            } catch (e) {
+                console.error('Failed to load editor prefs', e)
+            }
+        }
+    }, [])
+
+    const updateViewSetting = (key: string, value: string) => {
+        const newSettings = { ...viewSettings, [key]: value }
+        setViewSettings(newSettings)
+        localStorage.setItem('storyline_editor_prefs', JSON.stringify(newSettings))
+    }
 
     // Sync with external title (StructureTree changes)
     useEffect(() => {
@@ -63,6 +145,11 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         immediatelyRender: false,
         extensions: [
             StarterKit,
+            Underline,
+            Highlight.configure({ multicolor: true }),
+            BubbleMenuExtension.configure({
+                element: null, // Let the react component handle it
+            }),
             Placeholder.configure({
                 placeholder: writingMode === 'screenplay' ? 'Start your script...' : 'Once upon a time...',
             }),
@@ -72,7 +159,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             attributes: {
                 class: cn(
                     'prose prose-slate max-w-none focus:outline-none min-h-[500px]',
-                    writingMode === 'screenplay' ? 'font-mono' : 'font-serif text-lg leading-relaxed'
+                    writingMode === 'screenplay' 
+                        ? 'font-mono' 
+                        : 'font-serif text-[var(--editor-font-size,1.125rem)] leading-[var(--editor-line-height,1.8)] text-[var(--editor-text-align,left)]'
                 ),
             },
         },
@@ -204,8 +293,126 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             className="h-6 px-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-[#546354] hover:bg-white transition-all"
                         >
                             <HistoryIcon className="w-3 h-3 mr-1" />
-                            History
+                             History
                         </Button>
+                        
+                        {/* Phase B: View Settings */}
+                        {writingMode === 'simple' && (
+                            <div className="relative">
+                                <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => setShowViewSettings(!showViewSettings)}
+                                    className={cn(
+                                        "h-6 px-2 text-[10px] font-bold uppercase tracking-widest transition-all",
+                                        showViewSettings ? "text-emerald-500 bg-white" : "text-slate-400 hover:text-slate-600"
+                                    )}
+                                >
+                                    <Type className="w-3 h-3 mr-1" />
+                                    View
+                                </Button>
+
+                                {showViewSettings && (
+                                    <>
+                                        <div 
+                                            className="fixed inset-0 z-[60]" 
+                                            onClick={() => setShowViewSettings(false)} 
+                                        />
+                                        <div className="absolute right-0 top-8 w-64 bg-white/95 backdrop-blur-xl border border-slate-200 shadow-2xl rounded-2xl p-4 z-[70] animate-in fade-in slide-in-from-top-2 duration-200">
+                                            <div className="space-y-4">
+                                                {/* Font Size */}
+                                                <div>
+                                                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2 block">Font Size</label>
+                                                    <div className="flex bg-slate-50 p-1 rounded-xl gap-1">
+                                                        {['16px', '18px', '22px'].map((size) => (
+                                                            <button
+                                                                key={size}
+                                                                onClick={() => updateViewSetting('fontSize', size)}
+                                                                className={cn(
+                                                                    "flex-1 py-1 px-2 rounded-lg text-xs font-medium transition-all",
+                                                                    viewSettings.fontSize === size 
+                                                                        ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200" 
+                                                                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/50"
+                                                                )}
+                                                            >
+                                                                {size === '16px' ? 'Small' : size === '18px' ? 'Medium' : 'Large'}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Line Height */}
+                                                <div>
+                                                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2 block">Line Height</label>
+                                                    <div className="flex bg-slate-50 p-1 rounded-xl gap-1">
+                                                        {['1.5', '1.8', '2.2'].map((lh) => (
+                                                            <button
+                                                                key={lh}
+                                                                onClick={() => updateViewSetting('lineHeight', lh)}
+                                                                className={cn(
+                                                                    "flex-1 py-1 px-2 rounded-lg text-xs font-medium transition-all",
+                                                                    viewSettings.lineHeight === lh 
+                                                                        ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200" 
+                                                                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/50"
+                                                                )}
+                                                            >
+                                                                {lh === '1.5' ? 'Tight' : lh === '1.8' ? 'Normal' : 'Relaxed'}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Page Width */}
+                                                <div>
+                                                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2 block">Page Width</label>
+                                                    <div className="flex bg-slate-50 p-1 rounded-xl gap-1">
+                                                        {['896px', '1152px', '100%'].map((width) => (
+                                                            <button
+                                                                key={width}
+                                                                onClick={() => updateViewSetting('maxWidth', width)}
+                                                                className={cn(
+                                                                    "flex-1 py-1 px-2 rounded-lg text-xs font-medium transition-all",
+                                                                    viewSettings.maxWidth === width 
+                                                                        ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200" 
+                                                                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/50"
+                                                                )}
+                                                            >
+                                                                {width === '896px' ? 'Narrow' : width === '1152px' ? 'Default' : 'Full'}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Alignment */}
+                                                <div>
+                                                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2 block">Alignment</label>
+                                                    <div className="flex bg-slate-50 p-1 rounded-xl gap-1">
+                                                        {[
+                                                            { id: 'left', icon: AlignLeft, label: 'Left' },
+                                                            { id: 'justify', icon: AlignJustify, label: 'Justified' }
+                                                        ].map((item) => (
+                                                            <button
+                                                                key={item.id}
+                                                                onClick={() => updateViewSetting('textAlign', item.id)}
+                                                                className={cn(
+                                                                    "flex-1 py-1 px-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-2",
+                                                                    viewSettings.textAlign === item.id 
+                                                                        ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200" 
+                                                                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/50"
+                                                                )}
+                                                            >
+                                                                <item.icon className="w-3 h-3" />
+                                                                {item.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
                 
@@ -225,10 +432,95 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 />
             </div>
 
-            <div className={cn(
-                "transition-all duration-700 relative",
-                writingMode === 'screenplay' ? "max-w-[80ch] mx-auto bg-white shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] p-12 sm:p-20 min-h-[11in] border border-slate-200/50" : ""
-            )}>
+            <div 
+                style={isMounted && writingMode === 'simple' ? {
+                    '--editor-font-size': viewSettings.fontSize,
+                    '--editor-line-height': viewSettings.lineHeight,
+                    '--editor-max-width': viewSettings.maxWidth,
+                    '--editor-text-align': viewSettings.textAlign,
+                    maxWidth: viewSettings.maxWidth,
+                    textAlign: viewSettings.textAlign as any
+                } as React.CSSProperties : {}}
+                className={cn(
+                    "transition-all duration-700 relative",
+                    writingMode === 'screenplay' 
+                        ? "max-w-[80ch] mx-auto bg-white shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] p-12 sm:p-20 min-h-[11in] border border-slate-200/50" 
+                        : "mx-auto w-full transition-[max-width] duration-500 ease-in-out"
+                )}
+            >
+                {editor && writingMode !== 'screenplay' && (
+                    <BubbleMenu 
+                        editor={editor} 
+                        className="flex items-center gap-0.5 bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl p-1 overflow-hidden animate-in fade-in zoom-in duration-200"
+                    >
+                        <ToolbarButton
+                            onClick={() => editor.chain().focus().toggleBold().run()}
+                            active={editor.isActive('bold')}
+                            icon={Bold}
+                            tooltip="Bold"
+                        />
+                        <ToolbarButton
+                            onClick={() => editor.chain().focus().toggleItalic().run()}
+                            active={editor.isActive('italic')}
+                            icon={Italic}
+                            tooltip="Italic"
+                        />
+                        <ToolbarButton
+                            onClick={() => editor.chain().focus().toggleUnderline().run()}
+                            active={editor.isActive('underline')}
+                            icon={UnderlineIcon}
+                            tooltip="Underline"
+                        />
+                        <ToolbarButton
+                            onClick={() => editor.chain().focus().toggleStrike().run()}
+                            active={editor.isActive('strike')}
+                            icon={Strikethrough}
+                            tooltip="Strike"
+                        />
+                        <ToolbarButton
+                            onClick={() => editor.chain().focus().toggleHighlight().run()}
+                            active={editor.isActive('highlight')}
+                            icon={Highlighter}
+                            tooltip="Highlight"
+                        />
+                        
+                        <div className="w-[1px] h-4 bg-slate-200 mx-1" />
+
+                        <ToolbarButton
+                            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                            active={editor.isActive('heading', { level: 1 })}
+                            icon={Heading1}
+                            tooltip="Heading 1"
+                        />
+                        <ToolbarButton
+                            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                            active={editor.isActive('heading', { level: 2 })}
+                            icon={Heading2}
+                            tooltip="Heading 2"
+                        />
+                        
+                        <div className="w-[1px] h-4 bg-slate-200 mx-1" />
+
+                        <ToolbarButton
+                            onClick={() => editor.chain().focus().toggleBulletList().run()}
+                            active={editor.isActive('bulletList')}
+                            icon={List}
+                            tooltip="Bullet List"
+                        />
+                        <ToolbarButton
+                            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                            active={editor.isActive('orderedList')}
+                            icon={ListOrdered}
+                            tooltip="Numbered List"
+                        />
+                        <ToolbarButton
+                            onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                            active={editor.isActive('blockquote')}
+                            icon={Quote}
+                            tooltip="Quote"
+                        />
+                    </BubbleMenu>
+                )}
                 <EditorContent editor={editor} />
             </div>
 
