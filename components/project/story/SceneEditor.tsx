@@ -1,13 +1,21 @@
 'use client'
 
-import { useState, useCallback, useEffect, useImperativeHandle, forwardRef, useRef } from 'react'
+import { useState, useCallback, useEffect, useImperativeHandle, forwardRef, useRef, useMemo } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import { BubbleMenu } from '@tiptap/react/menus'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
-import Underline from '@tiptap/extension-underline'
 import Highlight from '@tiptap/extension-highlight'
 import BubbleMenuExtension from '@tiptap/extension-bubble-menu'
+import { 
+    ScreenplaySceneHeading, 
+    ScreenplayAction, 
+    ScreenplayCharacter, 
+    ScreenplayParenthetical, 
+    ScreenplayDialogue, 
+    ScreenplayTransition 
+} from '@/lib/tiptap/screenplay'
+import { ScreenplayKeyboard } from '@/lib/tiptap/screenplay-keyboard'
 import { createClient } from '@/lib/supabase/client'
 import type { Database, WritingMode } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
@@ -34,7 +42,12 @@ import {
     Settings2,
     Mic,
     MicOff,
-    Waves
+    Waves,
+    Clapperboard,
+    User,
+    MessageSquare,
+    ArrowRight,
+    Type as TypeIcon
 } from 'lucide-react'
 import { restoreStructureNode, captureSceneVersion } from '@/lib/supabase/recovery'
 import { Button } from '@/components/ui/button'
@@ -151,6 +164,12 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         }
     }, [])
 
+    // Track latest scene prop in a ref to ensure autosave doesn't use a stale closure
+    const sceneRef = useRef(scene)
+    useEffect(() => {
+        sceneRef.current = scene
+    }, [scene])
+
     const updateViewSetting = (key: string, value: string) => {
         const newSettings = { ...viewSettings, [key]: value }
         setViewSettings(newSettings)
@@ -162,25 +181,53 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         setTitle(initialTitle)
     }, [initialTitle])
 
-    const editor = useEditor({
-        immediatelyRender: false,
-        extensions: [
-            StarterKit,
-            Underline,
+    // Memoize extensions to prevent unnecessary editor re-mounts
+    const extensions = useMemo(() => {
+        const base = [
+            StarterKit.configure({
+                // Keep standard nodes enabled to prevent schema validation errors
+                // We control their use via ScreenplayKeyboard and priority instead.
+                paragraph: {},
+                heading: {},
+            }),
+            // Underline is often included in StarterKit v3 or globally registered
+            // If it's missing, add it back, but currently causing 'Duplicate' warning
             Highlight.configure({ multicolor: true }),
             BubbleMenuExtension.configure({
-                element: null, // Let the react component handle it
+                element: null, 
             }),
             Placeholder.configure({
                 placeholder: writingMode === 'screenplay' ? 'Start your script...' : 'Once upon a time...',
             }),
-        ],
+        ]
+
+        if (writingMode === 'screenplay') {
+            return [
+                ...base,
+                ScreenplaySceneHeading,
+                ScreenplayAction,
+                ScreenplayCharacter,
+                ScreenplayParenthetical,
+                ScreenplayDialogue,
+                ScreenplayTransition,
+                ScreenplayKeyboard,
+            ]
+        }
+
+        return base
+    }, [writingMode])
+
+    const editor = useEditor({
+        immediatelyRender: false,
+        extensions,
         content: scene.content || '',
         editorProps: {
             attributes: {
                 class: cn(
-                    'prose prose-slate max-w-none focus:outline-none min-h-[500px] editor-novel-overrides',
-                    writingMode === 'screenplay' ? 'font-mono' : 'font-serif'
+                    'max-w-none focus:outline-none min-h-[500px]',
+                    writingMode === 'screenplay' 
+                        ? 'screenplay-mode font-mono' 
+                        : 'prose prose-slate font-serif editor-novel-overrides'
                 ),
             },
         },
@@ -192,7 +239,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             onTextChange?.(text)
             setSaveStatus('idle') 
         },
-    })
+    }, [writingMode])
 
     const saveContent = useCallback(async () => {
         if (!editor) return
@@ -235,9 +282,14 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         } else {
             setSaveStatus('saved')
             if (currentTitle !== initialTitle) onTitleUpdate?.(currentTitle)
-            onUpdate({ ...scene, title: currentTitle, content: newContent })
+            
+            const updatedScene = { ...sceneRef.current, title: currentTitle, content: newContent }
+            if (editor) {
+                (editor as any)._lastContent = newContent
+            }
+            onUpdate(updatedScene)
         }
-    }, [scene.id, scene.node_id, title, initialTitle, editor, onUpdate, onTitleUpdate])
+    }, [scene, title, initialTitle, editor, onUpdate, onTitleUpdate])
 
     // Effect for autosave
     useEffect(() => {
@@ -248,11 +300,18 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
     // Keep editor in sync when scene changes (ID or content)
     useEffect(() => {
-        if (editor && (scene.id !== (editor as any)._lastSceneId || scene.content !== (editor as any)._lastContent)) {
+        if (!editor) return
+
+        const isDifferentScene = scene.id !== (editor as any)._lastSceneId
+        const currentHTML = editor.getHTML()
+        // Structurally check if the content from parent is actually different from what we have/saved
+        const isContentDifferent = scene.content !== (editor as any)._lastContent && scene.content !== currentHTML
+
+        if (isDifferentScene || (isContentDifferent && !editor.isFocused)) {
             editor.commands.setContent(scene.content || '')
             ;(editor as any)._lastSceneId = scene.id
             ;(editor as any)._lastContent = scene.content
-            setSaveStatus('idle')
+            // Note: status will become idle via onUpdate which is triggered by setContent
         }
     }, [scene.id, scene.content, editor])
 
@@ -484,77 +543,116 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                         : "mx-auto w-full transition-[max-width] duration-500 ease-in-out"
                 )}
             >
-                {editor && writingMode !== 'screenplay' && (
+                {editor && (
                     <BubbleMenu 
                         editor={editor} 
-                        className="flex items-center gap-0.5 bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl p-1 overflow-hidden animate-in fade-in zoom-in duration-200"
+                        className="flex items-center gap-0.5 bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl p-1 overflow-hidden animate-in fade-in zoom-in duration-200 z-[100]"
                     >
-                        <ToolbarButton
-                            onClick={() => editor.chain().focus().toggleBold().run()}
-                            active={editor.isActive('bold')}
-                            icon={Bold}
-                            tooltip="Bold"
-                        />
-                        <ToolbarButton
-                            onClick={() => editor.chain().focus().toggleItalic().run()}
-                            active={editor.isActive('italic')}
-                            icon={Italic}
-                            tooltip="Italic"
-                        />
-                        <ToolbarButton
-                            onClick={() => editor.chain().focus().toggleUnderline().run()}
-                            active={editor.isActive('underline')}
-                            icon={UnderlineIcon}
-                            tooltip="Underline"
-                        />
-                        <ToolbarButton
-                            onClick={() => editor.chain().focus().toggleStrike().run()}
-                            active={editor.isActive('strike')}
-                            icon={Strikethrough}
-                            tooltip="Strike"
-                        />
-                        <ToolbarButton
-                            onClick={() => editor.chain().focus().toggleHighlight().run()}
-                            active={editor.isActive('highlight')}
-                            icon={Highlighter}
-                            tooltip="Highlight"
-                        />
-                        
-                        <div className="w-[1px] h-4 bg-slate-200 mx-1" />
-
-                        <ToolbarButton
-                            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-                            active={editor.isActive('heading', { level: 1 })}
-                            icon={Heading1}
-                            tooltip="Heading 1"
-                        />
-                        <ToolbarButton
-                            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-                            active={editor.isActive('heading', { level: 2 })}
-                            icon={Heading2}
-                            tooltip="Heading 2"
-                        />
-                        
-                        <div className="w-[1px] h-4 bg-slate-200 mx-1" />
-
-                        <ToolbarButton
-                            onClick={() => editor.chain().focus().toggleBulletList().run()}
-                            active={editor.isActive('bulletList')}
-                            icon={List}
-                            tooltip="Bullet List"
-                        />
-                        <ToolbarButton
-                            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                            active={editor.isActive('orderedList')}
-                            icon={ListOrdered}
-                            tooltip="Numbered List"
-                        />
-                        <ToolbarButton
-                            onClick={() => editor.chain().focus().toggleBlockquote().run()}
-                            active={editor.isActive('blockquote')}
-                            icon={Quote}
-                            tooltip="Quote"
-                        />
+                        {writingMode === 'screenplay' ? (
+                            <>
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().setNode('screenplaySceneHeading').run()}
+                                    active={editor.isActive('screenplaySceneHeading')}
+                                    icon={Clapperboard}
+                                    tooltip="Scene Heading"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().setNode('screenplayAction').run()}
+                                    active={editor.isActive('screenplayAction')}
+                                    icon={TypeIcon}
+                                    tooltip="Action"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().setNode('screenplayCharacter').run()}
+                                    active={editor.isActive('screenplayCharacter')}
+                                    icon={User}
+                                    tooltip="Character"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().setNode('screenplayParenthetical').run()}
+                                    active={editor.isActive('screenplayParenthetical')}
+                                    icon={() => <span className="text-[10px] font-bold">( )</span>}
+                                    tooltip="Parenthetical"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().setNode('screenplayDialogue').run()}
+                                    active={editor.isActive('screenplayDialogue')}
+                                    icon={MessageSquare}
+                                    tooltip="Dialogue"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().setNode('screenplayTransition').run()}
+                                    active={editor.isActive('screenplayTransition')}
+                                    icon={ArrowRight}
+                                    tooltip="Transition"
+                                />
+                            </>
+                        ) : (
+                            <>
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().toggleBold().run()}
+                                    active={editor.isActive('bold')}
+                                    icon={Bold}
+                                    tooltip="Bold"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().toggleItalic().run()}
+                                    active={editor.isActive('italic')}
+                                    icon={Italic}
+                                    tooltip="Italic"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().toggleUnderline().run()}
+                                    active={editor.isActive('underline')}
+                                    icon={UnderlineIcon}
+                                    tooltip="Underline"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().toggleStrike().run()}
+                                    active={editor.isActive('strike')}
+                                    icon={Strikethrough}
+                                    tooltip="Strikethrough"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().toggleHighlight().run()}
+                                    active={editor.isActive('highlight')}
+                                    icon={Highlighter}
+                                    tooltip="Highlight"
+                                />
+                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                                    active={editor.isActive('heading', { level: 1 })}
+                                    icon={Heading1}
+                                    tooltip="Heading 1"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                                    active={editor.isActive('heading', { level: 2 })}
+                                    icon={Heading2}
+                                    tooltip="Heading 2"
+                                />
+                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().toggleBulletList().run()}
+                                    active={editor.isActive('bulletList')}
+                                    icon={List}
+                                    tooltip="Bullet List"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                                    active={editor.isActive('orderedList')}
+                                    icon={ListOrdered}
+                                    tooltip="Numbered List"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                                    active={editor.isActive('blockquote')}
+                                    icon={Quote}
+                                    tooltip="Blockquote"
+                                />
+                            </>
+                        )}
                     </BubbleMenu>
                 )}
                 <EditorContent editor={editor} />

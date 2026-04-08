@@ -110,11 +110,13 @@ export default function NewProjectPage() {
 
             // Convert firstIdea into TipTap JSON to seed the initial scene.
             // This is intentional duplication: firstIdea is saved as an idea AND prefilled into the first writing unit.
+            const writingMode = state.writing_mode || 'simple';
+            const nodeType = writingMode === 'screenplay' ? 'screenplayAction' : 'paragraph';
             const paragraphs = firstIdea.split('\n')
                 .filter(l => l.trim() !== '')
-                .map(l => ({ type: 'paragraph', content: [{ type: 'text', text: (l as string) }] }))
+                .map(l => ({ type: nodeType, content: [{ type: 'text', text: (l as string) }] }))
             
-            initialSceneContent = { type: 'doc', content: paragraphs.length ? paragraphs : [{ type: 'paragraph' }] }
+            initialSceneContent = { type: 'doc', content: paragraphs.length ? paragraphs : [{ type: nodeType }] }
         }
 
         if (extras?.chunks && extras.chunks.length > 0) {
@@ -132,8 +134,10 @@ export default function NewProjectPage() {
 
             for (let i = 0; i < chunks.length; i++) {
                 const chunk = chunks[i]
-                const paragraphs = chunk.content.split('\n').filter(l => l.trim() !== '').map(l => ({ type: 'paragraph', content: [{ type: 'text', text: l }] }))
-                const tiptapJson = { type: 'doc', content: paragraphs.length ? paragraphs : [{ type: 'paragraph' }] }
+                const writingMode = state.writing_mode || 'simple';
+                const nodeType = writingMode === 'screenplay' ? 'screenplayAction' : 'paragraph';
+                const paragraphs = chunk.content.split('\n').filter(l => l.trim() !== '').map(l => ({ type: nodeType, content: [{ type: 'text', text: l }] }))
+                const tiptapJson = { type: 'doc', content: paragraphs.length ? paragraphs : [{ type: nodeType }] }
 
                 if (state.type === 'novel') {
                     const { data: chapter } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, type: 'chapter', title: chunk.title || `Chapter ${i + 1}`, order_index: i }).select().single()

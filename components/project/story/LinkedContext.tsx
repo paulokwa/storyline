@@ -72,8 +72,8 @@ export default function LinkedContext({
     async function addCharacter(characterId: string) {
         startTransition(async () => {
             // @ts-ignore
-            const { error } = await supabase.from('scene_characters').insert({ scene_id: sceneId, character_id: characterId })
-            if (!error || error.code === '23505') onUpdate()
+            const { error } = await supabase.from('scene_characters').upsert({ scene_id: sceneId, character_id: characterId }, { onConflict: 'scene_id,character_id' })
+            onUpdate()
         })
     }
 
@@ -87,8 +87,8 @@ export default function LinkedContext({
     async function addIdea(ideaId: string) {
         startTransition(async () => {
             // @ts-ignore
-            const { error } = await supabase.from('scene_ideas').insert({ scene_id: sceneId, idea_id: ideaId })
-            if (!error || error.code === '23505') onUpdate()
+            const { error } = await supabase.from('scene_ideas').upsert({ scene_id: sceneId, idea_id: ideaId }, { onConflict: 'scene_id,idea_id' })
+            onUpdate()
         })
     }
 
@@ -102,8 +102,8 @@ export default function LinkedContext({
     async function addLocation(locationId: string) {
         startTransition(async () => {
             // @ts-ignore
-            const { error } = await supabase.from('scene_locations').insert({ scene_id: sceneId, location_id: locationId })
-            if (!error || error.code === '23505') onUpdate()
+            const { error } = await supabase.from('scene_locations').upsert({ scene_id: sceneId, location_id: locationId }, { onConflict: 'scene_id,location_id' })
+            onUpdate()
         })
     }
 
@@ -117,8 +117,8 @@ export default function LinkedContext({
     async function addObject(objectId: string) {
         startTransition(async () => {
             // @ts-ignore
-            const { error } = await supabase.from('scene_objects').insert({ scene_id: sceneId, object_id: objectId })
-            if (!error || error.code === '23505') onUpdate()
+            const { error } = await supabase.from('scene_objects').upsert({ scene_id: sceneId, object_id: objectId }, { onConflict: 'scene_id,object_id' })
+            onUpdate()
         })
     }
 

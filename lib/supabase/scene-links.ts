@@ -28,19 +28,14 @@ export async function addCharacterLink(supabase: Supabase, sceneId: string, char
     const { data, error } = await supabase
         .from('scene_characters')
         // @ts-ignore - Supabase type inference failure
-        .insert({
+        .upsert({
             scene_id: sceneId,
             character_id: characterId
-        })
+        }, { onConflict: 'scene_id,character_id' })
         .select()
         .single()
         
-    if (error) {
-        // 23505 is PostgreSQL unique_violation error code
-        if (error.code === '23505') return null
-        throw error
-    }
-    
+    if (error) throw error
     return data
 }
 
@@ -79,19 +74,14 @@ export async function addIdeaLink(supabase: Supabase, sceneId: string, ideaId: s
     const { data, error } = await supabase
         .from('scene_ideas')
         // @ts-ignore - Supabase type inference failure
-        .insert({
+        .upsert({
             scene_id: sceneId,
             idea_id: ideaId
-        })
+        }, { onConflict: 'scene_id,idea_id' })
         .select()
         .single()
         
-    if (error) {
-        // 23505 is PostgreSQL unique_violation error code
-        if (error.code === '23505') return null
-        throw error
-    }
-    
+    if (error) throw error
     return data
 }
 

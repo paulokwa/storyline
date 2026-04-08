@@ -90,85 +90,85 @@ body {
 
 /* Screenplay mode formatting */
 .screenplay-mode {
-  font-family: 'Courier Prime', 'Courier Final Draft', 'Courier New', monospace;
-  font-size: 12pt;
-  line-height: 1; /* Standard screenplay line spacing is tight/single */
-  width: 100%;
-  max-width: 8.5in;
-  margin: 0 auto;
-  background: white;
-  min-height: 11in;
-  padding: 1in 1in 1in 1.5in;
-  box-shadow: 0 40px 100px rgba(0,0,0,0.05);
-  border: 1px solid #e1e4e8;
-  color: black;
-  box-sizing: border-box;
+  font-family: 'Courier Prime', 'Courier Final Draft', 'Courier New', monospace !important;
+  font-size: 12pt !important;
+  line-height: 1.2 !important; /* Slightly more breathable than 1.0 for digital reading */
+  color: black !important;
 }
 
-@media (max-width: 768px) {
-  .screenplay-mode {
-    min-height: auto;
-    padding: 2.5rem 1.5rem;
-    font-size: 11pt;
-    max-width: 100%;
-    margin: 0;
-    border: none;
-    box-shadow: none;
-  }
+/* Reset standard margins in screenplay mode to let specific classes handle them */
+.screenplay-mode p {
+  margin: 0 !important;
+  padding: 0 !important;
+  text-indent: 0 !important;
 }
 
-.screenplay-slugline {
+.screenplay-scene-heading {
   text-transform: uppercase;
   font-weight: bold;
-  margin-top: 2em;
-  margin-bottom: 1em;
+  margin-top: 25pt !important;
+  margin-bottom: 12pt !important;
 }
 
 .screenplay-action {
-  margin-top: 1em;
-  margin-bottom: 1em;
+  margin-top: 12pt !important;
+  margin-bottom: 12pt !important;
 }
 
 .screenplay-character {
   text-transform: uppercase;
-  margin-left: 25%;
-  margin-top: 1.5em;
-  margin-bottom: 0;
+  margin-left: 200pt !important;
+  margin-top: 12pt !important;
+  margin-bottom: 0 !important;
   width: fit-content;
 }
 
 @media (max-width: 768px) {
   .screenplay-character {
-    margin-left: 15%;
+    margin-left: 25% !important;
   }
 }
 
 .screenplay-dialogue {
-  margin-left: 10%;
-  width: 70%;
-  margin-top: 0;
-  margin-bottom: 1em;
+  margin-left: 110pt !important;
+  margin-right: 110pt !important;
+  margin-top: 0 !important;
+  margin-bottom: 12pt !important;
 }
 
 @media (max-width: 768px) {
   .screenplay-dialogue {
-    margin-left: 5%;
-    width: 90%;
+    margin-left: 15% !important;
+    margin-right: 10% !important;
+    width: auto !important;
   }
 }
 
 .screenplay-parenthetical {
-  margin-left: 15%;
-  width: 50%;
-  margin-top: 0;
-  margin-bottom: 0;
-  font-style: italic;
+  margin-left: 150pt !important;
+  margin-right: 150pt !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 @media (max-width: 768px) {
   .screenplay-parenthetical {
-    margin-left: 10%;
-    width: 80%;
+    margin-left: 20% !important;
+    margin-right: 20% !important;
+  }
+}
+
+.screenplay-transition {
+  text-transform: uppercase;
+  margin-left: 360pt !important;
+  margin-top: 12pt !important;
+  margin-bottom: 12pt !important;
+  width: fit-content;
+}
+
+@media (max-width: 768px) {
+  .screenplay-transition {
+    margin-left: 60% !important;
   }
 }
 
