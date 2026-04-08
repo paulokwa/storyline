@@ -120,7 +120,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             {/* Backdrop for mobile */}
             {(sidebarOpen || aiPanelOpen) && (
                 <div 
-                    className="md:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity duration-300"
+                    className="md:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-30 transition-opacity duration-300"
                     onClick={() => {
                         setSidebarOpen(false)
                         setAiPanelOpen(false)
@@ -130,7 +130,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
 
             {/* Left sidebar */}
             <div className={cn(
-                'bg-[#f5f4ef] flex flex-col transition-all duration-300 overflow-hidden z-30 md:z-20',
+                'bg-[#f5f4ef] flex flex-col transition-all duration-300 overflow-hidden z-40 md:z-20',
                 'fixed top-14 bottom-0 left-0 md:relative md:inset-auto md:h-full',
                 sidebarOpen ? 'w-[280px] lg:w-[320px] border-r border-slate-200' : 'w-0 border-none'
             )}>
@@ -215,7 +215,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
 
             {/* AI Helper Sidebar */}
             <div className={cn(
-                'bg-white flex flex-col border-l border-slate-200 transition-all duration-300 overflow-hidden z-30 md:z-20',
+                'bg-white flex flex-col border-l border-slate-200 transition-all duration-300 overflow-hidden z-40 md:z-20',
                 'fixed top-14 bottom-0 right-0 md:relative md:inset-auto md:h-full',
                 aiPanelOpen ? 'w-[320px] lg:w-[380px]' : 'w-0 border-none'
             )}>

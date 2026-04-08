@@ -71,8 +71,8 @@ export async function softDeleteEntity(
     table: EntityTable,
     id: string
 ) {
-    const { error } = await (supabase.from(table) as any)
-        .update({ deleted_at: new Date().toISOString() })
+    const { error } = await supabase.from(table as any)
+        .update({ deleted_at: new Date().toISOString() } as any)
         .eq('id', id);
 
     if (error) throw error;
@@ -83,8 +83,8 @@ export async function restoreEntity(
     table: EntityTable,
     id: string
 ) {
-    const { error } = await (supabase.from(table) as any)
-        .update({ deleted_at: null })
+    const { error } = await supabase.from(table as any)
+        .update({ deleted_at: null } as any)
         .eq('id', id);
 
     if (error) throw error;
@@ -180,7 +180,7 @@ export async function createProjectSnapshot(
     }
 
     // 2. Fetch all active state
-    const fetchActive = (table: any) => supabase.from(table).select('*').eq('project_id', projectId).is('deleted_at', null);
+    const fetchActive = (table: any) => (supabase.from(table as any) as any).select('*').eq('project_id', projectId).is('deleted_at', null);
     
     const [
         { data: nodes },
@@ -281,7 +281,7 @@ export async function restoreProjectSnapshot(
     // 3. Step B: Soft-delete current active state (moving everything to Trash)
     const tablesToClear: EntityTable[] = ['characters', 'ideas', 'locations', 'objects', 'ai_responses'];
     const clearPromises = tablesToClear.map(table => 
-        (supabase.from(table) as any).update({ deleted_at: deletedAt }).eq('project_id', projectId).is('deleted_at', null)
+        (supabase.from(table as any) as any).update({ deleted_at: deletedAt }).eq('project_id', projectId).is('deleted_at', null)
     );
     
     await Promise.all([
@@ -368,7 +368,7 @@ export async function restoreProjectSnapshot(
             };
         });
         if (rows.length > 0) {
-            const { error } = await (supabase.from(ent.name) as any).insert(rows);
+            const { error } = await (supabase.from(ent.name as any) as any).insert(rows);
             if (error) throw error;
         }
     }
@@ -398,7 +398,7 @@ export async function restoreProjectSnapshot(
         }).filter(Boolean);
 
         if (rowsToInsert.length > 0) {
-            const { error } = await (supabase.from(config.table) as any).insert(rowsToInsert);
+            const { error } = await (supabase.from(config.table as any) as any).insert(rowsToInsert);
             if (error) throw error;
         }
     }
@@ -443,7 +443,7 @@ export async function permanentlyDeleteTrashItem(
     } else {
         // assets (characters, ideas, etc.)
         const table = (typeLabel?.toLowerCase() + 's') as any;
-        const { error } = await supabase.from(table).delete().eq('id', id);
+        const { error } = await supabase.from(table as any).delete().eq('id', id);
         if (error) throw error;
     }
 }
