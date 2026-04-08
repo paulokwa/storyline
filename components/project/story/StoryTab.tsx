@@ -226,6 +226,8 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                         projectRelationships={projectRelationships}
                         projectType={project.type as any}
                         aiSettings={aiSettings}
+                        activeNodeId={activeNodeId}
+                        activeSceneId={activeScene?.id}
                         onClearSelection={() => setSelectedNodeIds([])}
                         onInsert={(text) => editorRef.current?.insertText(text)}
                     />

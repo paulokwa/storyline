@@ -16,7 +16,8 @@ import {
     PanelLeft,
     Sparkles,
     Volume2,
-    Wand2
+    Wand2,
+    Bookmark
 } from 'lucide-react'
 import ExportModal from '@/components/export/ExportModal'
 import ProjectSettingsModal from '@/components/project/ProjectSettingsModal'
@@ -34,6 +35,7 @@ const TABS = [
     { slug: 'ideas', label: 'Ideas', icon: Lightbulb },
     { slug: 'locations', label: 'Locations', icon: MapPin },
     { slug: 'objects', label: 'Objects', icon: Package },
+    { slug: 'archive', label: 'Archive', icon: Bookmark },
 ] as const
 
 export default function ProjectShell({

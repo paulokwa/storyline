@@ -3,10 +3,14 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { useCompletion } from '@ai-sdk/react'
 import Link from 'next/link'
-import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Package } from 'lucide-react'
+import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Package, Bookmark } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
+import SaveAiResponseModal from '@/components/project/ai/SaveAiResponseModal'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { createClient } from '@/lib/supabase/client'
 
 interface AiHelperPanelProps {
     projectId: string
@@ -21,6 +25,8 @@ interface AiHelperPanelProps {
     allScenes?: any[]
     onClearSelection?: () => void
     onInsert: (text: string) => void
+    activeNodeId?: string | null
+    activeSceneId?: string | null
     projectType?: 'tv_script' | 'novel'
     aiSettings: {
         ai_enabled: boolean
@@ -82,7 +88,8 @@ const PROMPT_TEMPLATES = [
 export default function AiHelperPanel({
     projectId, sceneText, onInsert, linkedCharacters = [], linkedIdeas = [], linkedLocations = [], linkedObjects = [],
     projectRelationships = [],
-    selectedNodes = [], allNodes = [], allScenes = [], onClearSelection, aiSettings, projectType
+    selectedNodes = [], allNodes = [], allScenes = [], onClearSelection, aiSettings, projectType,
+    activeNodeId, activeSceneId
 }: AiHelperPanelProps) {
     const isNovel = projectType === 'novel'
     const label = isNovel ? 'Chapter' : 'Scene'
@@ -95,11 +102,66 @@ export default function AiHelperPanel({
     const [previewOpen, setPreviewOpen] = useState(false)
     const [promptMode, setPromptMode] = useState('Review / Chat')
     const [isOllamaLoading, setIsOllamaLoading] = useState(false)
-    const [ollamaStatus, setOllamaStatus] = useState<'checking' | 'online' | 'offline'>('checking')
-    const [geminiStatus, setGeminiStatus] = useState<'checking' | 'online' | 'offline'>('checking')
+    const [ollamaStatus, setOllamaStatus] = useState<'online' | 'offline' | 'checking'>('online')
+    const [geminiStatus, setGeminiStatus] = useState<'online' | 'offline' | 'checking'>('online')
+    const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
     const [lastUsedProvider, setLastUsedProvider] = useState<'gemini' | 'ollama' | null>(null)
 
+    // Phase 5 AI Reuse Context
+    const [includeArchiveContext, setIncludeArchiveContext] = useState(false)
+    const [archiveResponses, setArchiveResponses] = useState<any[]>([])
+    const [selectedArchiveIds, setSelectedArchiveIds] = useState<string[]>([])
+    const [isLoadingArchive, setIsLoadingArchive] = useState(false)
+
+    const supabase = createClient()
+    const [saveModalOpen, setSaveModalOpen] = useState(false)
+    const [saveSuccess, setSaveSuccess] = useState(false)
+
     // Snapshot scene text at submit time so the hook body stays stable during streaming
+    // Fetch archive context when enabled
+    useEffect(() => {
+        async function loadArchive() {
+            if (!includeArchiveContext) {
+                setArchiveResponses([])
+                setSelectedArchiveIds([]) // Clear selection when disabled for safety
+                return
+            }
+            try {
+                setIsLoadingArchive(true)
+                const { data, error } = await (supabase
+                    .from('ai_responses' as any) as any)
+                    .select('id, title, response, type, source_label')
+                    .eq('project_id', projectId)
+                    .order('created_at', { ascending: false })
+                    .limit(8)
+                
+                if (error) throw error
+                if (data) setArchiveResponses(data)
+            } catch (err: any) {
+                console.error('Error loading archive context:', err.message)
+            } finally {
+                setIsLoadingArchive(false)
+            }
+        }
+        loadArchive()
+    }, [includeArchiveContext, projectId, supabase])
+
+    const archiveContextString = useMemo(() => {
+        if (!includeArchiveContext || selectedArchiveIds.length === 0) return ''
+        const selectedIndices = archiveResponses.filter(r => selectedArchiveIds.includes(r.id))
+        return selectedIndices.map(r => 
+            `=== Saved Response: ${r.title} ===\nType: ${r.type}\nSource: ${r.source_label}\n\n${r.response}`
+        ).join('\n\n')
+    }, [includeArchiveContext, archiveResponses, selectedArchiveIds])
+
+    const toggleArchiveId = (id: string) => {
+        setSelectedArchiveIds(prev => {
+            if (prev.includes(id)) return prev.filter(i => i !== id)
+            if (prev.length >= 5) return prev // Max 5 limit
+            return [...prev, id]
+        })
+    }
+
     const sceneTextRef = useRef(sceneText)
     sceneTextRef.current = sceneText
 
@@ -130,6 +192,41 @@ export default function AiHelperPanel({
     }, [storySelectionContext])
 
     const isContextTooLarge = contextSizeChars > 30000 // Blocking over 30k chars
+
+    const linkedEntitiesSnapshot = useMemo(() => {
+        return {
+            characters: linkedCharacters.map(c => ({ id: c.id, name: c.name })),
+            ideas: linkedIdeas.map(i => ({ id: i.id, title: i.title })),
+            locations: linkedLocations.map(l => ({ id: l.id, name: l.name })),
+            objects: linkedObjects.map(o => ({ id: o.id, name: o.name })),
+            storyContextNodes: selectedNodes.map(n => ({ id: n.id, title: n.title, type: n.type }))
+        }
+    }, [linkedCharacters, linkedIdeas, linkedLocations, linkedObjects, selectedNodes])
+
+    const contextSnapshotString = useMemo(() => {
+        const parts = []
+        if (projectId) parts.push(`Project: ${projectId}`)
+        if (activeNodeId) {
+            const node = allNodes.find(n => n.id === activeNodeId)
+            if (node) parts.push(`${node.type === 'scene' ? 'Scene' : 'Chapter'}: ${node.title}`)
+        }
+        if (linkedCharacters.length > 0) parts.push(`${linkedCharacters.length} Chars`)
+        if (linkedIdeas.length > 0) parts.push(`${linkedIdeas.length} Ideas`)
+        if (selectedNodes.length > 0) parts.push(`${selectedNodes.length} Nodes`)
+        return parts.join(' | ')
+    }, [projectId, activeNodeId, allNodes, linkedCharacters, linkedIdeas, selectedNodes])
+
+    const sourceLabel = useMemo(() => {
+        if (activeNodeId) {
+            const node = allNodes.find(n => n.id === activeNodeId)
+            if (node) {
+                const typeLabel = node.type.charAt(0).toUpperCase() + node.type.slice(1)
+                return `${typeLabel}: ${node.title}`
+            }
+            return isNovel ? 'Chapter: Unknown' : 'Scene: Unknown'
+        }
+        return 'Project Chat'
+    }, [activeNodeId, allNodes, isNovel])
 
     const { completion, complete, isLoading, error, setCompletion } = useCompletion({
         api: '/api/ai',
@@ -162,6 +259,7 @@ export default function AiHelperPanel({
                 action: 'helper',
                 projectId,
                 input: sceneTextRef.current.slice(-10000),
+                archiveContext: archiveContextString,
                 linkedCharacters: linkedCharacters.map((c: any) => ({
                     id: c.id,
                     name: c.name,
@@ -206,6 +304,10 @@ export default function AiHelperPanel({
         const charactersContext = linkedCharacters.length > 0 
             ? `Characters: ${linkedCharacters.map(c => c.name).join(', ')}. ` 
             : ''
+        const archiveContext = includeArchiveContext && archiveContextString
+            ? `\n\nRELEVANT ARCHIVED RESPONSES:\n${archiveContextString}\n\n`
+            : ''
+        
         const ideasContext = linkedIdeas.length > 0 
             ? `Ideas: ${linkedIdeas.map(i => i.title).join(', ')}. ` 
             : ''
@@ -588,7 +690,13 @@ export default function AiHelperPanel({
 
                         {/* Action buttons — only when complete */}
                         {!isLoading && completion && (
-                            <div className="flex gap-2">
+                            <div className="flex items-center gap-2">
+                                {saveSuccess && (
+                                    <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider animate-in fade-in slide-in-from-right-2 duration-500 flex items-center gap-1 mr-1">
+                                        <Check className="w-3 h-3" />
+                                        Saved to Archive
+                                    </span>
+                                )}
                                 <Button
                                     onClick={handleInsert}
                                     variant="outline"
@@ -613,10 +721,93 @@ export default function AiHelperPanel({
                                     {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                                     {copied ? 'Copied' : 'Copy'}
                                 </Button>
+                                <Button
+                                    onClick={() => setSaveModalOpen(true)}
+                                    variant="outline"
+                                    size="sm"
+                                    title="Save to database"
+                                    className="rounded-xl gap-1.5 h-9 px-3 transition-all active:scale-95 border-slate-200 text-slate-500 hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50"
+                                >
+                                    <Bookmark className="w-3.5 h-3.5" />
+                                    Save
+                                </Button>
                             </div>
                         )}
+                        
+                        <SaveAiResponseModal 
+                            open={saveModalOpen}
+                            onOpenChange={setSaveModalOpen}
+                            projectId={projectId}
+                            prompt={lastPrompt}
+                            response={completion || displayedCompletion}
+                            sourceSceneId={activeSceneId || undefined}
+                            sourceNodeId={activeNodeId || undefined}
+                            sourceLabel={sourceLabel}
+                            model={lastUsedProvider === 'ollama' ? aiSettings.ollama_model : (lastUsedProvider === 'gemini' ? 'Gemini' : aiSettings.ai_provider)}
+                            action={promptMode.toLowerCase()}
+                            linkedEntities={linkedEntitiesSnapshot}
+                            contextSnapshot={contextSnapshotString}
+                            onSuccess={() => {
+                                setSaveSuccess(true)
+                                setTimeout(() => setSaveSuccess(false), 4000)
+                            }}
+                        />
                     </div>
                 )}
+            </div>
+            
+            <div className="px-6 py-4 border-b border-slate-200/60 bg-white/30 space-y-4">
+                <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                        <Label htmlFor="archive-context" className="text-[11px] font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+                             Use Archive Context
+                             {isLoadingArchive && <Loader2 className="w-3 h-3 animate-spin text-indigo-500" />}
+                        </Label>
+                        <p className="text-[10px] text-slate-400 font-medium">Include top 5 most recent saved responses</p>
+                    </div>
+                    <Switch 
+                        id="archive-context" 
+                        checked={includeArchiveContext} 
+                        onCheckedChange={setIncludeArchiveContext}
+                        className="scale-90 data-[state=checked]:bg-indigo-500"
+                    />
+                </div>
+                <div className={cn(
+                    "flex flex-wrap gap-1 mt-2 transition-all duration-300",
+                    includeArchiveContext ? "opacity-100 max-h-40 overflow-y-auto" : "opacity-0 max-h-0 overflow-hidden pointer-events-none"
+                )}>
+                    {archiveResponses.length > 0 ? (
+                        archiveResponses.map((r) => {
+                            const isSelected = selectedArchiveIds.includes(r.id)
+                            return (
+                                <button
+                                    key={r.id}
+                                    onClick={() => toggleArchiveId(r.id)}
+                                    className={cn(
+                                        "text-[9px] px-2 py-1 rounded-lg border transition-all text-left truncate max-w-[140px] flex items-center gap-1.5",
+                                        isSelected 
+                                            ? "bg-indigo-50 text-indigo-700 border-indigo-200 font-bold" 
+                                            : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
+                                    )}
+                                    title={`${r.title} (${r.source_label})`}
+                                >
+                                    <div className={cn(
+                                        "w-1 h-1 rounded-full",
+                                        isSelected ? "bg-indigo-500" : "bg-slate-300"
+                                    )} />
+                                    {r.title}
+                                </button>
+                            )
+                        })
+                    ) : includeArchiveContext && !isLoadingArchive ? (
+                        <p className="text-[10px] text-slate-400 italic px-1">No saved responses found.</p>
+                    ) : null}
+                    {selectedArchiveIds.length >= 5 && (
+                        <p className="text-[9px] text-amber-600 font-medium px-1 mt-1 w-full flex items-center gap-1">
+                            <Info className="w-2 h-2" /> Max selection reached
+                        </p>
+                    )}
+                </div>
             </div>
 
             {/* Input Area */}
