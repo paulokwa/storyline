@@ -31,11 +31,15 @@ import {
     AlignJustify,
     MoveHorizontal,
     Maximize2,
-    Settings2
+    Settings2,
+    Mic,
+    MicOff,
+    Waves
 } from 'lucide-react'
 import { restoreStructureNode, captureSceneVersion } from '@/lib/supabase/recovery'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
+import { useSpeechToText } from '@/hooks/useSpeechToText'
 
 interface SceneEditorProps {
     scene: any
@@ -110,6 +114,23 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [isRestoring, setIsRestoring] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
     const [showViewSettings, setShowViewSettings] = useState(false)
+    const [interimTranscript, setInterimTranscript] = useState('')
+
+    const { toggle: toggleDictation, isRecording, supported: speechSupported } = useSpeechToText({
+        onTranscript: (text, isFinal) => {
+            if (isFinal && editor) {
+                setInterimTranscript('')
+                // Add a space if we're not at the start of a sentence/line
+                const { from } = editor.state.selection
+                const textBefore = editor.state.doc.textBetween(Math.max(0, from - 1), from)
+                const needsSpace = textBefore && ![' ', '\n'].includes(textBefore)
+                
+                editor.chain().focus().insertContent((needsSpace ? ' ' : '') + text).run()
+            } else {
+                setInterimTranscript(text)
+            }
+        }
+    })
 
     const [viewSettings, setViewSettings] = useState({
         fontSize: '18px',
@@ -158,10 +179,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         editorProps: {
             attributes: {
                 class: cn(
-                    'prose prose-slate max-w-none focus:outline-none min-h-[500px]',
-                    writingMode === 'screenplay' 
-                        ? 'font-mono' 
-                        : 'font-serif text-[var(--editor-font-size,1.125rem)] leading-[var(--editor-line-height,1.8)] text-[var(--editor-text-align,left)]'
+                    'prose prose-slate max-w-none focus:outline-none min-h-[500px] editor-novel-overrides',
+                    writingMode === 'screenplay' ? 'font-mono' : 'font-serif'
                 ),
             },
         },
@@ -295,6 +314,23 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             <HistoryIcon className="w-3 h-3 mr-1" />
                              History
                         </Button>
+                        
+                        {speechSupported && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={toggleDictation}
+                                className={cn(
+                                    "h-6 px-2 text-[10px] font-bold uppercase tracking-widest transition-all",
+                                    isRecording 
+                                        ? "text-red-500 bg-red-50 hover:bg-red-100 animate-pulse" 
+                                        : "text-slate-400 hover:text-slate-600 hover:bg-white"
+                                )}
+                            >
+                                {isRecording ? <Mic className="w-3 h-3 mr-1" /> : <MicOff className="w-3 h-3 mr-1" />}
+                                {isRecording ? 'Listening...' : 'Dictate'}
+                            </Button>
+                        )}
                         
                         {/* Phase B: View Settings */}
                         {writingMode === 'simple' && (
@@ -522,6 +558,23 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                     </BubbleMenu>
                 )}
                 <EditorContent editor={editor} />
+                
+                {/* Floating Interim Transcript Indicator */}
+                {isRecording && (
+                    <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-3">
+                        {interimTranscript && (
+                            <div className="bg-white/80 backdrop-blur-md border border-slate-200 px-6 py-3 rounded-2xl shadow-2xl max-w-lg text-center animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                <p className="text-slate-600 font-serif italic line-clamp-2">
+                                    "{interimTranscript}..."
+                                </p>
+                            </div>
+                        )}
+                        <div className="bg-slate-900 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-3 animate-pulse">
+                            <Waves className="w-4 h-4 text-emerald-400" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Dictation Active</span>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {isProjectEmpty && (

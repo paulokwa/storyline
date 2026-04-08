@@ -239,3 +239,30 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* 
+  Editor Novel Mode View Settings Overrides
+  Ensures font size, line height, and alignment variables are 
+  consistently applied to all prose elements.
+*/
+.editor-novel-overrides {
+  font-size: var(--editor-font-size, 1.125rem) !important;
+  line-height: var(--editor-line-height, 1.8) !important;
+  text-align: var(--editor-text-align, left) !important;
+}
+
+.editor-novel-overrides p,
+.editor-novel-overrides li,
+.editor-novel-overrides mark,
+.editor-novel-overrides blockquote,
+.editor-novel-overrides h1,
+.editor-novel-overrides h2 {
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
+/* Special case for highlight to ensure background color doesn't wrap oddly at larger sizes */
+.editor-novel-overrides mark {
+  padding: 0.1em 0;
+  border-radius: 2px;
+}
