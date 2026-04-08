@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { User, Users, Plus, Search, ChevronRight, PenTool, Hash, Loader2, Trash2, Pencil } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { User, Users, Plus, Search, ChevronRight, PenTool, Hash, Loader2, Trash2, Pencil, GripVertical } from 'lucide-react'
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
+import { cn, reorder } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { createClient } from '@/lib/supabase/client'
@@ -163,6 +164,41 @@ export default function CharactersTab({
         if (e.key === 'Escape') setRenamingId(null)
     }
 
+    async function handleReorder(result: DropResult) {
+        if (!result.destination) return
+
+        const items = reorder(
+            localCharacters,
+            result.source.index,
+            result.destination.index
+        )
+
+        setLocalCharacters(items)
+
+        // Update database
+        const supabase = createClient()
+        const updates = items.map((char, index) => ({
+            id: char.id,
+            order_index: index,
+            project_id: projectId, // Supabase update may require all PK or required fields for bulk if using upsert, but update is per row
+        }))
+
+        // Bulk update is better. Using upsert if possible, or multiple updates.
+        // Supabase allows bulk upsert.
+        const { error } = await (supabase as any)
+            .from('characters')
+            .upsert(items.map((char, index) => ({
+                ...char,
+                order_index: index
+            })))
+
+        if (error) {
+            console.error('Error updating character order:', error)
+            // Rollback
+            setLocalCharacters(localCharacters)
+        }
+    }
+
     if (localCharacters.length === 0) {
         return <EmptyCharactersState onCreate={handleCreateCharacter} isCreating={isCreating} projectType={projectType} />
     }
@@ -192,72 +228,95 @@ export default function CharactersTab({
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-4 pb-10 space-y-1 custom-scrollbar">
-                    {localCharacters.map((char: Character) => (
-                        <div
-                            key={char.id}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => setSelectedId(char.id)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault()
-                                    setSelectedId(char.id)
-                                }
-                            }}
-                            className={cn(
-                                "w-full flex items-center gap-3 px-4 py-4 rounded-2xl transition-all duration-300 text-left group cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#546354]/20",
-                                selectedId === char.id
-                                    ? "bg-white shadow-[0_10px_30px_rgba(0,0,0,0.03)] ring-1 ring-slate-100"
-                                    : "hover:bg-white/40 text-slate-500 hover:text-slate-800"
-                            )}
-                        >
-                            <div className={cn(
-                                "w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center transition-all duration-500",
-                                selectedId === char.id ? "bg-[#fbf9f5] scale-105" : "bg-white border border-slate-100"
-                            )}>
-                                <User className={cn("w-4.5 h-4.5 transition-colors duration-500", selectedId === char.id ? "text-[#546354]" : "text-stone-300")} />
+                <DragDropContext onDragEnd={handleReorder}>
+                    <Droppable droppableId="characters">
+                        {(provided) => (
+                            <div 
+                                {...provided.droppableProps}
+                                ref={provided.innerRef}
+                                className="flex-1 overflow-y-auto px-4 pb-10 space-y-1 custom-scrollbar"
+                            >
+                                {localCharacters.map((char: Character, index: number) => (
+                                    <Draggable key={char.id} draggableId={char.id} index={index}>
+                                        {(provided, snapshot) => (
+                                            <div
+                                                ref={provided.innerRef}
+                                                {...provided.draggableProps}
+                                                role="button"
+                                                tabIndex={0}
+                                                onClick={() => setSelectedId(char.id)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                        e.preventDefault()
+                                                        setSelectedId(char.id)
+                                                    }
+                                                }}
+                                                className={cn(
+                                                    "w-full flex items-center gap-3 px-4 py-4 rounded-2xl transition-all duration-300 text-left group cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#546354]/20",
+                                                    selectedId === char.id
+                                                        ? "bg-white shadow-[0_10px_30px_rgba(0,0,0,0.03)] ring-1 ring-slate-100"
+                                                        : "hover:bg-white/40 text-slate-500 hover:text-slate-800",
+                                                    snapshot.isDragging && "shadow-2xl ring-2 ring-[#546354]/20 z-50 bg-white"
+                                                )}
+                                            >
+                                                <div 
+                                                    {...provided.dragHandleProps}
+                                                    className="p-1 -ml-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-400"
+                                                >
+                                                    <GripVertical className="w-3.5 h-3.5" />
+                                                </div>
+                                                <div className={cn(
+                                                    "w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center transition-all duration-500",
+                                                    selectedId === char.id ? "bg-[#fbf9f5] scale-105" : "bg-white border border-slate-100"
+                                                )}>
+                                                    <User className={cn("w-4.5 h-4.5 transition-colors duration-500", selectedId === char.id ? "text-[#546354]" : "text-stone-300")} />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    {renamingId === char.id ? (
+                                                        <input
+                                                            ref={renameInputRef}
+                                                            type="text"
+                                                            value={renameValue}
+                                                            onChange={e => setRenameValue(e.target.value)}
+                                                            onBlur={() => commitRename(char.id)}
+                                                            onKeyDown={e => handleRenameKeyDown(e, char.id)}
+                                                            onClick={e => e.stopPropagation()}
+                                                            className="w-full bg-[#fbf9f5] border border-[#546354]/20 rounded-lg px-2 py-0.5 text-sm font-medium text-slate-800 outline-none ring-1 ring-[#546354]/10"
+                                                        />
+                                                    ) : (
+                                                        <>
+                                                            <p className={cn(
+                                                                "text-sm font-medium tracking-tight truncate",
+                                                                selectedId === char.id ? "text-slate-800" : "text-slate-500"
+                                                            )}>
+                                                                {char.name}
+                                                            </p>
+                                                            <p className="text-[10px] text-slate-300 uppercase tracking-widest mt-0.5 font-medium opacity-60">
+                                                                {projectType === 'novel' ? 'Character' : 'Cast Member'}
+                                                            </p>
+                                                        </>
+                                                    )}
+                                                </div>
+                                                {selectedId === char.id && renamingId !== char.id ? (
+                                                    <button
+                                                        onClick={e => startRename(char, e)}
+                                                        className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-slate-50 text-stone-300 hover:text-[#546354] transition-all duration-200 flex-shrink-0"
+                                                        title="Rename character"
+                                                    >
+                                                        <Pencil className="w-3 h-3" />
+                                                    </button>
+                                                ) : selectedId === char.id && (
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-[#546354]/40 flex-shrink-0" />
+                                                )}
+                                            </div>
+                                        )}
+                                    </Draggable>
+                                ))}
+                                {provided.placeholder}
                             </div>
-                            <div className="flex-1 min-w-0">
-                                {renamingId === char.id ? (
-                                    <input
-                                        ref={renameInputRef}
-                                        type="text"
-                                        value={renameValue}
-                                        onChange={e => setRenameValue(e.target.value)}
-                                        onBlur={() => commitRename(char.id)}
-                                        onKeyDown={e => handleRenameKeyDown(e, char.id)}
-                                        onClick={e => e.stopPropagation()}
-                                        className="w-full bg-[#fbf9f5] border border-[#546354]/20 rounded-lg px-2 py-0.5 text-sm font-medium text-slate-800 outline-none ring-1 ring-[#546354]/10"
-                                    />
-                                ) : (
-                                    <>
-                                        <p className={cn(
-                                            "text-sm font-medium tracking-tight truncate",
-                                            selectedId === char.id ? "text-slate-800" : "text-slate-500"
-                                        )}>
-                                            {char.name}
-                                        </p>
-                                        <p className="text-[10px] text-slate-300 uppercase tracking-widest mt-0.5 font-medium opacity-60">
-                                            {projectType === 'novel' ? 'Character' : 'Cast Member'}
-                                        </p>
-                                    </>
-                                )}
-                            </div>
-                            {selectedId === char.id && renamingId !== char.id ? (
-                                <button
-                                    onClick={e => startRename(char, e)}
-                                    className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-slate-50 text-stone-300 hover:text-[#546354] transition-all duration-200 flex-shrink-0"
-                                    title="Rename character"
-                                >
-                                    <Pencil className="w-3 h-3" />
-                                </button>
-                            ) : selectedId === char.id && (
-                                <div className="w-1.5 h-1.5 rounded-full bg-[#546354]/40 flex-shrink-0" />
-                            )}
-                        </div>
-                    ))}
-                </div>
+                        )}
+                    </Droppable>
+                </DragDropContext>
             </div>
 
             {/* Main Content - Detail view */}

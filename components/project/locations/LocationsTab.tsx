@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { MapPin, Plus, Search, ChevronRight, PenTool, Hash, Loader2, Trash2, Pencil } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { MapPin, Plus, Search, ChevronRight, PenTool, Hash, Loader2, Trash2, Pencil, GripVertical } from 'lucide-react'
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
+import { cn, reorder } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
@@ -133,6 +134,20 @@ export default function LocationsTab({
         setRenamingId(null)
     }
 
+    async function handleReorder(result: DropResult) {
+        if (!result.destination) return
+        const items = reorder(localLocations, result.source.index, result.destination.index)
+        setLocalLocations(items)
+        const supabase = createClient()
+        const { error } = await (supabase as any)
+            .from('locations')
+            .upsert(items.map((loc, index) => ({ ...loc, order_index: index })))
+        if (error) {
+            console.error('Error updating location order:', error)
+            setLocalLocations(localLocations)
+        }
+    }
+
     if (localLocations.length === 0) {
         return <EmptyState onCreate={handleCreateLocation} isCreating={isCreating} />
     }
@@ -150,28 +165,55 @@ export default function LocationsTab({
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-4 pb-10 space-y-1">
-                    {localLocations.map((loc: any) => (
-                        <div key={loc.id} onClick={() => setSelectedId(loc.id)} className={cn("w-full flex items-center gap-3 px-4 py-4 rounded-2xl transition-all duration-300 text-left cursor-pointer group", selectedId === loc.id ? "bg-white shadow-sm ring-1 ring-slate-100" : "hover:bg-white/40 text-slate-500 hover:text-slate-800")}>
-                            <div className={cn("w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center", selectedId === loc.id ? "bg-[#fbf9f5]" : "bg-white border border-slate-100")}>
-                                <MapPin className={cn("w-4.5 h-4.5", selectedId === loc.id ? "text-[#546354]" : "text-stone-300")} />
+                <DragDropContext onDragEnd={handleReorder}>
+                    <Droppable droppableId="locations">
+                        {(provided) => (
+                            <div 
+                                {...provided.droppableProps}
+                                ref={provided.innerRef}
+                                className="flex-1 overflow-y-auto px-4 pb-10 space-y-1"
+                            >
+                                {localLocations.map((loc: any, index: number) => (
+                                    <Draggable key={loc.id} draggableId={loc.id} index={index}>
+                                        {(provided, snapshot) => (
+                                            <div
+                                                ref={provided.innerRef}
+                                                {...provided.draggableProps}
+                                                onClick={() => setSelectedId(loc.id)}
+                                                className={cn(
+                                                    "w-full flex items-center gap-3 px-4 py-4 rounded-2xl transition-all duration-300 text-left cursor-pointer group",
+                                                    selectedId === loc.id ? "bg-white shadow-sm ring-1 ring-slate-100" : "hover:bg-white/40 text-slate-500 hover:text-slate-800",
+                                                    snapshot.isDragging && "shadow-2xl ring-2 ring-[#546354]/20 z-50 bg-white"
+                                                )}
+                                            >
+                                                <div {...provided.dragHandleProps} className="p-1 -ml-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab text-slate-300">
+                                                    <GripVertical className="w-3.5 h-3.5" />
+                                                </div>
+                                                <div className={cn("w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center", selectedId === loc.id ? "bg-[#fbf9f5]" : "bg-white border border-slate-100")}>
+                                                    <MapPin className={cn("w-4.5 h-4.5", selectedId === loc.id ? "text-[#546354]" : "text-stone-300")} />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    {renamingId === loc.id ? (
+                                                        <input ref={renameInputRef} type="text" value={renameValue} onChange={e => setRenameValue(e.target.value)} onBlur={() => commitRename(loc.id)} onKeyDown={e => e.key === 'Enter' && commitRename(loc.id)} onClick={e => e.stopPropagation()} className="w-full bg-[#fbf9f5] border border-[#546354]/20 rounded-lg px-2 py-0.5 text-sm outline-none" />
+                                                    ) : (
+                                                        <>
+                                                            <p className={cn("text-sm font-medium truncate", selectedId === loc.id ? "text-slate-800" : "text-slate-500")}>{loc.name}</p>
+                                                            <p className="text-[10px] text-slate-300 uppercase tracking-widest mt-0.5 font-medium opacity-60">Setting</p>
+                                                        </>
+                                                    )}
+                                                </div>
+                                                {selectedId === loc.id && renamingId !== loc.id && (
+                                                    <button onClick={e => startRename(loc, e)} className="opacity-0 group-hover:opacity-100 p-1 text-stone-300 hover:text-[#546354]"><Pencil className="w-3 h-3" /></button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </Draggable>
+                                ))}
+                                {provided.placeholder}
                             </div>
-                            <div className="flex-1 min-w-0">
-                                {renamingId === loc.id ? (
-                                    <input ref={renameInputRef} type="text" value={renameValue} onChange={e => setRenameValue(e.target.value)} onBlur={() => commitRename(loc.id)} onKeyDown={e => e.key === 'Enter' && commitRename(loc.id)} onClick={e => e.stopPropagation()} className="w-full bg-[#fbf9f5] border border-[#546354]/20 rounded-lg px-2 py-0.5 text-sm outline-none" />
-                                ) : (
-                                    <>
-                                        <p className={cn("text-sm font-medium truncate", selectedId === loc.id ? "text-slate-800" : "text-slate-500")}>{loc.name}</p>
-                                        <p className="text-[10px] text-slate-300 uppercase tracking-widest mt-0.5 font-medium opacity-60">Setting</p>
-                                    </>
-                                )}
-                            </div>
-                            {selectedId === loc.id && renamingId !== loc.id && (
-                                <button onClick={e => startRename(loc, e)} className="opacity-0 group-hover:opacity-100 p-1 text-stone-300 hover:text-[#546354]"><Pencil className="w-3 h-3" /></button>
-                            )}
-                        </div>
-                    ))}
-                </div>
+                        )}
+                    </Droppable>
+                </DragDropContext>
             </div>
 
             <div className={cn("flex-1 flex flex-col overflow-hidden bg-[#fbf9f5]", !selectedId && "hidden md:flex")}>

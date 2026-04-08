@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,7 +14,8 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { cn } from '@/lib/utils'
+import { cn, reorder } from '@/lib/utils'
+import { GripVertical } from 'lucide-react'
 import type { Database, NodeType } from '@/lib/supabase/types'
 
 type Project = Database['public']['Tables']['projects']['Row']
@@ -134,6 +136,41 @@ export default function StructureTree({
         onNodesChange(nodes.map(n => n.id === node.id ? { ...n, title } : n))
     }
 
+    async function handleReorder(result: DropResult) {
+        if (!result.destination) return
+
+        const sourceParentId = result.source.droppableId === 'root' ? null : result.source.droppableId
+        const destParentId = result.destination.droppableId === 'root' ? null : result.destination.droppableId
+
+        // For now, only support reordering within the same parent
+        if (sourceParentId !== destParentId) return 
+
+        const siblings = nodes.filter(n => n.parent_id === sourceParentId).sort((a, b) => a.order_index - b.order_index)
+        const newSiblings = reorder(siblings, result.source.index, result.destination.index)
+        
+        // Update all nodes in the state
+        const updatedNodes = nodes.map(n => {
+            const newIndex = newSiblings.findIndex(sib => sib.id === n.id)
+            if (newIndex !== -1) {
+                return { ...n, order_index: newIndex }
+            }
+            return n
+        })
+        
+        onNodesChange(updatedNodes)
+
+        // Update Supabase
+        const supabase = createClient()
+        const { error } = await (supabase as any)
+            .from('structure_nodes')
+            .upsert(newSiblings.map((n, i) => ({ ...n, order_index: i })))
+        
+        if (error) {
+            console.error('Error reordering nodes:', error)
+            onNodesChange(nodes) // Rollback
+        }
+    }
+
     const rootNodes = useMemo(() => buildTree(nodes, null), [nodes])
 
     return (
@@ -160,23 +197,33 @@ export default function StructureTree({
                             </Button>
                         </div>
                     ) : (
-                        rootNodes.map(node => (
-                            <NodeItem
-                                key={node.id}
-                                node={node}
-                                nodes={nodes}
-                                activeNodeId={activeNodeId}
-                                depth={0}
-                                onSelect={onNodeSelect}
-                                onToggleSelection={onNodeToggleSelection}
-                                selectedNodeIds={selectedNodeIds}
-                                onAddChild={addChild}
-                                onDelete={deleteNode}
-                                onRename={renameNode}
-                                confirmingDeleteId={confirmingDeleteId}
-                                onRequestDelete={setConfirmingDeleteId}
-                            />
-                        ))
+                        <DragDropContext onDragEnd={handleReorder}>
+                            <Droppable droppableId="root">
+                                {(provided) => (
+                                    <div {...provided.droppableProps} ref={provided.innerRef}>
+                                        {rootNodes.map((node, index) => (
+                                            <NodeItem
+                                                key={node.id}
+                                                node={node}
+                                                nodes={nodes}
+                                                index={index}
+                                                activeNodeId={activeNodeId}
+                                                depth={0}
+                                                onSelect={onNodeSelect}
+                                                onToggleSelection={onNodeToggleSelection}
+                                                selectedNodeIds={selectedNodeIds}
+                                                onAddChild={addChild}
+                                                onDelete={deleteNode}
+                                                onRename={renameNode}
+                                                confirmingDeleteId={confirmingDeleteId}
+                                                onRequestDelete={setConfirmingDeleteId}
+                                            />
+                                        ))}
+                                        {provided.placeholder}
+                                    </div>
+                                )}
+                            </Droppable>
+                        </DragDropContext>
                     )}
                 </div>
 
@@ -198,6 +245,7 @@ export default function StructureTree({
 interface NodeItemProps {
     node: StructureNode
     nodes: StructureNode[]
+    index: number
     activeNodeId: string | null
     selectedNodeIds?: string[]
     depth: number
@@ -210,7 +258,7 @@ interface NodeItemProps {
     onRequestDelete: (id: string | null) => void
 }
 
-const NodeItem = React.memo(function NodeItem({ node, nodes, activeNodeId, selectedNodeIds = [], depth, onSelect, onToggleSelection, onAddChild, onDelete, onRename, confirmingDeleteId, onRequestDelete }: NodeItemProps) {
+const NodeItem = React.memo(function NodeItem({ node, nodes, index, activeNodeId, selectedNodeIds = [], depth, onSelect, onToggleSelection, onAddChild, onDelete, onRename, confirmingDeleteId, onRequestDelete }: NodeItemProps) {
     const [expanded, setExpanded] = useState(true)
     const [hovered, setHovered] = useState(false)
     const [editing, setEditing] = useState(false)
@@ -237,153 +285,178 @@ const NodeItem = React.memo(function NodeItem({ node, nodes, activeNodeId, selec
     }
 
     return (
-        <div>
-            <div
-                className={cn(
-                    'group flex items-center gap-2 py-3 px-4 mx-3 rounded-2xl cursor-pointer transition-all duration-300 text-sm mb-1 relative border border-transparent',
-                    isActive
-                        ? 'bg-white text-[#546354] shadow-[0_8px_24px_rgba(0,0,0,0.06)] font-bold border-[#546354]/10 z-10'
-                        : 'text-slate-500 hover:bg-white/60',
-                    isRoot && 'font-serif italic text-base py-4 bg-white/30 backdrop-blur-sm border-white/40 mb-2 mt-2 shadow-[0_2px_8px_rgba(0,0,0,0.02)]',
-                    isAct && 'font-semibold text-slate-700 py-2.5',
-                    isScene && 'text-slate-500 py-2',
-                    isSelected && 'bg-indigo-50/40 border-indigo-200/50'
-                )}
-                style={{ paddingLeft: `${16 + depth * 24}px` }}
-                onMouseEnter={() => setHovered(true)}
-                onMouseLeave={() => setHovered(false)}
-                onClick={handleClick}
-            >
-                {isActive && (
-                    <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-[#546354] rounded-full shadow-[0_0_12px_rgba(84,99,84,0.3)]" />
-                )}
-
-                {!isScene && (
-                    <span className="text-slate-400 group-hover:text-[#546354] transition-colors">
-                        {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    </span>
-                )}
-                {isScene && <div className="w-4" />}
-
-                {onToggleSelection && (
-                    <div 
+        <Draggable draggableId={node.id} index={index}>
+            {(provided, snapshot) => (
+                <div ref={provided.innerRef} {...provided.draggableProps}>
+                    <div
                         className={cn(
-                            "w-4 h-4 border-2 rounded-md flex items-center justify-center transition-all duration-200",
-                            isSelected 
-                                ? "bg-indigo-500 border-indigo-500" 
-                                : "border-slate-300 group-hover:border-slate-400"
+                            'group flex items-center gap-2 py-3 px-4 mx-3 rounded-2xl cursor-pointer transition-all duration-300 text-sm mb-1 relative border border-transparent',
+                            isActive
+                                ? 'bg-white text-[#546354] shadow-[0_8px_24px_rgba(0,0,0,0.06)] font-bold border-[#546354]/10 z-10'
+                                : 'text-slate-500 hover:bg-white/60',
+                            isRoot && 'font-serif italic text-base py-4 bg-white/30 backdrop-blur-sm border-white/40 mb-2 mt-2 shadow-[0_2px_8px_rgba(0,0,0,0.02)]',
+                            isAct && 'font-semibold text-slate-700 py-2.5',
+                            isScene && 'text-slate-500 py-2',
+                            isSelected && 'bg-indigo-50/40 border-indigo-200/50',
+                            snapshot.isDragging && 'shadow-2xl z-50 bg-white ring-2 ring-[#546354]/10'
                         )}
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            onToggleSelection(node.id)
-                        }}
+                        style={{ paddingLeft: `${16 + depth * 24}px` }}
+                        onMouseEnter={() => setHovered(true)}
+                        onMouseLeave={() => setHovered(false)}
+                        onClick={handleClick}
                     >
-                        {isSelected && <Check className="w-3 h-3 text-white" />}
-                    </div>
-                )}
-
-                <Icon className={cn(
-                    'shrink-0 transition-transform duration-300',
-                    isRoot ? 'w-5 h-5 text-[#546354]/80' : 'w-4 h-4',
-                    isActive ? 'text-[#546354] scale-110' : 'text-slate-400',
-                    isAct && 'text-slate-500'
-                )} />
-
-                {editing ? (
-                    <input
-                        value={draft}
-                        onChange={e => setDraft(e.target.value)}
-                        onBlur={finishRename}
-                        onKeyDown={e => {
-                            if (e.key === 'Enter') finishRename()
-                            if (e.key === 'Escape') { setDraft(node.title); setEditing(false) }
-                        }}
-                        onClick={e => e.stopPropagation()}
-                        className="flex-1 bg-white border border-[#546354]/20 rounded-xl px-3 text-xs outline-none h-8 font-serif italic shadow-inner"
-                        autoFocus
-                    />
-                ) : (
-                    <span
-                        className={cn(
-                            "flex-1 truncate",
-                            isRoot && "tracking-tight text-[#485748]",
-                            isScene && "text-slate-600 font-medium"
+                        {isActive && (
+                            <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-[#546354] rounded-full shadow-[0_0_12px_rgba(84,99,84,0.3)]" />
                         )}
-                        onDoubleClick={(e) => { e.stopPropagation(); setEditing(true) }}
-                    >
-                        {node.title}
-                    </span>
-                )}
 
-                {/* Confirm delete — always visible when active, outside hover conditional */}
-                {confirmingDeleteId === node.id && !editing && (
-                    <div className="flex items-center gap-1 shrink-0 animate-in fade-in duration-150" onClick={e => e.stopPropagation()}>
-                        <button
-                            onClick={e => { e.stopPropagation(); onRequestDelete(null) }}
-                            className="px-2 py-1 text-[9px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider rounded"
-                        >No</button>
-                        <button
-                            onClick={e => { e.stopPropagation(); onDelete(node) }}
-                            className="px-2 py-1 text-[9px] font-bold bg-red-500 hover:bg-red-600 text-white rounded uppercase tracking-wider transition-colors"
-                        >Delete</button>
-                    </div>
-                )}
+                        <div 
+                            {...provided.dragHandleProps}
+                            className={cn(
+                                "p-1 -ml-2 opacity-0 transition-opacity cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-400 shrink-0",
+                                hovered && "opacity-100"
+                            )}
+                        >
+                            <GripVertical className="w-3.5 h-3.5" />
+                        </div>
 
-                {/* Hover actions — only when not confirming */}
-                {(!editing && confirmingDeleteId !== node.id && (hovered || isActive || (typeof window !== 'undefined' && window.innerWidth < 768))) && (
-                    <div className={cn(
-                        "flex items-center gap-1 shrink-0 transition-opacity duration-300 md:opacity-0 md:group-hover:opacity-100",
-                        (isActive || (typeof window !== 'undefined' && window.innerWidth < 768)) && "opacity-100"
-                    )} onClick={e => e.stopPropagation()}>
-                        {CHILD_TYPE[node.type as NodeType] && (
-                            <button
-                                onClick={() => onAddChild(node)}
-                                className="p-2 rounded-lg hover:bg-primary/10 text-slate-400 hover:text-primary active:scale-95 transition-all"
-                                title={CHILD_LABELS[node.type as NodeType]}
+                        {!isScene && (
+                            <span className="text-slate-400 group-hover:text-[#546354] transition-colors">
+                                {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                            </span>
+                        )}
+                        {isScene && <div className="w-4" />}
+
+                        {onToggleSelection && (
+                            <div 
+                                className={cn(
+                                    "w-4 h-4 border-2 rounded-md flex items-center justify-center transition-all duration-200",
+                                    isSelected 
+                                        ? "bg-indigo-500 border-indigo-500" 
+                                        : "border-slate-300 group-hover:border-slate-400"
+                                )}
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    onToggleSelection(node.id)
+                                }}
                             >
-                                <Plus className="w-4 h-4 md:w-3.5 md:h-3.5" />
-                            </button>
+                                {isSelected && <Check className="w-3 h-3 text-white" />}
+                            </div>
                         )}
-                        <button
-                            onClick={e => { e.stopPropagation(); setEditing(true) }}
-                            className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 active:scale-95 transition-all"
-                            title="Rename"
-                        >
-                            <Pencil className="w-4 h-4 md:w-3.5 md:h-3.5" />
-                        </button>
-                        <button
-                            onClick={e => { e.stopPropagation(); onRequestDelete(node.id) }}
-                            className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 active:scale-95 transition-all"
-                            title="Delete"
-                        >
-                            <Trash2 className="w-4 h-4 md:w-3.5 md:h-3.5" />
-                        </button>
-                    </div>
-                )}
-            </div>
 
-            {!isScene && expanded && children.length > 0 && (
-                <div className="fade-in">
-                    {children.map(child => (
-                        <NodeItem
-                            key={child.id}
-                            node={child}
-                            nodes={nodes}
-                            activeNodeId={activeNodeId}
-                            selectedNodeIds={selectedNodeIds}
-                            depth={depth + 1}
-                            onSelect={onSelect}
-                            onToggleSelection={onToggleSelection}
-                            onAddChild={onAddChild}
-                            onDelete={onDelete}
-                            onRename={onRename}
-                            confirmingDeleteId={confirmingDeleteId}
-                            onRequestDelete={onRequestDelete}
-                        />
-                    ))}
+                        <Icon className={cn(
+                            'shrink-0 transition-transform duration-300',
+                            isRoot ? 'w-5 h-5 text-[#546354]/80' : 'w-4 h-4',
+                            isActive ? 'text-[#546354] scale-110' : 'text-slate-400',
+                            isAct && 'text-slate-500'
+                        )} />
+
+                        {editing ? (
+                            <input
+                                value={draft}
+                                onChange={e => setDraft(e.target.value)}
+                                onBlur={finishRename}
+                                onKeyDown={e => {
+                                    if (e.key === 'Enter') finishRename()
+                                    if (e.key === 'Escape') { setDraft(node.title); setEditing(false) }
+                                }}
+                                onClick={e => e.stopPropagation()}
+                                className="flex-1 bg-white border border-[#546354]/20 rounded-xl px-3 text-xs outline-none h-8 font-serif italic shadow-inner"
+                                autoFocus
+                            />
+                        ) : (
+                            <span
+                                className={cn(
+                                    "flex-1 truncate",
+                                    isRoot && "tracking-tight text-[#485748]",
+                                    isScene && "text-slate-600 font-medium"
+                                )}
+                                onDoubleClick={(e) => { e.stopPropagation(); setEditing(true) }}
+                            >
+                                {node.title}
+                            </span>
+                        )}
+
+                        {/* Confirm delete — always visible when active, outside hover conditional */}
+                        {confirmingDeleteId === node.id && !editing && (
+                            <div className="flex items-center gap-1 shrink-0 animate-in fade-in duration-150" onClick={e => e.stopPropagation()}>
+                                <button
+                                    onClick={e => { e.stopPropagation(); onRequestDelete(null) }}
+                                    className="px-2 py-1 text-[9px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider rounded"
+                                >No</button>
+                                <button
+                                    onClick={e => { e.stopPropagation(); onDelete(node) }}
+                                    className="px-2 py-1 text-[9px] font-bold bg-red-500 hover:bg-red-600 text-white rounded uppercase tracking-wider transition-colors"
+                                >Delete</button>
+                            </div>
+                        )}
+
+                        {/* Hover actions — only when not confirming */}
+                        {(!editing && confirmingDeleteId !== node.id && (hovered || isActive || (typeof window !== 'undefined' && window.innerWidth < 768))) && (
+                            <div className={cn(
+                                "flex items-center gap-1 shrink-0 transition-opacity duration-300 md:opacity-0 md:group-hover:opacity-100",
+                                (isActive || (typeof window !== 'undefined' && window.innerWidth < 768)) && "opacity-100"
+                            )} onClick={e => e.stopPropagation()}>
+                                {CHILD_TYPE[node.type as NodeType] && (
+                                    <button
+                                        onClick={() => onAddChild(node)}
+                                        className="p-2 rounded-lg hover:bg-primary/10 text-slate-400 hover:text-primary active:scale-95 transition-all"
+                                        title={CHILD_LABELS[node.type as NodeType]}
+                                    >
+                                        <Plus className="w-4 h-4 md:w-3.5 md:h-3.5" />
+                                    </button>
+                                )}
+                                <button
+                                    onClick={e => { e.stopPropagation(); setEditing(true) }}
+                                    className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 active:scale-95 transition-all"
+                                    title="Rename"
+                                >
+                                    <Pencil className="w-4 h-4 md:w-3.5 md:h-3.5" />
+                                </button>
+                                <button
+                                    onClick={e => { e.stopPropagation(); onRequestDelete(node.id) }}
+                                    className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 active:scale-95 transition-all"
+                                    title="Delete"
+                                >
+                                    <Trash2 className="w-4 h-4 md:w-3.5 md:h-3.5" />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {!isScene && expanded && (
+                        <Droppable droppableId={node.id}>
+                            {(provided) => (
+                                <div 
+                                    className="fade-in"
+                                    {...provided.droppableProps}
+                                    ref={provided.innerRef}
+                                >
+                                    {children.map((child, index) => (
+                                        <NodeItem
+                                            key={child.id}
+                                            node={child}
+                                            nodes={nodes}
+                                            index={index}
+                                            activeNodeId={activeNodeId}
+                                            selectedNodeIds={selectedNodeIds}
+                                            depth={depth + 1}
+                                            onSelect={onSelect}
+                                            onToggleSelection={onToggleSelection}
+                                            onAddChild={onAddChild}
+                                            onDelete={onDelete}
+                                            onRename={onRename}
+                                            confirmingDeleteId={confirmingDeleteId}
+                                            onRequestDelete={onRequestDelete}
+                                        />
+                                    ))}
+                                    {provided.placeholder}
+                                </div>
+                            )}
+                        </Droppable>
+                    )}
                 </div>
             )}
-        </div>
+        </Draggable>
     )
 }, (prev, next) => {
     // Re-render if:

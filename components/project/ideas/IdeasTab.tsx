@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { Lightbulb, Plus, Hash, Loader2, Sparkles, PenTool, Trash2, Pencil, ChevronRight } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Lightbulb, Plus, Hash, Loader2, Sparkles, PenTool, Trash2, Pencil, ChevronRight, GripVertical } from 'lucide-react'
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
+import { cn, reorder } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
@@ -27,7 +28,6 @@ export default function IdeasTab({
 
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const renameInputRef = useRef<HTMLInputElement>(null)
-    const titleInputRef = useRef<HTMLInputElement>(null)
     const selectedIdea = localIdeas.find((i: Idea) => i.id === selectedId)
 
     // Sync justSaved state
@@ -158,6 +158,20 @@ export default function IdeasTab({
         if (e.key === 'Escape') setRenamingId(null)
     }
 
+    async function handleReorder(result: DropResult) {
+        if (!result.destination) return
+        const items = reorder(localIdeas, result.source.index, result.destination.index)
+        setLocalIdeas(items)
+        const supabase = createClient()
+        const { error } = await (supabase as any)
+            .from('ideas')
+            .upsert(items.map((idea, index) => ({ ...idea, order_index: index })))
+        if (error) {
+            console.error('Error updating idea order:', error)
+            setLocalIdeas(localIdeas)
+        }
+    }
+
     if (localIdeas.length === 0) {
         return <EmptyIdeasState onCreate={handleCreateIdea} isCreating={isCreating} />
     }
@@ -185,60 +199,83 @@ export default function IdeasTab({
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-4 pb-10 space-y-1 custom-scrollbar">
-                    {localIdeas.map((idea: Idea) => (
-                        <div
-                            key={idea.id}
-                            onClick={() => setSelectedId(idea.id)}
-                            className={cn(
-                                "w-full flex items-center gap-3 px-4 py-4 rounded-2xl transition-all duration-300 text-left group cursor-pointer",
-                                selectedId === idea.id
-                                    ? "bg-white shadow-[0_10px_30px_rgba(0,0,0,0.03)] ring-1 ring-slate-100"
-                                    : "hover:bg-white/40 text-slate-500 hover:text-slate-800"
-                            )}
-                        >
-                            <div className={cn(
-                                "w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center transition-all duration-500",
-                                selectedId === idea.id ? "bg-amber-50 scale-105" : "bg-white border border-slate-100"
-                            )}>
-                                <Sparkles className={cn("w-4 h-4 transition-colors duration-500", selectedId === idea.id ? "text-amber-500" : "text-stone-300")} />
+                <DragDropContext onDragEnd={handleReorder}>
+                    <Droppable droppableId="ideas">
+                        {(provided) => (
+                            <div 
+                                {...provided.droppableProps}
+                                ref={provided.innerRef}
+                                className="flex-1 overflow-y-auto px-4 pb-10 space-y-1 custom-scrollbar"
+                            >
+                                {localIdeas.map((idea: Idea, index: number) => (
+                                    <Draggable key={idea.id} draggableId={idea.id} index={index}>
+                                        {(provided, snapshot) => (
+                                            <div
+                                                ref={provided.innerRef}
+                                                {...provided.draggableProps}
+                                                onClick={() => setSelectedId(idea.id)}
+                                                className={cn(
+                                                    "w-full flex items-center gap-3 px-4 py-4 rounded-2xl transition-all duration-300 text-left group cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#546354]/20",
+                                                    selectedId === idea.id
+                                                        ? "bg-white shadow-[0_10px_30px_rgba(0,0,0,0.03)] ring-1 ring-slate-100"
+                                                        : "hover:bg-white/40 text-slate-500 hover:text-slate-800",
+                                                    snapshot.isDragging && "shadow-2xl ring-2 ring-[#546354]/20 z-50 bg-white"
+                                                )}
+                                            >
+                                                <div 
+                                                    {...provided.dragHandleProps}
+                                                    className="p-1 -ml-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-400"
+                                                >
+                                                    <GripVertical className="w-3.5 h-3.5" />
+                                                </div>
+                                                <div className={cn(
+                                                    "w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center transition-all duration-500",
+                                                    selectedId === idea.id ? "bg-amber-50 scale-105" : "bg-white border border-slate-100"
+                                                )}>
+                                                    <Sparkles className={cn("w-4 h-4 transition-colors duration-500", selectedId === idea.id ? "text-amber-500" : "text-stone-300")} />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    {renamingId === idea.id ? (
+                                                        <input
+                                                            ref={renameInputRef}
+                                                            type="text"
+                                                            value={renameValue}
+                                                            onChange={e => setRenameValue(e.target.value)}
+                                                            onBlur={() => commitRename(idea.id)}
+                                                            onKeyDown={e => handleRenameKeyDown(e, idea.id)}
+                                                            onClick={e => e.stopPropagation()}
+                                                            className="w-full bg-amber-50 border border-amber-200 rounded-lg px-2 py-0.5 text-sm font-medium text-slate-800 outline-none ring-1 ring-amber-300/50"
+                                                        />
+                                                    ) : (
+                                                        <>
+                                                            <p className={cn(
+                                                                "text-sm font-medium tracking-tight truncate",
+                                                                selectedId === idea.id ? "text-slate-800" : "text-slate-500"
+                                                            )}>
+                                                                {idea.title}
+                                                            </p>
+                                                            <p className="text-[10px] text-slate-300 uppercase tracking-widest mt-0.5 font-medium opacity-60">Thought Spark</p>
+                                                        </>
+                                                    )}
+                                                </div>
+                                                {selectedId === idea.id && renamingId !== idea.id && (
+                                                    <button
+                                                        onClick={e => startRename(idea, e)}
+                                                        className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-amber-50 text-stone-300 hover:text-amber-500 transition-all duration-200 flex-shrink-0"
+                                                        title="Rename idea"
+                                                    >
+                                                        <Pencil className="w-3 h-3" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </Draggable>
+                                ))}
+                                {provided.placeholder}
                             </div>
-                            <div className="flex-1 min-w-0">
-                                {renamingId === idea.id ? (
-                                    <input
-                                        ref={renameInputRef}
-                                        type="text"
-                                        value={renameValue}
-                                        onChange={e => setRenameValue(e.target.value)}
-                                        onBlur={() => commitRename(idea.id)}
-                                        onKeyDown={e => handleRenameKeyDown(e, idea.id)}
-                                        onClick={e => e.stopPropagation()}
-                                        className="w-full bg-amber-50 border border-amber-200 rounded-lg px-2 py-0.5 text-sm font-medium text-slate-800 outline-none ring-1 ring-amber-300/50"
-                                    />
-                                ) : (
-                                    <>
-                                        <p className={cn(
-                                            "text-sm font-medium tracking-tight truncate",
-                                            selectedId === idea.id ? "text-slate-800" : "text-slate-500"
-                                        )}>
-                                            {idea.title}
-                                        </p>
-                                        <p className="text-[10px] text-slate-300 uppercase tracking-widest mt-0.5 font-medium opacity-60">Thought Spark</p>
-                                    </>
-                                )}
-                            </div>
-                            {selectedId === idea.id && renamingId !== idea.id && (
-                                <button
-                                    onClick={e => startRename(idea, e)}
-                                    className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-amber-50 text-stone-300 hover:text-amber-500 transition-all duration-200 flex-shrink-0"
-                                    title="Rename idea"
-                                >
-                                    <Pencil className="w-3 h-3" />
-                                </button>
-                            )}
-                        </div>
-                    ))}
-                </div>
+                        )}
+                    </Droppable>
+                </DragDropContext>
             </div>
 
             {/* Main Content - Detail view */}
