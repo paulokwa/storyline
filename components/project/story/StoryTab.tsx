@@ -46,6 +46,13 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     const [activeNodeId, setActiveNodeId] = useState<string | null>(
         initialNodes.find(n => n.type === 'scene')?.id ?? null
     )
+
+    // On mobile, we want to go direct to the tab column (list) instead of an entry.
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+            setActiveNodeId(null)
+        }
+    }, [])
     const [writingMode, setWritingMode] = useState<WritingMode>(project.writing_mode ?? 'simple')
     
     const [activeCharacters, setActiveCharacters] = useState<Record<string, boolean>>({})

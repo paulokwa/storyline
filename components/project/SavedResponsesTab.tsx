@@ -77,7 +77,12 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
                 if (error) throw error
                 if (data) {
                     setResponses(data as SavedResponse[])
-                    if (data.length > 0 && !selectedId) setSelectedId(data[0].id)
+                    if (data.length > 0 && !selectedId) {
+                        // On desktop, auto-select first. On mobile, leave null to show list.
+                        if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+                            setSelectedId(data[0].id)
+                        }
+                    }
                 }
             } catch (err: any) {
                 console.error('Error loading archived responses:', err.message)
@@ -87,6 +92,13 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
         }
         loadResponses()
     }, [projectId, supabase, selectedId])
+
+    // Extra safeguard for mobile selection reset
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+            setSelectedId(null)
+        }
+    }, [])
 
     useEffect(() => {
         async function loadScenes() {
@@ -260,7 +272,10 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
     return (
         <div className="flex-1 flex overflow-hidden bg-[#fbf9f5]">
             {/* List Sidebar */}
-            <div className="w-[350px] lg:w-[400px] border-r border-[#e0ded9] flex flex-col bg-white">
+            <div className={cn(
+                "w-full md:w-[350px] lg:w-[400px] border-r border-[#e0ded9] flex flex-col bg-white transition-all duration-300",
+                selectedId && "hidden md:flex"
+            )}>
                 <div className="p-4 border-b border-slate-100 space-y-4">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -343,9 +358,24 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
             </div>
 
             {/* Detail View */}
-            <div className="flex-1 flex flex-col bg-[#fbf9f5] overflow-hidden relative">
+            <div className={cn(
+                "flex-1 flex flex-col bg-[#fbf9f5] overflow-hidden relative",
+                !selectedId && "hidden md:flex"
+            )}>
                 {selectedResponse ? (
                     <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 duration-500 overflow-hidden">
+                        {/* Mobile Back Button */}
+                        <div className="md:hidden px-8 pt-6 -mb-4">
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => setSelectedId(null)}
+                                className="text-[#546354] gap-2 px-0 hover:bg-transparent"
+                            >
+                                <ChevronRight className="w-4 h-4 rotate-180" />
+                                Back to Archive
+                            </Button>
+                        </div>
                         {/* Detail Header */}
                         <div className="p-8 pb-4 bg-white border-b border-slate-100 flex items-start justify-between">
                             <div className="space-y-4 flex-1 pr-6">

@@ -20,6 +20,13 @@ export default function LocationsTab({
 }) {
     const [localLocations, setLocalLocations] = useState<any[]>(initialLocations)
     const [selectedId, setSelectedId] = useState<string | null>(initialLocations[0]?.id ?? null)
+
+    // On mobile, we want to go direct to the tab column (list) instead of an entry.
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+            setSelectedId(null)
+        }
+    }, [])
     const [isCreating, setIsCreating] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
     const [justSaved, setJustSaved] = useState(false)
