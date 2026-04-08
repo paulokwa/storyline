@@ -59,13 +59,13 @@ export default function LinkedContext({
     const supabase = createClient()
     const [isPending, startTransition] = useTransition()
 
-    const linkedChars = sceneCharacters?.map(sc => sc.characters).filter(Boolean) || []
-    const linkedIds = sceneIdeas?.map(si => si.ideas).filter(Boolean) || []
-    const linkedLocs = sceneLocations?.map(sl => sl.locations).filter(Boolean) || []
-    const linkedObjs = sceneObjects?.map(so => so.objects).filter(Boolean) || []
+    const linkedChars = sceneCharacters?.map(sc => sc.characters).filter(c => c && !c.deleted_at) || []
+    const linkedIdeas = sceneIdeas?.map(si => si.ideas).filter(i => i && !i.deleted_at) || []
+    const linkedLocs = sceneLocations?.map(sl => sl.locations).filter(l => l && !l.deleted_at) || []
+    const linkedObjs = sceneObjects?.map(so => so.objects).filter(o => o && !o.deleted_at) || []
     
     const unlinkedCharacters = projectCharacters.filter(pc => !linkedChars.some(lc => lc.id === pc.id))
-    const unlinkedIdeas = projectIdeas.filter(pi => !linkedIds.some(li => li.id === pi.id))
+    const unlinkedIdeas = projectIdeas.filter(pi => !linkedIdeas.some(li => li.id === pi.id))
     const unlinkedLocations = projectLocations.filter(pl => !linkedLocs.some(ll => ll.id === pl.id))
     const unlinkedObjects = projectObjects.filter(po => !linkedObjs.some(lo => lo.id === po.id))
 
@@ -152,7 +152,7 @@ export default function LinkedContext({
             })}
             
             {/* Linked Ideas */}
-            {linkedIds.map(idea => {
+            {linkedIdeas.map(idea => {
                 const isActive = activeIdeas?.[idea.id] !== false
                 return (
                     <div key={idea.id} className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all", isActive ? "bg-indigo-50 text-indigo-700 border-indigo-100" : "bg-white text-slate-300 border-slate-100 grayscale opacity-60")}>

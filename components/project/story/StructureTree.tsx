@@ -17,6 +17,7 @@ import {
 import { cn, reorder } from '@/lib/utils'
 import { GripVertical } from 'lucide-react'
 import type { Database, NodeType } from '@/lib/supabase/types'
+import { softDeleteStructureNode } from '@/lib/supabase/recovery'
 
 type Project = Database['public']['Tables']['projects']['Row']
 type StructureNode = Database['public']['Tables']['structure_nodes']['Row']
@@ -120,12 +121,15 @@ export default function StructureTree({
 
     async function deleteNode(node: StructureNode) {
         const supabase = createClient()
-        await (supabase as any).from('structure_nodes').delete().eq('id', node.id)
-        const idsToRemove = getDescendantIds(nodes, node.id)
-        onNodesChange(nodes.filter(n => !idsToRemove.includes(n.id) && n.id !== node.id))
-        if (activeNodeId && (activeNodeId === node.id || idsToRemove.includes(activeNodeId))) {
-            const firstScene = nodes.find(n => n.type === 'scene' && !idsToRemove.includes(n.id) && n.id !== node.id)
-            onNodeSelect(firstScene?.id ?? '')
+        try {
+            const idsToRemove = await softDeleteStructureNode(supabase, project.id, node.id, nodes)
+            onNodesChange(nodes.filter(n => !idsToRemove.includes(n.id)))
+            if (activeNodeId && (activeNodeId === node.id || idsToRemove.includes(activeNodeId))) {
+                const firstScene = nodes.find(n => n.type === 'scene' && !idsToRemove.includes(n.id))
+                onNodeSelect(firstScene?.id ?? '')
+            }
+        } catch (error) {
+            console.error('Error soft deleting node:', error)
         }
         setConfirmingDeleteId(null)
     }
@@ -380,13 +384,12 @@ const NodeItem = React.memo(function NodeItem({ node, nodes, index, activeNodeId
                         {confirmingDeleteId === node.id && !editing && (
                             <div className="flex items-center gap-1 shrink-0 animate-in fade-in duration-150" onClick={e => e.stopPropagation()}>
                                 <button
-                                    onClick={e => { e.stopPropagation(); onRequestDelete(null) }}
                                     className="px-2 py-1 text-[9px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider rounded"
-                                >No</button>
+                                >Cancel</button>
                                 <button
                                     onClick={e => { e.stopPropagation(); onDelete(node) }}
-                                    className="px-2 py-1 text-[9px] font-bold bg-red-500 hover:bg-red-600 text-white rounded uppercase tracking-wider transition-colors"
-                                >Delete</button>
+                                    className="px-2 py-1 text-[9px] font-bold bg-amber-500 hover:bg-amber-600 text-white rounded uppercase tracking-wider transition-colors"
+                                >Trash</button>
                             </div>
                         )}
 
@@ -414,8 +417,8 @@ const NodeItem = React.memo(function NodeItem({ node, nodes, index, activeNodeId
                                 </button>
                                 <button
                                     onClick={e => { e.stopPropagation(); onRequestDelete(node.id) }}
-                                    className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 active:scale-95 transition-all"
-                                    title="Delete"
+                                    className="p-2 rounded-lg hover:bg-amber-50 text-slate-400 hover:text-amber-600 active:scale-95 transition-all"
+                                    title="Move to Trash"
                                 >
                                     <Trash2 className="w-4 h-4 md:w-3.5 md:h-3.5" />
                                 </button>

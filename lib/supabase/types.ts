@@ -18,9 +18,92 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_responses: {
+        Row: {
+          action: string | null
+          auto_title: string | null
+          context_snapshot: string | null
+          created_at: string
+          deleted_at: string | null
+          id: string
+          linked_entities: Json
+          model: string | null
+          project_id: string
+          prompt: string
+          response: string
+          source_label: string | null
+          source_node_id: string | null
+          source_scene_id: string | null
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          action?: string | null
+          auto_title?: string | null
+          context_snapshot?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          linked_entities?: Json
+          model?: string | null
+          project_id: string
+          prompt: string
+          response: string
+          source_label?: string | null
+          source_node_id?: string | null
+          source_scene_id?: string | null
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          action?: string | null
+          auto_title?: string | null
+          context_snapshot?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          linked_entities?: Json
+          model?: string | null
+          project_id?: string
+          prompt?: string
+          response?: string
+          source_label?: string | null
+          source_node_id?: string | null
+          source_scene_id?: string | null
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_responses_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_responses_source_node_id_fkey"
+            columns: ["source_node_id"]
+            isOneToOne: false
+            referencedRelation: "structure_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_responses_source_scene_id_fkey"
+            columns: ["source_scene_id"]
+            isOneToOne: false
+            referencedRelation: "scenes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       characters: {
         Row: {
           created_at: string | null
+          deleted_at: string | null
           description: string | null
           id: string
           name: string
@@ -30,6 +113,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name: string
@@ -39,6 +123,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name?: string
@@ -104,6 +189,7 @@ export type Database = {
         Row: {
           content: string | null
           created_at: string | null
+          deleted_at: string | null
           id: string
           order_index: number
           project_id: string
@@ -113,6 +199,7 @@ export type Database = {
         Insert: {
           content?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           id?: string
           order_index?: number
           project_id: string
@@ -122,6 +209,7 @@ export type Database = {
         Update: {
           content?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           id?: string
           order_index?: number
           project_id?: string
@@ -142,6 +230,7 @@ export type Database = {
         Row: {
           atmosphere: string | null
           created_at: string | null
+          deleted_at: string | null
           description: string | null
           id: string
           name: string
@@ -152,6 +241,7 @@ export type Database = {
         Insert: {
           atmosphere?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name: string
@@ -162,6 +252,7 @@ export type Database = {
         Update: {
           atmosphere?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name?: string
@@ -182,6 +273,7 @@ export type Database = {
       objects: {
         Row: {
           created_at: string | null
+          deleted_at: string | null
           description: string | null
           id: string
           name: string
@@ -192,6 +284,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name: string
@@ -202,6 +295,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name?: string
@@ -213,6 +307,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "objects_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_snapshots: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          project_id: string
+          snapshot_data: Json | null
+          storage_path: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          project_id: string
+          snapshot_data?: Json | null
+          storage_path?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+          snapshot_data?: Json | null
+          storage_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_snapshots_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -262,24 +394,6 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           writing_mode?: WritingMode | null
-        }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          created_at: string
-          display_name: string | null
-          id: string
-        }
-        Insert: {
-          created_at?: string
-          display_name?: string | null
-          id: string
-        }
-        Update: {
-          created_at?: string
-          display_name?: string | null
-          id?: string
         }
         Relationships: []
       }
@@ -421,9 +535,52 @@ export type Database = {
           },
         ]
       }
+      scene_versions: {
+        Row: {
+          content: Json
+          created_at: string | null
+          id: string
+          project_id: string
+          scene_id: string
+          source_text: string | null
+        }
+        Insert: {
+          content: Json
+          created_at?: string | null
+          id?: string
+          project_id: string
+          scene_id: string
+          source_text?: string | null
+        }
+        Update: {
+          content?: Json
+          created_at?: string | null
+          id?: string
+          project_id?: string
+          scene_id?: string
+          source_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scene_versions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scene_versions_scene_id_fkey"
+            columns: ["scene_id"]
+            isOneToOne: false
+            referencedRelation: "scenes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scenes: {
         Row: {
           content: Json | null
+          deleted_at: string | null
           id: string
           node_id: string
           project_id: string
@@ -432,6 +589,7 @@ export type Database = {
         }
         Insert: {
           content?: Json | null
+          deleted_at?: string | null
           id?: string
           node_id: string
           project_id: string
@@ -440,6 +598,7 @@ export type Database = {
         }
         Update: {
           content?: Json | null
+          deleted_at?: string | null
           id?: string
           node_id?: string
           project_id?: string
@@ -496,6 +655,7 @@ export type Database = {
       structure_nodes: {
         Row: {
           created_at: string | null
+          deleted_at: string | null
           id: string
           order_index: number
           parent_id: string | null
@@ -505,6 +665,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          deleted_at?: string | null
           id?: string
           order_index?: number
           parent_id?: string | null
@@ -514,6 +675,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          deleted_at?: string | null
           id?: string
           order_index?: number
           parent_id?: string | null

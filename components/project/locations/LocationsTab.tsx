@@ -7,6 +7,7 @@ import { cn, reorder } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
+import { softDeleteEntity } from '@/lib/supabase/recovery'
 
 type Location = any // Flexibility for custom schema
 
@@ -76,9 +77,8 @@ export default function LocationsTab({
         if (!selectedId) return
         setIsSaving(true)
         const supabase = createClient()
-        const { error } = await supabase.from('locations' as any).delete().eq('id', selectedId)
-
-        if (!error) {
+        try {
+            await softDeleteEntity(supabase, 'locations', selectedId)
             const index = localLocations.findIndex(l => l.id === selectedId)
             const newLocs = localLocations.filter(l => l.id !== selectedId)
             setLocalLocations(newLocs)
@@ -88,6 +88,8 @@ export default function LocationsTab({
             } else {
                 setSelectedId(null)
             }
+        } catch (error) {
+            console.error('Error soft deleting location:', error)
         }
         setShowDeleteConfirm(false)
         setIsSaving(false)
@@ -232,14 +234,14 @@ export default function LocationsTab({
                                     <div className="h-px flex-1 bg-stone-200/50" />
                                     {showDeleteConfirm ? (
                                         <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200">
-                                            <span className="text-[10px] text-red-400 font-medium">Delete location?</span>
+                                            <span className="text-[10px] text-amber-400 font-medium tracking-tight">Move to Trash?</span>
                                             <button onClick={() => setShowDeleteConfirm(false)} className="px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider">Cancel</button>
-                                            <button onClick={handleDeleteLocation} disabled={isSaving} className="px-3 py-1 text-[10px] font-bold bg-red-500 hover:bg-red-600 text-white rounded-full uppercase tracking-wider transition-colors disabled:opacity-50">
-                                                {isSaving ? 'Deleting...' : 'Delete'}
+                                            <button onClick={handleDeleteLocation} disabled={isSaving} className="px-3 py-1 text-[10px] font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-full uppercase tracking-wider transition-colors disabled:opacity-50">
+                                                {isSaving ? 'Moving...' : 'Trash'}
                                             </button>
                                         </div>
                                     ) : (
-                                        <button onClick={() => setShowDeleteConfirm(true)} className="p-2 hover:bg-red-50 text-stone-300 hover:text-red-400 rounded-full transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
+                                        <button onClick={() => setShowDeleteConfirm(true)} className="p-2 hover:bg-amber-50 text-stone-300 hover:text-amber-400 rounded-full transition-all" title="Move to Trash"><Trash2 className="w-3.5 h-3.5" /></button>
                                     )}
                                 </div>
                                 <input type="text" value={selectedLocation.name} onChange={(e) => handleFieldChange(selectedLocation.id, 'name', e.target.value)} className="w-full bg-transparent text-4xl sm:text-6xl font-serif italic text-slate-800 outline-none placeholder:text-slate-200" placeholder="Location Name" />

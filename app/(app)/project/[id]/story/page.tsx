@@ -13,6 +13,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
         .from('structure_nodes')
         .select('*')
         .eq('project_id', id)
+        .is('deleted_at', null)
         .order('order_index')
 
     const [
@@ -23,17 +24,19 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
         { data: allScenes },
         { data: projectRelationships }
     ] = await Promise.all([
-        supabase.from('characters').select('*').eq('project_id', id).order('order_index'),
-        supabase.from('ideas').select('*').eq('project_id', id).order('order_index'),
-        supabase.from('locations').select('*').eq('project_id', id).order('order_index'),
-        supabase.from('objects').select('*').eq('project_id', id).order('order_index'),
+        supabase.from('characters').select('*').eq('project_id', id).is('deleted_at', null).order('order_index'),
+        supabase.from('ideas').select('*').eq('project_id', id).is('deleted_at', null).order('order_index'),
+        supabase.from('locations').select('*').eq('project_id', id).is('deleted_at', null).order('order_index'),
+        supabase.from('objects').select('*').eq('project_id', id).is('deleted_at', null).order('order_index'),
         supabase.from('scenes').select(`
             *,
             scene_characters(characters(*)),
             scene_ideas(ideas(*)),
             scene_locations(locations(*)),
             scene_objects(objects(*))
-        `).eq('project_id', id),
+        `)
+        .eq('project_id', id)
+        .is('deleted_at', null),
         supabase.from('entity_relationships').select('*').eq('project_id', id)
     ])
 

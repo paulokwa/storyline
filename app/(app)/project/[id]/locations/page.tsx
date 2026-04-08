@@ -9,7 +9,7 @@ export default async function LocationsPage({ params }: { params: Promise<{ id: 
     if (!user) redirect('/login')
 
     const [{ data: locations }, { data: projectData }] = await Promise.all([
-        supabase.from('locations').select('*').eq('project_id', id).order('order_index', { ascending: true }),
+        supabase.from('locations').select('*').eq('project_id', id).is('deleted_at', null).order('order_index', { ascending: true }),
         supabase.from('projects').select('type').eq('id', id).single()
     ])
 

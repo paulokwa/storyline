@@ -25,6 +25,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { softDeleteEntity } from '@/lib/supabase/recovery'
 
 interface SavedResponse {
     id: string
@@ -70,6 +71,7 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
                     .from('ai_responses' as any) as any)
                     .select('*')
                     .eq('project_id', projectId)
+                    .is('deleted_at', null)
                     .order('created_at', { ascending: false })
                 
                 if (error) throw error
@@ -170,11 +172,9 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
     }
 
     const deleteResponse = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this archived response?')) return
         setIsSavingAction(true)
         try {
-            const { error } = await (supabase.from('ai_responses' as any) as any).delete().eq('id', id)
-            if (error) throw error
+            await softDeleteEntity(supabase, 'ai_responses', id)
 
             setResponses(prev => {
                 const next = prev.filter(r => r.id !== id)
@@ -184,8 +184,7 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
                 return next
             })
         } catch (err: any) {
-            console.error('Error deleting response:', err.message)
-            alert('Failed to delete response.')
+            console.error('Error soft deleting response:', err.message)
         } finally {
             setIsSavingAction(false)
         }
@@ -429,7 +428,8 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
                                     variant="outline"
                                     size="icon"
                                     onClick={() => deleteResponse(selectedResponse.id)}
-                                    className="rounded-xl h-10 w-10 border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50 transition-all"
+                                    className="rounded-xl h-10 w-10 border-slate-200 text-slate-400 hover:text-amber-500 hover:border-amber-100 hover:bg-amber-50 transition-all"
+                                    title="Move to Trash"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </Button>

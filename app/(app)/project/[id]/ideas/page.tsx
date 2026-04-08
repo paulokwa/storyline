@@ -12,6 +12,7 @@ export default async function IdeasPage({ params }: { params: Promise<{ id: stri
         .from('ideas')
         .select('*')
         .eq('project_id', id)
+        .is('deleted_at', null)
         .order('order_index', { ascending: true })
 
     return <IdeasTab projectId={id} ideas={ideas ?? []} />

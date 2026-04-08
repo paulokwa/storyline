@@ -9,9 +9,9 @@ export default async function CharactersPage({ params }: { params: Promise<{ id:
     if (!user) redirect('/login')
 
     const [{ data: characters }, { data: locations }, { data: objects }, { data: projectData }] = await Promise.all([
-        supabase.from('characters').select('*').eq('project_id', id).order('order_index', { ascending: true }),
-        supabase.from('locations').select('id, name').eq('project_id', id).order('name', { ascending: true }),
-        supabase.from('objects').select('id, name').eq('project_id', id).order('name', { ascending: true }),
+        supabase.from('characters').select('*').eq('project_id', id).is('deleted_at', null).order('order_index', { ascending: true }),
+        supabase.from('locations').select('id, name').eq('project_id', id).is('deleted_at', null).order('name', { ascending: true }),
+        supabase.from('objects').select('id, name').eq('project_id', id).is('deleted_at', null).order('name', { ascending: true }),
         supabase.from('projects').select('type').eq('id', id).single()
     ])
 

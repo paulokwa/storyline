@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
+import { softDeleteEntity } from '@/lib/supabase/recovery'
 import RelationshipManager from './RelationshipManager'
 
 type Character = Database['public']['Tables']['characters']['Row']
@@ -89,13 +90,9 @@ export default function CharactersTab({
     async function handleDeleteCharacter() {
         if (!selectedId) return
         setIsSaving(true)
-        const supabase = createClient() as any
-        const { error } = await supabase
-            .from('characters')
-            .delete()
-            .eq('id', selectedId)
-
-        if (!error) {
+        const supabase = createClient()
+        try {
+            await softDeleteEntity(supabase, 'characters', selectedId)
             const index = localCharacters.findIndex(c => c.id === selectedId)
             const newChars = localCharacters.filter(c => c.id !== selectedId)
             setLocalCharacters(newChars)
@@ -106,8 +103,8 @@ export default function CharactersTab({
             } else {
                 setSelectedId(null)
             }
-        } else {
-            console.error('Error deleting character:', error)
+        } catch (error) {
+            console.error('Error soft deleting character:', error)
         }
         setShowDeleteConfirm(false)
         setIsSaving(false)
@@ -351,14 +348,14 @@ export default function CharactersTab({
                                     <div className="h-px flex-1 bg-stone-200/50" />
                                     {showDeleteConfirm ? (
                                         <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200">
-                                            <span className="text-[10px] text-red-400 font-medium">Delete character?</span>
+                                            <span className="text-[10px] text-amber-400 font-medium tracking-tight">Move to Trash?</span>
                                             <button onClick={() => setShowDeleteConfirm(false)} className="px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider">Cancel</button>
-                                            <button onClick={handleDeleteCharacter} disabled={isSaving} className="px-3 py-1 text-[10px] font-bold bg-red-500 hover:bg-red-600 text-white rounded-full uppercase tracking-wider transition-colors disabled:opacity-50">
-                                                {isSaving ? 'Deleting...' : 'Delete'}
+                                            <button onClick={handleDeleteCharacter} disabled={isSaving} className="px-3 py-1 text-[10px] font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-full uppercase tracking-wider transition-colors disabled:opacity-50">
+                                                {isSaving ? 'Moving...' : 'Trash'}
                                             </button>
                                         </div>
                                     ) : (
-                                        <button onClick={() => setShowDeleteConfirm(true)} className="p-2 hover:bg-red-50 text-stone-300 hover:text-red-400 rounded-full transition-all duration-300 active:scale-90" title="Delete character">
+                                        <button onClick={() => setShowDeleteConfirm(true)} className="p-2 hover:bg-amber-50 text-stone-300 hover:text-amber-400 rounded-full transition-all duration-300 active:scale-90" title="Move to Trash">
                                             <Trash2 className="w-3.5 h-3.5" />
                                         </button>
                                     )}

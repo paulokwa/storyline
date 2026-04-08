@@ -17,7 +17,8 @@ import {
     Sparkles,
     Volume2,
     Wand2,
-    Bookmark
+    Bookmark,
+    History
 } from 'lucide-react'
 import ExportModal from '@/components/export/ExportModal'
 import ProjectSettingsModal from '@/components/project/ProjectSettingsModal'
@@ -36,6 +37,7 @@ const TABS = [
     { slug: 'locations', label: 'Locations', icon: MapPin },
     { slug: 'objects', label: 'Objects', icon: Package },
     { slug: 'archive', label: 'Archive', icon: Bookmark },
+    { slug: 'recovery', label: 'Recovery', icon: History },
 ] as const
 
 export default function ProjectShell({
@@ -56,8 +58,8 @@ export default function ProjectShell({
     async function saveTitle() {
         if (!titleDraft.trim()) return setEditingTitle(false)
         const supabase = createClient()
-        const { data } = await (supabase
-            .from('projects') as any)
+        const { data } = await supabase
+            .from('projects')
             .update({ title: titleDraft.trim() })
             .eq('id', project.id)
             .select()
