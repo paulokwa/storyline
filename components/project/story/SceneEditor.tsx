@@ -18,7 +18,7 @@ import {
 import { ScreenplayKeyboard } from '@/lib/tiptap/screenplay-keyboard'
 import { createClient } from '@/lib/supabase/client'
 import type { Database, WritingMode } from '@/lib/supabase/types'
-import { cn } from '@/lib/utils'
+import { cn, getUserColor } from '@/lib/utils'
 import { 
     Trash2, 
     RotateCcw, 
@@ -47,12 +47,18 @@ import {
     User,
     MessageSquare,
     ArrowRight,
-    Type as TypeIcon
+    Type as TypeIcon,
+    Clock
 } from 'lucide-react'
 import { restoreStructureNode, captureSceneVersion } from '@/lib/supabase/recovery'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { useSpeechToText } from '@/hooks/useSpeechToText'
+
+import { useProjectActions } from '@/components/project/ProjectContext'
+import { useComments } from '@/components/project/CommentsContext'
+import { CommentMark } from '@/lib/tiptap/comment-mark'
+import { usePresence } from '@/components/project/PresenceContext'
 
 interface SceneEditorProps {
     scene: any
@@ -129,6 +135,14 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [showViewSettings, setShowViewSettings] = useState(false)
     const [interimTranscript, setInterimTranscript] = useState('')
 
+    // Versioning & Conflict State
+    const [localVersion, setLocalVersion] = useState<number>(scene.version || 1)
+    const [showConflictModal, setShowConflictModal] = useState(false)
+    const [showUpdateBanner, setShowUpdateBanner] = useState(false)
+    const [remoteVersion, setRemoteVersion] = useState<number>(scene.version || 1)
+    const [lastEditorName, setLastEditorName] = useState<string | null>(null)
+
+
     const { toggle: toggleDictation, isRecording, supported: speechSupported } = useSpeechToText({
         onTranscript: (text, isFinal) => {
             if (isFinal && editor) {
@@ -199,6 +213,16 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             Placeholder.configure({
                 placeholder: writingMode === 'screenplay' ? 'Start your script...' : 'Once upon a time...',
             }),
+            CommentMark.extend({
+                addAttributes() {
+                    return {
+                        ...this.parent?.(),
+                        onClick: {
+                            default: null,
+                        }
+                    }
+                }
+            })
         ]
 
         if (writingMode === 'screenplay') {
@@ -218,6 +242,16 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     }, [writingMode])
 
     const { sidebarOpen, setSidebarOpen, aiPanelOpen, setAiPanelOpen, currentSceneText, setCurrentSceneText, role } = useProjectActions()
+    const { 
+        setCommentsPanelOpen, 
+        addComment, 
+        activeCommentId, 
+        setActiveCommentId,
+        comments,
+        isLoading
+    } = useComments()
+    const { activeSceneUsers, setMyStatus } = usePresence()
+    
     const isReadOnly = role === 'viewer'
 
     const editor = useEditor({
@@ -234,6 +268,29 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                         : 'prose prose-slate font-serif editor-novel-overrides'
                 ),
             },
+            handleClick: (view, pos, event) => {
+                const { state } = view
+                console.log('Editor click at pos:', pos)
+                if (!state?.doc?.resolve) return false
+                const mark = state.doc.resolve(pos).marks().find(m => m.type.name === 'comment')
+                if (mark) {
+                    const commentId = mark.attrs.commentId
+                    setActiveCommentId(commentId)
+                    setCommentsPanelOpen(true)
+                    return true
+                }
+                setActiveCommentId(null)
+                return false
+            },
+            transformPasted: (slice) => {
+                // Strip comment marks from pasted content
+                slice.content.descendants(node => {
+                    if (node.marks) {
+                        node.marks = node.marks.filter(m => m.type.name !== 'comment')
+                    }
+                })
+                return slice
+            }
         },
         onCreate: ({ editor }) => {
             onTextChange?.(editor.getText())
@@ -242,8 +299,81 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             const text = editor.getText()
             onTextChange?.(text)
             setSaveStatus('idle') 
+            // Handle status transition
+            setMyStatus('editing')
         },
     }, [writingMode, isReadOnly])
+
+    // Revert to viewing after 2s of inactivity
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setMyStatus('viewing')
+        }, 2000)
+        return () => clearTimeout(timer)
+    }, [currentSceneText, setMyStatus])
+    
+    // Scan for detached comments
+    useEffect(() => {
+        if (!editor || isLoading) return
+        
+        const editorCommentIds = new Set<string>()
+        editor.state.doc.descendants((node) => {
+            if (node.marks) {
+                node.marks.forEach(mark => {
+                    if (mark.type.name === 'comment') {
+                        editorCommentIds.add(mark.attrs.commentId)
+                    }
+                })
+            }
+        })
+        
+        const nodeComments = comments.filter(c => c.node_id === scene.node_id && c.anchor_data?.type === 'inline' && !c.parent_id)
+        const detached = nodeComments.filter(c => !editorCommentIds.has(c.id))
+        
+        if (detached.length > 0) {
+            console.log('Detached comments found in this scene:', detached.map(d => d.id))
+            // In a future phase, we could show a "Restore Highlights" UI
+        }
+    }, [editor, comments, scene.node_id, isLoading])
+
+    // Realtime Highlight Cleanup: Remove marks if the comment no longer exists globally
+    useEffect(() => {
+        if (!editor || isLoading || comments.length === 0) return
+
+        // Get all comment IDs in doc
+        const editorCommentIds = new Set<string>()
+        editor.state.doc.descendants((node) => {
+            if (node.marks) {
+                node.marks.forEach(mark => {
+                    if (mark.type.name === 'comment') {
+                        editorCommentIds.add(mark.attrs.commentId)
+                    }
+                })
+            }
+        })
+
+        // Find which ones are missing from the global list
+        const missingIds = Array.from(editorCommentIds).filter(id => 
+            !id.startsWith('pending-') && 
+            !comments.some(c => c.id === id)
+        )
+
+        if (missingIds.length > 0) {
+            // Remove marks for missing comments
+            editor.commands.command(({ tr, dispatch }) => {
+                if (dispatch) {
+                    missingIds.forEach(id => {
+                        editor.state.doc.descendants((node, pos) => {
+                             if (node.marks?.some(m => m.type.name === 'comment' && m.attrs.commentId === id)) {
+                                tr.removeMark(pos, pos + node.nodeSize, editor.schema.marks.comment)
+                             }
+                        })
+                    })
+                }
+                return true
+            })
+        }
+    }, [comments, editor, isLoading])
 
     const saveContent = useCallback(async () => {
         if (!editor || isReadOnly) return
@@ -257,15 +387,19 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
         setSaveStatus('saving')
         const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
         
-        // 1. Update scene content
-        const { error: sceneError } = await (supabase
+        // 1. Update scene content with version check
+        const { error: sceneError, count } = await (supabase
             .from('scenes') as any)
             .update({ 
                 content: newContent,
+                version: localVersion + 1,
+                last_editor_id: user?.id,
                 updated_at: new Date().toISOString() 
-            })
+            }, { count: 'exact' })
             .eq('id', scene.id)
+            .eq('version', localVersion)
 
         // 1b. Capture version
         await captureSceneVersion(supabase, scene.project_id, scene.id, newContent)
@@ -280,20 +414,128 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             nodeErrorResult = nodeError
         }
 
+        if (count === 0 && !sceneError) {
+            console.warn('Conflict detected: local version', localVersion, 'Remote is likely newer.')
+            setSaveStatus('error')
+            setShowConflictModal(true)
+            return
+        }
+
         if (sceneError || nodeErrorResult) {
             console.error('Save error (scene/node):', sceneError || nodeErrorResult)
             setSaveStatus('error')
         } else {
             setSaveStatus('saved')
+            setLocalVersion(prev => prev + 1)
+            setShowUpdateBanner(false)
             if (currentTitle !== initialTitle) onTitleUpdate?.(currentTitle)
             
-            const updatedScene = { ...sceneRef.current, title: currentTitle, content: newContent }
+            const updatedScene = { ...scene, title: currentTitle, content: newContent, version: localVersion + 1 }
             if (editor) {
                 (editor as any)._lastContent = newContent
             }
             onUpdate(updatedScene)
         }
-    }, [scene, title, initialTitle, editor, onUpdate, onTitleUpdate])
+    }, [scene, title, initialTitle, editor, onUpdate, onTitleUpdate, localVersion])
+
+    // Sync active comment from sidebar to editor
+    useEffect(() => {
+        if (!editor || !activeCommentId) return
+
+        const { state, view } = editor
+        let foundPos = -1
+        
+        state.doc.descendants((node, pos) => {
+            if (node.marks) {
+                const mark = node.marks.find(m => m.type.name === 'comment' && m.attrs.commentId === activeCommentId)
+                if (mark) {
+                    foundPos = pos
+                    return false
+                }
+            }
+        })
+
+        if (foundPos !== -1) {
+            // Highlight precisely? For now just scroll
+            const element = view.domAtPos(foundPos).node as HTMLElement
+            if (element instanceof HTMLElement) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }
+        }
+    }, [activeCommentId, editor])
+
+    // Sync individual comment status (resolved/open) to marks
+    useEffect(() => {
+        if (!editor) return
+        
+        let transaction = editor.state.tr
+        let changed = false
+
+        editor.state.doc.descendants((node, pos) => {
+            if (node.marks) {
+                const commentMark = node.marks.find(m => m.type.name === 'comment')
+                if (commentMark) {
+                    const dbComment = comments.find(c => c.id === commentMark.attrs.commentId)
+                    if (dbComment && dbComment.status !== commentMark.attrs.status) {
+                        transaction = transaction.removeMark(pos, pos + node.nodeSize, commentMark.type)
+                        transaction = transaction.addMark(pos, pos + node.nodeSize, commentMark.type.create({
+                            ...commentMark.attrs,
+                            status: dbComment.status
+                        }))
+                        changed = true
+                    }
+                }
+            }
+        })
+
+        if (changed) {
+            editor.view.dispatch(transaction)
+        }
+    }, [comments, editor])
+
+    async function handleAddInlineComment() {
+        if (!editor) return
+        const { from, to } = editor.state.selection
+        const text = editor.state.doc.textBetween(from, to)
+        
+        if (!text.trim()) return
+
+        // 1. Apply pending mark
+        const tempId = 'pending-' + Math.random().toString(36).substr(2, 9)
+        editor.chain().focus().setComment(tempId).run()
+
+        try {
+            // 2. Create in DB
+            const newComment = await addComment({
+                project_id: scene.project_id,
+                node_id: scene.node_id,
+                content: 'Add your feedback...', // Initial placeholder
+                anchor_data: {
+                    type: 'inline',
+                    text,
+                    from,
+                    to,
+                }
+            })
+
+            // 3. Replace pending ID with real ID
+            editor.view.state.doc.descendants((node, pos) => {
+                if (node.marks) {
+                    const mark = node.marks.find(m => m.type.name === 'comment' && m.attrs.commentId === tempId)
+                    if (mark) {
+                        // We need a transaction to replace the mark
+                        editor.chain().setTextSelection({ from: pos, to: pos + node.nodeSize }).unsetComment().setComment(newComment!.id).run()
+                    }
+                }
+            })
+
+            setActiveCommentId(newComment!.id)
+            setCommentsPanelOpen(true)
+        } catch (err) {
+            console.error('Failed to create inline comment:', err)
+            editor.chain().focus().unsetComment().run()
+        }
+    }
 
     // Effect for autosave
     useEffect(() => {
@@ -311,14 +553,43 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         // Structurally check if the content from parent is actually different from what we have/saved
         const isContentDifferent = scene.content !== (editor as any)._lastContent && scene.content !== currentHTML
 
-        if (isDifferentScene || (isContentDifferent && !editor.isFocused)) {
+        if (isDifferentScene) {
             editor.commands.setContent(scene.content || '')
             ;(editor as any)._lastSceneId = scene.id
             ;(editor as any)._lastContent = scene.content
-            // Note: status will become idle via onUpdate which is triggered by setContent
+            setLocalVersion(scene.version || 1)
+            setShowConflictModal(false)
+            setShowUpdateBanner(false)
+        } else if (isContentDifferent && !editor.isFocused) {
+            // Updated elsewhere while we are idle?
+            if (scene.version > localVersion) {
+                setShowUpdateBanner(true)
+                setRemoteVersion(scene.version)
+            }
         }
-    }, [scene.id, scene.content, editor])
+    }, [scene.id, scene.content, scene.version, editor, localVersion])
 
+    // Fetch last editor name
+    useEffect(() => {
+        if (!scene.last_editor_id) {
+            setLastEditorName(null)
+            return
+        }
+        
+        async function fetchLastEditor() {
+            const supabase = createClient()
+            const { data } = await supabase
+                .from('project_members')
+                .select('user_email')
+                .eq('user_id', scene.last_editor_id)
+                .maybeSingle()
+            
+            if (data?.user_email) setLastEditorName(data.user_email)
+            else setLastEditorName('a collaborator')
+        }
+        
+        fetchLastEditor()
+    }, [scene.last_editor_id])
     useImperativeHandle(ref, () => ({
         getText: () => editor?.getText() || '',
         getSelectionText: () => {
@@ -354,12 +625,122 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             'min-h-full pb-32 md:pb-80 transition-all duration-700 ease-in-out relative',
             writingMode === 'screenplay' ? 'bg-[#f0f0ed] py-10 px-4 sm:px-8' : 'px-4 sm:px-12 md:px-24 max-w-6xl mx-auto pt-4'
         )}>
+            {/* Realtime Conflict / Update Banners */}
+            {showUpdateBanner && !showConflictModal && (
+                <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] animate-in slide-in-from-top-4 duration-500">
+                    <div className="bg-white border-2 border-primary/20 shadow-2xl rounded-2xl px-6 py-3 flex items-center gap-4">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                            <RotateCcw className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-sm font-bold text-slate-900">Scene updated elsewhere</span>
+                            <span className="text-[10px] text-slate-500 font-medium">Someone else saved a new version (v{remoteVersion})</span>
+                        </div>
+                        <Button 
+                            variant="default" 
+                            size="sm" 
+                            className="rounded-xl h-8 text-[11px] font-bold uppercase tracking-widest"
+                            onClick={() => {
+                                editor?.commands.setContent(scene.content || '')
+                                setLocalVersion(scene.version)
+                                setShowUpdateBanner(false)
+                            }}
+                        >
+                            Load Latest
+                        </Button>
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="rounded-xl h-8 text-[10px] text-slate-400"
+                            onClick={() => setShowUpdateBanner(false)}
+                        >
+                            Ignore
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {showConflictModal && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-6 animate-in fade-in duration-500">
+                    <div className="bg-white rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl border border-white/50 text-center space-y-8">
+                        <div className="w-24 h-24 bg-amber-50 rounded-[2.2rem] flex items-center justify-center text-amber-500 mx-auto shadow-inner">
+                            <RotateCcw className="w-12 h-12" />
+                        </div>
+                        <div className="space-y-3">
+                            <h2 className="text-3xl font-serif font-bold text-slate-900">Collaboration Conflict</h2>
+                            <p className="text-base text-slate-500 font-sans leading-relaxed tracking-tight">
+                                Another collaborator has saved changes to this scene since you started. How would you like to handle this overlap?
+                            </p>
+                        </div>
+                        <div className="grid gap-4 pt-4">
+                            <div className="relative group">
+                                <Button 
+                                    className="w-full h-16 rounded-3xl text-lg font-bold bg-[#546354] hover:bg-[#435043] shadow-lg shadow-[#546354]/10 transition-all hover:-translate-y-0.5"
+                                    onClick={() => {
+                                        editor?.commands.setContent(scene.content || '')
+                                        setLocalVersion(scene.version)
+                                        setShowConflictModal(false)
+                                        setSaveStatus('idle')
+                                    }}
+                                >
+                                    <RotateCcw className="w-5 h-5 mr-3" />
+                                    Reload Latest (Safe)
+                                </Button>
+                                <p className="text-[10px] text-slate-400 mt-2 font-medium uppercase tracking-widest text-center">Replaces your local changes with the current server version</p>
+                            </div>
+
+                            <div className="pt-4 border-t border-slate-100">
+                                <Button 
+                                    variant="outline"
+                                    className="w-full h-14 rounded-2xl text-sm font-bold border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all"
+                                    onClick={async () => {
+                                        setLocalVersion(scene.version)
+                                        setShowConflictModal(false)
+                                        setSaveStatus('idle')
+                                    }}
+                                >
+                                    Force Overwrite
+                                </Button>
+                                <p className="text-[10px] text-slate-400 mt-2 font-medium uppercase tracking-widest text-center">Keeping your local work and overwriting remote changes</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* Header info bar */}
             <div className="flex flex-col mb-10">
                 <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 font-sans">
-                        {writingMode === 'screenplay' ? 'Script' : 'Draft'} — {label}
-                    </span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 font-sans">
+                            {writingMode === 'screenplay' ? 'Script' : 'Draft'} — {label}
+                        </span>
+                        {activeSceneUsers.length > 0 && (
+                            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300 ml-4">
+                                <div className="flex items-center -space-x-1.5">
+                                    {activeSceneUsers.map(u => {
+                                        const userColor = getUserColor(u.email)
+                                        return (
+                                            <div 
+                                                key={u.user_id} 
+                                                className={cn(
+                                                    "w-5 h-5 rounded-full border border-white flex items-center justify-center text-[8px] font-bold shadow-sm",
+                                                    userColor
+                                                )}
+                                                title={u.email}
+                                            >
+                                                {u.email[0].toUpperCase()}
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                    {activeSceneUsers.length === 1 
+                                        ? `${activeSceneUsers[0].email} is ${activeSceneUsers[0].status === 'editing' ? 'writing' : 'reading'}` 
+                                        : `${activeSceneUsers.length} others reading`}
+                                </span>
+                            </div>
+                        )}
+                    </div>
                     <div className="flex items-center gap-2">
                         {!isReadOnly && (
                              <span className={cn(
@@ -371,6 +752,17 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                 {saveStatus === 'saving' ? 'Autosaving...' : saveStatus === 'saved' ? 'Saved' : ''}
                             </span>
                         )}
+                        
+                        <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => setCommentsPanelOpen(true)}
+                            className="h-6 px-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary hover:bg-white transition-all"
+                        >
+                            <MessageSquare className="w-3 h-3 mr-1" />
+                             Feedback
+                        </Button>
+
                         {!isReadOnly && (
                             <Button 
                                 variant="ghost" 
@@ -536,6 +928,12 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             : "font-serif text-3xl sm:text-4xl text-[#31332f]"
                     )}
                 />
+                {lastEditorName && (
+                    <div className="flex items-center gap-1.5 mt-2 text-[10px] text-slate-400 font-bold uppercase tracking-wider animate-in fade-in duration-500">
+                        <Clock className="w-3 h-3" />
+                        <span>Last edited by {lastEditorName}</span>
+                    </div>
+                )}
             </div>
 
             <div 
@@ -584,6 +982,16 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     active={editor.isActive('screenplayParenthetical')}
                                     icon={() => <span className="text-[10px] font-bold">( )</span>}
                                     tooltip="Parenthetical"
+                                />
+                                
+                                <div className="w-px h-4 bg-slate-200 mx-1" />
+
+                                <ToolbarButton
+                                    onClick={handleAddInlineComment}
+                                    active={false}
+                                    icon={MessageSquare}
+                                    tooltip="Add Comment"
+                                    disabled={editor.isActive('comment')}
                                 />
                                 <ToolbarButton
                                     onClick={() => editor.chain().focus().setNode('screenplayDialogue').run()}
@@ -661,6 +1069,16 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     active={editor.isActive('blockquote')}
                                     icon={Quote}
                                     tooltip="Blockquote"
+                                />
+
+                                <div className="w-px h-4 bg-slate-200 mx-1" />
+
+                                <ToolbarButton
+                                    onClick={handleAddInlineComment}
+                                    active={false}
+                                    icon={MessageSquare}
+                                    tooltip="Add Comment"
+                                    disabled={editor.isActive('comment')}
                                 />
                             </>
                         )}

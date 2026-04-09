@@ -11,3 +11,23 @@ export const reorder = <T>(list: T[], startIndex: number, endIndex: number): T[]
   result.splice(endIndex, 0, removed)
   return result
 }
+
+export const getUserColor = (email: string) => {
+  const colors = [
+    'bg-rose-100 text-rose-700 border-rose-200',
+    'bg-amber-100 text-amber-700 border-amber-200',
+    'bg-emerald-100 text-emerald-700 border-emerald-200',
+    'bg-sky-100 text-sky-700 border-sky-200',
+    'bg-indigo-100 text-indigo-700 border-indigo-200',
+    'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200',
+    'bg-orange-100 text-orange-700 border-orange-200',
+    'bg-teal-100 text-teal-700 border-teal-200',
+  ]
+  
+  let hash = 0
+  for (let i = 0; i < email.length; i++) {
+    hash = email.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  
+  return colors[Math.abs(hash) % colors.length]
+}

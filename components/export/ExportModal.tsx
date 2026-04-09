@@ -150,7 +150,7 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[640px] p-0 overflow-hidden rounded-3xl border-none shadow-2xl bg-[#fbf9f5]">
-                <DialogHeader className="p-8 pb-4 bg-white/50 backdrop-blur-md border-b border-[#f0eee9]">
+                <DialogHeader className="p-8 pb-4 bg-white border-b border-[#f0eee9]">
                     <DialogTitle className="text-2xl font-serif text-[#31332f] flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
                             <Download className="w-5 h-5 text-amber-600" />

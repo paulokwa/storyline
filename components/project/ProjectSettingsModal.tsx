@@ -85,17 +85,17 @@ export default function ProjectSettingsModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px] rounded-[2rem] p-8 border-none shadow-2xl bg-card">
+            <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden rounded-3xl border border-slate-200/50 shadow-2xl bg-[#fbf9f5] !opacity-100 backdrop-blur-none">
                 {!showDeleteConfirm ? (
                     <>
-                        <DialogHeader>
+                        <DialogHeader className="bg-white/50 p-8 border-b border-[#f0eee9]">
                             <DialogTitle className="text-3xl font-serif text-foreground">Project Settings</DialogTitle>
                             <DialogDescription className="text-muted-foreground font-medium">
                                 Configure the foundations of your story.
                             </DialogDescription>
                         </DialogHeader>
 
-                        <div className="flex gap-1 p-1 bg-slate-100 rounded-xl mt-4">
+                        <div className="flex gap-1 p-1 bg-slate-100 rounded-xl mt-4 mx-8">
                             <button
                                 onClick={() => setActiveTab('general')}
                                 className={cn(
@@ -120,7 +120,7 @@ export default function ProjectSettingsModal({
                             </button>
                         </div>
 
-                        <div className="py-6 font-sans max-h-[50vh] overflow-y-auto px-1 custom-scrollbar">
+                        <div className="p-8 pb-0 pt-6 font-sans max-h-[50vh] overflow-y-auto custom-scrollbar">
                             {activeTab === 'general' ? (
                                 <div className="space-y-6">
                                     <div className="space-y-2">
@@ -287,7 +287,7 @@ export default function ProjectSettingsModal({
                             )}
                         </div>
 
-                        <DialogFooter className="flex flex-col sm:flex-row gap-3 pt-4">
+                        <DialogFooter className="p-6 bg-white border-t border-[#f0eee9] flex flex-col sm:flex-row gap-3">
                             <Button
                                 variant="ghost"
                                 onClick={() => setShowDeleteConfirm(true)}

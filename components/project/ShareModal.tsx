@@ -8,6 +8,7 @@ import {
     DialogHeader,
     DialogTitle,
     DialogDescription,
+    DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -58,9 +59,14 @@ export default function ShareModal({
 
     async function fetchMembers() {
         setIsLoading(true)
-        const { data, error } = await supabase.rpc('get_project_members_extended', { p_id: projectId })
+        const { data, error } = await supabase.rpc('get_project_members_extended', { project_id_arg: projectId })
         if (error) {
-            console.error('Error fetching members:', error)
+            console.error('Error fetching members details:', {
+                message: error.message,
+                code: error.code,
+                details: error.details,
+                hint: error.hint
+            })
         } else {
             setMembers(data as Member[] || [])
         }
@@ -119,8 +125,8 @@ export default function ShareModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px] rounded-[2rem] p-8 border-none shadow-2xl bg-card">
-                <DialogHeader className="mb-6">
+            <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden rounded-3xl border border-slate-200/50 shadow-2xl bg-[#fbf9f5] !opacity-100 backdrop-blur-none">
+                <DialogHeader className="bg-white/50 p-8 border-b border-[#f0eee9]">
                     <DialogTitle className="text-3xl font-serif text-foreground flex items-center gap-3">
                         <UserPlus className="w-8 h-8 text-primary" strokeWidth={1.5} />
                         Share Project
@@ -130,7 +136,7 @@ export default function ShareModal({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-8 py-2">
+                <div className="p-8 space-y-8">
                     {/* Add Member Form */}
                     <div className="space-y-3">
                         <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">Invite Collaborator</label>
@@ -246,7 +252,7 @@ export default function ShareModal({
                     </div>
                 </div>
 
-                <div className="pt-8 flex justify-end">
+                <DialogFooter className="p-6 bg-white border-t border-[#f0eee9] flex justify-end">
                     <Button 
                         variant="ghost" 
                         onClick={() => onOpenChange(false)} 
@@ -254,7 +260,7 @@ export default function ShareModal({
                     >
                         Close
                     </Button>
-                </div>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     )

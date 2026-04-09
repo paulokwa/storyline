@@ -23,11 +23,21 @@ import {
 import ExportModal from '@/components/export/ExportModal'
 import ProjectSettingsModal from '@/components/project/ProjectSettingsModal'
 import ShareModal from '@/components/project/ShareModal'
-import { cn } from '@/lib/utils'
+import { cn, getUserColor } from '@/lib/utils'
 import type { Database } from '@/lib/supabase/types'
 import { ReaderProvider, useSpeech } from '@/hooks/useSpeech'
+import { CommentsProvider, useComments } from '@/components/project/CommentsContext'
 import { FloatingPlayer } from '@/components/project/story/ReaderMode'
 import { ProjectProvider, useProjectActions } from '@/components/project/ProjectContext'
+import { MessageSquare } from 'lucide-react'
+import { PresenceProvider, usePresence } from '@/components/project/PresenceContext'
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { Avatar, AvatarFallback } from "../ui/avatar"
 
 type Project = Database['public']['Tables']['projects']['Row']
 
@@ -75,52 +85,65 @@ export default function ProjectShell({
 
     return (
         <ProjectProvider role={role}>
-            <ReaderProvider>
-                <ProjectShellInner 
-                    project={project} 
-                    editingTitle={editingTitle} 
-                    setEditingTitle={setEditingTitle} 
-                    titleDraft={titleDraft} 
-                    setTitleDraft={setTitleDraft} 
-                    saveTitle={saveTitle} 
-                    exportModalOpen={exportModalOpen}
-                    setExportModalOpen={setExportModalOpen}
-                    settingsModalOpen={settingsModalOpen}
-                    setSettingsModalOpen={setSettingsModalOpen}
-                    shareModalOpen={shareModalOpen}
-                    setShareModalOpen={setShareModalOpen}
-                    role={role}
-                    pathname={pathname} 
-                >
-                    {children}
-                </ProjectShellInner>
-                
-                <ExportModal 
-                    open={exportModalOpen} 
-                    onOpenChange={setExportModalOpen} 
-                    projectId={project.id}
-                    projectTitle={project.title ?? 'Untitled'}
-                    onOpenSettings={() => {
-                        setExportModalOpen(false)
-                        setSettingsModalOpen(true)
-                    }}
-                />
-                
-                <ProjectSettingsModal 
-                    open={settingsModalOpen} 
-                    onOpenChange={setSettingsModalOpen} 
-                    project={project} 
-                />
+            <PresenceWrapper project={project} role={role}>
+                <CommentsProvider projectId={project.id}>
+                    <ReaderProvider>
+                        <ProjectShellInner 
+                            project={project} 
+                            editingTitle={editingTitle} 
+                            setEditingTitle={setEditingTitle} 
+                        titleDraft={titleDraft} 
+                        setTitleDraft={setTitleDraft} 
+                        saveTitle={saveTitle} 
+                        exportModalOpen={exportModalOpen}
+                        setExportModalOpen={setExportModalOpen}
+                        settingsModalOpen={settingsModalOpen}
+                        setSettingsModalOpen={setSettingsModalOpen}
+                        shareModalOpen={shareModalOpen}
+                        setShareModalOpen={setShareModalOpen}
+                        role={role}
+                        pathname={pathname} 
+                    >
+                        {children}
+                    </ProjectShellInner>
+                    
+                    <ExportModal 
+                        open={exportModalOpen} 
+                        onOpenChange={setExportModalOpen} 
+                        projectId={project.id}
+                        projectTitle={project.title ?? 'Untitled'}
+                        onOpenSettings={() => {
+                            setExportModalOpen(false)
+                            setSettingsModalOpen(true)
+                        }}
+                    />
+                    
+                    <ProjectSettingsModal 
+                        open={settingsModalOpen} 
+                        onOpenChange={setSettingsModalOpen} 
+                        project={project} 
+                    />
 
-                <ShareModal
-                    open={shareModalOpen}
-                    onOpenChange={setShareModalOpen}
-                    projectId={project.id}
-                />
+                    <ShareModal
+                        open={shareModalOpen}
+                        onOpenChange={setShareModalOpen}
+                        projectId={project.id}
+                    />
 
-                <FloatingPlayer />
-            </ReaderProvider>
+                    <FloatingPlayer />
+                </ReaderProvider>
+            </CommentsProvider>
+            </PresenceWrapper>
         </ProjectProvider>
+    )
+}
+
+function PresenceWrapper({ project, children }: any) {
+    const { activeNodeId } = useProjectActions()
+    return (
+        <PresenceProvider projectId={project.id} currentSceneId={activeNodeId}>
+            {children}
+        </PresenceProvider>
     )
 }
 
@@ -147,6 +170,7 @@ function ProjectShellInner({
         currentSceneText, 
         analyzeScene, isAnalyzing 
     } = useProjectActions()
+    const { commentsPanelOpen, setCommentsPanelOpen } = useComments()
     const { speak, speechState } = useSpeech()
     const isReading = speechState === 'speaking'
     const isStoryTab = pathname.includes('/story')
@@ -198,6 +222,10 @@ function ProjectShellInner({
                                 {project.title}
                             </button>
                         )}
+
+                        <div className="flex items-center -space-x-2 mr-4 overflow-hidden">
+                             <CollaborativeAvatars />
+                        </div>
 
                         <div className="flex items-center gap-2">
                              {/* Tab Actions (Dynamic) */}
@@ -257,6 +285,20 @@ function ProjectShellInner({
                                     >
                                         <Sparkles className="w-4 h-4" />
                                         <span className="text-xs font-medium hidden md:inline">AI Helper</span>
+                                    </Button>
+
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setCommentsPanelOpen(!commentsPanelOpen)}
+                                        className={cn(
+                                            "rounded-xl transition-all h-9 px-2.5 gap-2",
+                                            commentsPanelOpen ? "bg-primary/10 text-primary hover:bg-primary/20" : "text-slate-500 hover:bg-black/5"
+                                        )}
+                                        title="Toggle feedback panel"
+                                    >
+                                        <MessageSquare className="w-4 h-4" />
+                                        <span className="text-xs font-medium hidden md:inline">Feedback</span>
                                     </Button>
                                 </div>
                             )}
@@ -323,5 +365,51 @@ function ProjectShellInner({
                 {children}
             </div>
         </div>
+    )
+}
+
+function CollaborativeAvatars() {
+    const { presenceUsers } = usePresence()
+    const MAX_VISIBLE = 4
+    
+    const visibleUsers = presenceUsers.slice(0, MAX_VISIBLE)
+    const remainingCount = presenceUsers.length - MAX_VISIBLE
+    
+    return (
+        <TooltipProvider>
+            <div className="flex items-center -space-x-1.5 hover:-space-x-1 transition-all duration-300">
+                {visibleUsers.map((user) => {
+                    const statusLabel = user.status === 'editing' ? 'writing' : 'reading'
+                    const userColor = getUserColor(user.email)
+                    
+                    return (
+                        <Tooltip key={user.user_id}>
+                            <TooltipTrigger>
+                                <Avatar className={cn(
+                                    "w-8 h-8 ring-2 ring-white transition-all cursor-default",
+                                    userColor
+                                )}>
+                                    <AvatarFallback className="text-[10px] font-bold bg-transparent">
+                                        {user.email.substring(0, 2).toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" className="flex flex-col gap-0.5 px-3 py-2 rounded-xl shadow-xl border-slate-200">
+                                <p className="text-xs font-bold text-slate-900">{user.email}</p>
+                                <p className="text-[10px] text-slate-500 font-medium">
+                                    Currently <span className="text-primary/70">{statusLabel}</span> {user.scene_id ? 'this scene' : 'the project'}
+                                </p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )
+                })}
+                
+                {remainingCount > 0 && (
+                    <div className="w-8 h-8 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-slate-500 ring-2 ring-white cursor-default">
+                        +{remainingCount}
+                    </div>
+                )}
+            </div>
+        </TooltipProvider>
     )
 }

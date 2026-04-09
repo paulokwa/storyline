@@ -392,4 +392,35 @@ body {
 .editor-novel-overrides mark {
   padding: 0.1em 0;
   border-radius: 2px;
-}
+}
+
+/* Inline Comment Highlights */
+.comment-highlight {
+  background-color: rgba(254, 240, 138, 0.4);
+  border-bottom: 2px solid rgba(250, 204, 21, 0.4);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.comment-highlight:hover {
+  background-color: rgba(254, 240, 138, 0.6);
+  border-bottom-color: rgba(250, 204, 21, 0.8);
+}
+
+.comment-highlight.active {
+  background-color: rgba(254, 240, 138, 0.8) !important;
+  border-bottom-color: rgba(250, 204, 21, 1) !important;
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.2);
+}
+
+.comment-highlight[data-comment-status="resolved"] {
+  background-color: rgba(241, 245, 249, 0.4);
+  border-bottom-color: rgba(203, 213, 225, 0.4);
+  opacity: 0.6;
+}
+
+.comment-highlight[data-comment-status="resolved"]:hover {
+  opacity: 1;
+  background-color: rgba(241, 245, 249, 0.8);
+}

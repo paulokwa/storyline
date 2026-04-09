@@ -15,8 +15,10 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { cn, reorder } from '@/lib/utils'
-import { GripVertical } from 'lucide-react'
+import { GripVertical, MessageSquare } from 'lucide-react'
 import type { Database, NodeType } from '@/lib/supabase/types'
+import { useComments } from '@/components/project/CommentsContext'
+import { useProjectActions } from '@/components/project/ProjectContext'
 import { softDeleteStructureNode } from '@/lib/supabase/recovery'
 
 type Project = Database['public']['Tables']['projects']['Row']
@@ -70,6 +72,7 @@ function getDescendantIds(nodes: StructureNode[], parentId: string): string[] {
     return children.flatMap(c => [c.id, ...getDescendantIds(nodes, c.id)])
 }
 
+export default function StructureTree({
     project, nodes, activeNodeId, selectedNodeIds = [], onNodeSelect, onNodeToggleSelection, onNodesChange, onSceneCreated
 }: StructureTreeProps) {
     const { role } = useProjectActions()
@@ -265,6 +268,9 @@ interface NodeItemProps {
     onRequestDelete: (id: string | null) => void
 }
 
+const NodeItem = React.memo(({
+    node, nodes, index, activeNodeId, selectedNodeIds = [], depth, onSelect, onToggleSelection, onAddChild, onDelete, onRename, confirmingDeleteId, onRequestDelete
+}: NodeItemProps) => {
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'
     const [expanded, setExpanded] = useState(true)
@@ -279,6 +285,11 @@ interface NodeItemProps {
     const isRoot = node.type === 'episode' || node.type === 'chapter'
     const isActive = isScene && activeNodeId === node.id
     const isSelected = selectedNodeIds.includes(node.id)
+
+    const { comments } = useComments()
+    const openCommentCount = useMemo(() => {
+        return comments.filter(c => c.node_id === node.id && c.status === 'open' && !c.parent_id).length
+    }, [comments, node.id])
 
     function handleClick(e: React.MouseEvent) {
         e.stopPropagation()
@@ -384,6 +395,13 @@ interface NodeItemProps {
                             >
                                 {node.title}
                             </span>
+                        )}
+
+                        {openCommentCount > 0 && (
+                            <div className="flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-lg ml-2 border border-primary/5 shadow-sm">
+                                <MessageSquare className="w-2.5 h-2.5 text-primary/70" />
+                                <span className="text-[10px] font-bold text-primary">{openCommentCount}</span>
+                            </div>
                         )}
 
                         {/* Confirm delete — always visible when active, outside hover conditional */}

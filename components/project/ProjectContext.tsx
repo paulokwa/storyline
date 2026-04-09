@@ -16,6 +16,8 @@ interface ProjectContextType {
     analysisResult: any | null
     setAnalysisResult: (val: any | null) => void
     analyzeScene: () => Promise<void>
+    activeNodeId: string | null
+    setActiveNodeId: (val: string | null) => void
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined)
@@ -34,6 +36,7 @@ export function ProjectProvider({
     // Analysis
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [analysisResult, setAnalysisResult] = useState<any | null>(null)
+    const [activeNodeId, setActiveNodeId] = useState<string | null>(null)
 
     const analyzeScene = async () => {
         if (!currentSceneText.trim()) return
@@ -70,7 +73,9 @@ export function ProjectProvider({
             setIsAnalyzing,
             analysisResult,
             setAnalysisResult,
-            analyzeScene
+            analyzeScene,
+            activeNodeId,
+            setActiveNodeId
         }}>
             {children}
         </ProjectContext.Provider>

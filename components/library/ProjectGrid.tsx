@@ -24,7 +24,7 @@ type Project = Database['public']['Tables']['projects']['Row'] & {
 export default function ProjectGrid({ projects }: { projects: Project[] }) {
     if (projects.length === 0) {
         return (
-            <div className="max-w-7xl mx-auto px-6 py-24 text-center fade-in">
+            <div className="max-w-[1440px] mx-auto px-6 py-24 text-center fade-in">
                 <div className="w-20 h-20 bg-stone-100 rounded-3xl flex items-center justify-center mx-auto mb-8">
                     <BookOpen className="w-10 h-10 text-stone-400" />
                 </div>
@@ -43,7 +43,7 @@ export default function ProjectGrid({ projects }: { projects: Project[] }) {
 
     return (
         <TooltipProvider>
-            <div className="max-w-7xl mx-auto px-6 py-16 md:py-24 fade-in">
+            <div className="max-w-[1440px] mx-auto px-6 py-16 md:py-24 fade-in">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-20 border-b border-slate-100 pb-12">
                     <div className="space-y-4">
                         <h1 className="text-5xl md:text-7xl font-serif text-slate-800 tracking-tight leading-tight">

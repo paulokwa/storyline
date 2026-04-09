@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button'
 import type { Database, WritingMode } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
 import { useProjectActions } from '@/components/project/ProjectContext'
+import { useComments } from '@/components/project/CommentsContext'
+import CommentsPanel from '@/components/project/sidebar/CommentsPanel'
 
 type Project = Database['public']['Tables']['projects']['Row']
 type StructureNode = Database['public']['Tables']['structure_nodes']['Row']
@@ -39,20 +41,30 @@ interface StoryTabProps {
 
 export default function StoryTab({ project, initialNodes, initialScenes, projectCharacters, projectIdeas, projectLocations, projectObjects, projectRelationships, aiSettings }: StoryTabProps) {
     const router = useRouter()
-    const { sidebarOpen, setSidebarOpen, aiPanelOpen, setAiPanelOpen, currentSceneText, setCurrentSceneText } = useProjectActions()
+    const { 
+        sidebarOpen, setSidebarOpen, 
+        aiPanelOpen, setAiPanelOpen, 
+        currentSceneText, setCurrentSceneText,
+        activeNodeId, setActiveNodeId
+    } = useProjectActions()
+    const { commentsPanelOpen, setCommentsPanelOpen, fetchComments } = useComments()
     
     const [nodes, setNodes] = useState(initialNodes)
     const [scenes, setScenes] = useState(initialScenes)
-    const [activeNodeId, setActiveNodeId] = useState<string | null>(
-        initialNodes.find(n => n.type === 'scene')?.id ?? null
-    )
 
     // On mobile, we want to go direct to the tab column (list) instead of an entry.
     useEffect(() => {
+        if (!activeNodeId) {
+             setActiveNodeId(initialNodes.find(n => n.type === 'scene')?.id ?? null)
+        }
         if (typeof window !== 'undefined' && window.innerWidth < 768) {
             setActiveNodeId(null)
         }
     }, [])
+
+    useEffect(() => {
+        fetchComments(project.id)
+    }, [project.id, fetchComments])
     const [writingMode, setWritingMode] = useState<WritingMode>(project.writing_mode ?? 'simple')
     
     const [activeCharacters, setActiveCharacters] = useState<Record<string, boolean>>({})
@@ -67,6 +79,61 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     useEffect(() => {
         setScenes(initialScenes)
     }, [initialScenes])
+
+    // Realtime Structure Sync
+    useEffect(() => {
+        if (!project.id) return
+
+        const supabase = createClient()
+        const channel = supabase.channel(`structure:${project.id}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'structure_nodes',
+                filter: `project_id=eq.${project.id}`
+            }, (payload) => {
+                if (payload.eventType === 'INSERT') {
+                    setNodes(prev => {
+                        if (prev.some(n => n.id === payload.new.id)) return prev
+                        return [...prev, payload.new as StructureNode]
+                    })
+                } else if (payload.eventType === 'UPDATE') {
+                    setNodes(prev => prev.map(n => 
+                        n.id === payload.new.id ? { ...n, ...payload.new } : n
+                    ))
+                } else if (payload.eventType === 'DELETE') {
+                    setNodes(prev => prev.filter(n => n.id !== payload.old.id))
+                    // Safety check for active node
+                    if (activeNodeId === payload.old.id) {
+                         setActiveNodeId(null)
+                    }
+                }
+            })
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'scenes',
+                filter: `project_id=eq.${project.id}`
+            }, (payload) => {
+                 if (payload.eventType === 'INSERT') {
+                    setScenes(prev => {
+                        if (prev.some(s => s.id === payload.new.id)) return prev
+                        return [...prev, payload.new as Scene]
+                    })
+                } else if (payload.eventType === 'UPDATE') {
+                    setScenes(prev => prev.map(s => 
+                        s.id === payload.new.id ? { ...s, ...payload.new } : s
+                    ))
+                } else if (payload.eventType === 'DELETE') {
+                    setScenes(prev => prev.filter(s => s.id !== payload.old.id))
+                }
+            })
+            .subscribe()
+
+        return () => {
+            channel.unsubscribe()
+        }
+    }, [project.id, activeNodeId, setActiveNodeId])
 
     const handleWritingModeChange = useCallback(async (mode: WritingMode) => {
         setWritingMode(mode)
@@ -118,12 +185,13 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     return (
         <div className="flex flex-1 overflow-hidden relative">
             {/* Backdrop for mobile */}
-            {(sidebarOpen || aiPanelOpen) && (
+            {(sidebarOpen || aiPanelOpen || commentsPanelOpen) && (
                 <div 
                     className="md:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-30 transition-opacity duration-300"
                     onClick={() => {
                         setSidebarOpen(false)
                         setAiPanelOpen(false)
+                        setCommentsPanelOpen(false)
                     }}
                 />
             )}
@@ -204,9 +272,36 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                 projectObjects={projectObjects}
                                 aiSettings={aiSettings}
                             />
+                        ) : activeNodeId ? (
+                            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center space-y-4 animate-in fade-in duration-500">
+                                <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300">
+                                    <BookOpen className="w-8 h-8" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-serif font-bold text-slate-800">Scene Not Found</h3>
+                                    <p className="text-sm text-slate-500 max-w-xs mx-auto mt-2">
+                                        This scene may have been moved or deleted by a collaborator.
+                                    </p>
+                                </div>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => setActiveNodeId(null)}
+                                    className="rounded-xl border-slate-200 text-slate-500"
+                                >
+                                    Dismiss
+                                </Button>
+                            </div>
                         ) : (
-                            <div className="flex-1 flex items-center justify-center p-12 text-slate-400 font-serif italic text-lg">
-                                Select a scene to begin writing...
+                            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                                <div className="w-24 h-24 bg-primary/5 rounded-[2.5rem] flex items-center justify-center text-primary/40 relative">
+                                    <Sparkles className="w-10 h-10 animate-pulse" />
+                                    <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-white" />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-2xl font-serif italic text-slate-400">Your story awaits...</h3>
+                                    <p className="text-sm text-slate-300 font-medium uppercase tracking-[0.2em]">Select a scene to begin writing</p>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -237,6 +332,21 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                         activeSceneId={activeScene?.id}
                         onClearSelection={() => setSelectedNodeIds([])}
                         onInsert={(text) => editorRef.current?.insertText(text)}
+                    />
+                </div>
+            </div>
+
+            {/* Comments Sidebar */}
+            <div className={cn(
+                'bg-white flex flex-col border-l border-slate-200 transition-all duration-300 overflow-hidden z-40 md:z-20',
+                'fixed top-14 bottom-0 right-0 md:relative md:inset-auto md:h-full',
+                commentsPanelOpen ? 'w-[320px] lg:w-[380px]' : 'w-0 border-none'
+            )}>
+                <div className="w-[320px] lg:w-[380px] h-full flex flex-col">
+                    <CommentsPanel 
+                        projectId={project.id}
+                        activeNodeId={activeNodeId}
+                        onSelectNode={handleSceneSelect}
                     />
                 </div>
             </div>

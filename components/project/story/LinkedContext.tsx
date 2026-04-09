@@ -1,5 +1,8 @@
+import { useTransition } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { useProjectActions } from '@/components/project/ProjectContext'
+import { Users, Lightbulb, MapPin, Package, X, FileText, Folder } from 'lucide-react'
 
 interface Entity {
     id: string
