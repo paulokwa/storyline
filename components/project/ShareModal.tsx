@@ -48,7 +48,7 @@ export default function ShareModal({
     const [isInviting, setIsInviting] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
-    const supabase = createClient()
+    const supabase = createClient() as any
 
     useEffect(() => {
         if (open) {

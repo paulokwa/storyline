@@ -86,15 +86,18 @@ const ToolbarButton = ({
     onClick, 
     active, 
     icon: Icon, 
-    tooltip 
+    tooltip,
+    disabled 
 }: { 
     onClick: (e: React.MouseEvent) => void, 
     active?: boolean, 
     icon: any, 
-    tooltip: string 
+    tooltip: string,
+    disabled?: boolean 
 }) => (
     <button
         type="button"
+        disabled={disabled}
         onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
@@ -286,7 +289,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 // Strip comment marks from pasted content
                 slice.content.descendants(node => {
                     if (node.marks) {
-                        node.marks = node.marks.filter(m => m.type.name !== 'comment')
+                        ;(node as any).marks = node.marks.filter(m => m.type.name !== 'comment')
                     }
                 })
                 return slice
@@ -578,7 +581,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         
         async function fetchLastEditor() {
             const supabase = createClient()
-            const { data } = await supabase
+            const { data } = await (supabase as any)
                 .from('project_members')
                 .select('user_email')
                 .eq('user_id', scene.last_editor_id)

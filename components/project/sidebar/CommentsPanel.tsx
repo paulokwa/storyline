@@ -190,14 +190,14 @@ export default function CommentsPanel({
                             key={comment.id}
                             comment={comment}
                             replies={comments.filter(c => c.parent_id === comment.id)}
-                            onReply={(id) => { setReplyToId(id); setReplyText('') }}
+                            onReply={(id: string) => { setReplyToId(id); setReplyText('') }}
                             isReplying={replyToId === comment.id}
                             replyText={replyText}
                             setReplyText={setReplyText}
                             onAddReply={() => handleAddReply(comment.id)}
                             onCancelReply={() => setReplyToId(null)}
                             editingId={editingId}
-                            onEdit={(id, text) => { setEditingId(id); setEditText(text) }}
+                            onEdit={(id: string, text: string) => { setEditingId(id); setEditText(text) }}
                             editText={editText}
                             setEditText={setEditText}
                             onUpdate={handleUpdate}
@@ -209,7 +209,7 @@ export default function CommentsPanel({
                             isActive={activeCommentId === comment.id}
                             onActivate={() => setActiveCommentId(comment.id)}
                             typingUsers={typingUsers.filter(u => u.threadId === comment.id)}
-                            onTypingChange={(isTyping) => sendTypingIndicator(isTyping ? comment.id : null)}
+                            onTypingChange={(isTyping: boolean) => sendTypingIndicator(isTyping ? comment.id : null)}
                         />
                     ))}
                 </div>
@@ -334,7 +334,7 @@ function CommentThread({
                                 value={replyText}
                                 onChange={(e) => {
                                     setReplyText(e.target.value)
-                                    handleTyping(comment.id)
+                                    onTypingChange(true)
                                 }}
                                 className="w-full bg-white border border-slate-200 rounded-2xl p-3 sm:p-4 pr-10 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[80px] sm:min-h-[100px] resize-none font-sans"
                             />

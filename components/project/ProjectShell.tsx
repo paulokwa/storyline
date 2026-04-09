@@ -336,11 +336,11 @@ function ProjectShellInner({
                                     
                                     {isMobile && (
                                         <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
+                                            <DropdownMenuTrigger render={
                                                 <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-xl text-slate-500">
                                                     <MoreHorizontal className="w-4 h-4" />
                                                 </Button>
-                                            </DropdownMenuTrigger>
+                                            } />
                                             <DropdownMenuContent align="end" className="rounded-2xl p-2 border-slate-200 shadow-xl">
                                                 <DropdownMenuItem onClick={() => speak(currentSceneText, 'Scene')} className="rounded-xl gap-2 font-medium text-slate-700">
                                                     <Volume2 className="w-4 h-4" />

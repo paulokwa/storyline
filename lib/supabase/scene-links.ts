@@ -1,7 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { Database } from './types'
 
-export type Supabase = SupabaseClient<Database>
+export type Supabase = SupabaseClient<any>
 
 // ==========================================
 // CHARACTER LINKS

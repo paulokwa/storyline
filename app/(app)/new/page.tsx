@@ -110,7 +110,7 @@ export default function NewProjectPage() {
 
             // Convert firstIdea into TipTap JSON to seed the initial scene.
             // This is intentional duplication: firstIdea is saved as an idea AND prefilled into the first writing unit.
-            const writingMode = state.writing_mode || 'simple';
+            const writingMode = state.writingMode || 'simple';
             const nodeType = writingMode === 'screenplay' ? 'screenplayAction' : 'paragraph';
             const paragraphs = firstIdea.split('\n')
                 .filter(l => l.trim() !== '')
@@ -134,7 +134,7 @@ export default function NewProjectPage() {
 
             for (let i = 0; i < chunks.length; i++) {
                 const chunk = chunks[i]
-                const writingMode = state.writing_mode || 'simple';
+                const writingMode = state.writingMode || 'simple';
                 const nodeType = writingMode === 'screenplay' ? 'screenplayAction' : 'paragraph';
                 const paragraphs = chunk.content.split('\n').filter(l => l.trim() !== '').map(l => ({ type: nodeType, content: [{ type: 'text', text: l }] }))
                 const tiptapJson = { type: 'doc', content: paragraphs.length ? paragraphs : [{ type: nodeType }] }

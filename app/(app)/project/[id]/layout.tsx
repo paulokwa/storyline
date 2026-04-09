@@ -28,7 +28,7 @@ export default async function ProjectLayout({
     }
 
     // Update last accessed time asynchronously via RPC (safe for all members)
-    supabase.rpc('touch_project', { p_id: id }).then(({ error }) => {
+    ;(supabase as any).rpc('touch_project', { p_id: id }).then(({ error }: any) => {
         if (error) console.error('Failed to update last_accessed_at:', error)
     })
 

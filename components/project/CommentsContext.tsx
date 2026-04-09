@@ -28,7 +28,7 @@ interface CommentsContextType {
     comments: Comment[]
     isLoading: boolean
     fetchComments: (projectId: string) => Promise<void>
-    addComment: (data: { project_id: string; node_id?: string; content: string; parent_id?: string }) => Promise<void>
+    addComment: (data: { project_id: string; node_id?: string; content: string; parent_id?: string, anchor_data?: any }) => Promise<Comment>
     updateComment: (id: string, content: string) => Promise<void>
     deleteComment: (id: string) => Promise<void>
     resolveComment: (id: string, resolved: boolean) => Promise<void>
@@ -52,7 +52,7 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
     const [typingUsers, setTypingUsers] = useState<TypingState[]>([])
     const [detachedCommentIds, setDetachedCommentIds] = useState<Set<string>>(new Set())
     
-    const supabase = createClient()
+    const supabase = createClient() as any
     const channelRef = useRef<any>(null)
 
     const fetchSingleExtended = async (id: string) => {
@@ -106,7 +106,7 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
                 schema: 'public',
                 table: 'project_comments',
                 filter: `project_id=eq.${projectId}`
-            }, async (payload) => {
+            }, async (payload: any) => {
                 if (payload.eventType === 'INSERT') {
                     const extended = await fetchSingleExtended(payload.new.id)
                     if (extended) {
@@ -123,7 +123,7 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
                     setComments(prev => prev.filter(c => c.id !== payload.old.id && c.parent_id !== payload.old.id))
                 }
             })
-            .on('broadcast', { event: 'typing' }, ({ payload }) => {
+            .on('broadcast', { event: 'typing' }, ({ payload }: any) => {
                 setTypingUsers(prev => {
                     const filtered = prev.filter(u => u.userEmail !== payload.email)
                     if (payload.typing) {
