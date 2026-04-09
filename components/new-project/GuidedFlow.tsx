@@ -242,7 +242,7 @@ function StepBlock({ title, hint, optional, children }: {
         <div className="space-y-8">
             <div className="space-y-3">
                 <div className="flex items-baseline gap-4">
-                    <h1 className="text-4xl font-serif text-slate-800 leading-tight tracking-tight">{title}</h1>
+                    <h1 className="text-2xl md:text-4xl font-serif text-slate-800 leading-tight tracking-tight">{title}</h1>
                     {optional && <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300 translate-y-[-2px]">Optional</span>}
                 </div>
                 <p className="text-slate-500 font-medium text-lg leading-relaxed max-w-xl italic opacity-80">{hint}</p>

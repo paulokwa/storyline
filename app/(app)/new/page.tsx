@@ -201,7 +201,7 @@ export default function NewProjectPage() {
 
     return (
         <TooltipProvider>
-            <div className="min-h-screen bg-background flex flex-col items-center py-16 md:py-24 fade-in">
+            <div className="flex-1 w-full overflow-y-auto bg-background flex flex-col items-center py-16 md:py-24 fade-in">
                 {/* Header/Nav */}
                 <div className="w-full max-w-2xl px-6 flex items-center justify-between mb-20 animate-in fade-in slide-in-from-top-4 duration-700">
                     <Link href="/library" className="group flex items-center gap-2 text-slate-400 hover:text-slate-800 transition-all font-medium">
@@ -222,7 +222,7 @@ export default function NewProjectPage() {
                 </div>
 
                 <div className="w-full max-w-2xl px-6">
-                    <div className="sanctuary-card rounded-[2.5rem] p-10 md:p-14 relative overflow-hidden animate-in fade-in zoom-in-95 duration-1000">
+                    <div className="sanctuary-card rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-14 relative overflow-hidden animate-in fade-in zoom-in-95 duration-1000">
                         {step === 'title' && (
                             <StepTitle
                                 value={state.title}

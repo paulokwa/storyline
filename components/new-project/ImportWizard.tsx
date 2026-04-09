@@ -404,7 +404,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
             {/* Sanity Check Modal */}
             {showSanityModal && (
                 <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
-                    <div className="bg-white rounded-[2.5rem] p-10 md:p-14 max-w-lg w-full shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-500 border border-slate-100">
+                    <div className="bg-white rounded-[2rem] md:rounded-[2.5rem] p-8 md:p-14 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl relative animate-in zoom-in-95 duration-500 border border-slate-100">
                         <button 
                             onClick={() => setShowSanityModal(false)}
                             className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-50 text-slate-400 transition-colors"
