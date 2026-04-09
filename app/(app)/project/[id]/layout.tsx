@@ -14,18 +14,23 @@ export default async function ProjectLayout({
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login')
 
-    const { data: project } = await supabase
+    const { data: projectData } = await supabase
         .from('projects')
-        .select('*')
+        .select('*, project_members!inner(role)')
         .eq('id', id)
         .single()
 
-    if (!project) notFound()
+    if (!projectData) notFound()
 
-    // Update last accessed time asynchronously (we don't need to wait for this to show the page)
-    supabase.from('projects').update({ last_accessed_at: new Date().toISOString() }).eq('id', id).then(({ error }) => {
+    const project = {
+        ...projectData,
+        role: (projectData.project_members as any)?.[0]?.role as 'owner' | 'editor' | 'viewer'
+    }
+
+    // Update last accessed time asynchronously via RPC (safe for all members)
+    supabase.rpc('touch_project', { p_id: id }).then(({ error }) => {
         if (error) console.error('Failed to update last_accessed_at:', error)
     })
 
-    return <ProjectShell project={project}>{children}</ProjectShell>
+    return <ProjectShell project={project} role={project.role}>{children}</ProjectShell>
 }

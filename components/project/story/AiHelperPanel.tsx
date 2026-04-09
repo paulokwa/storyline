@@ -11,6 +11,7 @@ import SaveAiResponseModal from '@/components/project/ai/SaveAiResponseModal'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
+import { useProjectActions } from '@/components/project/ProjectContext'
 
 interface AiHelperPanelProps {
     projectId: string
@@ -93,6 +94,9 @@ export default function AiHelperPanel({
 }: AiHelperPanelProps) {
     const isNovel = projectType === 'novel'
     const label = isNovel ? 'Chapter' : 'Scene'
+
+    const { role } = useProjectActions()
+    const isReadOnly = role === 'viewer'
 
     const [prompt, setPrompt] = useState('')
     const [lastPrompt, setLastPrompt] = useState('')
@@ -697,15 +701,29 @@ export default function AiHelperPanel({
                                         Saved to Archive
                                     </span>
                                 )}
-                                <Button
-                                    onClick={handleInsert}
-                                    variant="outline"
-                                    size="sm"
-                                    className="flex-1 rounded-xl border-indigo-100 hover:border-indigo-200 hover:bg-indigo-50/50 text-indigo-600 gap-2 h-9 font-serif italic transition-all active:scale-95"
-                                >
-                                    <Plus className="w-3.5 h-3.5" />
-                                    Add to Scene
-                                </Button>
+                                {!isReadOnly && (
+                                    <>
+                                        <Button
+                                            onClick={handleInsert}
+                                            variant="outline"
+                                            size="sm"
+                                            className="flex-1 rounded-xl border-indigo-100 hover:border-indigo-200 hover:bg-indigo-50/50 text-indigo-600 gap-2 h-9 font-serif italic transition-all active:scale-95"
+                                        >
+                                            <Plus className="w-3.5 h-3.5" />
+                                            Add to Scene
+                                        </Button>
+                                        <Button
+                                            onClick={() => setSaveModalOpen(true)}
+                                            variant="outline"
+                                            size="sm"
+                                            title="Save to database"
+                                            className="rounded-xl gap-1.5 h-9 px-3 transition-all active:scale-95 border-slate-200 text-slate-500 hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50"
+                                        >
+                                            <Bookmark className="w-3.5 h-3.5" />
+                                            Save
+                                        </Button>
+                                    </>
+                                )}
                                 <Button
                                     onClick={handleCopy}
                                     variant="outline"
@@ -713,6 +731,7 @@ export default function AiHelperPanel({
                                     title="Copy to clipboard"
                                     className={cn(
                                         "rounded-xl gap-1.5 h-9 px-3 transition-all active:scale-95",
+                                        isReadOnly && "flex-1",
                                         copied
                                             ? "border-green-200 text-green-600 bg-green-50"
                                             : "border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50"
@@ -720,16 +739,6 @@ export default function AiHelperPanel({
                                 >
                                     {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                                     {copied ? 'Copied' : 'Copy'}
-                                </Button>
-                                <Button
-                                    onClick={() => setSaveModalOpen(true)}
-                                    variant="outline"
-                                    size="sm"
-                                    title="Save to database"
-                                    className="rounded-xl gap-1.5 h-9 px-3 transition-all active:scale-95 border-slate-200 text-slate-500 hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50"
-                                >
-                                    <Bookmark className="w-3.5 h-3.5" />
-                                    Save
                                 </Button>
                             </div>
                         )}

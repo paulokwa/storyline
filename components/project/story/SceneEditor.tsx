@@ -217,10 +217,14 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         return base
     }, [writingMode])
 
+    const { sidebarOpen, setSidebarOpen, aiPanelOpen, setAiPanelOpen, currentSceneText, setCurrentSceneText, role } = useProjectActions()
+    const isReadOnly = role === 'viewer'
+
     const editor = useEditor({
         immediatelyRender: false,
         extensions,
         content: scene.content || '',
+        editable: !isReadOnly,
         editorProps: {
             attributes: {
                 class: cn(
@@ -239,10 +243,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             onTextChange?.(text)
             setSaveStatus('idle') 
         },
-    }, [writingMode])
+    }, [writingMode, isReadOnly])
 
     const saveContent = useCallback(async () => {
-        if (!editor) return
+        if (!editor || isReadOnly) return
         const currentTitle = title
         const newContent = editor.getHTML()
         
@@ -329,6 +333,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     }))
 
     const handleRestore = async () => {
+        if (isReadOnly) return
         setIsRestoring(true)
         try {
             const supabase = createClient()
@@ -356,25 +361,29 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                         {writingMode === 'screenplay' ? 'Script' : 'Draft'} — {label}
                     </span>
                     <div className="flex items-center gap-2">
-                         <span className={cn(
-                            "text-[10px] font-bold uppercase tracking-wider transition-colors duration-300 font-sans",
-                            saveStatus === 'saving' ? "text-amber-500" : 
-                            saveStatus === 'saved' ? "text-emerald-500" : 
-                            saveStatus === 'error' ? "text-red-500" : "text-slate-300"
-                        )}>
-                            {saveStatus === 'saving' ? 'Autosaving...' : saveStatus === 'saved' ? 'Saved' : ''}
-                        </span>
-                        <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => router.push(`/project/${scene.project_id}/recovery?section=history&sceneId=${scene.id}`)}
-                            className="h-6 px-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-[#546354] hover:bg-white transition-all"
-                        >
-                            <HistoryIcon className="w-3 h-3 mr-1" />
-                             History
-                        </Button>
+                        {!isReadOnly && (
+                             <span className={cn(
+                                "text-[10px] font-bold uppercase tracking-wider transition-colors duration-300 font-sans",
+                                saveStatus === 'saving' ? "text-amber-500" : 
+                                saveStatus === 'saved' ? "text-emerald-500" : 
+                                saveStatus === 'error' ? "text-red-500" : "text-slate-300"
+                            )}>
+                                {saveStatus === 'saving' ? 'Autosaving...' : saveStatus === 'saved' ? 'Saved' : ''}
+                            </span>
+                        )}
+                        {!isReadOnly && (
+                            <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => router.push(`/project/${scene.project_id}/recovery?section=history&sceneId=${scene.id}`)}
+                                className="h-6 px-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-[#546354] hover:bg-white transition-all"
+                            >
+                                <HistoryIcon className="w-3 h-3 mr-1" />
+                                 History
+                            </Button>
+                        )}
                         
-                        {speechSupported && (
+                        {!isReadOnly && speechSupported && (
                             <Button
                                 variant="ghost"
                                 size="sm"
@@ -514,9 +523,11 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 <input
                     value={title}
                     onChange={(e) => {
+                        if (isReadOnly) return
                         setTitle(e.target.value)
                         setSaveStatus('idle')
                     }}
+                    disabled={isReadOnly}
                     placeholder={`Untitled ${label}`}
                     className={cn(
                         "w-full bg-transparent border-none focus:outline-none focus:ring-0 p-0 transition-all placeholder:text-slate-300",
@@ -543,7 +554,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                         : "mx-auto w-full transition-[max-width] duration-500 ease-in-out"
                 )}
             >
-                {editor && (
+                {editor && !isReadOnly && (
                     <BubbleMenu 
                         editor={editor} 
                         className="flex items-center gap-0.5 bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl p-1 overflow-hidden animate-in fade-in zoom-in duration-200 z-[100]"

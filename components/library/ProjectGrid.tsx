@@ -17,7 +17,9 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-type Project = Database['public']['Tables']['projects']['Row']
+type Project = Database['public']['Tables']['projects']['Row'] & {
+    role?: 'owner' | 'editor' | 'viewer'
+}
 
 export default function ProjectGrid({ projects }: { projects: Project[] }) {
     if (projects.length === 0) {
@@ -97,29 +99,31 @@ function ProjectCard({ project }: { project: Project }) {
                         {isTV ? <Film className="w-7 h-7" /> : <BookOpen className="w-7 h-7" />}
                     </div>
 
-                    {confirmDelete ? (
-                        <div
-                            onClick={e => e.preventDefault()}
-                            className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200"
-                        >
-                            <span className="text-[10px] text-red-400 font-medium">Delete?</span>
+                    {project.role === 'owner' && (
+                        confirmDelete ? (
+                            <div
+                                onClick={e => e.preventDefault()}
+                                className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200"
+                            >
+                                <span className="text-[10px] text-red-400 font-medium">Delete?</span>
+                                <button
+                                    onClick={e => { e.preventDefault(); e.stopPropagation(); setConfirmDelete(false) }}
+                                    className="px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider"
+                                >Cancel</button>
+                                <button
+                                    onClick={handleDelete}
+                                    disabled={isDeleting}
+                                    className="px-3 py-1 text-[10px] font-bold bg-red-500 hover:bg-red-600 text-white rounded-full uppercase tracking-wider transition-colors disabled:opacity-50"
+                                >{isDeleting ? '...' : 'Delete'}</button>
+                            </div>
+                        ) : (
                             <button
-                                onClick={e => { e.preventDefault(); e.stopPropagation(); setConfirmDelete(false) }}
-                                className="px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider"
-                            >Cancel</button>
-                            <button
-                                onClick={handleDelete}
-                                disabled={isDeleting}
-                                className="px-3 py-1 text-[10px] font-bold bg-red-500 hover:bg-red-600 text-white rounded-full uppercase tracking-wider transition-colors disabled:opacity-50"
-                            >{isDeleting ? '...' : 'Delete'}</button>
-                        </div>
-                    ) : (
-                        <button
-                            onClick={e => { e.preventDefault(); e.stopPropagation(); setConfirmDelete(true) }}
-                            className="opacity-0 group-hover:opacity-100 transition-all duration-300 p-2.5 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50"
-                        >
-                            <Trash2 className="w-5 h-5" />
-                        </button>
+                                onClick={e => { e.preventDefault(); e.stopPropagation(); setConfirmDelete(true) }}
+                                className="opacity-0 group-hover:opacity-100 transition-all duration-300 p-2.5 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50"
+                            >
+                                <Trash2 className="w-5 h-5" />
+                            </button>
+                        )
                     )}
                 </div>
 
@@ -128,10 +132,22 @@ function ProjectCard({ project }: { project: Project }) {
                         {project.title}
                     </h3>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                         <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 bg-slate-50 px-2.5 py-1 rounded-md group-hover:bg-primary/5 group-hover:text-primary/60 transition-colors">
                             {isTV ? 'TV Script' : 'Novel'}
                         </span>
+                        
+                        {project.role && project.role !== 'owner' && (
+                            <Badge variant="outline" className="text-[9px] uppercase tracking-wider py-0 px-2 border-slate-200 text-slate-500 font-bold bg-white/50">
+                                {project.role === 'editor' ? 'Shared · Can edit' : 'Shared · View only'}
+                            </Badge>
+                        )}
+                        {project.role === 'owner' && (
+                             <Badge variant="outline" className="text-[9px] uppercase tracking-wider py-0 px-2 border-amber-100 text-amber-600 font-bold bg-amber-50/30">
+                                Owner
+                            </Badge>
+                        )}
+
                         <span className="text-xs text-slate-400 font-medium flex items-center gap-1.5" title={`Last updated: ${formatDistanceToNow(project.updated_at || new Date().toISOString())}`}>
                             <Clock className="w-3.5 h-3.5" />
                             {formatDistanceToNow(project.last_accessed_at || new Date().toISOString())}

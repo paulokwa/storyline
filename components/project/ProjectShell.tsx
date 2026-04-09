@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import ExportModal from '@/components/export/ExportModal'
 import ProjectSettingsModal from '@/components/project/ProjectSettingsModal'
+import ShareModal from '@/components/project/ShareModal'
 import { cn } from '@/lib/utils'
 import type { Database } from '@/lib/supabase/types'
 import { ReaderProvider, useSpeech } from '@/hooks/useSpeech'
@@ -42,9 +43,11 @@ const TABS = [
 
 export default function ProjectShell({
     project: initialProject,
+    role = 'owner',
     children,
 }: {
     project: Project
+    role?: 'owner' | 'editor' | 'viewer'
     children: React.ReactNode
 }) {
     const pathname = usePathname()
@@ -54,6 +57,7 @@ export default function ProjectShell({
     const [titleDraft, setTitleDraft] = useState(project.title ?? '')
     const [exportModalOpen, setExportModalOpen] = useState(false)
     const [settingsModalOpen, setSettingsModalOpen] = useState(false)
+    const [shareModalOpen, setShareModalOpen] = useState(false)
 
     async function saveTitle() {
         if (!titleDraft.trim()) return setEditingTitle(false)
@@ -70,7 +74,7 @@ export default function ProjectShell({
     }
 
     return (
-        <ProjectProvider>
+        <ProjectProvider role={role}>
             <ReaderProvider>
                 <ProjectShellInner 
                     project={project} 
@@ -83,6 +87,9 @@ export default function ProjectShell({
                     setExportModalOpen={setExportModalOpen}
                     settingsModalOpen={settingsModalOpen}
                     setSettingsModalOpen={setSettingsModalOpen}
+                    shareModalOpen={shareModalOpen}
+                    setShareModalOpen={setShareModalOpen}
+                    role={role}
                     pathname={pathname} 
                 >
                     {children}
@@ -104,6 +111,13 @@ export default function ProjectShell({
                     onOpenChange={setSettingsModalOpen} 
                     project={project} 
                 />
+
+                <ShareModal
+                    open={shareModalOpen}
+                    onOpenChange={setShareModalOpen}
+                    projectId={project.id}
+                />
+
                 <FloatingPlayer />
             </ReaderProvider>
         </ProjectProvider>
@@ -121,6 +135,9 @@ function ProjectShellInner({
     setExportModalOpen, 
     settingsModalOpen,
     setSettingsModalOpen, 
+    shareModalOpen,
+    setShareModalOpen,
+    role,
     pathname, 
     children 
 }: any) {
@@ -254,6 +271,19 @@ function ProjectShellInner({
                                 <Download className="w-3.5 h-3.5" />
                                 <span className="hidden sm:inline">Export</span>
                             </Button>
+
+                            {role === 'owner' && (
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="flex rounded-xl bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-700 hover:border-indigo-600 transition-all duration-300 gap-1.5 px-2.5 sm:px-4 shadow-lg shadow-indigo-200"
+                                    onClick={() => setShareModalOpen(true)}
+                                    title="Share Project"
+                                >
+                                    <Users className="w-3.5 h-3.5" />
+                                    <span className="hidden sm:inline">Share</span>
+                                </Button>
+                            )}
                             
                             <Button
                                 variant="ghost"

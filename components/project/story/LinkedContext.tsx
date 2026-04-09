@@ -1,7 +1,5 @@
-import { useState, useTransition } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { Plus, X, Users, Lightbulb, FileText, Folder, MapPin, Package } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useProjectActions } from '@/components/project/ProjectContext'
 
 interface Entity {
     id: string
@@ -58,6 +56,8 @@ export default function LinkedContext({
 }: LinkedContextProps) {
     const supabase = createClient()
     const [isPending, startTransition] = useTransition()
+    const { role } = useProjectActions()
+    const isReadOnly = role === 'viewer'
 
     const linkedChars = sceneCharacters?.map(sc => sc.characters).filter(c => c && !c.deleted_at) || []
     const linkedIdeas = sceneIdeas?.map(si => si.ideas).filter(i => i && !i.deleted_at) || []
@@ -144,9 +144,11 @@ export default function LinkedContext({
                         />
                         <Users className="w-3 h-3 opacity-60" />
                         {char.name}
-                        <button onClick={() => removeCharacter(char.id)} className="ml-1 opacity-40 hover:opacity-100 transition-opacity" disabled={isPending}>
-                            <X className="w-3 h-3" />
-                        </button>
+                        {!isReadOnly && (
+                            <button onClick={() => removeCharacter(char.id)} className="ml-1 opacity-40 hover:opacity-100 transition-opacity" disabled={isPending}>
+                                <X className="w-3 h-3" />
+                            </button>
+                        )}
                     </div>
                 )
             })}
@@ -164,9 +166,11 @@ export default function LinkedContext({
                         />
                         <Lightbulb className="w-3 h-3 opacity-60" />
                         {idea.title}
-                        <button onClick={() => removeIdea(idea.id)} className="ml-1 opacity-40 hover:opacity-100 transition-opacity" disabled={isPending}>
-                            <X className="w-3 h-3" />
-                        </button>
+                        {!isReadOnly && (
+                            <button onClick={() => removeIdea(idea.id)} className="ml-1 opacity-40 hover:opacity-100 transition-opacity" disabled={isPending}>
+                                <X className="w-3 h-3" />
+                            </button>
+                        )}
                     </div>
                 )
             })}
@@ -184,9 +188,11 @@ export default function LinkedContext({
                         />
                         <MapPin className="w-3 h-3 opacity-60" />
                         {loc.name}
-                        <button onClick={() => removeLocation(loc.id)} className="ml-1 opacity-40 hover:opacity-100 transition-opacity" disabled={isPending}>
-                            <X className="w-3 h-3" />
-                        </button>
+                        {!isReadOnly && (
+                            <button onClick={() => removeLocation(loc.id)} className="ml-1 opacity-40 hover:opacity-100 transition-opacity" disabled={isPending}>
+                                <X className="w-3 h-3" />
+                            </button>
+                        )}
                     </div>
                 )
             })}
@@ -204,9 +210,11 @@ export default function LinkedContext({
                         />
                         <Package className="w-3 h-3 opacity-60" />
                         {obj.name}
-                        <button onClick={() => removeObject(obj.id)} className="ml-1 opacity-40 hover:opacity-100 transition-opacity" disabled={isPending}>
-                            <X className="w-3 h-3" />
-                        </button>
+                        {!isReadOnly && (
+                            <button onClick={() => removeObject(obj.id)} className="ml-1 opacity-40 hover:opacity-100 transition-opacity" disabled={isPending}>
+                                <X className="w-3 h-3" />
+                            </button>
+                        )}
                     </div>
                 )
             })}
@@ -221,74 +229,78 @@ export default function LinkedContext({
                     <div key={nodeId} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border bg-amber-50 text-amber-700 border-amber-200">
                         <Icon className="w-3 h-3 opacity-60" />
                         {node.title}
-                        <button 
-                            onClick={() => onToggleNodeSelection?.(nodeId)} 
-                            className="ml-1 opacity-40 hover:opacity-100 transition-opacity"
-                        >
-                            <X className="w-3 h-3" />
-                        </button>
+                        {!isReadOnly && (
+                            <button 
+                                onClick={() => onToggleNodeSelection?.(nodeId)} 
+                                className="ml-1 opacity-40 hover:opacity-100 transition-opacity"
+                            >
+                                <X className="w-3 h-3" />
+                            </button>
+                        )}
                     </div>
                 )
             })}
 
             {/* Add Context Actions */}
-            <div className="flex items-center gap-1.5 ml-2 border-l border-slate-200 pl-3">
-                {unlinkedCharacters.length > 0 && (
-                    <select 
-                        className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-[#546354] transition-colors"
-                        value=""
-                        onChange={(e) => e.target.value && addCharacter(e.target.value)}
-                        disabled={isPending}
-                    >
-                        <option value="" disabled>+ Character</option>
-                        {unlinkedCharacters.map(char => (
-                            <option key={char.id} value={char.id}>{char.name}</option>
-                        ))}
-                    </select>
-                )}
+            {!isReadOnly && (
+                <div className="flex items-center gap-1.5 ml-2 border-l border-slate-200 pl-3">
+                    {unlinkedCharacters.length > 0 && (
+                        <select 
+                            className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-[#546354] transition-colors"
+                            value=""
+                            onChange={(e) => e.target.value && addCharacter(e.target.value)}
+                            disabled={isPending}
+                        >
+                            <option value="" disabled>+ Character</option>
+                            {unlinkedCharacters.map(char => (
+                                <option key={char.id} value={char.id}>{char.name}</option>
+                            ))}
+                        </select>
+                    )}
 
-                {unlinkedIdeas.length > 0 && (
-                    <select 
-                        className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-indigo-600 transition-colors"
-                        value=""
-                        onChange={(e) => e.target.value && addIdea(e.target.value)}
-                        disabled={isPending}
-                    >
-                        <option value="" disabled>+ Idea</option>
-                        {unlinkedIdeas.map(idea => (
-                            <option key={idea.id} value={idea.id}>{idea.title}</option>
-                        ))}
-                    </select>
-                )}
+                    {unlinkedIdeas.length > 0 && (
+                        <select 
+                            className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-indigo-600 transition-colors"
+                            value=""
+                            onChange={(e) => e.target.value && addIdea(e.target.value)}
+                            disabled={isPending}
+                        >
+                            <option value="" disabled>+ Idea</option>
+                            {unlinkedIdeas.map(idea => (
+                                <option key={idea.id} value={idea.id}>{idea.title}</option>
+                            ))}
+                        </select>
+                    )}
 
-                {unlinkedLocations.length > 0 && (
-                    <select 
-                        className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-emerald-600 transition-colors"
-                        value=""
-                        onChange={(e) => e.target.value && addLocation(e.target.value)}
-                        disabled={isPending}
-                    >
-                        <option value="" disabled>+ Location</option>
-                        {unlinkedLocations.map(loc => (
-                            <option key={loc.id} value={loc.id}>{loc.name}</option>
-                        ))}
-                    </select>
-                )}
+                    {unlinkedLocations.length > 0 && (
+                        <select 
+                            className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-emerald-600 transition-colors"
+                            value=""
+                            onChange={(e) => e.target.value && addLocation(e.target.value)}
+                            disabled={isPending}
+                        >
+                            <option value="" disabled>+ Location</option>
+                            {unlinkedLocations.map(loc => (
+                                <option key={loc.id} value={loc.id}>{loc.name}</option>
+                            ))}
+                        </select>
+                    )}
 
-                {unlinkedObjects.length > 0 && (
-                    <select 
-                        className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-blue-600 transition-colors"
-                        value=""
-                        onChange={(e) => e.target.value && addObject(e.target.value)}
-                        disabled={isPending}
-                    >
-                        <option value="" disabled>+ Object</option>
-                        {unlinkedObjects.map(obj => (
-                            <option key={obj.id} value={obj.id}>{obj.name}</option>
-                        ))}
-                    </select>
-                )}
-            </div>
+                    {unlinkedObjects.length > 0 && (
+                        <select 
+                            className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-blue-600 transition-colors"
+                            value=""
+                            onChange={(e) => e.target.value && addObject(e.target.value)}
+                            disabled={isPending}
+                        >
+                            <option value="" disabled>+ Object</option>
+                            {unlinkedObjects.map(obj => (
+                                <option key={obj.id} value={obj.id}>{obj.name}</option>
+                            ))}
+                        </select>
+                    )}
+                </div>
+            )}
         </div>
     )
 }

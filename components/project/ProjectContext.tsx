@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState } from 'react'
 
 interface ProjectContextType {
+    role: 'owner' | 'editor' | 'viewer'
     sidebarOpen: boolean
     setSidebarOpen: (val: boolean | ((prev: boolean) => boolean)) => void
     aiPanelOpen: boolean
@@ -19,7 +20,13 @@ interface ProjectContextType {
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined)
 
-export function ProjectProvider({ children }: { children: React.ReactNode }) {
+export function ProjectProvider({ 
+    children,
+    role = 'viewer'
+}: { 
+    children: React.ReactNode,
+    role?: 'owner' | 'editor' | 'viewer'
+}) {
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [aiPanelOpen, setAiPanelOpen] = useState(false)
     const [currentSceneText, setCurrentSceneText] = useState('')
@@ -52,6 +59,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <ProjectContext.Provider value={{
+            role,
             sidebarOpen,
             setSidebarOpen,
             aiPanelOpen,

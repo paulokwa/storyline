@@ -70,9 +70,10 @@ function getDescendantIds(nodes: StructureNode[], parentId: string): string[] {
     return children.flatMap(c => [c.id, ...getDescendantIds(nodes, c.id)])
 }
 
-export default function StructureTree({
     project, nodes, activeNodeId, selectedNodeIds = [], onNodeSelect, onNodeToggleSelection, onNodesChange, onSceneCreated
 }: StructureTreeProps) {
+    const { role } = useProjectActions()
+    const isReadOnly = role === 'viewer'
     const rootType: NodeType = project.type === 'tv_script' ? 'episode' : 'chapter'
     const rootLabel = project.type === 'tv_script' ? 'Episode' : 'Chapter'
     const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
@@ -141,7 +142,7 @@ export default function StructureTree({
     }
 
     async function handleReorder(result: DropResult) {
-        if (!result.destination) return
+        if (!result.destination || isReadOnly) return
 
         const sourceParentId = result.source.droppableId === 'root' ? null : result.source.droppableId
         const destParentId = result.destination.droppableId === 'root' ? null : result.destination.droppableId
@@ -202,7 +203,7 @@ export default function StructureTree({
                         </div>
                     ) : (
                         <DragDropContext onDragEnd={handleReorder}>
-                            <Droppable droppableId="root">
+                            <Droppable droppableId="root" isDropDisabled={isReadOnly}>
                                 {(provided) => (
                                     <div {...provided.droppableProps} ref={provided.innerRef}>
                                         {rootNodes.map((node, index) => (
@@ -231,16 +232,18 @@ export default function StructureTree({
                     )}
                 </div>
 
-                <div className="p-4 mt-auto">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={addRootNode}
-                        className="w-full justify-start text-slate-400 hover:text-[#546354] hover:bg-white/50 text-[10px] uppercase tracking-widest gap-2 px-3 h-10 rounded-xl"
-                    >
-                        <Plus className="w-3.5 h-3.5" /> Add {rootLabel}
-                    </Button>
-                </div>
+                {!isReadOnly && (
+                    <div className="p-4 mt-auto">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={addRootNode}
+                            className="w-full justify-start text-slate-400 hover:text-[#546354] hover:bg-white/50 text-[10px] uppercase tracking-widest gap-2 px-3 h-10 rounded-xl"
+                        >
+                            <Plus className="w-3.5 h-3.5" /> Add {rootLabel}
+                        </Button>
+                    </div>
+                )}
             </div>
         </TooltipProvider>
     )
@@ -262,7 +265,8 @@ interface NodeItemProps {
     onRequestDelete: (id: string | null) => void
 }
 
-const NodeItem = React.memo(function NodeItem({ node, nodes, index, activeNodeId, selectedNodeIds = [], depth, onSelect, onToggleSelection, onAddChild, onDelete, onRename, confirmingDeleteId, onRequestDelete }: NodeItemProps) {
+    const { role } = useProjectActions()
+    const isReadOnly = role === 'viewer'
     const [expanded, setExpanded] = useState(true)
     const [hovered, setHovered] = useState(false)
     const [editing, setEditing] = useState(false)
@@ -313,15 +317,17 @@ const NodeItem = React.memo(function NodeItem({ node, nodes, index, activeNodeId
                             <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-[#546354] rounded-full shadow-[0_0_12px_rgba(84,99,84,0.3)]" />
                         )}
 
-                        <div 
-                            {...provided.dragHandleProps}
-                            className={cn(
-                                "p-1 -ml-2 opacity-0 transition-opacity cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-400 shrink-0",
-                                hovered && "opacity-100"
-                            )}
-                        >
-                            <GripVertical className="w-3.5 h-3.5" />
-                        </div>
+                        {!isReadOnly && (
+                            <div 
+                                {...provided.dragHandleProps}
+                                className={cn(
+                                    "p-1 -ml-2 opacity-0 transition-opacity cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-400 shrink-0",
+                                    hovered && "opacity-100"
+                                )}
+                            >
+                                <GripVertical className="w-3.5 h-3.5" />
+                            </div>
+                        )}
 
                         {!isScene && (
                             <span className="text-slate-400 group-hover:text-[#546354] transition-colors">
@@ -374,7 +380,7 @@ const NodeItem = React.memo(function NodeItem({ node, nodes, index, activeNodeId
                                     isRoot && "tracking-tight text-[#485748]",
                                     isScene && "text-slate-600 font-medium"
                                 )}
-                                onDoubleClick={(e) => { e.stopPropagation(); setEditing(true) }}
+                                onDoubleClick={isReadOnly ? undefined : (e) => { e.stopPropagation(); setEditing(true) }}
                             >
                                 {node.title}
                             </span>
@@ -394,7 +400,7 @@ const NodeItem = React.memo(function NodeItem({ node, nodes, index, activeNodeId
                         )}
 
                         {/* Hover actions — only when not confirming */}
-                        {(!editing && confirmingDeleteId !== node.id && (hovered || isActive || (typeof window !== 'undefined' && window.innerWidth < 768))) && (
+                        {(!editing && !isReadOnly && confirmingDeleteId !== node.id && (hovered || isActive || (typeof window !== 'undefined' && window.innerWidth < 768))) && (
                             <div className={cn(
                                 "flex items-center gap-1 shrink-0 transition-opacity duration-300 md:opacity-0 md:group-hover:opacity-100",
                                 (isActive || (typeof window !== 'undefined' && window.innerWidth < 768)) && "opacity-100"
@@ -427,7 +433,7 @@ const NodeItem = React.memo(function NodeItem({ node, nodes, index, activeNodeId
                     </div>
 
                     {!isScene && expanded && (
-                        <Droppable droppableId={node.id}>
+                        <Droppable droppableId={node.id} isDropDisabled={isReadOnly}>
                             {(provided) => (
                                 <div 
                                     className="fade-in"
