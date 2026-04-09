@@ -85,12 +85,12 @@ export default function ProjectSettingsModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px] rounded-[2rem] p-8 border-none shadow-2xl bg-white">
+            <DialogContent className="sm:max-w-[500px] rounded-[2rem] p-8 border-none shadow-2xl bg-card">
                 {!showDeleteConfirm ? (
                     <>
                         <DialogHeader>
-                            <DialogTitle className="text-3xl font-serif text-slate-800">Project Settings</DialogTitle>
-                            <DialogDescription className="text-slate-500 font-medium">
+                            <DialogTitle className="text-3xl font-serif text-foreground">Project Settings</DialogTitle>
+                            <DialogDescription className="text-muted-foreground font-medium">
                                 Configure the foundations of your story.
                             </DialogDescription>
                         </DialogHeader>
@@ -101,8 +101,8 @@ export default function ProjectSettingsModal({
                                 className={cn(
                                     "flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all",
                                     activeTab === 'general' 
-                                        ? "bg-white text-slate-900 shadow-sm" 
-                                        : "text-slate-500 hover:text-slate-700"
+                                        ? "bg-card text-foreground shadow-sm" 
+                                        : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
                                 General
@@ -112,8 +112,8 @@ export default function ProjectSettingsModal({
                                 className={cn(
                                     "flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all",
                                     activeTab === 'metadata' 
-                                        ? "bg-white text-slate-900 shadow-sm" 
-                                        : "text-slate-500 hover:text-slate-700"
+                                        ? "bg-card text-foreground shadow-sm" 
+                                        : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
                                 Export Metadata
@@ -124,13 +124,13 @@ export default function ProjectSettingsModal({
                             {activeTab === 'general' ? (
                                 <div className="space-y-6">
                                     <div className="space-y-2">
-                                        <Label htmlFor="title" className="text-sm font-semibold text-slate-700 ml-1">Project Title</Label>
+                                        <Label htmlFor="title" className="text-sm font-semibold text-foreground ml-1">Project Title</Label>
                                         <Input
                                             id="title"
                                             value={title}
                                             onChange={(e) => setTitle(e.target.value)}
                                             placeholder="Enter story title..."
-                                            className="rounded-2xl border-slate-100 bg-slate-50 focus:bg-white focus:ring-primary/20 transition-all h-12"
+                                            className="rounded-2xl border-border bg-muted/50 focus:bg-card focus:ring-primary/20 transition-all h-12"
                                         />
                                     </div>
 
@@ -141,7 +141,7 @@ export default function ProjectSettingsModal({
                                                 id="type"
                                                 value={type} 
                                                 onChange={(e) => setType(e.target.value as any)}
-                                                className="w-full rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all h-12 px-4 appearance-none text-sm"
+                                                className="w-full rounded-2xl border border-border bg-muted/50 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all h-12 px-4 appearance-none text-sm"
                                             >
                                                 <option value="novel">Novel / Book</option>
                                                 <option value="tv_script">TV / Movie Script</option>
@@ -153,13 +153,13 @@ export default function ProjectSettingsModal({
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="premise" className="text-sm font-semibold text-slate-700 ml-1">Core Premise</Label>
+                                        <Label htmlFor="premise" className="text-sm font-semibold text-foreground ml-1">Core Premise</Label>
                                         <Textarea
                                             id="premise"
                                             value={premise}
                                             onChange={(e) => setPremise(e.target.value)}
                                             placeholder="The elevator pitch for your story..."
-                                            className="rounded-2xl border-slate-100 bg-slate-50 focus:bg-white focus:ring-primary/20 transition-all min-h-[100px] resize-none"
+                                            className="rounded-2xl border-border bg-muted/50 focus:bg-card focus:ring-primary/20 transition-all min-h-[100px] resize-none"
                                         />
                                     </div>
                                 </div>
@@ -167,75 +167,75 @@ export default function ProjectSettingsModal({
                                 <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                                 <Type className="w-3 h-3" /> Author Name
                                             </Label>
                                             <Input
                                                 value={metadata.authorName || ''}
                                                 onChange={(e) => updateMetadata('authorName', e.target.value)}
                                                 placeholder="Legal name"
-                                                className="rounded-xl border-slate-100 bg-slate-50 h-10 text-sm"
+                                                className="rounded-xl border-border bg-muted/50 h-10 text-sm"
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                                 <Info className="w-3 h-3" /> Pen Name
                                             </Label>
                                             <Input
                                                 value={metadata.penName || ''}
                                                 onChange={(e) => updateMetadata('penName', e.target.value)}
                                                 placeholder="Byline"
-                                                className="rounded-xl border-slate-100 bg-slate-50 h-10 text-sm"
+                                                className="rounded-xl border-border bg-muted/50 h-10 text-sm"
                                             />
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                                 <Copyright className="w-3 h-3" /> Copyright
                                             </Label>
                                             <Input
                                                 value={metadata.copyrightHolder || ''}
                                                 onChange={(e) => updateMetadata('copyrightHolder', e.target.value)}
                                                 placeholder="Holder"
-                                                className="rounded-xl border-slate-100 bg-slate-50 h-10 text-sm"
+                                                className="rounded-xl border-border bg-muted/50 h-10 text-sm"
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                                 <Info className="w-3 h-3" /> Year
                                             </Label>
                                             <Input
                                                 value={metadata.copyrightYear || ''}
                                                 onChange={(e) => updateMetadata('copyrightYear', e.target.value)}
                                                 placeholder="e.g. 2024"
-                                                className="rounded-xl border-slate-100 bg-slate-50 h-10 text-sm"
+                                                className="rounded-xl border-border bg-muted/50 h-10 text-sm"
                                             />
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                                 <Globe className="w-3 h-3" /> Language
                                             </Label>
                                             <Input
                                                 value={metadata.language || ''}
                                                 onChange={(e) => updateMetadata('language', e.target.value)}
                                                 placeholder="e.g. English"
-                                                className="rounded-xl border-slate-100 bg-slate-50 h-10 text-sm"
+                                                className="rounded-xl border-border bg-muted/50 h-10 text-sm"
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                                 <Book className="w-3 h-3" /> Publisher
                                             </Label>
                                             <Input
                                                 value={metadata.publisher || ''}
                                                 onChange={(e) => updateMetadata('publisher', e.target.value)}
                                                 placeholder="Imprint"
-                                                className="rounded-xl border-slate-100 bg-slate-50 h-10 text-sm"
+                                                className="rounded-xl border-border bg-muted/50 h-10 text-sm"
                                             />
                                         </div>
                                     </div>
@@ -248,38 +248,38 @@ export default function ProjectSettingsModal({
                                             value={metadata.description || ''}
                                             onChange={(e) => updateMetadata('description', e.target.value)}
                                             placeholder="A short summary for publishing metadata..."
-                                            className="rounded-xl border-slate-100 bg-slate-50 min-h-[80px] text-sm resize-none"
+                                            className="rounded-xl border-border bg-muted/50 min-h-[80px] text-sm resize-none"
                                         />
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                                 <Tag className="w-3 h-3" /> Keywords
                                             </Label>
                                             <Input
                                                 value={metadata.keywords || ''}
                                                 onChange={(e) => updateMetadata('keywords', e.target.value)}
                                                 placeholder="Comma separated"
-                                                className="rounded-xl border-slate-100 bg-slate-50 h-10 text-sm"
+                                                className="rounded-xl border-border bg-muted/50 h-10 text-sm"
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                                 <Hash className="w-3 h-3" /> ISBN
                                             </Label>
                                             <Input
                                                 value={metadata.isbn || ''}
                                                 onChange={(e) => updateMetadata('isbn', e.target.value)}
                                                 placeholder="Optional"
-                                                className="rounded-xl border-slate-100 bg-slate-50 h-10 text-sm"
+                                                className="rounded-xl border-border bg-muted/50 h-10 text-sm"
                                             />
                                         </div>
                                     </div>
                                     
-                                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                    <div className="p-4 bg-muted/50 rounded-2xl border border-border">
                                         <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Testing Tip</p>
-                                        <p className="text-xs text-slate-500 leading-relaxed">
+                                        <p className="text-xs text-muted-foreground leading-relaxed">
                                             This metadata will be automatically injected into your EPUB, DOCX, and PDF exports.
                                         </p>
                                     </div>
@@ -299,7 +299,7 @@ export default function ProjectSettingsModal({
                             <Button
                                 variant="outline"
                                 onClick={() => onOpenChange(false)}
-                                className="rounded-full px-6 h-11 border-slate-200"
+                                className="rounded-full px-6 h-11 border-border"
                             >
                                 Cancel
                             </Button>
@@ -315,13 +315,13 @@ export default function ProjectSettingsModal({
                     </>
                 ) : (
                     <div className="py-6 space-y-6">
-                        <div className="w-20 h-20 bg-red-50 rounded-[2rem] flex items-center justify-center mx-auto text-red-500">
+                        <div className="w-20 h-20 bg-destructive/10 rounded-[2rem] flex items-center justify-center mx-auto text-destructive">
                             <AlertTriangle className="w-10 h-10" />
                         </div>
                         <div className="text-center space-y-2">
-                            <h2 className="text-2xl font-serif text-slate-800">Delete Project?</h2>
-                            <p className="text-slate-500 max-w-xs mx-auto">
-                                This will permanently delete <span className="font-bold text-slate-700">"{project.title}"</span> and all its scenes, characters, and ideas.
+                            <h2 className="text-2xl font-serif text-foreground">Delete Project?</h2>
+                            <p className="text-muted-foreground max-w-xs mx-auto">
+                                This will permanently delete <span className="font-bold text-foreground">"{project.title}"</span> and all its scenes, characters, and ideas.
                             </p>
                         </div>
                         <div className="flex flex-col gap-3">
@@ -337,7 +337,7 @@ export default function ProjectSettingsModal({
                                 variant="ghost"
                                 onClick={() => setShowDeleteConfirm(false)}
                                 disabled={loading}
-                                className="h-12 rounded-full text-slate-500"
+                                className="h-12 rounded-full text-muted-foreground"
                             >
                                 No, Keep My Story
                             </Button>

@@ -138,7 +138,7 @@ function ProjectShellInner({
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
             {/* Project header */}
-            <div className="bg-[#f5f4ef] px-4 sm:px-6 lg:px-8">
+            <div className="bg-secondary/50 backdrop-blur-sm px-4 sm:px-6 lg:px-8 border-b border-border">
                 <div className="max-w-[1440px] mx-auto">
                     {/* Top row */}
                     <div className="flex items-center gap-3 pt-4 pb-3">
@@ -175,7 +175,7 @@ function ProjectShellInner({
                         ) : (
                             <button
                                 onClick={() => { setTitleDraft(project.title ?? ''); setEditingTitle(true) }}
-                                className="text-2xl sm:text-3xl font-serif text-[#31332f] hover:text-[#546354] transition-colors text-left flex-1 truncate py-2"
+                                className="text-2xl sm:text-3xl font-serif text-foreground hover:text-primary transition-colors text-left flex-1 truncate py-2"
                                 title="Click to rename"
                             >
                                 {project.title}
@@ -192,7 +192,7 @@ function ProjectShellInner({
                                         onClick={() => setSidebarOpen(!sidebarOpen)}
                                         className={cn(
                                             "rounded-xl transition-all h-9 px-2.5",
-                                            sidebarOpen ? "bg-[#546354]/10 text-[#546354] hover:bg-[#546354]/20" : "text-slate-500 hover:bg-[#efeee9]"
+                                            sidebarOpen ? "bg-primary/10 text-primary hover:bg-primary/20" : "text-slate-500 hover:bg-black/5"
                                         )}
                                         title="Toggle structure panel"
                                     >
@@ -205,7 +205,7 @@ function ProjectShellInner({
                                         onClick={() => speak(currentSceneText, 'Scene')}
                                         className={cn(
                                             "rounded-xl transition-all h-9 px-2.5 gap-2",
-                                            isReading ? "bg-amber-100 text-amber-700 animate-pulse" : "text-slate-500 hover:bg-[#efeee9]"
+                                            isReading ? "bg-amber-100 text-amber-700 animate-pulse" : "text-slate-500 hover:bg-black/5"
                                         )}
                                         title="Read aloud"
                                     >
@@ -220,7 +220,7 @@ function ProjectShellInner({
                                         disabled={isAnalyzing || !currentSceneText}
                                         className={cn(
                                             "rounded-xl transition-all h-9 px-2.5 gap-2",
-                                            isAnalyzing ? "bg-violet-100 text-violet-700 animate-pulse" : "text-slate-500 hover:bg-[#efeee9]"
+                                            isAnalyzing ? "bg-violet-100 text-violet-700 animate-pulse" : "text-slate-500 hover:bg-black/5"
                                         )}
                                         title="Analyze scene"
                                     >
@@ -234,7 +234,7 @@ function ProjectShellInner({
                                         onClick={() => setAiPanelOpen(!aiPanelOpen)}
                                         className={cn(
                                             "rounded-xl transition-all h-9 px-2.5 gap-2",
-                                            aiPanelOpen ? "bg-violet-100 text-violet-700 hover:bg-violet-200" : "text-slate-500 hover:bg-[#efeee9]"
+                                            aiPanelOpen ? "bg-violet-100 text-violet-700 hover:bg-violet-200" : "text-slate-500 hover:bg-black/5"
                                         )}
                                         title="Toggle AI helper"
                                     >
@@ -247,7 +247,7 @@ function ProjectShellInner({
                             <Button 
                                 variant="outline" 
                                 size="sm" 
-                                className="flex rounded-xl bg-white/50 border-[#e0ded9] text-[#546354] hover:bg-white hover:border-[#546354]/20 transition-all duration-300 gap-1.5 px-2.5 sm:px-4"
+                                className="flex rounded-xl bg-card border-border text-primary hover:bg-primary/5 hover:border-primary/20 transition-all duration-300 gap-1.5 px-2.5 sm:px-4"
                                 onClick={() => setExportModalOpen(true)}
                                 title="Export Project"
                             >
@@ -276,8 +276,8 @@ function ProjectShellInner({
                                 className={cn(
                                     'flex items-center gap-1.5 px-4 sm:px-6 py-3 text-sm font-medium transition-all duration-300 rounded-t-xl shrink-0',
                                     activeTab === slug
-                                        ? 'bg-[#fbf9f5] text-[#546354] shadow-[0_-4px_12px_rgba(49,51,47,0.03)]'
-                                        : 'text-slate-500 hover:text-slate-800 hover:bg-[#efeee9]'
+                                        ? 'bg-background text-primary shadow-[0_-4px_12px_rgba(0,0,0,0.03)]'
+                                        : 'text-slate-500 hover:text-slate-800 hover:bg-black/5'
                                 )}
                             >
                                 <Icon className="w-3.5 h-3.5" />
