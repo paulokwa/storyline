@@ -33,6 +33,16 @@ export async function toPdf(payload: ExportPayload, options: ExportOptions): Pro
         format: 'a4'
     })
 
+    if (payload.metadata) {
+        pdf.setProperties({
+            title: payload.projectTitle,
+            author: payload.metadata.penName || payload.metadata.authorName || '',
+            subject: payload.metadata.description || '',
+            keywords: payload.metadata.keywords || '',
+            creator: 'Storyline'
+        })
+    }
+
     const imgProps = pdf.internal.pageSize
     const pdfWidth = imgProps.width
     const pdfHeight = (canvas.height * pdfWidth) / canvas.width

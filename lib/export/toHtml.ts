@@ -5,16 +5,26 @@ import type { ExportPayload, ExportOptions } from './buildExportPayload'
 const extensions = [StarterKit]
 
 export function toHtml(payload: ExportPayload, options: ExportOptions): string {
-    const { nodes, projectTitle } = payload
+    const { nodes, projectTitle, metadata } = payload
+    
+    let metaTags = ''
+    if (metadata) {
+        if (metadata.description) metaTags += `<meta name="description" content="${metadata.description.replace(/"/g, '&quot;')}">\n    `
+        if (metadata.authorName || metadata.penName) metaTags += `<meta name="author" content="${(metadata.penName || metadata.authorName || '').replace(/"/g, '&quot;')}">\n    `
+        if (metadata.keywords) metaTags += `<meta name="keywords" content="${metadata.keywords.replace(/"/g, '&quot;')}">\n    `
+    }
+
     let html = `<!DOCTYPE html>
-<html lang="en">
+<html lang="${metadata?.language || 'en'}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${projectTitle || 'Storyline Export'}</title>
+    ${metaTags}
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 20px; color: #333; }
         h1 { font-family: 'Georgia', serif; font-size: 2.5em; text-align: center; margin-bottom: 50px; }
+        .byline { text-align: center; font-style: italic; color: #666; margin-top: -40px; margin-bottom: 50px; }
         h2 { font-family: 'Georgia', serif; font-size: 1.8em; margin-top: 40px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
         h3 { font-family: 'Georgia', serif; font-size: 1.3em; color: #666; margin-top: 30px; }
         .scene { margin-bottom: 40px; }
@@ -27,6 +37,9 @@ export function toHtml(payload: ExportPayload, options: ExportOptions): string {
 
     if (options.includeProjectTitle) {
         html += `    <h1>${projectTitle}</h1>\n`
+        if (metadata?.penName || metadata?.authorName) {
+            html += `    <div class="byline">by ${metadata.penName || metadata.authorName}</div>\n`
+        }
     }
 
     nodes.forEach(node => {

@@ -12,8 +12,24 @@ function jsonToText(json: any): string {
 }
 
 export function toText(payload: ExportPayload, options: ExportOptions): string {
-    const { nodes, projectTitle } = payload
+    const { nodes, projectTitle, metadata } = payload
     let txt = ''
+
+    if (metadata) {
+        if (metadata.authorName || metadata.penName) {
+            txt += `BY: ${metadata.penName || metadata.authorName}\n`
+        }
+        if (metadata.copyrightHolder) {
+            txt += `COPYRIGHT: © ${metadata.copyrightYear || ''} ${metadata.copyrightHolder}\n`
+        }
+        if (metadata.publisher) {
+            txt += `PUBLISHER: ${metadata.publisher}\n`
+        }
+        if (metadata.isbn) {
+            txt += `ISBN: ${metadata.isbn}\n`
+        }
+        txt += '\n'
+    }
 
     if (options.includeProjectTitle) {
         txt += `${projectTitle.toUpperCase()}\n`

@@ -23,8 +23,22 @@ function jsonToMarkdown(json: any): string {
 }
 
 export function toMarkdown(payload: ExportPayload, options: ExportOptions): string {
-    const { nodes, projectTitle } = payload
+    const { nodes, projectTitle, metadata } = payload
     let md = ''
+
+    if (metadata) {
+        md += '---\n'
+        md += `title: "${projectTitle}"\n`
+        if (metadata.authorName) md += `author: "${metadata.authorName}"\n`
+        if (metadata.penName) md += `pen_name: "${metadata.penName}"\n`
+        if (metadata.copyrightHolder) md += `copyright: "© ${metadata.copyrightYear || ''} ${metadata.copyrightHolder}"\n`
+        if (metadata.language) md += `language: "${metadata.language}"\n`
+        if (metadata.publisher) md += `publisher: "${metadata.publisher}"\n`
+        if (metadata.description) md += `description: "${metadata.description.replace(/"/g, '\\"')}"\n`
+        if (metadata.keywords) md += `keywords: "${metadata.keywords}"\n`
+        if (metadata.isbn) md += `isbn: "${metadata.isbn}"\n`
+        md += '---\n\n'
+    }
 
     if (options.includeProjectTitle) {
         md += `# ${projectTitle}\n\n`

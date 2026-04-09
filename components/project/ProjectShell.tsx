@@ -93,6 +93,10 @@ export default function ProjectShell({
                     onOpenChange={setExportModalOpen} 
                     projectId={project.id}
                     projectTitle={project.title ?? 'Untitled'}
+                    onOpenSettings={() => {
+                        setExportModalOpen(false)
+                        setSettingsModalOpen(true)
+                    }}
                 />
                 
                 <ProjectSettingsModal 

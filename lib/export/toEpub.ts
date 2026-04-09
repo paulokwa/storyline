@@ -6,7 +6,7 @@ import StarterKit from '@tiptap/starter-kit'
 const extensions = [StarterKit]
 
 export async function toEpub(payload: ExportPayload, options: ExportOptions): Promise<Blob> {
-    const { nodes, projectTitle } = payload
+    const { nodes, projectTitle, metadata } = payload
     const zip = new JSZip()
 
     // 1. mimetype (first file, uncompressed)
@@ -50,19 +50,26 @@ export async function toEpub(payload: ExportPayload, options: ExportOptions): Pr
     // For simplicity, we bundle everything into one single content.xhtml for V1
     zip.file('OEBPS/content.xhtml', `<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${metadata?.language || 'en'}" lang="${metadata?.language || 'en'}">
 <head>
     <title>${projectTitle}</title>
     <style>
         body { font-family: serif; line-height: 1.5; margin: 5%; }
         h1 { text-align: center; }
+        .byline { text-align: center; font-style: italic; margin-bottom: 2em; }
         h2 { margin-top: 2em; border-bottom: 1px solid #ccc; }
         h3 { margin-top: 1em; font-style: italic; }
         p { margin: 1em 0; }
+        .copyright { text-align: center; font-size: 0.8em; margin-top: 3em; }
     </style>
 </head>
 <body>
+    ${options.includeProjectTitle ? `<h1>${projectTitle}</h1>` : ''}
+    ${(metadata?.penName || metadata?.authorName) ? `<div class="byline">by ${metadata.penName || metadata.authorName}</div>` : ''}
+    
     ${contentHtml}
+
+    ${metadata?.copyrightHolder ? `<div class="copyright">© ${metadata.copyrightYear || ''} ${metadata.copyrightHolder}</div>` : ''}
 </body>
 </html>`)
 
@@ -70,8 +77,12 @@ export async function toEpub(payload: ExportPayload, options: ExportOptions): Pr
 <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="pub-id" version="3.0">
     <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
         <dc:title>${projectTitle}</dc:title>
-        <dc:language>en</dc:language>
-        <dc:identifier id="pub-id">storyline-${Date.now()}</dc:identifier>
+        <dc:language>${metadata?.language || 'en'}</dc:language>
+        <dc:creator>${metadata?.penName || metadata?.authorName || 'Storyline'}</dc:creator>
+        ${metadata?.description ? `<dc:description>${metadata.description}</dc:description>` : ''}
+        ${metadata?.publisher ? `<dc:publisher>${metadata.publisher}</dc:publisher>` : ''}
+        ${metadata?.copyrightHolder ? `<dc:rights>© ${metadata.copyrightYear || ''} ${metadata.copyrightHolder}</dc:rights>` : ''}
+        <dc:identifier id="pub-id">${metadata?.isbn || `storyline-${Date.now()}`}</dc:identifier>
     </metadata>
     <manifest>
         <item id="content" href="content.xhtml" media-type="application/xhtml+xml"/>

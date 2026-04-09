@@ -48,7 +48,7 @@ function jsonToDocxElements(json: any): Paragraph[] {
 }
 
 export async function toDocx(payload: ExportPayload, options: ExportOptions): Promise<Blob> {
-    const { nodes, projectTitle } = payload
+    const { nodes, projectTitle, metadata } = payload
     const sections: any[] = []
 
     // 1. Title Page or Header
@@ -57,8 +57,24 @@ export async function toDocx(payload: ExportPayload, options: ExportOptions): Pr
             text: projectTitle,
             heading: HeadingLevel.TITLE,
             alignment: AlignmentType.CENTER,
-            spacing: { after: 1000 }
+            spacing: { after: 400 }
         }))
+
+        if (metadata?.penName || metadata?.authorName) {
+            sections.push(new Paragraph({
+                children: [new TextRun({ text: `by ${metadata.penName || metadata.authorName}`, italics: true })],
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 800 }
+            }))
+        }
+
+        if (metadata?.copyrightHolder) {
+            sections.push(new Paragraph({
+                children: [new TextRun({ text: `© ${metadata.copyrightYear || ''} ${metadata.copyrightHolder}`, size: 20 })],
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 1000 }
+            }))
+        }
     }
 
     // 2. Content
@@ -103,6 +119,10 @@ export async function toDocx(payload: ExportPayload, options: ExportOptions): Pr
     })
 
     const doc = new Document({
+        title: projectTitle,
+        creator: metadata?.penName || metadata?.authorName || 'Storyline',
+        description: metadata?.description || '',
+        keywords: metadata?.keywords || '',
         sections: [{
             properties: {},
             children: sections

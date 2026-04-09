@@ -10,10 +10,23 @@ export type ExportNode = {
     summary?: string
 }
 
+export interface ExportMetadata {
+    authorName?: string
+    penName?: string
+    copyrightHolder?: string
+    copyrightYear?: string
+    language?: string
+    publisher?: string
+    description?: string
+    keywords?: string
+    isbn?: string
+}
+
 export type ExportPayload = {
     projectTitle: string
     projectType: 'tv_script' | 'novel'
     nodes: ExportNode[]
+    metadata?: ExportMetadata
 }
 
 export type ExportScope = 'entire_project' | 'selected_chapters' | 'selected_scenes'
@@ -34,9 +47,9 @@ export async function buildExportPayload(projectId: string): Promise<ExportPaylo
     // 1. Fetch project
     const { data: project } = await supabase
         .from('projects')
-        .select('title, type')
+        .select('title, type, export_metadata')
         .eq('id', projectId)
-        .single() as { data: { title: string; type: string } | null }
+        .single() as { data: { title: string; type: string; export_metadata: any } | null }
 
     if (!project) throw new Error('Project not found')
 
@@ -69,6 +82,7 @@ export async function buildExportPayload(projectId: string): Promise<ExportPaylo
     return {
         projectTitle: project.title,
         projectType: project.type as any,
-        nodes: exportNodes
+        nodes: exportNodes,
+        metadata: project.export_metadata as ExportMetadata
     }
 }

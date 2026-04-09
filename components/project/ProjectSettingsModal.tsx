@@ -15,8 +15,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Trash2, AlertTriangle, Save } from 'lucide-react'
+import { Trash2, AlertTriangle, Save, Globe, Info, Tag, Hash, Copyright, Book, Type } from 'lucide-react'
+import { Separator } from '@/components/ui/separator'
 import type { Database } from '@/lib/supabase/types'
+import type { ExportMetadata } from '@/lib/export/buildExportPayload'
+import { cn } from '@/lib/utils'
 
 type Project = Database['public']['Tables']['projects']['Row']
 
@@ -35,9 +38,15 @@ export default function ProjectSettingsModal({
     const [loading, setLoading] = useState(false)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
+    const [activeTab, setActiveTab] = useState<'general' | 'metadata'>('general')
     const [title, setTitle] = useState(project.title ?? '')
     const [type, setType] = useState(project.type)
     const [premise, setPremise] = useState(project.premise || '')
+    const [metadata, setMetadata] = useState<ExportMetadata>((project.export_metadata as any) || {})
+
+    const updateMetadata = (key: keyof ExportMetadata, value: string) => {
+        setMetadata(prev => ({ ...prev, [key]: value }))
+    }
 
     async function handleSave() {
         setLoading(true)
@@ -48,6 +57,7 @@ export default function ProjectSettingsModal({
                 title: title.trim(),
                 type: type,
                 premise: premise.trim() || null,
+                export_metadata: metadata as any,
             })
             .eq('id', project.id)
 
@@ -85,46 +95,196 @@ export default function ProjectSettingsModal({
                             </DialogDescription>
                         </DialogHeader>
 
-                        <div className="space-y-6 py-6 font-sans">
-                            <div className="space-y-2">
-                                <Label htmlFor="title" className="text-sm font-semibold text-slate-700 ml-1">Project Title</Label>
-                                <Input
-                                    id="title"
-                                    value={title}
-                                    onChange={(e) => setTitle(e.target.value)}
-                                    placeholder="Enter story title..."
-                                    className="rounded-2xl border-slate-100 bg-slate-50 focus:bg-white focus:ring-primary/20 transition-all h-12"
-                                />
-                            </div>
+                        <div className="flex gap-1 p-1 bg-slate-100 rounded-xl mt-4">
+                            <button
+                                onClick={() => setActiveTab('general')}
+                                className={cn(
+                                    "flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all",
+                                    activeTab === 'general' 
+                                        ? "bg-white text-slate-900 shadow-sm" 
+                                        : "text-slate-500 hover:text-slate-700"
+                                )}
+                            >
+                                General
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('metadata')}
+                                className={cn(
+                                    "flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all",
+                                    activeTab === 'metadata' 
+                                        ? "bg-white text-slate-900 shadow-sm" 
+                                        : "text-slate-500 hover:text-slate-700"
+                                )}
+                            >
+                                Export Metadata
+                            </button>
+                        </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="type" className="text-sm font-semibold text-slate-700 ml-1">Project Format</Label>
-                                <div className="relative">
-                                    <select 
-                                        id="type"
-                                        value={type} 
-                                        onChange={(e) => setType(e.target.value as any)}
-                                        className="w-full rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all h-12 px-4 appearance-none text-sm"
-                                    >
-                                        <option value="novel">Novel / Book</option>
-                                        <option value="tv_script">TV / Movie Script</option>
-                                    </select>
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        <div className="py-6 font-sans max-h-[50vh] overflow-y-auto px-1 custom-scrollbar">
+                            {activeTab === 'general' ? (
+                                <div className="space-y-6">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="title" className="text-sm font-semibold text-slate-700 ml-1">Project Title</Label>
+                                        <Input
+                                            id="title"
+                                            value={title}
+                                            onChange={(e) => setTitle(e.target.value)}
+                                            placeholder="Enter story title..."
+                                            className="rounded-2xl border-slate-100 bg-slate-50 focus:bg-white focus:ring-primary/20 transition-all h-12"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="type" className="text-sm font-semibold text-slate-700 ml-1">Project Format</Label>
+                                        <div className="relative">
+                                            <select 
+                                                id="type"
+                                                value={type} 
+                                                onChange={(e) => setType(e.target.value as any)}
+                                                className="w-full rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all h-12 px-4 appearance-none text-sm"
+                                            >
+                                                <option value="novel">Novel / Book</option>
+                                                <option value="tv_script">TV / Movie Script</option>
+                                            </select>
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="premise" className="text-sm font-semibold text-slate-700 ml-1">Core Premise</Label>
+                                        <Textarea
+                                            id="premise"
+                                            value={premise}
+                                            onChange={(e) => setPremise(e.target.value)}
+                                            placeholder="The elevator pitch for your story..."
+                                            className="rounded-2xl border-slate-100 bg-slate-50 focus:bg-white focus:ring-primary/20 transition-all min-h-[100px] resize-none"
+                                        />
                                     </div>
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                                <Type className="w-3 h-3" /> Author Name
+                                            </Label>
+                                            <Input
+                                                value={metadata.authorName || ''}
+                                                onChange={(e) => updateMetadata('authorName', e.target.value)}
+                                                placeholder="Legal name"
+                                                className="rounded-xl border-slate-100 bg-slate-50 h-10 text-sm"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                                <Info className="w-3 h-3" /> Pen Name
+                                            </Label>
+                                            <Input
+                                                value={metadata.penName || ''}
+                                                onChange={(e) => updateMetadata('penName', e.target.value)}
+                                                placeholder="Byline"
+                                                className="rounded-xl border-slate-100 bg-slate-50 h-10 text-sm"
+                                            />
+                                        </div>
+                                    </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="premise" className="text-sm font-semibold text-slate-700 ml-1">Core Premise</Label>
-                                <Textarea
-                                    id="premise"
-                                    value={premise}
-                                    onChange={(e) => setPremise(e.target.value)}
-                                    placeholder="The elevator pitch for your story..."
-                                    className="rounded-2xl border-slate-100 bg-slate-50 focus:bg-white focus:ring-primary/20 transition-all min-h-[100px] resize-none"
-                                />
-                            </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                                <Copyright className="w-3 h-3" /> Copyright
+                                            </Label>
+                                            <Input
+                                                value={metadata.copyrightHolder || ''}
+                                                onChange={(e) => updateMetadata('copyrightHolder', e.target.value)}
+                                                placeholder="Holder"
+                                                className="rounded-xl border-slate-100 bg-slate-50 h-10 text-sm"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                                <Info className="w-3 h-3" /> Year
+                                            </Label>
+                                            <Input
+                                                value={metadata.copyrightYear || ''}
+                                                onChange={(e) => updateMetadata('copyrightYear', e.target.value)}
+                                                placeholder="e.g. 2024"
+                                                className="rounded-xl border-slate-100 bg-slate-50 h-10 text-sm"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                                <Globe className="w-3 h-3" /> Language
+                                            </Label>
+                                            <Input
+                                                value={metadata.language || ''}
+                                                onChange={(e) => updateMetadata('language', e.target.value)}
+                                                placeholder="e.g. English"
+                                                className="rounded-xl border-slate-100 bg-slate-50 h-10 text-sm"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                                <Book className="w-3 h-3" /> Publisher
+                                            </Label>
+                                            <Input
+                                                value={metadata.publisher || ''}
+                                                onChange={(e) => updateMetadata('publisher', e.target.value)}
+                                                placeholder="Imprint"
+                                                className="rounded-xl border-slate-100 bg-slate-50 h-10 text-sm"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                            <Info className="w-3 h-3" /> Blurb / Description
+                                        </Label>
+                                        <Textarea
+                                            value={metadata.description || ''}
+                                            onChange={(e) => updateMetadata('description', e.target.value)}
+                                            placeholder="A short summary for publishing metadata..."
+                                            className="rounded-xl border-slate-100 bg-slate-50 min-h-[80px] text-sm resize-none"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                                <Tag className="w-3 h-3" /> Keywords
+                                            </Label>
+                                            <Input
+                                                value={metadata.keywords || ''}
+                                                onChange={(e) => updateMetadata('keywords', e.target.value)}
+                                                placeholder="Comma separated"
+                                                className="rounded-xl border-slate-100 bg-slate-50 h-10 text-sm"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                                <Hash className="w-3 h-3" /> ISBN
+                                            </Label>
+                                            <Input
+                                                value={metadata.isbn || ''}
+                                                onChange={(e) => updateMetadata('isbn', e.target.value)}
+                                                placeholder="Optional"
+                                                className="rounded-xl border-slate-100 bg-slate-50 h-10 text-sm"
+                                            />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                        <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Testing Tip</p>
+                                        <p className="text-xs text-slate-500 leading-relaxed">
+                                            This metadata will be automatically injected into your EPUB, DOCX, and PDF exports.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <DialogFooter className="flex flex-col sm:flex-row gap-3 pt-4">

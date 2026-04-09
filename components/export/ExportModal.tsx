@@ -30,16 +30,20 @@ import { toHtml } from '@/lib/export/toHtml'
 import { toDocx } from '@/lib/export/toDocx'
 import { toEpub } from '@/lib/export/toEpub'
 import { toPdf } from '@/lib/export/toPdf'
+import { ExportMetadata } from '@/lib/export/buildExportPayload'
+import { createClient } from '@/lib/supabase/client'
 
 interface ExportModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     projectId: string
     projectTitle: string
+    onOpenSettings?: () => void
 }
 
-export default function ExportModal({ open, onOpenChange, projectId, projectTitle }: ExportModalProps) {
+export default function ExportModal({ open, onOpenChange, projectId, projectTitle, onOpenSettings }: ExportModalProps) {
     const [loading, setLoading] = useState(false)
+    const [metadata, setMetadata] = useState<ExportMetadata | null>(null)
     const [options, setOptions] = useState<ExportOptions>({
         format: 'md',
         scope: 'entire_project',
@@ -57,6 +61,17 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
         
         async function fetchStats() {
             try {
+                const supabase = createClient()
+                const { data: project } = await supabase
+                    .from('projects')
+                    .select('export_metadata')
+                    .eq('id', projectId)
+                    .single()
+                
+                if (project?.export_metadata) {
+                    setMetadata(project.export_metadata as ExportMetadata)
+                }
+
                 const payload = await buildExportPayload(projectId)
                 const chapters = payload.nodes.filter(n => n.type === 'chapter' || n.type === 'episode').length
                 const scenes = payload.nodes.filter(n => n.type === 'scene').length
@@ -202,6 +217,59 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
                                     </p>
                                 </button>
                             ))}
+                        </div>
+                    </div>
+
+                    {/* Export Metadata Summary */}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="flex items-center gap-2 text-[10px] font-sans tracking-[0.2em] uppercase text-slate-400 font-bold">
+                                <FileText className="w-3 h-3" />
+                                Export Metadata
+                            </label>
+                            <button
+                                onClick={onOpenSettings}
+                                className="text-[10px] font-sans tracking-wide uppercase text-amber-600 font-bold hover:text-amber-700 transition-colors"
+                            >
+                                Edit metadata
+                            </button>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-white border border-[#f0eee9] space-y-3">
+                            {metadata && (metadata.authorName || metadata.penName || metadata.copyrightHolder) ? (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Author / Pen Name</p>
+                                        <p className="text-xs text-slate-700 font-medium">
+                                            {metadata.penName || metadata.authorName || 'Not set'}
+                                        </p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Copyright</p>
+                                        <p className="text-xs text-slate-700 font-medium">
+                                            {metadata.copyrightHolder ? `© ${metadata.copyrightYear || ''} ${metadata.copyrightHolder}` : 'Not set'}
+                                        </p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Language</p>
+                                        <p className="text-xs text-slate-700 font-medium">
+                                            {metadata.language || 'Not set'}
+                                        </p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Publisher</p>
+                                        <p className="text-xs text-slate-700 font-medium">
+                                            {metadata.publisher || 'Not set'}
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-between">
+                                    <p className="text-xs text-slate-400 italic">No publishing metadata defined yet.</p>
+                                    <Button variant="ghost" size="sm" onClick={onOpenSettings} className="h-7 text-[10px] rounded-lg">
+                                        Set Metadata
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     </div>
 
