@@ -92,12 +92,13 @@ body {
 .screenplay-mode {
   font-family: 'Courier Prime', 'Courier Final Draft', 'Courier New', monospace !important;
   font-size: 12pt !important;
-  line-height: 1.2 !important; /* Slightly more breathable than 1.0 for digital reading */
+  line-height: normal !important;
   color: black !important;
+  background-color: white !important;
 }
 
 /* Reset standard margins in screenplay mode to let specific classes handle them */
-.screenplay-mode p {
+.screenplay-mode .ProseMirror p {
   margin: 0 !important;
   padding: 0 !important;
   text-indent: 0 !important;
@@ -108,68 +109,69 @@ body {
   font-weight: bold;
   margin-top: 25pt !important;
   margin-bottom: 12pt !important;
+  text-align: left !important;
 }
 
 .screenplay-action {
   margin-top: 12pt !important;
   margin-bottom: 12pt !important;
+  text-align: left !important;
 }
 
 .screenplay-character {
   text-transform: uppercase;
-  margin-left: 200pt !important;
+  text-align: left !important;
+  margin-left: 120pt !important;
   margin-top: 12pt !important;
   margin-bottom: 0 !important;
-  width: fit-content;
+  width: auto !important;
 }
 
 @media (max-width: 768px) {
   .screenplay-character {
-    margin-left: 25% !important;
+    margin-left: 15% !important;
   }
 }
 
 .screenplay-dialogue {
-  margin-left: 110pt !important;
-  margin-right: 110pt !important;
+  text-align: left !important;
+  margin-left: 50pt !important;
+  margin-right: 50pt !important;
   margin-top: 0 !important;
   margin-bottom: 12pt !important;
 }
 
 @media (max-width: 768px) {
   .screenplay-dialogue {
-    margin-left: 15% !important;
-    margin-right: 10% !important;
+    margin-left: 10% !important;
+    margin-right: 5% !important;
     width: auto !important;
   }
 }
 
 .screenplay-parenthetical {
-  margin-left: 150pt !important;
-  margin-right: 150pt !important;
+  text-align: left !important;
+  margin-left: 80pt !important;
+  margin-right: 80pt !important;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
 }
 
 @media (max-width: 768px) {
   .screenplay-parenthetical {
-    margin-left: 20% !important;
-    margin-right: 20% !important;
+    margin-left: 15% !important;
+    margin-right: 15% !important;
   }
 }
 
 .screenplay-transition {
   text-transform: uppercase;
-  margin-left: 360pt !important;
+  text-align: right !important;
+  /* Pull transition back from the edge to the "right third" of the page */
+  margin-right: 120pt !important; 
   margin-top: 12pt !important;
   margin-bottom: 12pt !important;
-  width: fit-content;
-}
-
-@media (max-width: 768px) {
-  .screenplay-transition {
-    margin-left: 60% !important;
-  }
+  display: block !important;
 }
 
 /* Transitions */

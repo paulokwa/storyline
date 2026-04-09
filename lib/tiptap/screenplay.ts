@@ -1,4 +1,4 @@
-import { Node, mergeAttributes } from '@tiptap/core'
+import { Node, mergeAttributes, InputRule } from '@tiptap/core'
 
 /**
  * Screenplay Scene Heading (Slugline)
@@ -8,6 +8,7 @@ export const ScreenplaySceneHeading = Node.create({
   name: 'screenplaySceneHeading',
   group: 'block',
   content: 'inline*',
+  defining: true,
   priority: 1000,
   parseHTML() {
     return [{ tag: 'p[data-type="scene-heading"]', priority: 1000 }]
@@ -17,17 +18,16 @@ export const ScreenplaySceneHeading = Node.create({
   },
   addInputRules() {
     return [
-      {
+      new InputRule({
         find: /^(INT|EXT|I\/E|INT\/EXT)\.\s$/i,
-        handler: ({ state, range, chain }) => {
-          const text = state.doc.textBetween(range.from, range.to)
+        handler: ({ state, chain }) => {
+          // Use state to check node type instead of editor (safer for hot reload/undefined editor)
+          if (state.selection.$from.parent.type.name === this.name) return
           chain()
-            .deleteRange(range)
             .setNode(this.name)
-            .insertContent(text)
             .run()
         },
-      },
+      }),
     ]
   },
 })
@@ -40,6 +40,7 @@ export const ScreenplayAction = Node.create({
   name: 'screenplayAction',
   group: 'block',
   content: 'inline*',
+  defining: true,
   priority: 1000, // Higher than standard paragraph (50) to capture <p> tags
   parseHTML() {
     return [
@@ -59,6 +60,7 @@ export const ScreenplayCharacter = Node.create({
   name: 'screenplayCharacter',
   group: 'block',
   content: 'inline*',
+  defining: true,
   priority: 1000,
   parseHTML() {
     return [{ tag: 'p[data-type="character"]', priority: 1000 }]
@@ -68,28 +70,20 @@ export const ScreenplayCharacter = Node.create({
   },
   addInputRules() {
     return [
-      {
+      new InputRule({
         // When user types something in ALL CAPS followed by a space at the start of a line
-        // Only trigger if it's clearly a name (2-3 words max, all caps) and NOT a slugline
-        find: /^[A-Z0-9\s]{2,}\s$/,
-        handler: ({ state, range, chain }) => {
-          const text = state.doc.textBetween(range.from, range.to)
-          const trimmed = text.trim().toUpperCase()
+        // We use a negative lookahead to ignore common screenplay keywords like "CUT" or "INT"
+        // This prevents the rule from interfering with other markers like "CUT TO:"
+        find: /^(?!(?:INT|EXT|CUT|FADE|SMASH|MATCH)\s?)[A-Z0-9\s]{2,}\s$/,
+        handler: ({ chain, state }) => {
+          if (state.selection.$from.parent.type.name === this.name) return
           
-          // Basic exclusion list for common screenplay markers
-          const exclusions = ['INT.', 'EXT.', 'CUT TO:', 'FADE IN', 'FADE OUT', 'CUT', 'FADE']
-          if (exclusions.some(exc => trimmed.startsWith(exc))) {
-            return null
-          }
-
-          // Convert but keep the text
+          // Convert the current block
           chain()
-            .deleteRange(range)
             .setNode(this.name)
-            .insertContent(text)
             .run()
         },
-      },
+      }),
     ]
   },
 })
@@ -102,6 +96,7 @@ export const ScreenplayParenthetical = Node.create({
   name: 'screenplayParenthetical',
   group: 'block',
   content: 'inline*',
+  defining: true,
   priority: 1000,
   parseHTML() {
     return [{ tag: 'p[data-type="parenthetical"]', priority: 1000 }]
@@ -111,18 +106,26 @@ export const ScreenplayParenthetical = Node.create({
   },
   addInputRules() {
     return [
-      {
-        // Automatically convert when typing starting with '('
-        find: /^\(\s$/,
-        handler: ({ state, range, chain }) => {
-          const text = state.doc.textBetween(range.from, range.to)
+      new InputRule({
+        // Support both starting with "(" + space OR finishing a bracketed phrase (text) + space
+        find: /^\(.*\)\s$/,
+        handler: ({ state, chain }) => {
+          if (state.selection.$from.parent.type.name === this.name) return
           chain()
-            .deleteRange(range)
             .setNode(this.name)
-            .insertContent(text)
             .run()
         },
-      },
+      }),
+      new InputRule({
+        // Also support immediate conversion when typing "(" and then space
+        find: /^\(\s$/,
+        handler: ({ state, chain }) => {
+          if (state.selection.$from.parent.type.name === this.name) return
+          chain()
+            .setNode(this.name)
+            .run()
+        },
+      }),
     ]
   },
 })
@@ -134,6 +137,7 @@ export const ScreenplayDialogue = Node.create({
   name: 'screenplayDialogue',
   group: 'block',
   content: 'inline*',
+  defining: true,
   priority: 1000,
   parseHTML() {
     return [{ tag: 'p[data-type="dialogue"]', priority: 1000 }]
@@ -151,6 +155,7 @@ export const ScreenplayTransition = Node.create({
   name: 'screenplayTransition',
   group: 'block',
   content: 'inline*',
+  defining: true,
   priority: 1000,
   parseHTML() {
     return [{ tag: 'p[data-type="transition"]', priority: 1000 }]
@@ -160,18 +165,16 @@ export const ScreenplayTransition = Node.create({
   },
   addInputRules() {
     return [
-      {
+      new InputRule({
         // Typical transition markers
         find: /^(CUT TO:|FADE OUT:|FADE TO:|SMASH CUT:|MATCH CUT:)\s$/i,
-        handler: ({ state, range, chain }) => {
-          const text = state.doc.textBetween(range.from, range.to)
+        handler: ({ state, chain }) => {
+          if (state.selection.$from.parent.type.name === this.name) return
           chain()
-            .deleteRange(range)
             .setNode(this.name)
-            .insertContent(text)
             .run()
         },
-      },
+      }),
     ]
   },
 })
