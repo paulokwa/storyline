@@ -18,8 +18,16 @@ import {
     Volume2,
     Wand2,
     Bookmark,
-    History
+    History,
+    MoreHorizontal
 } from 'lucide-react'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import ExportModal from '@/components/export/ExportModal'
 import ProjectSettingsModal from '@/components/project/ProjectSettingsModal'
 import ShareModal from '@/components/project/ShareModal'
@@ -171,6 +179,27 @@ function ProjectShellInner({
         analyzeScene, isAnalyzing 
     } = useProjectActions()
     const { commentsPanelOpen, setCommentsPanelOpen } = useComments()
+    
+    // Responsive checks
+    const isMobile = useMediaQuery('(max-width: 768px)')
+    const isVerySmall = useMediaQuery('(max-width: 480px)')
+
+    const handleToggleAi = () => {
+        const nextState = !aiPanelOpen
+        if (nextState && isMobile) {
+            setCommentsPanelOpen(false)
+        }
+        setAiPanelOpen(nextState)
+    }
+
+    const handleToggleComments = () => {
+        const nextState = !commentsPanelOpen
+        if (nextState && isMobile) {
+            setAiPanelOpen(false)
+        }
+        setCommentsPanelOpen(nextState)
+    }
+
     const { speak, speechState } = useSpeech()
     const isReading = speechState === 'speaking'
     const isStoryTab = pathname.includes('/story')
@@ -223,20 +252,20 @@ function ProjectShellInner({
                             </button>
                         )}
 
-                        <div className="flex items-center -space-x-2 mr-4 overflow-hidden">
+                        <div className="flex items-center -space-x-2 mr-2 sm:mr-4 overflow-hidden shrink-0">
                              <CollaborativeAvatars />
                         </div>
 
                         <div className="flex items-center gap-2">
                              {/* Tab Actions (Dynamic) */}
                              {isStoryTab && (
-                                <div className="flex items-center gap-1.5 mr-2 pr-2 border-r border-[#e0ded9]">
+                                <div className="flex items-center gap-1 sm:gap-1.5 mr-2 pr-2 border-r border-[#e0ded9]">
                                     <Button
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => setSidebarOpen(!sidebarOpen)}
                                         className={cn(
-                                            "rounded-xl transition-all h-9 px-2.5",
+                                            "rounded-xl transition-all h-9 px-2 sm:px-2.5",
                                             sidebarOpen ? "bg-primary/10 text-primary hover:bg-primary/20" : "text-slate-500 hover:bg-black/5"
                                         )}
                                         title="Toggle structure panel"
@@ -244,41 +273,45 @@ function ProjectShellInner({
                                         <PanelLeft className="w-4 h-4" />
                                     </Button>
 
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => speak(currentSceneText, 'Scene')}
-                                        className={cn(
-                                            "rounded-xl transition-all h-9 px-2.5 gap-2",
-                                            isReading ? "bg-amber-100 text-amber-700 animate-pulse" : "text-slate-500 hover:bg-black/5"
-                                        )}
-                                        title="Read aloud"
-                                    >
-                                        <Volume2 className={cn("w-4 h-4", isReading && "animate-bounce")} />
-                                        <span className="text-xs font-medium hidden md:inline">Read Aloud</span>
-                                    </Button>
+                                    {!isMobile && (
+                                        <>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => speak(currentSceneText, 'Scene')}
+                                                className={cn(
+                                                    "rounded-xl transition-all h-9 px-2.5 gap-2",
+                                                    isReading ? "bg-amber-100 text-amber-700 animate-pulse" : "text-slate-500 hover:bg-black/5"
+                                                )}
+                                                title="Read aloud"
+                                            >
+                                                <Volume2 className={cn("w-4 h-4", isReading && "animate-bounce")} />
+                                                <span className="text-xs font-medium hidden md:inline">Read Aloud</span>
+                                            </Button>
+
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => analyzeScene()}
+                                                disabled={isAnalyzing || !currentSceneText}
+                                                className={cn(
+                                                    "rounded-xl transition-all h-9 px-2.5 gap-2",
+                                                    isAnalyzing ? "bg-violet-100 text-violet-700 animate-pulse" : "text-slate-500 hover:bg-black/5"
+                                                )}
+                                                title="Analyze scene"
+                                            >
+                                                <Wand2 className="w-4 h-4" />
+                                                <span className="text-xs font-medium hidden md:inline">Analyze</span>
+                                            </Button>
+                                        </>
+                                    )}
 
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => analyzeScene()}
-                                        disabled={isAnalyzing || !currentSceneText}
+                                        onClick={handleToggleAi}
                                         className={cn(
-                                            "rounded-xl transition-all h-9 px-2.5 gap-2",
-                                            isAnalyzing ? "bg-violet-100 text-violet-700 animate-pulse" : "text-slate-500 hover:bg-black/5"
-                                        )}
-                                        title="Analyze scene"
-                                    >
-                                        <Wand2 className="w-4 h-4" />
-                                        <span className="text-xs font-medium hidden md:inline">Analyze</span>
-                                    </Button>
-
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setAiPanelOpen(!aiPanelOpen)}
-                                        className={cn(
-                                            "rounded-xl transition-all h-9 px-2.5 gap-2",
+                                            "rounded-xl transition-all h-9 px-2 sm:px-2.5 gap-2",
                                             aiPanelOpen ? "bg-violet-100 text-violet-700 hover:bg-violet-200" : "text-slate-500 hover:bg-black/5"
                                         )}
                                         title="Toggle AI helper"
@@ -290,9 +323,9 @@ function ProjectShellInner({
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => setCommentsPanelOpen(!commentsPanelOpen)}
+                                        onClick={handleToggleComments}
                                         className={cn(
-                                            "rounded-xl transition-all h-9 px-2.5 gap-2",
+                                            "rounded-xl transition-all h-9 px-2 sm:px-2.5 gap-2",
                                             commentsPanelOpen ? "bg-primary/10 text-primary hover:bg-primary/20" : "text-slate-500 hover:bg-black/5"
                                         )}
                                         title="Toggle feedback panel"
@@ -300,6 +333,30 @@ function ProjectShellInner({
                                         <MessageSquare className="w-4 h-4" />
                                         <span className="text-xs font-medium hidden md:inline">Feedback</span>
                                     </Button>
+                                    
+                                    {isMobile && (
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-xl text-slate-500">
+                                                    <MoreHorizontal className="w-4 h-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="rounded-2xl p-2 border-slate-200 shadow-xl">
+                                                <DropdownMenuItem onClick={() => speak(currentSceneText, 'Scene')} className="rounded-xl gap-2 font-medium text-slate-700">
+                                                    <Volume2 className="w-4 h-4" />
+                                                    Read Aloud
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem 
+                                                    onClick={() => analyzeScene()} 
+                                                    disabled={isAnalyzing || !currentSceneText}
+                                                    className="rounded-xl gap-2 font-medium text-slate-700"
+                                                >
+                                                    <Wand2 className="w-4 h-4" />
+                                                    Analyze Scene
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    )}
                                 </div>
                             )}
 

@@ -184,7 +184,7 @@ export default function StructureTree({
     return (
         <TooltipProvider>
             <div className="flex flex-col h-full bg-transparent">
-                <div className="px-6 py-6 flex items-center justify-between">
+                <div className="px-4 sm:px-6 py-4 sm:py-6 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <h3 className="text-sm font-serif italic text-slate-500 tracking-wide">The Structure</h3>
                     </div>
@@ -309,17 +309,17 @@ const NodeItem = React.memo(({
                 <div ref={provided.innerRef} {...provided.draggableProps}>
                     <div
                         className={cn(
-                            'group flex items-center gap-2 py-3 px-4 mx-3 rounded-2xl cursor-pointer transition-all duration-300 text-sm mb-1 relative border border-transparent',
+                            'group flex items-center gap-2 py-3 px-3 sm:px-4 mx-2 sm:mx-3 rounded-2xl cursor-pointer transition-all duration-300 text-sm mb-1 relative border border-transparent',
                             isActive
                                 ? 'bg-white text-[#546354] shadow-[0_8px_24px_rgba(0,0,0,0.06)] font-bold border-[#546354]/10 z-10'
                                 : 'text-slate-500 hover:bg-white/60',
-                            isRoot && 'font-serif italic text-base py-4 bg-white/30 backdrop-blur-sm border-white/40 mb-2 mt-2 shadow-[0_2px_8px_rgba(0,0,0,0.02)]',
-                            isAct && 'font-semibold text-slate-700 py-2.5',
-                            isScene && 'text-slate-500 py-2',
+                            isRoot && 'font-serif italic text-base py-3 sm:py-4 bg-white/30 backdrop-blur-sm border-white/40 mb-2 mt-2 shadow-[0_2px_8px_rgba(0,0,0,0.02)]',
+                            isAct && 'font-semibold text-slate-700 py-2 sm:py-2.5',
+                            isScene && 'text-slate-500 py-1.5 sm:py-2',
                             isSelected && 'bg-indigo-50/40 border-indigo-200/50',
                             snapshot.isDragging && 'shadow-2xl z-50 bg-white ring-2 ring-[#546354]/10'
                         )}
-                        style={{ paddingLeft: `${16 + depth * 24}px` }}
+                        style={{ paddingLeft: `${(typeof window !== 'undefined' && window.innerWidth < 640 ? 12 : 16) + depth * (typeof window !== 'undefined' && window.innerWidth < 640 ? 16 : 24)}px` }}
                         onMouseEnter={() => setHovered(true)}
                         onMouseLeave={() => setHovered(false)}
                         onClick={handleClick}

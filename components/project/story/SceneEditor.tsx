@@ -101,14 +101,14 @@ const ToolbarButton = ({
             onClick(e)
         }}
         className={cn(
-            "p-1.5 rounded-lg transition-all duration-200",
+            "p-1.5 sm:p-2 rounded-lg transition-all duration-200 shrink-0",
             active 
                 ? "bg-slate-800 text-white shadow-md scale-105" 
                 : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
         )}
         title={tooltip}
     >
-        <Icon className="w-3.5 h-3.5" />
+        <Icon className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
     </button>
 )
 
@@ -955,7 +955,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 {editor && !isReadOnly && (
                     <BubbleMenu 
                         editor={editor} 
-                        className="flex items-center gap-0.5 bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl p-1 overflow-hidden animate-in fade-in zoom-in duration-200 z-[100]"
+                        className="flex items-center gap-0.5 bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl p-1 animate-in fade-in zoom-in duration-200 z-[100] max-w-[calc(100vw-2rem)] overflow-x-auto no-scrollbar scroll-smooth"
                     >
                         {writingMode === 'screenplay' ? (
                             <>

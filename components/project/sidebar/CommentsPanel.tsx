@@ -279,12 +279,12 @@ function CommentThread({
     
     return (
         <div className={cn(
-            "transition-all duration-300 rounded-[24px] border border-transparent overflow-hidden",
+            "transition-all duration-300 rounded-[18px] sm:rounded-[24px] border border-transparent overflow-hidden",
             isActive && "bg-white border-primary/20 shadow-xl shadow-primary/5 ring-1 ring-primary/10",
             !isActive && "hover:border-slate-200"
         )}>
             <div className={cn(
-                "p-4 space-y-4",
+                "p-3 sm:p-4 space-y-3 sm:space-y-4",
                 isResolved && "opacity-60 bg-slate-50/30"
             )}>
                 <CommentItem 
@@ -306,7 +306,7 @@ function CommentThread({
                 />
                 
                 {replies.length > 0 && (
-                    <div className="ml-7 border-l-2 border-slate-100/80 pl-4 space-y-4 pt-2">
+                    <div className="ml-4 sm:ml-7 border-l-2 border-slate-100/80 pl-3 sm:pl-4 space-y-3 sm:space-y-4 pt-1 sm:pt-2">
                         {replies.map((reply: any) => (
                             <CommentItem 
                                 key={reply.id}
@@ -326,7 +326,7 @@ function CommentThread({
                 )}
 
                 {isReplying && (
-                    <div className="ml-7 border-l-2 border-slate-100/80 pl-4">
+                    <div className="ml-4 sm:ml-7 border-l-2 border-slate-100/80 pl-3 sm:pl-4">
                         <div className="relative">
                             <textarea
                                 autoFocus
@@ -336,11 +336,11 @@ function CommentThread({
                                     setReplyText(e.target.value)
                                     handleTyping(comment.id)
                                 }}
-                                className="w-full bg-white border border-slate-200 rounded-2xl p-4 pr-10 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[100px] resize-none font-sans"
+                                className="w-full bg-white border border-slate-200 rounded-2xl p-3 sm:p-4 pr-10 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[80px] sm:min-h-[100px] resize-none font-sans"
                             />
-                            <div className="flex justify-end gap-2 mt-3">
-                                 <Button variant="ghost" size="sm" className="h-8 text-[10px] uppercase tracking-widest font-bold rounded-xl" onClick={onCancelReply}>Cancel</Button>
-                                 <Button size="sm" className="h-8 px-4 text-[10px] uppercase tracking-widest font-bold rounded-xl sanctuary-btn-primary shadow-lg" onClick={onAddReply}>Reply</Button>
+                            <div className="flex justify-end gap-2 mt-2 sm:mt-3">
+                                 <Button variant="ghost" size="sm" className="h-7 sm:h-8 text-[10px] uppercase tracking-widest font-bold rounded-xl" onClick={onCancelReply}>Cancel</Button>
+                                 <Button size="sm" className="h-7 sm:h-8 px-3 sm:px-4 text-[10px] uppercase tracking-widest font-bold rounded-xl sanctuary-btn-primary shadow-lg" onClick={onAddReply}>Reply</Button>
                             </div>
                         </div>
                     </div>
@@ -394,8 +394,8 @@ function CommentItem({
         <div 
             className={cn(
                 "group transition-all cursor-pointer relative",
-                isReply && "py-1",
-                !isReply && "bg-slate-50/50 rounded-2xl p-4 border border-transparent hover:bg-white hover:border-slate-200 hover:shadow-md",
+                isReply && "py-0.5 sm:py-1",
+                !isReply && "bg-slate-50/50 rounded-2xl p-3 sm:p-4 border border-transparent hover:bg-white hover:border-slate-200 hover:shadow-md",
                 isActive && !isReply && "bg-white border-primary/20 shadow-xl shadow-primary/5 ring-1 ring-primary/10",
                 comment.status === 'resolved' && "bg-emerald-50/10"
             )}
