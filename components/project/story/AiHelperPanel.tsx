@@ -54,6 +54,39 @@ function extractTextFromJson(content: any): string {
     return ''
 }
 
+/**
+ * Attempts to salvage truncated JSON by force-closing brackets
+ */
+function attemptJsonRepair(str: string): any {
+    try {
+        return JSON.parse(str);
+    } catch (e) {
+        // Try adding a closing bracket
+        try {
+            return JSON.parse(str.trim() + ']');
+        } catch (e2) {
+            // Try finding the last valid object and closing the array there
+            const lastObjectEnd = str.lastIndexOf('}');
+            if (lastObjectEnd !== -1) {
+                try {
+                    return JSON.parse(str.substring(0, lastObjectEnd + 1) + ']');
+                } catch (e3) {
+                    // One last ditch effort: regex for objects
+                    const matches = str.match(/\{\s*"type":\s*"[^"]*",\s*"text":\s*"[^"]*"\s*\}/g);
+                    if (matches) {
+                        try {
+                            return JSON.parse(`[${matches.join(',')}]`);
+                        } catch (e4) {
+                            return null;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+    }
+}
+
 function getDescendantScenes(nodeId: string, allNodes: any[], allScenes: any[]): any[] {
     const node = allNodes.find(n => n.id === nodeId)
     if (!node) return []
@@ -261,10 +294,10 @@ export default function AiHelperPanel({
                     if (match) cleanText = match[1]
                 }
 
-                // 2. Parse JSON
-                const blocks = JSON.parse(cleanText)
-                if (Array.isArray(blocks)) {
-                    console.log('AI Helper: Valid JSON found, mapping to nodes:', blocks.length)
+                // 2. Parse JSON with salvage logic
+                const blocks = attemptJsonRepair(cleanText)
+                if (blocks && Array.isArray(blocks)) {
+                    console.log('AI Helper: JSON salvaged, mapping to nodes:', blocks.length)
                     // 3. Node mapping
                     const typeMap: Record<string, string> = {
                         'scene-heading': 'screenplaySceneHeading',

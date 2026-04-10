@@ -374,7 +374,7 @@ body {
 */
 .editor-novel-overrides,
 .editor-novel-overrides .ProseMirror,
-.editor-novel-overrides p {
+.editor-novel-overrides .ProseMirror > * {
   font-family: var(--editor-font, 'Newsreader', serif) !important;
   font-size: var(--editor-font-size, 1.125rem) !important;
   line-height: var(--editor-line-height, 1.8) !important;

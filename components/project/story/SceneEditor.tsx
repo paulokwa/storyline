@@ -221,7 +221,6 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 bulletList: { keepMarks: true },
                 orderedList: { keepMarks: true }
             }),
-            Underline,
             Highlight.configure({ multicolor: true }),
             Placeholder.configure({
                 placeholder: writingMode === 'screenplay' ? 'Start your script...' : 'Once upon a time...',
@@ -241,16 +240,21 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             })
         ]
 
-        if (writingMode === 'screenplay') {
+        const isScriptProject = projectType === 'tv_script' || projectType === 'feature_film';
+
+        if (writingMode === 'screenplay' || isScriptProject) {
             base.push(
                 ScreenplaySceneHeading,
                 ScreenplayAction,
                 ScreenplayCharacter,
                 ScreenplayParenthetical,
                 ScreenplayDialogue,
-                ScreenplayTransition,
-                ScreenplayKeyboard
+                ScreenplayTransition
             )
+        }
+
+        if (writingMode === 'screenplay') {
+            base.push(ScreenplayKeyboard)
         }
 
         return base
