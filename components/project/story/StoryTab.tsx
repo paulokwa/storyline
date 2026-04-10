@@ -340,7 +340,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                         activeNodeId={activeNodeId}
                         activeSceneId={activeScene?.id}
                         onClearSelection={() => setSelectedNodeIds([])}
-                        onInsert={(text) => editorRef.current?.insertText(text)}
+                        onInsert={(content) => editorRef.current?.insertContent(content)}
                     />
                 </div>
             </div>

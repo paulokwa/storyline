@@ -7,6 +7,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Highlight from '@tiptap/extension-highlight'
 import BubbleMenuExtension from '@tiptap/extension-bubble-menu'
+import Underline from '@tiptap/extension-underline'
 import { 
     ScreenplaySceneHeading, 
     ScreenplayAction, 
@@ -81,7 +82,7 @@ interface SceneEditorProps {
 export interface SceneEditorRef {
     getText: () => string
     getSelectionText: () => string
-    insertText: (text: string) => void
+    insertContent: (content: any) => void
 }
 
 const ToolbarButton = ({ 
@@ -136,6 +137,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [title, setTitle] = useState(initialTitle)
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
     const [isRestoring, setIsRestoring] = useState(false)
+
     const [isMounted, setIsMounted] = useState(false)
     const [showViewSettings, setShowViewSettings] = useState(false)
     const [interimTranscript, setInterimTranscript] = useState('')
@@ -176,15 +178,18 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         fontSize: '18px',
         lineHeight: '1.8',
         maxWidth: '1152px',
-        textAlign: 'left'
+        textAlign: 'left',
+        fontFamily: 'Newsreader'
     })
+
 
     useEffect(() => {
         setIsMounted(true)
         const saved = localStorage.getItem('storyline_editor_prefs')
         if (saved) {
             try {
-                setViewSettings(JSON.parse(saved))
+                const parsed = JSON.parse(saved)
+                setViewSettings(prev => ({ ...prev, ...parsed }))
             } catch (e) {
                 console.error('Failed to load editor prefs', e)
             }
@@ -212,19 +217,17 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const extensions = useMemo(() => {
         const base = [
             StarterKit.configure({
-                // Keep standard nodes enabled to prevent schema validation errors
-                // We control their use via ScreenplayKeyboard and priority instead.
-                paragraph: {},
-                heading: {},
+                heading: { levels: [1, 2] },
+                bulletList: { keepMarks: true },
+                orderedList: { keepMarks: true }
             }),
-            // Underline is often included in StarterKit v3 or globally registered
-            // If it's missing, add it back, but currently causing 'Duplicate' warning
+            Underline,
             Highlight.configure({ multicolor: true }),
-            BubbleMenuExtension.configure({
-                element: null, 
-            }),
             Placeholder.configure({
                 placeholder: writingMode === 'screenplay' ? 'Start your script...' : 'Once upon a time...',
+            }),
+            BubbleMenuExtension.configure({
+                element: null, 
             }),
             CommentMark.extend({
                 addAttributes() {
@@ -239,20 +242,19 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         ]
 
         if (writingMode === 'screenplay') {
-            return [
-                ...base,
+            base.push(
                 ScreenplaySceneHeading,
                 ScreenplayAction,
                 ScreenplayCharacter,
                 ScreenplayParenthetical,
                 ScreenplayDialogue,
                 ScreenplayTransition,
-                ScreenplayKeyboard,
-            ]
+                ScreenplayKeyboard
+            )
         }
 
         return base
-    }, [writingMode])
+    }, [writingMode, projectType, aiSettings])
 
     const { sidebarOpen, setSidebarOpen, aiPanelOpen, setAiPanelOpen, currentSceneText, setCurrentSceneText, role } = useProjectActions()
     const { 
@@ -273,18 +275,34 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         extensions,
         content: scene.content || '',
         editable: !isReadOnly,
+        onCreate: ({ editor }) => {
+            const html = editor.getHTML()
+            onTextChange?.(html)
+        },
+        onUpdate: ({ editor, transaction }) => {
+            const html = editor.getHTML()
+            onTextChange?.(html)
+            
+            // Only trigger autosave if it's a user change
+            const isInternal = transaction.getMeta('isInternal')
+            if (!isInternal) {
+                setSaveStatus('idle') 
+            }
+            
+            setMyStatus('editing')
+        },
         editorProps: {
             attributes: {
                 class: cn(
                     'max-w-none focus:outline-none min-h-[500px]',
                     writingMode === 'screenplay' 
                         ? 'screenplay-mode font-mono' 
-                        : 'prose prose-slate font-serif editor-novel-overrides'
+                        : 'prose prose-slate editor-novel-overrides'
                 ),
             },
             handleClick: (view, pos, event) => {
                 const { state } = view
-                console.log('Editor click at pos:', pos)
+                console.log('Editor click at pos:', pos, 'Writing mode:', writingMode, 'Project type:', projectType)
                 if (!state?.doc?.resolve) return false
                 const mark = state.doc.resolve(pos).marks().find(m => m.type.name === 'comment')
                 if (mark) {
@@ -300,29 +318,15 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 // Strip comment marks from pasted content
                 slice.content.descendants(node => {
                     if (node.marks) {
-                        ;(node as any).marks = node.marks.filter(m => m.type.name !== 'comment')
+                        ;(node as any).marks = node.marks.filter((m: any) => m.type.name !== 'comment')
                     }
                 })
                 return slice
             }
-        },
-        onCreate: ({ editor }) => {
-            onTextChange?.(editor.getText())
-        },
-        onUpdate: ({ editor, transaction }) => {
-            const text = editor.getText()
-            onTextChange?.(text)
-            
-            // Only trigger autosave if it's a user change
-            const isInternal = transaction.getMeta('isInternal')
-            if (!isInternal) {
-                setSaveStatus('idle') 
-            }
-            
-            // Handle status transition
-            setMyStatus('editing')
-        },
-    }, [writingMode, isReadOnly])
+        }
+    }, [writingMode, scene.id])
+
+    console.log('SceneEditor Render:', { writingMode, fontFamily: viewSettings.fontFamily, editorReady: !!editor })
 
     // Revert to viewing after 2s of inactivity
     useEffect(() => {
@@ -665,11 +669,11 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             const { from, to } = editor.state.selection
             return editor.state.doc.textBetween(from, to, ' ')
         },
-        insertText: (text: string) => {
+        insertContent: (content: any) => {
             if (!editor) return
-            editor.commands.insertContent(text)
+            editor.commands.insertContent(content)
         }
-    }))
+    }), [editor])
 
     const handleRestore = async () => {
         if (isReadOnly) return
@@ -687,6 +691,12 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
     const label = projectType === 'tv_script' ? 'Episode' : 'Scene'
     const isDeleted = scene.deleted_at !== null
+
+    // Sync editor settings without re-mounting
+    useEffect(() => {
+        if (!editor) return
+        editor.setEditable(!isReadOnly)
+    }, [editor, isReadOnly])
 
     return (
         <div className={cn(
@@ -884,6 +894,33 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                         />
                                         <div className="absolute right-0 top-8 w-64 bg-white/95 backdrop-blur-xl border border-slate-200 shadow-2xl rounded-2xl p-4 z-[70] animate-in fade-in slide-in-from-top-2 duration-200">
                                             <div className="space-y-4">
+                                                {/* Font Choice */}
+                                                <div>
+                                                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2 block">Typography</label>
+                                                    <div className="grid grid-cols-2 bg-slate-50 p-1 rounded-xl gap-1">
+                                                        {[
+                                                            { id: 'Newsreader', label: 'Newsreader', serif: true },
+                                                            { id: 'Lora', label: 'Lora', serif: true },
+                                                            { id: 'Inter', label: 'Inter', serif: false },
+                                                            { id: 'Atkinson Hyperlegible', label: 'Atkinson', serif: false }
+                                                        ].map((font) => (
+                                                            <button
+                                                                key={font.id}
+                                                                onClick={() => updateViewSetting('fontFamily', font.id)}
+                                                                className={cn(
+                                                                    "py-1.5 px-2 rounded-lg text-[11px] font-medium transition-all text-center",
+                                                                    viewSettings.fontFamily === font.id 
+                                                                        ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200" 
+                                                                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/50"
+                                                                )}
+                                                                style={{ fontFamily: font.id }}
+                                                            >
+                                                                {font.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
                                                 {/* Font Size */}
                                                 <div>
                                                     <label className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2 block">Font Size</label>
@@ -1006,12 +1043,13 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
             <div 
                 style={isMounted && writingMode === 'simple' ? {
+                    '--editor-font': `'${viewSettings.fontFamily}', serif`,
                     '--editor-font-size': viewSettings.fontSize,
                     '--editor-line-height': viewSettings.lineHeight,
                     '--editor-max-width': viewSettings.maxWidth,
                     '--editor-text-align': viewSettings.textAlign,
                     maxWidth: viewSettings.maxWidth,
-                    textAlign: viewSettings.textAlign as any
+                    textAlign: viewSettings.textAlign as any,
                 } as React.CSSProperties : {}}
                 className={cn(
                     "transition-all duration-700 relative",

@@ -25,7 +25,7 @@ interface AiHelperPanelProps {
     allNodes?: any[]
     allScenes?: any[]
     onClearSelection?: () => void
-    onInsert: (text: string) => void
+    onInsert: (content: any) => void
     activeNodeId?: string | null
     activeSceneId?: string | null
     projectType?: 'tv_script' | 'novel'
@@ -77,6 +77,7 @@ const MODE_EXPLANATIONS: Record<string, string> = {
     'Improve Scene': 'Refines the clarity, flow, and overall prose quality.',
     'Add Conflict': 'Introduces new tension, higher stakes, or drama.',
     'Rewrite with Emotion': 'Deepens emotional resonance and character expressions.',
+    'Write as Script Scene': 'Generates a new scene in structured screenplay format.',
     'Review / Chat': 'Ask questions about your story elements or critique your work.'
 }
 
@@ -250,6 +251,46 @@ export default function AiHelperPanel({
     const isShowingPrevious = actualLoading && !completion && !!previousCompletion
 
     const handleInsert = () => {
+        console.log('AI Helper: handleInsert called', { promptMode, completionExist: !!displayedCompletion })
+        if (promptMode === 'Write as Script Scene') {
+            try {
+                // 1. Pre-processing: Strip markdown code blocks if present
+                let cleanText = displayedCompletion.trim()
+                if (cleanText.startsWith('```')) {
+                    const match = cleanText.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+                    if (match) cleanText = match[1]
+                }
+
+                // 2. Parse JSON
+                const blocks = JSON.parse(cleanText)
+                if (Array.isArray(blocks)) {
+                    console.log('AI Helper: Valid JSON found, mapping to nodes:', blocks.length)
+                    // 3. Node mapping
+                    const typeMap: Record<string, string> = {
+                        'scene-heading': 'screenplaySceneHeading',
+                        'action': 'screenplayAction',
+                        'character': 'screenplayCharacter',
+                        'parenthetical': 'screenplayParenthetical',
+                        'dialogue': 'screenplayDialogue',
+                        'transition': 'screenplayTransition'
+                    }
+
+                    const nodes = blocks.map(block => ({
+                        type: typeMap[block.type] || 'screenplayAction',
+                        content: block.text ? [{ type: 'text', text: block.text }] : []
+                    }))
+
+                    onInsert(nodes)
+                    handleClear()
+                    return
+                }
+            } catch (err) {
+                console.warn('JSON parsing failed for Script Scene, falling back to text:', err)
+                // Fallback to text insertion if JSON is invalid
+            }
+        }
+
+        console.log('AI Helper: Inserting as plain text/HTML')
         onInsert(displayedCompletion)
         handleClear()
     }
@@ -438,6 +479,21 @@ export default function AiHelperPanel({
             finalPrompt = currentPrompt 
                 ? `Continue the scene by enhancing emotional depth and character expression.\n\nUser instructions: ${currentPrompt}${modeRules}`
                 : `Continue the scene by enhancing emotional depth and character expression.${modeRules}`
+        } else if (promptMode === 'Write as Script Scene') {
+            finalPrompt = `Write a new scene as a script based on these instructions: ${currentPrompt || 'Write a compelling scene.'}
+            
+            FORMAT REQUIREMENTS:
+            - Return ONLY a valid JSON array.
+            - No markdown code blocks.
+            - No preamble, no postamble, no explanation text.
+            - Valid types for screenplay blocks: "scene-heading", "action", "character", "parenthetical", "dialogue", "transition".
+            
+            JSON Structure Example:
+            [
+              { "type": "scene-heading", "text": "INT. OFFICE - DAY" },
+              { "type": "character", "text": "JOHN" },
+              { "type": "dialogue", "text": "Hello." }
+            ]`
         } else if (promptMode === 'Review / Chat') {
             finalPrompt = currentPrompt || 'Review the selected context and offer thoughtful insights.'
         }
@@ -713,7 +769,7 @@ export default function AiHelperPanel({
                                             className="flex-1 rounded-xl border-indigo-100 hover:border-indigo-200 hover:bg-indigo-50/50 text-indigo-600 gap-2 h-9 font-serif italic transition-all active:scale-95"
                                         >
                                             <Plus className="w-3.5 h-3.5" />
-                                            Add to Scene
+                                            Insert into Scene
                                         </Button>
                                         <Button
                                             onClick={() => setSaveModalOpen(true)}
@@ -1052,6 +1108,8 @@ export default function AiHelperPanel({
                                     <option value="Improve Scene">Improve Scene</option>
                                     <option value="Add Conflict">Add Conflict</option>
                                     <option value="Rewrite with Emotion">Rewrite with Emotion</option>
+                                    {!isNovel && <option value="Write as Script Scene">Write as Script Scene</option>}
+                                    <option value="Review / Chat">Review / Chat</option>
                                 </select>
                             </div>
                             <p className="text-[10px] text-center text-slate-300 font-bold uppercase tracking-tight">

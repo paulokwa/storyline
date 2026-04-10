@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,700;1,6..72,400;1,6..72,700&family=Lora:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@400;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 @import "tailwindcss";
 
 :root, [data-theme='sanctuary'] {
@@ -372,7 +372,10 @@ body {
   Ensures font size, line height, and alignment variables are 
   consistently applied to all prose elements.
 */
-.editor-novel-overrides {
+.editor-novel-overrides,
+.editor-novel-overrides .ProseMirror,
+.editor-novel-overrides p {
+  font-family: var(--editor-font, 'Newsreader', serif) !important;
   font-size: var(--editor-font-size, 1.125rem) !important;
   line-height: var(--editor-line-height, 1.8) !important;
   text-align: var(--editor-text-align, left) !important;
@@ -380,12 +383,16 @@ body {
 
 .editor-novel-overrides p,
 .editor-novel-overrides li,
-.editor-novel-overrides mark,
-.editor-novel-overrides blockquote,
-.editor-novel-overrides h1,
-.editor-novel-overrides h2 {
+.editor-novel-overrides mark {
+  font-family: inherit !important;
   font-size: inherit !important;
   line-height: inherit !important;
+}
+
+.editor-novel-overrides h1,
+.editor-novel-overrides h2,
+.editor-novel-overrides blockquote {
+  font-family: inherit !important;
 }
 
 /* Special case for highlight to ensure background color doesn't wrap oddly at larger sizes */
