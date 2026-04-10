@@ -46,6 +46,8 @@ import {
     Clapperboard,
     User,
     MessageSquare,
+    MessageSquarePlus,
+    MessageCircle,
     ArrowRight,
     Type as TypeIcon,
     Clock
@@ -144,6 +146,14 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [showUpdateBanner, setShowUpdateBanner] = useState(false)
     const [remoteVersion, setRemoteVersion] = useState<number>(scene.version || 1)
     const [lastEditorName, setLastEditorName] = useState<string | null>(null)
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+
+    useEffect(() => {
+        const supabase = createClient()
+        supabase.auth.getUser().then(({ data }) => {
+            setCurrentUserId(data.user?.id || null)
+        })
+    }, [])
 
 
     const { toggle: toggleDictation, isRecording, supported: speechSupported } = useSpeechToText({
@@ -251,7 +261,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         activeCommentId, 
         setActiveCommentId,
         comments,
-        isLoading
+        isLoading,
+        scrollTrigger
     } = useComments()
     const { activeSceneUsers, setMyStatus } = usePresence()
     
@@ -298,10 +309,16 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         onCreate: ({ editor }) => {
             onTextChange?.(editor.getText())
         },
-        onUpdate: ({ editor }) => {
+        onUpdate: ({ editor, transaction }) => {
             const text = editor.getText()
             onTextChange?.(text)
-            setSaveStatus('idle') 
+            
+            // Only trigger autosave if it's a user change
+            const isInternal = transaction.getMeta('isInternal')
+            if (!isInternal) {
+                setSaveStatus('idle') 
+            }
+            
             // Handle status transition
             setMyStatus('editing')
         },
@@ -341,7 +358,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
     // Realtime Highlight Cleanup: Remove marks if the comment no longer exists globally
     useEffect(() => {
-        if (!editor || isLoading || comments.length === 0) return
+        if (!editor || isLoading) return
 
         // Get all comment IDs in doc
         const editorCommentIds = new Set<string>()
@@ -365,6 +382,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             // Remove marks for missing comments
             editor.commands.command(({ tr, dispatch }) => {
                 if (dispatch) {
+                    tr.setMeta('isInternal', true)
                     missingIds.forEach(id => {
                         editor.state.doc.descendants((node, pos) => {
                              if (node.marks?.some(m => m.type.name === 'comment' && m.attrs.commentId === id)) {
@@ -429,11 +447,20 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             setSaveStatus('error')
         } else {
             setSaveStatus('saved')
-            setLocalVersion(prev => prev + 1)
+            setLastEditorName('you')
+            // Use the version we just successfully saved to
+            const savedVersion = localVersion + 1
+            setLocalVersion(v => Math.max(v, savedVersion))
             setShowUpdateBanner(false)
             if (currentTitle !== initialTitle) onTitleUpdate?.(currentTitle)
             
-            const updatedScene = { ...scene, title: currentTitle, content: newContent, version: localVersion + 1 }
+            const updatedScene = { 
+                ...scene, 
+                title: currentTitle, 
+                content: newContent, 
+                version: localVersion + 1,
+                last_editor_id: user?.id 
+            }
             if (editor) {
                 (editor as any)._lastContent = newContent
             }
@@ -441,9 +468,16 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         }
     }, [scene, title, initialTitle, editor, onUpdate, onTitleUpdate, localVersion])
 
+    const lastScrollTrigger = useRef(scrollTrigger)
+
     // Sync active comment from sidebar to editor
     useEffect(() => {
         if (!editor || !activeCommentId) return
+
+        const shouldScroll = scrollTrigger !== lastScrollTrigger.current
+        lastScrollTrigger.current = scrollTrigger
+
+        if (!shouldScroll) return
 
         const { state, view } = editor
         let foundPos = -1
@@ -465,7 +499,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 element.scrollIntoView({ behavior: 'smooth', block: 'center' })
             }
         }
-    }, [activeCommentId, editor])
+    }, [activeCommentId, editor, scrollTrigger])
 
     // Sync individual comment status (resolved/open) to marks
     useEffect(() => {
@@ -492,18 +526,23 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         })
 
         if (changed) {
+            transaction.setMeta('isInternal', true)
             editor.view.dispatch(transaction)
         }
     }, [comments, editor])
 
     async function handleAddInlineComment() {
         if (!editor) return
+        
+        // 1. Give immediate feedback by opening the panel
+        setCommentsPanelOpen(true)
+        
         const { from, to } = editor.state.selection
         const text = editor.state.doc.textBetween(from, to)
         
         if (!text.trim()) return
 
-        // 1. Apply pending mark
+        // 2. Apply pending mark
         const tempId = 'pending-' + Math.random().toString(36).substr(2, 9)
         editor.chain().focus().setComment(tempId).run()
 
@@ -533,7 +572,6 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             })
 
             setActiveCommentId(newComment!.id)
-            setCommentsPanelOpen(true)
         } catch (err) {
             console.error('Failed to create inline comment:', err)
             editor.chain().focus().unsetComment().run()
@@ -563,36 +601,63 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             setLocalVersion(scene.version || 1)
             setShowConflictModal(false)
             setShowUpdateBanner(false)
-        } else if (isContentDifferent && !editor.isFocused) {
-            // Updated elsewhere while we are idle?
+        } else {
+            // Same scene, check version
             if (scene.version > localVersion) {
-                setShowUpdateBanner(true)
-                setRemoteVersion(scene.version)
+                // If it caught up to exactly what we were trying to save, or we are idle, just sync
+                if (scene.version === localVersion + 1 && saveStatus === 'saving') {
+                    // This was likely our own save arriving via realtime
+                    setLocalVersion(v => Math.max(v, scene.version))
+                } else if (!editor.isFocused || scene.version > localVersion + 1) {
+                    setShowUpdateBanner(true)
+                    setRemoteVersion(scene.version)
+                }
+            } else if (scene.version === localVersion && showConflictModal) {
+                // The DB caught up to our local version state, we can resolve the conflict modal!
+                setShowConflictModal(false)
+                setSaveStatus('idle')
             }
         }
-    }, [scene.id, scene.content, scene.version, editor, localVersion])
+    }, [scene.id, scene.content, scene.version, editor, localVersion, showConflictModal, saveStatus])
 
     // Fetch last editor name
     useEffect(() => {
+        // If we just saved locally, we might already have set it to 'you'
+        // But we still want to sync if it's someone else
         if (!scene.last_editor_id) {
             setLastEditorName(null)
             return
         }
-        
+
+        if (currentUserId && scene.last_editor_id === currentUserId) {
+            setLastEditorName('you')
+            return
+        }
+
+        let isMounted = true
         async function fetchLastEditor() {
-            const supabase = createClient()
-            const { data } = await (supabase as any)
-                .from('project_members')
-                .select('user_email')
-                .eq('user_id', scene.last_editor_id)
-                .maybeSingle()
-            
-            if (data?.user_email) setLastEditorName(data.user_email)
-            else setLastEditorName('a collaborator')
+            try {
+                const supabase = createClient()
+                // Use the RPC if available (like for comments) or fetch from project_members
+                // Since project_members doesn't have email, we look it up in public.project_members joined with a secure view
+                // For now, let's try a direct member fetch - if we want emails of others, we need a secure DEFINER RPC
+                const { data, error } = await (supabase as any).rpc('get_project_member_email', { 
+                    p_project_id: scene.project_id,
+                    p_user_id: scene.last_editor_id
+                })
+                
+                if (isMounted) {
+                    if (data) setLastEditorName(data)
+                    else setLastEditorName('a collaborator')
+                }
+            } catch (e) {
+                if (isMounted) setLastEditorName('a collaborator')
+            }
         }
         
         fetchLastEditor()
-    }, [scene.last_editor_id])
+        return () => { isMounted = false }
+    }, [scene.last_editor_id, currentUserId, scene.project_id])
     useImperativeHandle(ref, () => ({
         getText: () => editor?.getText() || '',
         getSelectionText: () => {
@@ -992,14 +1057,13 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                 <ToolbarButton
                                     onClick={handleAddInlineComment}
                                     active={false}
-                                    icon={MessageSquare}
-                                    tooltip="Add Comment"
-                                    disabled={editor.isActive('comment')}
+                                    icon={MessageSquarePlus}
+                                    tooltip="Add Feedback"
                                 />
                                 <ToolbarButton
                                     onClick={() => editor.chain().focus().setNode('screenplayDialogue').run()}
                                     active={editor.isActive('screenplayDialogue')}
-                                    icon={MessageSquare}
+                                    icon={MessageCircle}
                                     tooltip="Dialogue"
                                 />
                                 <ToolbarButton
@@ -1079,9 +1143,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                 <ToolbarButton
                                     onClick={handleAddInlineComment}
                                     active={false}
-                                    icon={MessageSquare}
-                                    tooltip="Add Comment"
-                                    disabled={editor.isActive('comment')}
+                                    icon={MessageSquarePlus}
+                                    tooltip="Add Feedback"
                                 />
                             </>
                         )}

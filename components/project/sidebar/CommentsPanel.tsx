@@ -16,8 +16,11 @@ import {
     Filter,
     X,
     MessageCircle,
-    AlertCircle
+    AlertCircle,
+    GripVertical,
+    Target
 } from 'lucide-react'
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn, getUserColor } from '@/lib/utils'
@@ -44,7 +47,9 @@ export default function CommentsPanel({
         setActiveCommentId,
         typingUsers,
         sendTypingIndicator,
-        detachedCommentIds
+        detachedCommentIds,
+        jumpToComment,
+        reorderComments
     } = useComments()
     const { role } = useProjectActions()
     
@@ -56,6 +61,12 @@ export default function CommentsPanel({
     const [editingId, setEditingId] = useState<string | null>(null)
     const [editText, setEditText] = useState('')
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+    const supabaseClient = createClient()
+    
+    useEffect(() => {
+        supabaseClient.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id || null))
+    }, [])
 
     const handleTyping = (threadId: string | null) => {
         sendTypingIndicator(threadId)
@@ -68,19 +79,57 @@ export default function CommentsPanel({
         }, 3000)
     }
 
+    const onDragEnd = (result: any) => {
+        if (!result.destination) return
+
+        const items = Array.from(filteredComments)
+        const [reorderedItem] = items.splice(result.source.index, 1)
+        items.splice(result.destination.index, 0, reorderedItem)
+
+        // Only update if order actually changed
+        if (result.destination.index !== result.source.index) {
+            reorderComments(items.map(i => i.id))
+        }
+    }
+
     const filteredComments = useMemo(() => {
-        let list = comments.filter(c => !c.parent_id) // Get top-level threads
+        let list = comments.filter(c => !c.parent_id)
+        
+        // Rule: Viewers can only see their own threads 
+        // (threads they started)
+        if (role === 'viewer') {
+            list = list.filter(c => c.author_id === currentUserId)
+        }
         
         if (filterByNode && activeNodeId) {
             list = list.filter(c => c.node_id === activeNodeId)
         }
         
         if (!showResolved) {
-            list = list.filter(c => c.status === 'open')
+            list = list.filter(c => c.status !== 'resolved')
         }
         
-        return list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    }, [comments, activeNodeId, filterByNode, showResolved])
+        // Primary sort by order_index, fallback to created_at
+        return list.sort((a, b) => {
+            if ((a.order_index || 0) !== (b.order_index || 0)) {
+                return (a.order_index || 0) - (b.order_index || 0)
+            }
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        })
+    }, [comments, activeNodeId, filterByNode, showResolved, currentUserId, role])
+
+    // Meta-counts for UI feedback
+    const resolvedCount = useMemo(() => 
+        comments.filter(c => !c.parent_id && c.status === 'resolved').length, 
+    [comments])
+    
+    const allProjectCount = useMemo(() => 
+        comments.filter(c => !c.parent_id).length, 
+    [comments])
+
+    const currentSceneCount = useMemo(() => 
+        comments.filter(c => !c.parent_id && c.node_id === activeNodeId).length, 
+    [comments, activeNodeId])
 
     async function handleAddComment() {
         if (!newCommentText.trim()) return
@@ -91,8 +140,13 @@ export default function CommentsPanel({
                 content: newCommentText.trim()
             })
             setNewCommentText('')
-        } catch (e) {
-            console.error(e)
+        } catch (e: any) {
+            console.error('Failed to add comment:', {
+                message: e?.message || 'Unknown error',
+                details: e?.details,
+                hint: e?.hint,
+                code: e?.code
+            })
         }
     }
 
@@ -107,8 +161,13 @@ export default function CommentsPanel({
             })
             setReplyText('')
             setReplyToId(null)
-        } catch (e) {
-            console.error(e)
+        } catch (e: any) {
+            console.error('Failed to add reply:', {
+                message: e?.message || 'Unknown error',
+                details: e?.details,
+                hint: e?.hint,
+                code: e?.code
+            })
         }
     }
 
@@ -133,24 +192,28 @@ export default function CommentsPanel({
                     </div>
                     <h3 className="font-serif italic font-bold text-slate-800">Feedback</h3>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                     <Button 
                         variant="ghost" 
                         size="icon" 
-                        className={cn("h-8 w-8 rounded-lg", filterByNode ? "text-primary bg-primary/5" : "text-slate-400")}
+                        className={cn("h-8 px-2 w-auto min-w-[32px] rounded-lg gap-1.5", filterByNode ? "text-primary bg-primary/5" : "text-slate-400")}
                         onClick={() => setFilterByNode(!filterByNode)}
-                        title={filterByNode ? "Showing current scene tasks" : "Showing all project feedback"}
+                        title={filterByNode ? "Switch to: All Project Feedback" : "Switch to: Current Scene Only"}
                     >
-                        <Filter className="w-4 h-4" />
+                        <Filter className="w-3.5 h-3.5" />
+                        <span className="text-[10px] font-bold">{filterByNode ? currentSceneCount : allProjectCount}</span>
                     </Button>
                     <Button 
                         variant="ghost" 
                         size="icon" 
-                        className={cn("h-8 w-8 rounded-lg", showResolved ? "text-emerald-500 bg-emerald-50" : "text-slate-400")}
+                        className={cn("h-8 px-2 w-auto min-w-[32px] rounded-lg gap-1.5", showResolved ? "text-emerald-500 bg-emerald-50" : "text-slate-400")}
                         onClick={() => setShowResolved(!showResolved)}
-                        title={showResolved ? "Hiding resolved items" : "Showing resolved items"}
+                        title={showResolved ? "Hide resolved items" : "Show resolved items"}
                     >
-                        <CheckCircle2 className="w-4 h-4" />
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        {resolvedCount > 0 && (
+                            <span className="text-[10px] font-bold">{resolvedCount}</span>
+                        )}
                     </Button>
                 </div>
             </div>
@@ -185,33 +248,59 @@ export default function CommentsPanel({
                         </div>
                     )}
 
-                    {filteredComments.map(comment => (
-                        <CommentThread 
-                            key={comment.id}
-                            comment={comment}
-                            replies={comments.filter(c => c.parent_id === comment.id)}
-                            onReply={(id: string) => { setReplyToId(id); setReplyText('') }}
-                            isReplying={replyToId === comment.id}
-                            replyText={replyText}
-                            setReplyText={setReplyText}
-                            onAddReply={() => handleAddReply(comment.id)}
-                            onCancelReply={() => setReplyToId(null)}
-                            editingId={editingId}
-                            onEdit={(id: string, text: string) => { setEditingId(id); setEditText(text) }}
-                            editText={editText}
-                            setEditText={setEditText}
-                            onUpdate={handleUpdate}
-                            onCancelEdit={() => setEditingId(null)}
-                            onDelete={deleteComment}
-                            onResolve={resolveComment}
-                            onSelectNode={onSelectNode}
-                            role={role}
-                            isActive={activeCommentId === comment.id}
-                            onActivate={() => setActiveCommentId(comment.id)}
-                            typingUsers={typingUsers.filter(u => u.threadId === comment.id)}
-                            onTypingChange={(isTyping: boolean) => sendTypingIndicator(isTyping ? comment.id : null)}
-                        />
-                    ))}
+                    <DragDropContext onDragEnd={onDragEnd}>
+                        <Droppable droppableId="comments-list">
+                            {(provided) => (
+                                <div 
+                                    {...provided.droppableProps}
+                                    ref={provided.innerRef}
+                                    className="space-y-6 pb-20"
+                                >
+                                    {filteredComments.map((comment, index) => (
+                                        <Draggable key={comment.id} draggableId={comment.id} index={index}>
+                                            {(provided) => (
+                                                <div
+                                                    ref={provided.innerRef}
+                                                    {...provided.draggableProps}
+                                                >
+                                                    <CommentThread 
+                                                        comment={comment}
+                                                        replies={comments.filter(c => c.parent_id === comment.id)}
+                                                        onReply={(id: string) => { setReplyToId(id); setReplyText('') }}
+                                                        isReplying={replyToId === comment.id}
+                                                        replyText={replyText}
+                                                        setReplyText={setReplyText}
+                                                        onAddReply={() => handleAddReply(comment.id)}
+                                                        onCancelReply={() => setReplyToId(null)}
+                                                        editingId={editingId}
+                                                        onEdit={(id: string, text: string) => { setEditingId(id); setEditText(text) }}
+                                                        editText={editText}
+                                                        setEditText={setEditText}
+                                                        onUpdate={handleUpdate}
+                                                        onCancelEdit={() => setEditingId(null)}
+                                                        onDelete={deleteComment}
+                                                        onResolve={resolveComment}
+                                                        onSelectNode={onSelectNode}
+                                                        onJumpTo={() => {
+                                                            if (comment.node_id) onSelectNode?.(comment.node_id)
+                                                            jumpToComment(comment.id)
+                                                        }}
+                                                        role={role}
+                                                        isActive={activeCommentId === comment.id}
+                                                        onActivate={() => setActiveCommentId(comment.id)}
+                                                        typingUsers={typingUsers.filter(u => u.threadId === comment.id)}
+                                                        onTypingChange={(isTyping: boolean) => sendTypingIndicator(isTyping ? comment.id : null)}
+                                                        dragHandleProps={role !== 'viewer' ? provided.dragHandleProps : null}
+                                                    />
+                                                </div>
+                                            )}
+                                        </Draggable>
+                                    ))}
+                                    {provided.placeholder}
+                                </div>
+                            )}
+                        </Droppable>
+                    </DragDropContext>
                 </div>
             </ScrollArea>
 
@@ -231,6 +320,7 @@ export default function CommentsPanel({
                                 handleAddComment()
                             }
                         }}
+                        suppressHydrationWarning
                     />
                     <Button 
                         size="icon" 
@@ -272,6 +362,8 @@ function CommentThread({
     onActivate,
     typingUsers,
     onTypingChange,
+    onJumpTo,
+    dragHandleProps,
     isDetached
 }: any) {
     const isOwnerOrEditor = role === 'owner' || role === 'editor'
@@ -290,6 +382,7 @@ function CommentThread({
                 <CommentItem 
                     comment={comment} 
                     isOwnerOrEditor={isOwnerOrEditor}
+                    role={role}
                     onReply={() => onReply(comment.id)}
                     isEditing={editingId === comment.id}
                     onEdit={() => onEdit(comment.id, comment.content)}
@@ -300,9 +393,11 @@ function CommentThread({
                     onDelete={() => onDelete(comment.id)}
                     onResolve={() => onResolve(comment.id, comment.status === 'open')}
                     onSelectNode={onSelectNode}
+                    onJumpTo={onJumpTo}
                     isActive={isActive}
                     onActivate={onActivate}
                     isDetached={isDetached}
+                    dragHandleProps={dragHandleProps}
                 />
                 
                 {replies.length > 0 && (
@@ -312,6 +407,7 @@ function CommentThread({
                                 key={reply.id}
                                 comment={reply}
                                 isOwnerOrEditor={isOwnerOrEditor}
+                                role={role}
                                 isEditing={editingId === reply.id}
                                 onEdit={() => onEdit(reply.id, reply.content)}
                                 editText={editText}
@@ -376,10 +472,13 @@ function CommentItem({
     onDelete,
     onResolve,
     onSelectNode,
+    onJumpTo,
     isActive,
     onActivate,
     isDetached,
-    isReply
+    dragHandleProps,
+    isReply,
+    role
 }: any) {
     const supabase = createClient()
     const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -404,8 +503,13 @@ function CommentItem({
                 if (comment.node_id) onSelectNode?.(comment.node_id)
             }}
         >
-            <div className="flex items-start justify-between mb-2">
+            <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
+                    {dragHandleProps && (
+                        <div {...dragHandleProps} className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing p-1 -ml-2">
+                            <GripVertical className="w-3.5 h-3.5" />
+                        </div>
+                    )}
                     <div className={cn(
                         "w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold shadow-sm transition-all border border-white",
                         getUserColor(comment.author_email || '')
@@ -433,39 +537,6 @@ function CommentItem({
                             {new Date(comment.created_at).toLocaleDateString()}
                         </div>
                     </div>
-                </div>
-                
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {!isReply && onResolve && isOwnerOrEditor && (
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className={cn(
-                                "h-7 w-7 rounded-lg transition-all",
-                                comment.status === 'resolved' 
-                                    ? "text-emerald-500 bg-emerald-50" 
-                                    : "text-slate-300 hover:text-emerald-500 hover:bg-emerald-50"
-                            )}
-                            onClick={(e) => { e.stopPropagation(); onResolve(); }}
-                        >
-                            <CheckCircle2 className="w-4 h-4" />
-                        </Button>
-                    )}
-                    {isAuthor && (
-                        <>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-slate-300 hover:text-primary hover:bg-primary/5" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
-                                <Edit3 className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-slate-300 hover:text-destructive hover:bg-destructive/5" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
-                                <Trash2 className="w-4 h-4" />
-                            </Button>
-                        </>
-                    )}
-                    {!isReply && onReply && comment.status !== 'resolved' && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-slate-300 hover:text-primary hover:bg-primary/5" onClick={(e) => { e.stopPropagation(); onReply(); }}>
-                            <Reply className="w-4 h-4" />
-                        </Button>
-                    )}
                 </div>
             </div>
 
@@ -517,18 +588,64 @@ function CommentItem({
                     )}>
                         {comment.content}
                     </p>
-                    
-                    {comment.status === 'resolved' && comment.resolved_at && (
-                        <div className="mt-4 pt-4 border-t border-slate-100/50 flex items-center justify-between text-[10px]">
-                            <div className="flex items-center gap-1.5 text-emerald-600 font-bold uppercase tracking-wider">
-                                <CheckCircle2 className="w-3.5 h-3.5" />
+
+                    <div className="mt-4 pt-3 border-t border-slate-100/50 flex items-center justify-between">
+                        <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                            {onJumpTo && !isReply && (
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-7 w-7 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/5" 
+                                    onClick={(e) => { e.stopPropagation(); onJumpTo(); }}
+                                    title="Jump to position"
+                                >
+                                    <Target className="w-4 h-4" />
+                                </Button>
+                            )}
+                            {!isReply && onReply && comment.status !== 'resolved' && (
+                                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/5" onClick={(e) => { e.stopPropagation(); onReply(); }}>
+                                    <Reply className="w-4 h-4" />
+                                </Button>
+                            )}
+                            {!isReply && onResolve && isOwnerOrEditor && (
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className={cn(
+                                        "h-7 w-7 rounded-lg transition-all",
+                                        comment.status === 'resolved' 
+                                            ? "text-emerald-500 bg-emerald-50" 
+                                            : "text-slate-400 hover:text-emerald-500 hover:bg-emerald-50"
+                                    )}
+                                    onClick={(e) => { e.stopPropagation(); onResolve(); }}
+                                    title={comment.status === 'resolved' ? "Reopen" : "Resolve"}
+                                >
+                                    <CheckCircle2 className="w-4 h-4" />
+                                </Button>
+                            )}
+                            {isAuthor && (
+                                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/5" onClick={(e) => { e.stopPropagation(); onEdit(); }} title="Edit">
+                                    <Edit3 className="w-4 h-4" />
+                                </Button>
+                            )}
+                            {(isAuthor || role === 'owner') && (
+                                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-slate-400 hover:text-destructive hover:bg-destructive/5" onClick={(e) => { e.stopPropagation(); onDelete(); }} title="Delete">
+                                    <Trash2 className="w-4 h-4" />
+                                </Button>
+                            )}
+                        </div>
+
+                        {comment.status === 'resolved' && comment.resolved_at ? (
+                            <div className="flex items-center gap-1.5 text-emerald-600 font-bold uppercase tracking-wider text-[9px]">
+                                <CheckCircle2 className="w-3 h-3" />
                                 <span>Resolved</span>
                             </div>
-                            <span className="text-slate-400 font-medium italic">
-                                {new Date(comment.resolved_at).toLocaleDateString()}
-                            </span>
-                        </div>
-                    )}
+                        ) : (
+                            <div className="text-[10px] text-slate-300 font-medium italic">
+                                ID: {comment.id.slice(0, 4)}
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
         </div>

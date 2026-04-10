@@ -17,6 +17,7 @@ export interface Comment {
     resolved_at: string | null
     resolved_by: string | null
     author_email?: string
+    order_index: number
 }
 
 interface TypingState {
@@ -40,6 +41,9 @@ interface CommentsContextType {
     sendTypingIndicator: (threadId: string | null) => void
     detachedCommentIds: Set<string>
     setDetachedCommentIds: (ids: Set<string>) => void
+    scrollTrigger: number
+    jumpToComment: (id: string) => void
+    reorderComments: (orderedIds: string[]) => Promise<void>
 }
 
 const CommentsContext = createContext<CommentsContextType | undefined>(undefined)
@@ -51,30 +55,27 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
     const [activeCommentId, setActiveCommentId] = useState<string | null>(null)
     const [typingUsers, setTypingUsers] = useState<TypingState[]>([])
     const [detachedCommentIds, setDetachedCommentIds] = useState<Set<string>>(new Set())
+    const [scrollTrigger, setScrollTrigger] = useState(0)
+    const [currentUser, setCurrentUser] = useState<{ id: string, email: string } | null>(null)
     
     const supabase = createClient() as any
     const channelRef = useRef<any>(null)
 
+    useEffect(() => {
+        supabase.auth.getUser().then(({ data }: any) => {
+            if (data.user) {
+                setCurrentUser({ id: data.user.id, email: data.user.email || '' })
+            }
+        })
+    }, [])
+
     const fetchSingleExtended = async (id: string) => {
-        // Use a simple selection for the extended info for now
-        // In a real app, you might have another RPC for a single comment,
-        // but for now we can just re-fetch the list or use a select with join if possible
-        const { data } = await supabase
-            .from('project_comments')
-            .select(`
-                *,
-                author:author_id(email)
-            `)
-            .eq('id', id)
-            .single()
-        
-        if (data) {
-            return {
-                ...data,
-                author_email: (data as any).author?.email
-            } as Comment
+        const { data, error } = await supabase.rpc('get_comment_details', { comment_id_arg: id })
+        if (error) {
+            console.error('Error fetching single comment details:', error)
+            return null
         }
-        return null
+        return data as Comment
     }
 
     const fetchComments = useCallback(async (p_id: string) => {
@@ -91,7 +92,9 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
             })
             console.error('Full error object:', JSON.stringify(error))
         } else {
-            setComments(data as Comment[])
+            // Ensure data is sorted by order_index
+            const sortedData = (data as Comment[]).sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
+            setComments(sortedData)
         }
         setIsLoading(false)
     }, [])
@@ -112,7 +115,8 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
                     if (extended) {
                         setComments(prev => {
                             if (prev.some(c => c.id === extended.id)) return prev
-                            return [...prev, extended]
+                            const next = [extended, ...prev]
+                            return next.sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
                         })
                     }
                 } else if (payload.eventType === 'UPDATE') {
@@ -120,7 +124,10 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
                         c.id === payload.new.id ? { ...c, ...payload.new } : c
                     ))
                 } else if (payload.eventType === 'DELETE') {
-                    setComments(prev => prev.filter(c => c.id !== payload.old.id && c.parent_id !== payload.old.id))
+                    const deletedId = payload.old?.id
+                    if (deletedId) {
+                        setComments(prev => prev.filter(c => c.id !== deletedId && c.parent_id !== deletedId))
+                    }
                 }
             })
             .on('broadcast', { event: 'typing' }, ({ payload }: any) => {
@@ -162,41 +169,131 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
                 content,
                 parent_id,
                 anchor_data,
-                status: 'open'
+                status: 'open',
+                order_index: comments.length > 0 ? Math.min(...comments.map(c => c.order_index || 0)) - 1 : 1
             })
             .select()
             .single()
         
-        if (error) throw error
-        // Realtime will handle the update for us, but we return the data for the editor
-        return data as Comment
+        if (error) {
+            console.error('Supabase AddComment Error:', error)
+            throw error
+        }
+        
+        const newComment = {
+            ...data,
+            author_email: currentUser?.email
+        } as Comment
+
+        // Optimistic UI update: Add to list immediately
+        setComments(prev => {
+            if (prev.some(c => c.id === newComment.id)) return prev
+            const next = [newComment, ...prev]
+            return next.sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
+        })
+
+        return newComment
     }
 
     const updateComment = async (id: string, content: string) => {
+        // Optimistic update
+        setComments(prev => prev.map(c => 
+            c.id === id ? { ...c, content, updated_at: new Date().toISOString() } : c
+        ))
+
         const { error } = await supabase
             .from('project_comments')
-            .update({ content })
+            .update({ content, updated_at: new Date().toISOString() })
             .eq('id', id)
         
-        if (error) throw error
+        if (error) {
+            console.error('Error updating comment:', error)
+            // Revert or re-fetch on error if needed
+            fetchComments(projectId)
+            throw error
+        }
     }
 
     const deleteComment = async (id: string) => {
+        console.log('Attempting to delete comment:', id)
+        
+        // Optimistic update
+        setComments(prev => prev.filter(c => c.id !== id && c.parent_id !== id))
+        if (activeCommentId === id) setActiveCommentId(null)
+
         const { error } = await supabase
             .from('project_comments')
             .delete()
             .eq('id', id)
         
-        if (error) throw error
+        if (error) {
+            console.error('Error deleting comment:', error)
+            // Revert or refresh on error?
+            const { data } = await supabase.rpc('get_project_comments_extended', { p_project_id: projectId })
+            if (data) setComments(data as Comment[])
+            throw error
+        }
+        console.log('Successfully deleted comment:', id)
+    }
+
+    const jumpToComment = useCallback((id: string) => {
+        setActiveCommentId(id)
+        setScrollTrigger(prev => prev + 1)
+    }, [])
+
+    const reorderComments = async (orderedIds: string[]) => {
+        // Optimistic UI update
+        const idToIndex = new Map(orderedIds.map((id, index) => [id, index]))
+        
+        setComments(prev => {
+            const next = prev.map(c => ({
+                ...c,
+                order_index: idToIndex.has(c.id) ? idToIndex.get(c.id)! : c.order_index
+            }))
+            return next.sort((a, b) => a.order_index - b.order_index)
+        })
+
+        // Persistence
+        const updates = orderedIds.map((id, index) => ({
+            id,
+            order_index: index
+        }))
+
+        // Supabase doesn't support bulk update with different values easily without RPC 
+        // to avoid complexity, we can do them in parallel or use an RPC if needed.
+        // Actually we can use upsert if we provide ID and order_index
+        const { error } = await supabase
+            .from('project_comments')
+            .upsert(updates, { onConflict: 'id' })
+        
+        if (error) {
+            console.error('Error persisting reorder:', error)
+            // Revert or fetch? For now just log
+        }
     }
 
     const resolveComment = async (id: string, resolved: boolean) => {
+        const timestamp = resolved ? new Date().toISOString() : null
+        
+        // Optimistic update
+        setComments(prev => prev.map(c => 
+            c.id === id ? { ...c, status: resolved ? 'resolved' : 'open', resolved_at: timestamp } : c
+        ))
+
         const { error } = await supabase
             .from('project_comments')
-            .update({ status: resolved ? 'resolved' : 'open' })
+            .update({ 
+                status: resolved ? 'resolved' : 'open',
+                resolved_at: timestamp,
+                resolved_by: resolved ? (await supabase.auth.getUser()).data.user?.id : null
+            })
             .eq('id', id)
         
-        if (error) throw error
+        if (error) {
+            console.error('Error resolving comment:', error)
+            fetchComments(projectId)
+            throw error
+        }
     }
 
     return (
@@ -215,7 +312,10 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
             typingUsers,
             sendTypingIndicator,
             detachedCommentIds,
-            setDetachedCommentIds
+            setDetachedCommentIds,
+            scrollTrigger,
+            jumpToComment,
+            reorderComments
         }}>
             {children}
         </CommentsContext.Provider>

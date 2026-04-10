@@ -325,14 +325,14 @@ const NodeItem = React.memo(({
                         onClick={handleClick}
                     >
                         {isActive && (
-                            <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-[#546354] rounded-full shadow-[0_0_12px_rgba(84,99,84,0.3)]" />
+                            <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#546354] rounded-full shadow-[0_0_12px_rgba(84,99,84,0.3)]" />
                         )}
 
                         {!isReadOnly && (
                             <div 
                                 {...provided.dragHandleProps}
                                 className={cn(
-                                    "p-1 -ml-2 opacity-0 transition-opacity cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-400 shrink-0",
+                                    "p-1 -ml-1 opacity-0 transition-opacity cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-400 shrink-0",
                                     hovered && "opacity-100"
                                 )}
                             >
@@ -340,12 +340,18 @@ const NodeItem = React.memo(({
                             </div>
                         )}
 
+                        {openCommentCount > 0 && (
+                            <div className="flex items-center justify-center bg-[#546354]/10 text-[#546354] rounded-full min-w-[18px] h-[18px] px-1 shadow-sm border border-[#546354]/10 shrink-0">
+                                <span className="text-[9px] font-bold">{openCommentCount}</span>
+                            </div>
+                        )}
+
                         {!isScene && (
-                            <span className="text-slate-400 group-hover:text-[#546354] transition-colors">
+                            <span className="text-slate-400 group-hover:text-[#546354] transition-colors shrink-0">
                                 {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                             </span>
                         )}
-                        {isScene && <div className="w-4" />}
+                        {isScene && <div className="w-4 shrink-0" />}
 
                         {onToggleSelection && (
                             <div 
@@ -397,12 +403,7 @@ const NodeItem = React.memo(({
                             </span>
                         )}
 
-                        {openCommentCount > 0 && (
-                            <div className="flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-lg ml-2 border border-primary/5 shadow-sm">
-                                <MessageSquare className="w-2.5 h-2.5 text-primary/70" />
-                                <span className="text-[10px] font-bold text-primary">{openCommentCount}</span>
-                            </div>
-                        )}
+
 
                         {/* Confirm delete — always visible when active, outside hover conditional */}
                         {confirmingDeleteId === node.id && !editing && (

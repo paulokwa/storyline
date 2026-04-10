@@ -969,7 +969,7 @@ export default function AiHelperPanel({
                 </div>
 
                 <div className="px-4 pb-4">
-                    <form onSubmit={handleSubmit} className="space-y-3">
+                    <form onSubmit={handleSubmit} className="space-y-3" suppressHydrationWarning>
                         {isContextTooLarge && (
                             <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 text-[10px] leading-snug animate-in fade-in zoom-in duration-300">
                                 <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
@@ -1004,6 +1004,7 @@ export default function AiHelperPanel({
                                     "w-full border border-slate-200 rounded-2xl py-3.5 pl-4 pr-12 text-sm focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all resize-none outline-none placeholder:text-slate-400 font-serif leading-relaxed shadow-sm",
                                     actualLoading ? "bg-white cursor-wait" : "bg-slate-50"
                                 )}
+                                suppressHydrationWarning
                             ></textarea>
                             <button
                                 type="submit"
@@ -1025,7 +1026,7 @@ export default function AiHelperPanel({
                         
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
-                                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center">
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center" suppressHydrationWarning>
                                     AI Mode:
                                     <TooltipProvider delay={300}>
                                         <Tooltip>
@@ -1042,6 +1043,7 @@ export default function AiHelperPanel({
                                     value={promptMode}
                                     onChange={(e) => setPromptMode(e.target.value)}
                                     className="bg-transparent text-slate-600 text-[11px] font-medium outline-none cursor-pointer appearance-none border-b border-transparent hover:border-slate-300 transition-colors"
+                                    suppressHydrationWarning
                                 >
                                     <option value="Continue Writing">Continue Writing</option>
                                     <option value="Improve Scene">Improve Scene</option>
