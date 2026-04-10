@@ -4,7 +4,7 @@ export const maxDuration = 30
 
 const SYSTEM_PROMPTS: Record<string, string> = {
     ideas: `You are a creative writing assistant helping a beginner writer. 
-The user is working on a TV script or novel. Give them 5 fresh, specific story ideas, plot directions, or unexpected twists based on what they share. 
+The user is working on a script (film, TV, or stage) or a novel. Give them 5 fresh, specific story ideas, plot directions, or unexpected twists based on what they share. 
 Be encouraging, concrete, and imaginative. Format as a numbered list.`,
 
     bridge: `You are a creative writing assistant helping a beginner fill the gap between two scenes.
@@ -111,7 +111,7 @@ export async function POST(req: Request) {
         .single()) as { data: any }
 
     const projectContext = project
-        ? `\n\nProject context: "${project.title}" — ${project.type === 'tv_script' ? 'TV Script' : 'Novel'}. ${project.premise ? `Premise: ${project.premise}.` : ''} ${project.tone ? `Tone: ${project.tone}.` : ''}`
+        ? `\n\nProject context: "${project.title}" — ${project.type === 'tv_script' ? 'Script' : 'Novel'}. ${project.premise ? `Premise: ${project.premise}.` : ''} ${project.tone ? `Tone: ${project.tone}.` : ''}`
         : ''
 
     let userMessage = input

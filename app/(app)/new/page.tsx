@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -39,9 +39,34 @@ export default function NewProjectPage() {
     })
     const [creating, setCreating] = useState(false)
 
+    // Draft Persistence
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+        const saved = localStorage.getItem('storyline-new-project-draft')
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved)
+                // Basic validation to avoid infinite step loops
+                if (parsed.state) setState(parsed.state)
+                if (parsed.step) setStep(parsed.step)
+            } catch (e) {
+                console.error("Failed to load draft", e)
+            }
+        }
+    }, [])
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+        // Only save if we have some progress
+        if (state.type || state.title || step !== 'title') {
+            localStorage.setItem('storyline-new-project-draft', JSON.stringify({ state, step }))
+        }
+    }, [state, step])
+
     async function createProject(extras?: {
         title?: string; premise?: string; tone?: string; setting?: string;
         firstCharacterName?: string; firstIdea?: string;
+        characters?: string[]; locations?: string[];
         writingMode?: WritingMode;
         chunks?: { title: string; content: string }[];
     }) {
@@ -65,7 +90,13 @@ export default function NewProjectPage() {
 
         if (extras?.premise) payload.premise = extras.premise
         if (extras?.tone) payload.tone = extras.tone
-        if (extras?.setting) payload.setting = extras.setting
+        
+        // Combine locations into setting summary if multiple exist
+        if (extras?.locations && extras.locations.length > 0) {
+            payload.setting = extras.locations.join(', ')
+        } else if (extras?.setting) {
+            payload.setting = extras.setting
+        }
 
         console.log("Supabase Insert Payload:", JSON.stringify(payload, null, 2))
 
@@ -76,27 +107,53 @@ export default function NewProjectPage() {
             .single()
 
         if (error || !project) {
-            console.error("Supabase Insert Error:", error)
+            console.error("Supabase Insert Error:", {
+                code: error?.code,
+                message: error?.message,
+                details: error?.details,
+                hint: error?.hint,
+                error
+            })
             setCreating(false)
             return
         }
 
-        const firstCharacterName = extras?.firstCharacterName?.trim()
-        const firstIdea = extras?.firstIdea?.trim()
-
-        if (firstCharacterName) {
+        // Handle Characters
+        const charactersToInsert = extras?.characters || (extras?.firstCharacterName ? [extras.firstCharacterName] : [])
+        for (let i = 0; i < charactersToInsert.length; i++) {
+            const name = charactersToInsert[i].trim()
+            if (!name) continue
+            
             const { error: charError } = await (supabase as any).from('characters').insert({
                 project_id: project.id,
-                name: firstCharacterName,
-                description: 'Protagonist', // Adding a basic description
-                order_index: 0
+                name: name,
+                description: i === 0 ? 'Protagonist' : 'Supporting Character',
+                order_index: i
             })
             if (charError) {
                 console.error("Failed to insert character:", charError)
             }
         }
 
+        // Handle Locations
+        const locationsToInsert = extras?.locations || []
+        for (let i = 0; i < locationsToInsert.length; i++) {
+            const name = locationsToInsert[i].trim()
+            if (!name) continue
+
+            const { error: locError } = await (supabase as any).from('locations').insert({
+                project_id: project.id,
+                name: name,
+                order_index: i
+            })
+            if (locError) {
+                console.error("Failed to insert location:", locError)
+            }
+        }
+
         let initialSceneContent: any = null
+        const firstIdea = extras?.firstIdea?.trim()
+
         if (firstIdea) {
             const { error: ideaError } = await (supabase as any).from('ideas').insert({
                 project_id: project.id,
@@ -184,6 +241,11 @@ export default function NewProjectPage() {
             }
         }
 
+        // SUCCESS: Clear Drafts
+        localStorage.removeItem('storyline-new-project-draft')
+        localStorage.removeItem('storyline-guided-data-draft')
+
+        router.refresh()
         router.push(`/project/${project.id}/story`)
     }
 
@@ -211,7 +273,16 @@ export default function NewProjectPage() {
                         <span className="text-sm">Archive</span>
                     </Link>
                     <div className="flex flex-col items-end gap-2">
-                        <span className="text-[10px] font-extrabold uppercase tracking-[0.3em] text-[#546354]/60">Phase {currentStepIndex + 1} of {steps.length}</span>
+                        <span className="text-[10px] font-extrabold uppercase tracking-[0.3em] text-[#546354]/60">
+                            Phase {currentStepIndex + 1} of {steps.length} — {
+                                step === 'title' ? 'Project' :
+                                step === 'type' ? 'Format' :
+                                step === 'start_mode' ? 'Setup' :
+                                step === 'writing_mode' ? 'Writing' :
+                                step === 'guided' ? 'Details' :
+                                step === 'import' ? 'Import' : ''
+                            }
+                        </span>
                         <div className="w-40 h-1.5 bg-stone-200/40 rounded-full overflow-hidden shadow-inner">
                             <div
                                 className="h-full bg-[#546354] rounded-full transition-all duration-1000 ease-in-out shadow-[0_0_8px_rgba(84,99,84,0.3)]"
@@ -322,7 +393,7 @@ function StepTitle({ value, onChange, onContinue }: {
                 <h1 className="text-4xl md:text-5xl font-serif text-slate-800 leading-tight">
                     Every journey needs<br /><span className="text-slate-400 italic">a name</span>
                 </h1>
-                <p className="text-slate-500 font-medium text-lg leading-relaxed max-w-xl italic opacity-80">Give your creative work a title. You can change this later.</p>
+                <p className="text-slate-500 font-medium text-lg leading-relaxed max-w-xl italic opacity-80">Give your project a title. You can change it anytime.</p>
             </div>
 
             <div className="space-y-6">
@@ -357,14 +428,14 @@ function StepTypeSelect({ value, onSelect, onBack }: {
                 <h1 className="text-4xl md:text-5xl font-serif text-slate-800 leading-tight">
                     What are we<br /><span className="text-slate-400 italic">writing today?</span>
                 </h1>
-                <p className="text-slate-500 font-medium">Choose the vessel for your next story.</p>
+                <p className="text-slate-500 font-medium">Choose your story format.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <TypeCard
                     icon={<Tv className="w-8 h-8" />}
-                    title="TV Script"
-                    description="Episodes, acts, and scenes. Standard screenplay formatting for serialized stories."
+                    title="Script"
+                    description="Film, TV, and stage scripts. Structured for scene-based storytelling."
                     selected={value === 'tv_script'}
                     onClick={() => onSelect('tv_script')}
                 />
@@ -392,21 +463,21 @@ function StepStartMode({ value, projectType, onSelect, onBack }: {
                 <h1 className="text-4xl md:text-5xl font-serif text-slate-800 leading-tight">
                     How shall we<br /><span className="text-slate-400 italic">begin?</span>
                 </h1>
-                <p className="text-slate-500 font-medium">Choose a mode that matches your current momentum.</p>
+                <p className="text-slate-500 font-medium">Choose how you want to start.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <TypeCard
                     icon={<Zap className="w-8 h-8" />}
-                    title="Quick Start"
-                    description="Empty pages and a clean structure. Best when you just need to write."
+                    title="Start from Scratch"
+                    description="Empty pages and a clean structure. Start writing immediately."
                     selected={value === 'quick'}
                     onClick={() => onSelect('quick')}
                 />
                 <TypeCard
                     icon={<FileText className="w-8 h-8" />}
                     title="Import Manuscript"
-                    description="Upload an existing .docx, .md, or .txt file and automatically split it."
+                    description="Import an existing manuscript (.docx, .md, .txt) and structure it automatically."
                     selected={value === 'import'}
                     onClick={() => onSelect('import')}
                 />
@@ -438,22 +509,22 @@ function StepWritingMode({ value, onSelect, onBack, creating }: {
                 <h1 className="text-4xl md:text-5xl font-serif text-slate-800 leading-tight">
                     Define your<br /><span className="text-slate-400 italic">writing style</span>
                 </h1>
-                <p className="text-slate-500 font-medium">You can switch between these modes anytime inside the project.</p>
+                <p className="text-slate-500 font-medium">You can switch this anytime inside your project.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <TypeCard
                     icon={<PenLine className="w-8 h-8" />}
                     title="Simple Mode"
-                    description="Standard prose. Focus on the flow of your internal narrative."
+                    description="Write freely in standard prose."
                     selected={value === 'simple'}
                     onClick={() => !creating && onSelect('simple')}
                     disabled={creating}
                 />
                 <TypeCard
                     icon={<span className="text-xl font-bold tracking-tighter">INT.</span>}
-                    title="Screenplay Mode"
-                    description="Auto-formatted industry standards: sluglines, actions, and dialogue."
+                    title="Script Mode"
+                    description="Automatically formatted for scripts: scenes, dialogue, and actions."
                     selected={value === 'screenplay'}
                     onClick={() => !creating && onSelect('screenplay')}
                     disabled={creating}

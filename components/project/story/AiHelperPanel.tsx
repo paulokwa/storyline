@@ -29,6 +29,8 @@ interface AiHelperPanelProps {
     activeNodeId?: string | null
     activeSceneId?: string | null
     projectType?: 'tv_script' | 'novel'
+    projectPremise?: string | null
+    projectTone?: string | null
     aiSettings: {
         ai_enabled: boolean
         ai_provider: string
@@ -90,6 +92,7 @@ export default function AiHelperPanel({
     projectId, sceneText, onInsert, linkedCharacters = [], linkedIdeas = [], linkedLocations = [], linkedObjects = [],
     projectRelationships = [],
     selectedNodes = [], allNodes = [], allScenes = [], onClearSelection, aiSettings, projectType,
+    projectPremise, projectTone,
     activeNodeId, activeSceneId
 }: AiHelperPanelProps) {
     const isNovel = projectType === 'novel'
@@ -304,7 +307,7 @@ export default function AiHelperPanel({
 
     const runLocalOllama = async (finalPrompt: string) => {
         // Build the prompt with context
-        const projectContext = `Project: ${projectId}. `
+        const projectContext = `Project: ${projectId}. ${projectPremise ? `Premise: ${projectPremise}. ` : ''}${projectTone ? `Tone: ${projectTone}. ` : ''}`
         const charactersContext = linkedCharacters.length > 0 
             ? `Characters: ${linkedCharacters.map(c => c.name).join(', ')}. ` 
             : ''
@@ -414,7 +417,7 @@ export default function AiHelperPanel({
         if (actualLoading || isContextTooLarge) return
 
         const modeRules = projectType === 'tv_script'
-            ? `\n\nWrite in professional screenplay format (scene headings, character names in caps, dialogue, etc.).\nDo not give advice, suggestions, or explanations.\nOutput only the script.`
+            ? `\n\nWrite in professional script format (scene headings, character names in caps, dialogue, etc.).\nDo not give advice, suggestions, or explanations.\nOutput only the script.`
             : `\n\nWrite in narrative prose.\nDo not give advice, suggestions, or explanations.\nOutput only the story.`
         
         let finalPrompt = ''

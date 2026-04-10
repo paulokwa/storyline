@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -13,8 +13,8 @@ interface GuidedData {
     title: string
     premise: string
     tone: string
-    firstCharacterName: string
-    setting: string
+    characters: string[]
+    locations: string[]
     firstIdea: string
 }
 
@@ -24,6 +24,7 @@ interface GuidedFlowProps {
     onComplete: (data: GuidedData) => void
     onBack: () => void
     creating: boolean
+    onDataChange?: (data: GuidedData) => void
 }
 
 type GuidedStep = 'title' | 'premise' | 'tone' | 'character' | 'setting' | 'first_idea'
@@ -34,9 +35,9 @@ const STEPS: GuidedStep[] = ['premise', 'tone', 'character', 'setting', 'first_i
 const STAGE_LABELS: Record<GuidedStep, string> = {
     title: 'First Spark',
     premise: 'Concept',
-    tone: 'Tone & Style',
-    character: 'Protagonist',
-    setting: 'Setting',
+    tone: 'Story Tone',
+    character: 'Protagonists',
+    setting: 'World & Locations',
     first_idea: 'Vision'
 }
 
@@ -45,23 +46,47 @@ const TONES = [
     'Adventurous', 'Heartwarming', 'Suspenseful', 'Quirky',
 ]
 
-export default function GuidedFlow({ projectType, initialTitle, onComplete, onBack, creating }: GuidedFlowProps) {
+export default function GuidedFlow({ projectType, initialTitle, onComplete, onBack, creating, onDataChange }: GuidedFlowProps) {
     const [stepIndex, setStepIndex] = useState(0)
-    const [data, setData] = useState<GuidedData>({
-        title: initialTitle || '',
-        premise: '',
-        tone: '',
-        firstCharacterName: '',
-        setting: '',
-        firstIdea: '',
+    const [data, setData] = useState<GuidedData>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('storyline-guided-data-draft')
+            if (saved) {
+                try {
+                    return JSON.parse(saved)
+                } catch (e) {
+                    console.error("Failed to load guided draft", e)
+                }
+            }
+        }
+        return {
+            title: initialTitle || '',
+            premise: '',
+            tone: '',
+            characters: [''],
+            locations: [''],
+            firstIdea: '',
+        }
     })
+
+    useEffect(() => {
+        localStorage.setItem('storyline-guided-data-draft', JSON.stringify(data))
+        onDataChange?.(data)
+    }, [data, onDataChange])
 
     const step = STEPS[stepIndex]
     const isScriptProject = projectType === 'tv_script'
 
     function next() {
         if (stepIndex < STEPS.length - 1) setStepIndex(s => s + 1)
-        else onComplete(data)
+        else {
+            // Clean up empty strings before completion
+            onComplete({
+                ...data,
+                characters: data.characters.filter(c => c.trim() !== ''),
+                locations: data.locations.filter(l => l.trim() !== ''),
+            })
+        }
     }
 
     function back() {
@@ -72,8 +97,23 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
     function canAdvance() {
         if (step === 'title') return data.title.trim().length > 0
         if (step === 'premise') return data.premise.trim().length > 0
-        if (step === 'character') return data.firstCharacterName.trim().length > 0
+        if (step === 'character') return data.characters.some(c => c.trim().length > 0)
         return true
+    }
+
+    const addItem = (field: 'characters' | 'locations') => {
+        setData(d => ({ ...d, [field]: [...d[field], ''] }))
+    }
+
+    const updateItem = (field: 'characters' | 'locations', index: number, value: string) => {
+        const newList = [...data[field]]
+        newList[index] = value
+        setData(d => ({ ...d, [field]: newList }))
+    }
+
+    const removeItem = (field: 'characters' | 'locations', index: number) => {
+        if (data[field].length <= 1) return
+        setData(d => ({ ...d, [field]: d[field].filter((_, i) => i !== index) }))
     }
 
     return (
@@ -128,8 +168,8 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
 
             {step === 'tone' && (
                 <StepBlock
-                    title="Setting the tonal anchor"
-                    hint="Select the emotional frequency of your narrative universe."
+                    title="What is the story's tone?"
+                    hint="This guides future AI suggestions for your manuscript's atmosphere. It is entirely optional and can be adjusted anytime in settings."
                     optional
                 >
                     <div className="grid grid-cols-2 gap-3 mb-6">
@@ -154,36 +194,72 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
                         placeholder="Or define a custom vibe…"
                         className="h-14 text-base bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all"
                     />
+                    {!data.tone && (
+                        <p className="mt-8 text-[10px] uppercase tracking-widest text-slate-300 font-bold text-center">
+                            Feel free to skip — you can define this later
+                        </p>
+                    )}
                 </StepBlock>
             )}
 
             {step === 'character' && (
                 <StepBlock
-                    title="Who is the protagonist?"
-                    hint="A name to center the story around. You will layer their history in the characters tab."
+                    title="Who are your protagonists?"
+                    hint="Add the main characters driving this story. You can add more detailed history later in the characters tab."
                 >
-                    <Input
-                        value={data.firstCharacterName}
-                        onChange={(e) => setData(d => ({ ...d, firstCharacterName: e.target.value }))}
-                        placeholder="e.g. Maya Chen"
-                        className="h-16 text-xl bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all font-medium"
-                        autoFocus
-                    />
+                    <div className="space-y-4">
+                        {data.characters.map((name, i) => (
+                            <div key={i} className="flex gap-2">
+                                <Input
+                                    value={name}
+                                    onChange={(e) => updateItem('characters', i, e.target.value)}
+                                    placeholder={i === 0 ? "e.g. Maya Chen" : "Add another character..."}
+                                    className="h-16 text-xl bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all font-medium"
+                                    autoFocus={i === data.characters.length - 1 && i > 0}
+                                />
+                                {data.characters.length > 1 && (
+                                    <Button variant="ghost" className="h-16 rounded-2xl px-4 text-slate-300 hover:text-red-400" onClick={() => removeItem('characters', i)}>×</Button>
+                                )}
+                            </div>
+                        ))}
+                        <button 
+                            onClick={() => addItem('characters')}
+                            className="text-xs font-bold uppercase tracking-widest text-primary/60 hover:text-primary transition-colors flex items-center gap-2 pl-2"
+                        >
+                            + Add Character
+                        </button>
+                    </div>
                 </StepBlock>
             )}
 
             {step === 'setting' && (
                 <StepBlock
                     title="Where does the story live?"
-                    hint="A specific location, an era, or an entirely new world."
+                    hint="Major locations, eras, or worlds. You can refine and add specific settings later."
                     optional
                 >
-                    <Input
-                        value={data.setting}
-                        onChange={(e) => setData(d => ({ ...d, setting: e.target.value }))}
-                        placeholder={isScriptProject ? 'e.g. Modern-day New Mexico' : 'e.g. 1940s rural France'}
-                        className="h-16 text-xl bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all"
-                    />
+                      <div className="space-y-4">
+                        {data.locations.map((loc, i) => (
+                            <div key={i} className="flex gap-2">
+                                <Input
+                                    value={loc}
+                                    onChange={(e) => updateItem('locations', i, e.target.value)}
+                                    placeholder={isScriptProject ? 'e.g. Modern-day New Mexico' : 'e.g. 1940s rural France'}
+                                    className="h-16 text-xl bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all font-medium"
+                                    autoFocus={i === data.locations.length - 1 && i > 0}
+                                />
+                                {data.locations.length > 1 && (
+                                    <Button variant="ghost" className="h-16 rounded-2xl px-4 text-slate-300 hover:text-red-400" onClick={() => removeItem('locations', i)}>×</Button>
+                                )}
+                            </div>
+                        ))}
+                        <button 
+                            onClick={() => addItem('locations')}
+                            className="text-xs font-bold uppercase tracking-widest text-primary/60 hover:text-primary transition-colors flex items-center gap-2 pl-2"
+                        >
+                            + Add Location
+                        </button>
+                    </div>
                 </StepBlock>
             )}
 
@@ -224,7 +300,10 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
                     ) : stepIndex === STEPS.length - 1 ? (
                         <>Initialize Archive <ChevronRight className="w-5 h-5" /></>
                     ) : (
-                        <>Continue <ChevronRight className="w-5 h-5" /></>
+                        <>
+                            {step === 'tone' && !data.tone ? 'Skip for now' : 'Continue'} 
+                            <ChevronRight className="w-5 h-5" />
+                        </>
                     )}
                 </Button>
             </div>

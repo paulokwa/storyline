@@ -4,7 +4,7 @@ import { ThemeProvider } from '@/components/providers/ThemeProvider'
 
 export const metadata: Metadata = {
   title: 'Storyline — Write Your Story',
-  description: 'A beginner-friendly writing app for TV scripts and novels. Start writing today.',
+  description: 'A beginner-friendly writing app for scripts and novels. Start writing today.',
 }
 
 export default function RootLayout({

@@ -1,12 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Film, BookOpen, Trash2, ChevronRight, Plus, Clock } from 'lucide-react'
+import { Film, BookOpen, Trash2, ChevronRight, Plus, Clock, Sparkles } from 'lucide-react'
 import type { Database } from '@/lib/supabase/types'
 import { formatDistanceToNow } from '@/lib/time'
 import { cn } from '@/lib/utils'
@@ -22,7 +22,28 @@ type Project = Database['public']['Tables']['projects']['Row'] & {
 }
 
 export default function ProjectGrid({ projects }: { projects: Project[] }) {
-    if (projects.length === 0) {
+    const [draft, setDraft] = useState<{ state: any; step: any } | null>(null)
+
+    useEffect(() => {
+        const saved = localStorage.getItem('storyline-new-project-draft')
+        if (saved) {
+            try {
+                setDraft(JSON.parse(saved))
+            } catch (e) {
+                console.error("Failed to parse draft", e)
+            }
+        }
+    }, [])
+
+    function clearDraft(e: React.MouseEvent) {
+        e.preventDefault()
+        e.stopPropagation()
+        localStorage.removeItem('storyline-new-project-draft')
+        localStorage.removeItem('storyline-guided-data-draft')
+        setDraft(null)
+    }
+
+    if (projects.length === 0 && !draft) {
         return (
             <div className="max-w-[1440px] mx-auto px-6 py-24 text-center fade-in">
                 <div className="w-20 h-20 bg-stone-100 rounded-3xl flex items-center justify-center mx-auto mb-8">
@@ -61,6 +82,42 @@ export default function ProjectGrid({ projects }: { projects: Project[] }) {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {draft && (
+                        <Link
+                            href="/new"
+                            className="group block sanctuary-card border-2 border-dashed border-primary/20 bg-primary/5 rounded-[2rem] p-8 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl relative overflow-hidden active:scale-[0.98]"
+                        >
+                            <div className="relative z-10 flex flex-col h-full">
+                                <div className="flex items-start justify-between mb-8">
+                                    <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+                                        <Sparkles className="w-7 h-7" />
+                                    </div>
+                                    <Badge variant="default" className="bg-primary text-white text-[9px] uppercase tracking-widest px-3 py-1 font-bold">
+                                        In Progress
+                                    </Badge>
+                                </div>
+                                <div className="space-y-3 flex-1">
+                                    <h3 className="text-2xl font-serif text-slate-800 group-hover:text-primary transition-colors duration-300 leading-snug">
+                                        {draft.state.title || "Untitled Manuscript"}
+                                    </h3>
+                                    <p className="text-sm text-slate-500 font-medium italic">
+                                        Continue setting up your {draft.state.type === 'novel' ? 'novel' : 'script'}...
+                                    </p>
+                                </div>
+                                <div className="mt-10 pt-6 flex items-center justify-between">
+                                    <button 
+                                        onClick={clearDraft}
+                                        className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-red-500 transition-colors"
+                                    >
+                                        Discard Draft
+                                    </button>
+                                    <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center transform group-hover:scale-110 transition-transform">
+                                        <ChevronRight className="w-5 h-5" />
+                                    </div>
+                                </div>
+                            </div>
+                        </Link>
+                    )}
                     {projects.map((project) => (
                         <ProjectCard key={project.id} project={project} />
                     ))}
@@ -134,7 +191,7 @@ function ProjectCard({ project }: { project: Project }) {
 
                     <div className="flex flex-wrap items-center gap-3">
                         <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 bg-slate-50 px-2.5 py-1 rounded-md group-hover:bg-primary/5 group-hover:text-primary/60 transition-colors">
-                            {isTV ? 'TV Script' : 'Novel'}
+                            {isTV ? 'Script' : 'Novel'}
                         </span>
                         
                         {project.role && project.role !== 'owner' && (

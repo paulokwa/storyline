@@ -334,6 +334,8 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                         allScenes={scenes}
                         projectRelationships={projectRelationships}
                         projectType={project.type as any}
+                        projectPremise={project.premise}
+                        projectTone={project.tone}
                         aiSettings={aiSettings}
                         activeNodeId={activeNodeId}
                         activeSceneId={activeScene?.id}

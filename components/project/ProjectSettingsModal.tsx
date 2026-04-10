@@ -42,6 +42,7 @@ export default function ProjectSettingsModal({
     const [title, setTitle] = useState(project.title ?? '')
     const [type, setType] = useState(project.type)
     const [premise, setPremise] = useState(project.premise || '')
+    const [tone, setTone] = useState(project.tone || '')
     const [metadata, setMetadata] = useState<ExportMetadata>((project.export_metadata as any) || {})
 
     const updateMetadata = (key: keyof ExportMetadata, value: string) => {
@@ -57,6 +58,7 @@ export default function ProjectSettingsModal({
                 title: title.trim(),
                 type: type,
                 premise: premise.trim() || null,
+                tone: tone.trim() || null,
                 export_metadata: metadata as any,
             })
             .eq('id', project.id)
@@ -144,7 +146,7 @@ export default function ProjectSettingsModal({
                                                 className="w-full rounded-2xl border border-border bg-muted/50 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all h-12 px-4 appearance-none text-sm"
                                             >
                                                 <option value="novel">Novel / Book</option>
-                                                <option value="tv_script">TV / Movie Script</option>
+                                                <option value="tv_script">Script (Film, TV, Stage)</option>
                                             </select>
                                             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
@@ -154,12 +156,32 @@ export default function ProjectSettingsModal({
 
                                     <div className="space-y-2">
                                         <Label htmlFor="premise" className="text-sm font-semibold text-foreground ml-1">Core Premise</Label>
+                                        <div className="p-4 bg-muted/30 rounded-2xl border border-border/50 text-[10px] text-slate-400 font-medium leading-relaxed italic mb-2">
+                                            The central spark. This provides context for the AI and serves as the foundation for your narrative arc.
+                                        </div>
                                         <Textarea
                                             id="premise"
                                             value={premise}
                                             onChange={(e) => setPremise(e.target.value)}
                                             placeholder="The elevator pitch for your story..."
                                             className="rounded-2xl border-border bg-muted/50 focus:bg-card focus:ring-primary/20 transition-all min-h-[100px] resize-none"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between ml-1">
+                                            <Label htmlFor="tone" className="text-sm font-semibold text-foreground">Story Tone</Label>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">Optional</span>
+                                        </div>
+                                        <div className="p-4 bg-muted/30 rounded-2xl border border-border/50 text-[10px] text-slate-400 font-medium leading-relaxed italic mb-2">
+                                            Guides future AI suggestions for atmosphere and style.
+                                        </div>
+                                        <Textarea
+                                            id="tone"
+                                            value={tone}
+                                            onChange={(e) => setTone(e.target.value)}
+                                            placeholder="e.g. Noir, Whimsical, Gritty Realism..."
+                                            className="rounded-2xl border-border bg-muted/50 focus:bg-card focus:ring-primary/20 transition-all min-h-[80px] resize-none"
                                         />
                                     </div>
                                 </div>

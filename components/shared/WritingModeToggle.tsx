@@ -31,7 +31,7 @@ export default function WritingModeToggle({ mode, onChange }: WritingModeToggleP
                         : "text-slate-500 hover:text-slate-700"
                 )}
             >
-                Screenplay
+                Script
             </button>
         </div>
     )
