@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import StructureTree from './StructureTree'
 import SceneEditor, { SceneEditorRef } from './SceneEditor'
 import AiHelperPanel from './AiHelperPanel'
+import SceneAssetsPanel from './SceneAssetsPanel'
 import LinkedContext from './LinkedContext'
 import WritingModeToggle from '@/components/shared/WritingModeToggle'
 import { PanelLeftClose, PanelLeftOpen, BookOpen, Sparkles } from 'lucide-react'
@@ -44,6 +45,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     const { 
         sidebarOpen, setSidebarOpen, 
         aiPanelOpen, setAiPanelOpen, 
+        sceneAssetsOpen, setSceneAssetsOpen,
         currentSceneText, setCurrentSceneText,
         activeNodeId, setActiveNodeId
     } = useProjectActions()
@@ -195,6 +197,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                         setSidebarOpen(false)
                         setAiPanelOpen(false)
                         setCommentsPanelOpen(false)
+                        setSceneAssetsOpen(false)
                     }}
                 />
             )}
@@ -361,6 +364,25 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                     />
                 </div>
             </div>
+
+            {/* Scene Assets Sidebar */}
+            {activeNodeId && activeScene && (
+                <div className={cn(
+                    'bg-white flex flex-col border-l border-slate-200 transition-all duration-300 ease-in-out overflow-hidden z-40 md:z-20',
+                    'fixed top-14 bottom-0 right-0 md:relative md:inset-auto md:h-full',
+                    sceneAssetsOpen 
+                        ? 'w-[320px] lg:w-[380px] opacity-100 translate-x-0' 
+                        : 'w-0 border-none opacity-0 translate-x-full md:translate-x-0 md:opacity-100'
+                )}>
+                    <div className="w-[320px] lg:w-[380px] h-full flex flex-col">
+                        <SceneAssetsPanel 
+                            projectId={project.id}
+                            sceneId={activeScene.id}
+                            onClose={() => setSceneAssetsOpen(false)}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

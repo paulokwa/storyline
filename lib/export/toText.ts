@@ -4,11 +4,23 @@ function jsonToText(json: any): string {
     if (!json || !json.content) return ''
     
     return json.content.map((node: any) => {
-        if (node.content) {
-            return node.content.map((c: any) => c.text).join('')
+        const getText = (content?: any[]) => {
+            if (!content) return ''
+            return content.map((c: any) => c.text || '').join('')
         }
-        return '\n'
-    }).join('\n\n')
+
+        switch (node.type) {
+            case 'storyImage':
+                const alt = node.attrs?.alt || 'Illustration'
+                const caption = getText(node.content)
+                return `\n[Illustration: ${alt}${caption ? ` - Caption: ${caption}` : ''}]\n`
+            default:
+                if (node.content) {
+                    return node.content.map((c: any) => c.text || '').join('')
+                }
+                return ''
+        }
+    }).filter((s: string) => s.length > 0).join('\n\n')
 }
 
 export function toText(payload: ExportPayload, options: ExportOptions): string {

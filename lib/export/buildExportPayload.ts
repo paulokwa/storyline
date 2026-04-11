@@ -76,7 +76,7 @@ export async function buildExportPayload(projectId: string): Promise<ExportPaylo
         type: node.type as any,
         title: node.title,
         order_index: node.order_index,
-        content: sceneMap.get(node.id)
+        content: normalizeContent(sceneMap.get(node.id))
     }))
 
     return {

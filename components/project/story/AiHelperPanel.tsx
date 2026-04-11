@@ -47,9 +47,17 @@ function extractTextFromJson(content: any): string {
     if (content.content && Array.isArray(content.content)) {
         return content.content.map((c: any) => extractTextFromJson(c)).join('\n')
     }
+    if (content.type === 'storyImage') {
+        const alt = content.attrs?.alt || 'Illustration'
+        let caption = ''
+        if (content.content && Array.isArray(content.content)) {
+            caption = content.content.map((c: any) => extractTextFromJson(c)).join(' ')
+        }
+        return `[Illustration: ${alt}${caption ? ` - Caption: ${caption}` : ''}]`
+    }
     if (content.type === 'text') return content.text || ''
     if (Array.isArray(content)) {
-        return content.map((c: any) => extractTextFromJson(c)).join('\n')
+        return content.map((c: any) => extractTextFromJson(c)).join(' ')
     }
     return ''
 }

@@ -16,6 +16,7 @@ import {
     ScreenplayDialogue, 
     ScreenplayTransition 
 } from '@/lib/tiptap/screenplay'
+import { StoryImage } from '@/lib/tiptap/story-image'
 import { ScreenplayKeyboard } from '@/lib/tiptap/screenplay-keyboard'
 import { createClient } from '@/lib/supabase/client'
 import type { Database, WritingMode } from '@/lib/supabase/types'
@@ -51,12 +52,14 @@ import {
     MessageCircle,
     ArrowRight,
     Type as TypeIcon,
-    Clock
+    Clock,
+    Image as ImageIcon
 } from 'lucide-react'
 import { restoreStructureNode, captureSceneVersion } from '@/lib/supabase/recovery'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { useSpeechToText } from '@/hooks/useSpeechToText'
+import EditorAssetSelector from './EditorAssetSelector'
 
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { useComments } from '@/components/project/CommentsContext'
@@ -118,6 +121,42 @@ const ToolbarButton = ({
     </button>
 )
 
+// Helper to get clean text for AI context, representing custom nodes as placeholders
+function getSceneTextForAi(json: any): string {
+    if (!json || !json.content) return ''
+    
+    return json.content.map((node: any) => {
+        const getText = (content?: any[]) => {
+            if (!content) return ''
+            return content.map((c: any) => c.text || '').join('')
+        }
+
+        switch (node.type) {
+            case 'storyImage':
+                const alt = node.attrs?.alt || 'Illustration'
+                const caption = getText(node.content)
+                return `[Illustration: ${alt}${caption ? ` - Caption: ${caption}` : ''}]`
+            
+            case 'screenplaySceneHeading':
+                return `SCENE HEADING: ${getText(node.content).toUpperCase()}`
+            case 'screenplayCharacter':
+                return `CHARACTER: ${getText(node.content).toUpperCase()}`
+            case 'screenplayDialogue':
+                return `DIALOGUE: ${getText(node.content)}`
+            case 'screenplayAction':
+                return `ACTION: ${getText(node.content)}`
+            case 'screenplayTransition':
+                return `TRANSITION: ${getText(node.content).toUpperCase()}`
+                
+            default:
+                if (node.content) {
+                    return node.content.map((c: any) => c.text || '').join('')
+                }
+                return ''
+        }
+    }).filter((s: string) => s.length > 0).join('\n\n')
+}
+
 const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     scene,
     title: initialTitle,
@@ -141,6 +180,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [isMounted, setIsMounted] = useState(false)
     const [showViewSettings, setShowViewSettings] = useState(false)
     const [interimTranscript, setInterimTranscript] = useState('')
+    const [isDirty, setIsDirty] = useState(false)
+    const [isAssetSelectorOpen, setIsAssetSelectorOpen] = useState(false)
 
     // Versioning & Conflict State
     const [localVersion, setLocalVersion] = useState<number>(scene.version || 1)
@@ -237,7 +278,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                         }
                     }
                 }
-            })
+            }),
+            StoryImage
         ]
 
         const isScriptProject = projectType === 'tv_script' || projectType === 'feature_film';
@@ -260,7 +302,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         return base
     }, [writingMode, projectType, aiSettings])
 
-    const { sidebarOpen, setSidebarOpen, aiPanelOpen, setAiPanelOpen, currentSceneText, setCurrentSceneText, role } = useProjectActions()
+    const { sidebarOpen, setSidebarOpen, aiPanelOpen, setAiPanelOpen, sceneAssetsOpen, setSceneAssetsOpen, currentSceneText, setCurrentSceneText, role } = useProjectActions()
     const { 
         setCommentsPanelOpen, 
         addComment, 
@@ -280,17 +322,16 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         content: scene.content || '',
         editable: !isReadOnly,
         onCreate: ({ editor }) => {
-            const html = editor.getHTML()
-            onTextChange?.(html)
+            onTextChange?.(getSceneTextForAi(editor.getJSON()))
         },
         onUpdate: ({ editor, transaction }) => {
-            const html = editor.getHTML()
-            onTextChange?.(html)
+            onTextChange?.(getSceneTextForAi(editor.getJSON()))
             
             // Only trigger autosave if it's a user change
             const isInternal = transaction.getMeta('isInternal')
-            if (!isInternal) {
+            if (!isInternal && transaction.docChanged) {
                 setSaveStatus('idle') 
+                setIsDirty(true)
             }
             
             setMyStatus('editing')
@@ -406,11 +447,23 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
     const saveContent = useCallback(async () => {
         if (!editor || isReadOnly) return
-        const currentTitle = title
-        const newContent = editor.getHTML()
         
-        // Skip if same as scene/node (using initialTitle for current on-disk title)
-        if (currentTitle === initialTitle && newContent === (scene.content || '')) {
+        // Phase 0: Only save if there are actual changes to prevent auto-converting legacy HTML on load
+        const currentTitle = title
+        const newContent = editor.getJSON()
+        
+        const isTitleChanged = currentTitle !== initialTitle
+        
+        // Deep compare JSON content with stored content
+        const storedContentStr = typeof scene.content === 'string' ? scene.content : JSON.stringify(scene.content)
+        const newContentStr = JSON.stringify(newContent)
+        const isContentChanged = newContentStr !== storedContentStr
+
+        if (!isDirty && !isTitleChanged) {
+            return
+        }
+
+        if (!isTitleChanged && !isContentChanged) {
             return
         }
 
@@ -455,6 +508,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             setSaveStatus('error')
         } else {
             setSaveStatus('saved')
+            setIsDirty(false)
             setLastEditorName('you')
             // Use the version we just successfully saved to
             const savedVersion = localVersion + 1
@@ -474,7 +528,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             }
             onUpdate(updatedScene)
         }
-    }, [scene, title, initialTitle, editor, onUpdate, onTitleUpdate, localVersion])
+    }, [scene, title, initialTitle, editor, onUpdate, onTitleUpdate, localVersion, isDirty])
 
     const lastScrollTrigger = useRef(scrollTrigger)
 
@@ -588,10 +642,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
     // Effect for autosave
     useEffect(() => {
-        if (saveStatus !== 'idle') return
+        if (saveStatus !== 'idle' || !isDirty) return
         const timeout = setTimeout(saveContent, 1500)
         return () => clearTimeout(timeout)
-    }, [title, editor?.getHTML(), saveStatus, saveContent])
+    }, [title, isDirty, saveStatus, saveContent])
 
     // Keep editor in sync when scene changes (ID or content)
     useEffect(() => {
@@ -609,6 +663,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             setLocalVersion(scene.version || 1)
             setShowConflictModal(false)
             setShowUpdateBanner(false)
+            setIsDirty(false)
         } else {
             // Same scene, check version
             if (scene.version > localVersion) {
@@ -844,6 +899,19 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             <MessageSquare className="w-3 h-3 mr-1" />
                              Feedback
                         </Button>
+                        
+                        <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => setSceneAssetsOpen(!sceneAssetsOpen)}
+                            className={cn(
+                                "h-6 px-2 text-[10px] font-bold uppercase tracking-widest transition-all",
+                                sceneAssetsOpen ? "text-emerald-500 bg-white" : "text-slate-400 hover:text-emerald-600 hover:bg-white"
+                            )}
+                        >
+                            <ImageIcon className="w-3 h-3 mr-1" />
+                             Gallery
+                        </Button>
 
                         {!isReadOnly && (
                             <Button 
@@ -1065,7 +1133,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 {editor && !isReadOnly && (
                     <BubbleMenu 
                         editor={editor} 
-                        className="flex items-center gap-0.5 bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl p-1 animate-in fade-in zoom-in duration-200 z-[100] max-w-[calc(100vw-2rem)] overflow-x-auto no-scrollbar scroll-smooth"
+                        className="flex items-center gap-0.5 bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl p-1 animate-in fade-in zoom-in duration-200 z-[100] max-w-[calc(100vw-2rem)] overflow-x-auto no-scrollbar scroll-smooth cursor-default"
                     >
                         {writingMode === 'screenplay' ? (
                             <>
@@ -1188,6 +1256,13 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     icon={MessageSquarePlus}
                                     tooltip="Add Feedback"
                                 />
+                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <ToolbarButton
+                                    onClick={() => setIsAssetSelectorOpen(true)}
+                                    active={false}
+                                    icon={ImageIcon}
+                                    tooltip="Insert Illustration"
+                                />
                             </>
                         )}
                     </BubbleMenu>
@@ -1252,6 +1327,19 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                     </div>
                 </div>
             )}
+
+            <EditorAssetSelector
+                projectId={scene.project_id}
+                isOpen={isAssetSelectorOpen}
+                onClose={() => setIsAssetSelectorOpen(false)}
+                onSelect={(asset) => {
+                    editor?.chain().focus().setImage({
+                        assetId: asset.id,
+                        src: asset.url,
+                        alt: asset.alt,
+                    }).run()
+                }}
+            />
         </div>
     )
 })

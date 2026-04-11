@@ -2,7 +2,7 @@ import { generateHTML } from '@tiptap/html'
 import StarterKit from '@tiptap/starter-kit'
 import type { ExportPayload, ExportOptions } from './buildExportPayload'
 
-const extensions = [StarterKit]
+import { exportExtensions } from './normalize'
 
 export function toHtml(payload: ExportPayload, options: ExportOptions): string {
     const { nodes, projectTitle, metadata } = payload
@@ -30,6 +30,9 @@ export function toHtml(payload: ExportPayload, options: ExportOptions): string {
         .scene { margin-bottom: 40px; }
         .summary { font-style: italic; color: #777; margin-bottom: 20px; padding-left: 20px; border-left: 3px solid #eee; }
         .prose { margin-top: 10px; }
+        .story-image-container { margin: 2rem 0; text-align: center; }
+        .story-image-img { max-width: 100%; height: auto; border-radius: 8px; }
+        .story-image-caption-wrapper { font-size: 0.9em; color: #666; font-style: italic; margin-top: 8px; }
     </style>
 </head>
 <body>
@@ -58,7 +61,7 @@ export function toHtml(payload: ExportPayload, options: ExportOptions): string {
                 html += `        <div class="summary">${node.summary}</div>\n`
             }
             if (node.content && (options.contentMode === 'prose_only' || options.contentMode === 'both')) {
-                const proseHtml = generateHTML(node.content, extensions)
+                const proseHtml = generateHTML(node.content, exportExtensions)
                 html += `        <div class="prose">${proseHtml}</div>\n`
             }
             html += `    </div>\n`

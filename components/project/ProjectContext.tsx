@@ -18,6 +18,8 @@ interface ProjectContextType {
     analyzeScene: () => Promise<void>
     activeNodeId: string | null
     setActiveNodeId: (val: string | null) => void
+    sceneAssetsOpen: boolean
+    setSceneAssetsOpen: (val: boolean | ((prev: boolean) => boolean)) => void
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined)
@@ -32,6 +34,7 @@ export function ProjectProvider({
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [aiPanelOpen, setAiPanelOpen] = useState(false)
     const [currentSceneText, setCurrentSceneText] = useState('')
+    const [sceneAssetsOpen, setSceneAssetsOpen] = useState(false)
     
     // Analysis
     const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -75,7 +78,9 @@ export function ProjectProvider({
             setAnalysisResult,
             analyzeScene,
             activeNodeId,
-            setActiveNodeId
+            setActiveNodeId,
+            sceneAssetsOpen,
+            setSceneAssetsOpen
         }}>
             {children}
         </ProjectContext.Provider>

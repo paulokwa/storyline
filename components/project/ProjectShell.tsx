@@ -19,7 +19,8 @@ import {
     Wand2,
     Bookmark,
     History,
-    MoreHorizontal
+    MoreHorizontal,
+    Image as ImageIcon
 } from 'lucide-react'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import {
@@ -55,6 +56,7 @@ const TABS = [
     { slug: 'ideas', label: 'Ideas', icon: Lightbulb },
     { slug: 'locations', label: 'Locations', icon: MapPin },
     { slug: 'objects', label: 'Objects', icon: Package },
+    { slug: 'assets', label: 'Assets', icon: ImageIcon },
     { slug: 'archive', label: 'Archive', icon: Bookmark },
     { slug: 'recovery', label: 'Recovery', icon: History },
 ] as const

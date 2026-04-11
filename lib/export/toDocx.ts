@@ -10,19 +10,32 @@ import type { ExportPayload, ExportOptions } from './buildExportPayload'
 
 // Helper to convert TipTap JSON nodes to docx elements
 function jsonToDocxElements(json: any): Paragraph[] {
-    if (!json || !json.content) return []
+    if (!json || !json.content || !Array.isArray(json.content)) return []
     
     return json.content.map((node: any) => {
-        const children = node.content?.map((c: any) => {
-            if (c.type === 'text') {
-                return new TextRun({
-                    text: c.text,
-                    bold: c.marks?.some((m: any) => m.type === 'bold'),
-                    italics: c.marks?.some((m: any) => m.type === 'italic'),
-                })
-            }
-            return null
-        }).filter(Boolean) || []
+        // Safely extract text runs
+        const children: TextRun[] = []
+        
+        if (node.content && Array.isArray(node.content)) {
+            node.content.forEach((c: any) => {
+                if (c.type === 'text') {
+                    children.push(new TextRun({
+                        text: c.text,
+                        bold: c.marks?.some((m: any) => m.type === 'bold'),
+                        italics: c.marks?.some((m: any) => m.type === 'italic'),
+                        underline: c.marks?.some((m: any) => m.type === 'underline') ? {} : undefined,
+                    }))
+                } else if (c.type === 'hardBreak') {
+                    children.push(new TextRun({ text: "", break: 1 }))
+                }
+            })
+        }
+
+        // Helper to get raw text for capitalized elements
+        const getRawText = () => {
+             if (!node.content || !Array.isArray(node.content)) return ''
+             return node.content.map((c: any) => c.text || '').join('')
+        }
 
         switch (node.type) {
             case 'heading':
@@ -31,20 +44,98 @@ function jsonToDocxElements(json: any): Paragraph[] {
                     heading: node.attrs?.level === 1 ? HeadingLevel.HEADING_1 : node.attrs?.level === 2 ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_3,
                     spacing: { before: 400, after: 200 }
                 })
+            
+            // Screenplay specific nodes
+            case 'screenplaySceneHeading':
+                return new Paragraph({
+                    children: [new TextRun({ text: getRawText().toUpperCase(), bold: true })],
+                    spacing: { before: 400, after: 200 },
+                    alignment: AlignmentType.LEFT
+                })
+            case 'screenplayCharacter':
+                return new Paragraph({
+                    children: [new TextRun({ text: getRawText().toUpperCase() })],
+                    indent: { left: 2400 }, // Rough equivalent of centered character name
+                    spacing: { before: 200 }
+                })
+            case 'screenplayDialogue':
+                return new Paragraph({
+                    children,
+                    indent: { left: 1400, right: 1400 },
+                    spacing: { after: 120 }
+                })
+            case 'screenplayParenthetical':
+                return new Paragraph({
+                    children,
+                    indent: { left: 1800, right: 1800 },
+                })
+            case 'screenplayTransition':
+                return new Paragraph({
+                    children: [new TextRun({ text: getRawText().toUpperCase() })],
+                    alignment: AlignmentType.RIGHT,
+                    spacing: { before: 200, after: 200 }
+                })
+            case 'screenplayAction':
+                return new Paragraph({
+                    children,
+                    spacing: { after: 120 }
+                })
+
             case 'bulletList':
             case 'orderedList':
-                // Simple version for lists
-                return new Paragraph({
-                    children: [new TextRun({ text: "• " + (node.content?.map((li: any) => jsonToDocxElements(li)).join('\n') || '') })]
+                // For lists in docx, it's often better to flatten them into paragraphs if simple
+                // but for now we'll just return the children of list items
+                const listItems: Paragraph[] = []
+                node.content?.forEach((li: any) => {
+                    if (li.type === 'listItem') {
+                        listItems.push(...jsonToDocxElements(li))
+                    }
                 })
+                return listItems
+            
+            case 'listItem':
+                return new Paragraph({
+                    children,
+                    bullet: { level: 0 },
+                    spacing: { after: 120 }
+                })
+
+            case 'storyImage':
+                const imageAlt = node.attrs?.alt || 'Illustration'
+                const imageCaption = getRawText()
+                return new Paragraph({
+                    children: [
+                        new TextRun({ 
+                            text: `[ILLUSTRATION: ${imageAlt.toUpperCase()}]`, 
+                            bold: true,
+                            color: '666666',
+                            size: 20
+                        }),
+                        ...(imageCaption ? [
+                            new TextRun({ 
+                                text: `\nCaption: ${imageCaption}`, 
+                                italics: true, 
+                                color: '888888',
+                                size: 18
+                            })
+                        ] : [])
+                    ],
+                    alignment: AlignmentType.CENTER,
+                    spacing: { before: 400, after: 400 }
+                })
+
             case 'paragraph':
             default:
+                // If it's an empty paragraph, add a spacing run
+                if (children.length === 0) {
+                    return new Paragraph({ children: [new TextRun({ text: "" })], spacing: { after: 120 } })
+                }
                 return new Paragraph({
                     children,
                     spacing: { after: 120 }
                 })
         }
-    })
+    }).flat()
 }
 
 export async function toDocx(payload: ExportPayload, options: ExportOptions): Promise<Blob> {

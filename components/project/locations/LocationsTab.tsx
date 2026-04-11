@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
 import { softDeleteEntity } from '@/lib/supabase/recovery'
+import AssetPicker from '@/components/project/assets/AssetPicker'
 
 type Location = any // Flexibility for custom schema
 
@@ -251,7 +252,14 @@ export default function LocationsTab({
                                         <button onClick={() => setShowDeleteConfirm(true)} className="p-2 hover:bg-amber-50 text-stone-300 hover:text-amber-400 rounded-full transition-all" title="Move to Trash"><Trash2 className="w-3.5 h-3.5" /></button>
                                     )}
                                 </div>
-                                <input type="text" value={selectedLocation.name} onChange={(e) => handleFieldChange(selectedLocation.id, 'name', e.target.value)} className="w-full bg-transparent text-4xl sm:text-6xl font-serif italic text-slate-800 outline-none placeholder:text-slate-200" placeholder="Location Name" />
+                                <div className="flex flex-col sm:flex-row items-start sm:items-end gap-8">
+                                    <AssetPicker 
+                                        projectId={projectId}
+                                        entityId={selectedLocation.id}
+                                        entityType="location"
+                                    />
+                                    <input type="text" value={selectedLocation.name} onChange={(e) => handleFieldChange(selectedLocation.id, 'name', e.target.value)} className="flex-1 bg-transparent text-4xl sm:text-6xl font-serif italic text-slate-800 outline-none placeholder:text-slate-200" placeholder="Location Name" />
+                                </div>
                             </div>
 
                             <div className="space-y-8">

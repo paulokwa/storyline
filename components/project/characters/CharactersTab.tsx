@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
 import { softDeleteEntity } from '@/lib/supabase/recovery'
 import RelationshipManager from './RelationshipManager'
+import AssetPicker from '@/components/project/assets/AssetPicker'
 
 type Character = Database['public']['Tables']['characters']['Row']
 
@@ -368,13 +369,20 @@ export default function CharactersTab({
                                     )}
                                 </div>
                                 
+                                <div className="flex flex-col sm:flex-row items-start sm:items-end gap-8">
+                                    <AssetPicker 
+                                        projectId={projectId}
+                                        entityId={selectedCharacter.id}
+                                        entityType="character"
+                                    />
                                     <input
-                                    type="text"
-                                    value={selectedCharacter.name}
-                                    onChange={(e) => handleFieldChange(selectedCharacter.id, 'name', e.target.value)}
-                                    className="w-full bg-transparent text-4xl sm:text-6xl font-serif italic text-slate-800 tracking-tight leading-tight outline-none border-none placeholder:text-slate-200"
-                                    placeholder="Character Name"
-                                />
+                                        type="text"
+                                        value={selectedCharacter.name}
+                                        onChange={(e) => handleFieldChange(selectedCharacter.id, 'name', e.target.value)}
+                                        className="flex-1 bg-transparent text-4xl sm:text-6xl font-serif italic text-slate-800 tracking-tight leading-tight outline-none border-none placeholder:text-slate-200"
+                                        placeholder="Character Name"
+                                    />
+                                </div>
                             </div>
 
                             {/* Description - Physical & Background */}

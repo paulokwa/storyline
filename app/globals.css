@@ -179,6 +179,11 @@ body {
   font-size: 1.125rem;
   line-height: 1.8;
   color: hsl(var(--foreground));
+  cursor: text;
+}
+
+.ProseMirror {
+  cursor: text;
 }
 
 .editor-content p {
@@ -193,6 +198,63 @@ body {
   pointer-events: none;
   height: 0;
   transition: opacity 0.3s ease;
+}
+
+/* Story Image Block */
+.story-image-container {
+  display: block;
+  user-select: none;
+  transition: all 0.3s ease;
+  position: relative;
+  line-height: 0;
+}
+
+.story-image-container.align-center {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.story-image-container.align-left {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+
+.story-image-container.align-right {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+.story-image-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.story-image-caption-wrapper {
+  margin-top: 1rem;
+  text-align: center;
+  font-family: var(--ui-font);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  tracking: 0.1em;
+  color: hsl(var(--muted-foreground));
+  line-height: 1.5;
+  min-height: 1em;
+}
+
+.story-image-caption-wrapper[data-placeholder]::before {
+  content: attr(data-placeholder);
+  color: hsl(var(--muted-foreground) / 0.5);
+  pointer-events: none;
+}
+
+/* Selected state in editor */
+.ProseMirror .story-image-container.ProseMirror-selectednode .story-image-img {
+  outline: 4px solid var(--primary-dim);
+  outline-offset: 4px;
+  transform: scale(0.995);
 }
 
 /* Ensure no focus ring on the editor itself */
@@ -220,6 +282,11 @@ body {
   line-height: normal !important;
   color: black !important;
   background-color: white !important;
+  color-scheme: light !important;
+}
+
+.screenplay-mode .ProseMirror {
+  cursor: text !important;
 }
 
 /* Reset standard margins in screenplay mode to let specific classes handle them */
