@@ -11,7 +11,6 @@ export const StoryImage = Node.create({
   content: 'inline*', // Optional caption
   draggable: true,
   selectable: true,
-  isolating: true,
 
   addAttributes() {
     return {
