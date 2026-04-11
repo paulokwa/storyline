@@ -1333,11 +1333,19 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 isOpen={isAssetSelectorOpen}
                 onClose={() => setIsAssetSelectorOpen(false)}
                 onSelect={(asset) => {
-                    editor?.chain().focus().setImage({
+                    if (!editor) return
+
+                    const { to } = editor.state.selection
+
+                    // First, ensure we're at the end of any selection so we don't replace text
+                    editor.commands.setTextSelection(to)
+
+                    // Then insert the image at the new cursor position
+                    editor.commands.setImage({
                         assetId: asset.id,
                         src: asset.url,
                         alt: asset.alt,
-                    }).run()
+                    })
                 }}
             />
         </div>
