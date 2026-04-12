@@ -20,6 +20,7 @@ import { Separator } from '@/components/ui/separator'
 import type { Database } from '@/lib/supabase/types'
 import type { ExportMetadata } from '@/lib/export/buildExportPayload'
 import { cn } from '@/lib/utils'
+import { PROJECT_TYPE_LABELS, getProjectTypeLabel } from '@/lib/constants'
 
 type Project = Database['public']['Tables']['projects']['Row']
 
@@ -43,6 +44,7 @@ export default function ProjectSettingsModal({
     const [type, setType] = useState(project.type)
     const [premise, setPremise] = useState(project.premise || '')
     const [tone, setTone] = useState(project.tone || '')
+    const [writingMode, setWritingMode] = useState(project.writing_mode || 'simple')
     const [metadata, setMetadata] = useState<ExportMetadata>((project.export_metadata as any) || {})
 
     const updateMetadata = (key: keyof ExportMetadata, value: string) => {
@@ -59,6 +61,7 @@ export default function ProjectSettingsModal({
                 type: type,
                 premise: premise.trim() || null,
                 tone: tone.trim() || null,
+                writing_mode: writingMode,
                 export_metadata: metadata as any,
             })
             .eq('id', project.id)
@@ -145,13 +148,42 @@ export default function ProjectSettingsModal({
                                                 onChange={(e) => setType(e.target.value as any)}
                                                 className="w-full rounded-2xl border border-border bg-muted/50 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all h-12 px-4 appearance-none text-sm"
                                             >
-                                                <option value="novel">Novel / Book</option>
-                                                <option value="tv_script">Script (Film, TV, Stage)</option>
+                                                <option value="novel">{PROJECT_TYPE_LABELS.novel}</option>
+                                                <option value="tv_script">{PROJECT_TYPE_LABELS.tv_script}</option>
                                             </select>
                                             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                                             </div>
                                         </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="writingMode" className="text-sm font-semibold text-slate-700 ml-1">Editor Mode</Label>
+                                        <div className="relative">
+                                            <select 
+                                                id="writingMode"
+                                                value={writingMode} 
+                                                onChange={(e) => {
+                                                    const newMode = e.target.value as any;
+                                                    const isMismatch = (type === 'novel' && newMode === 'screenplay') ||
+                                                                     (type === 'tv_script' && newMode === 'simple');
+                                                    
+                                                    if (isMismatch) {
+                                                        const confirm = window.confirm(`Switching editor mode may not match your project structure. ${getProjectTypeLabel('tv_script')} mode works best with ${getProjectTypeLabel('tv_script').toLowerCase()}s. Continue?`);
+                                                        if (!confirm) return;
+                                                    }
+                                                    setWritingMode(newMode);
+                                                }}
+                                                className="w-full rounded-2xl border border-border bg-muted/50 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all h-12 px-4 appearance-none text-sm"
+                                            >
+                                                <option value="simple">Simple (Prose)</option>
+                                                <option value="screenplay">{getProjectTypeLabel('tv_script')}</option>
+                                            </select>
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                            </div>
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 px-1 italic">Controls the behavior and formatting of the editor.</p>
                                     </div>
 
                                     <div className="space-y-2">

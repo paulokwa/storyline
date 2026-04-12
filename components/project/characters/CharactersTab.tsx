@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { User, Users, Plus, Search, ChevronRight, PenTool, Hash, Loader2, Trash2, Pencil, GripVertical } from 'lucide-react'
+import { getProjectTypeLabel } from '@/lib/constants'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { cn, reorder } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -219,7 +220,7 @@ export default function CharactersTab({
                     <div className="flex items-center gap-3">
                         <Users className="w-4 h-4 text-[#546354]/60" />
                         <h2 className="text-[11px] font-sans tracking-[0.2em] uppercase text-[#546354]/60 font-medium">
-                            {projectType === 'novel' ? 'Literary Characters' : 'Dramatis Personae'}
+                            {projectType === 'tv_script' ? 'Dramatis Personae' : 'Book Characters'}
                         </h2>
                     </div>
                     {/* Add button */}
@@ -297,7 +298,7 @@ export default function CharactersTab({
                                                                 {char.name}
                                                             </p>
                                                             <p className="text-[10px] text-slate-300 uppercase tracking-widest mt-0.5 font-medium opacity-60">
-                                                                {projectType === 'novel' ? 'Character' : 'Cast Member'}
+                                                                {projectType === 'tv_script' ? 'Cast Member' : 'Character'}
                                                             </p>
                                                         </>
                                                     )}
@@ -496,7 +497,7 @@ function EmptyCharactersState({ onCreate, isCreating, projectType }: { onCreate:
 
                 <h2 className="text-4xl font-serif italic text-slate-800 mb-4 tracking-tight">The Stage Awaits</h2>
                 <p className="text-[11px] font-sans tracking-[0.4em] uppercase text-stone-300 mb-10 font-bold">
-                    {projectType === 'novel' ? 'Character Archive Empty' : 'Dramatis Personae Empty'}
+                    {getProjectTypeLabel(projectType as any)} Characters
                 </p>
 
                 <div className="space-y-8 max-w-md">

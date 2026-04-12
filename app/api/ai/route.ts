@@ -111,7 +111,7 @@ export async function POST(req: Request) {
         .single()) as { data: any }
 
     const projectContext = project
-        ? `\n\nProject context: "${project.title}" — ${project.type === 'tv_script' ? 'Script' : 'Novel'}. ${project.premise ? `Premise: ${project.premise}.` : ''} ${project.tone ? `Tone: ${project.tone}.` : ''}`
+        ? `\n\nProject context: "${project.title}" — ${project.type === 'tv_script' ? 'Screenplay' : 'Book'}. ${project.premise ? `Premise: ${project.premise}.` : ''} ${project.tone ? `Tone: ${project.tone}.` : ''}`
         : ''
 
     let userMessage = input

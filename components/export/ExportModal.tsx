@@ -38,10 +38,11 @@ interface ExportModalProps {
     onOpenChange: (open: boolean) => void
     projectId: string
     projectTitle: string
+    projectType?: 'tv_script' | 'novel'
     onOpenSettings?: () => void
 }
 
-export default function ExportModal({ open, onOpenChange, projectId, projectTitle, onOpenSettings }: ExportModalProps) {
+export default function ExportModal({ open, onOpenChange, projectId, projectTitle, projectType, onOpenSettings }: ExportModalProps) {
     const [loading, setLoading] = useState(false)
     const [metadata, setMetadata] = useState<ExportMetadata | null>(null)
     const [options, setOptions] = useState<ExportOptions>({
@@ -181,7 +182,7 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
                                     )}
                                     title={s !== 'entire_project' ? 'Coming soon in V2' : ''}
                                 >
-                                    {s === 'entire_project' ? 'Entire Project' : s === 'selected_chapters' ? 'Chapters' : 'Scenes'}
+                                    {s === 'entire_project' ? 'Entire Project' : s === 'selected_chapters' ? (projectType === 'tv_script' ? 'Episodes' : 'Chapters') : 'Scenes'}
                                 </button>
                             ))}
                         </div>
@@ -292,7 +293,7 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
                                 </div>
                                 <div className="flex items-center justify-between group">
                                     <Label htmlFor="inc-chapters" className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">
-                                        Chapter Titles
+                                        {stats?.chapters ? (stats.chapters > 0 ? 'Chapter / Act Titles' : 'Titles') : 'Titles'}
                                     </Label>
                                     <Switch
                                         id="inc-chapters"

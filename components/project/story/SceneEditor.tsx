@@ -748,7 +748,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         }
     }
 
-    const label = projectType === 'tv_script' ? 'Episode' : 'Scene'
+    const label = projectType === 'tv_script' ? 'Scene' : 'Scene'
     const isDeleted = scene.deleted_at !== null
 
     // Sync editor settings without re-mounting
@@ -849,7 +849,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                         <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 font-sans">
-                            {writingMode === 'screenplay' ? 'Script' : 'Draft'} — {label}
+                            {writingMode === 'screenplay' ? 'Screenplay' : 'Draft'} — {label}
                         </span>
                         {activeSceneUsers.length > 0 && (
                             <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300 ml-4">

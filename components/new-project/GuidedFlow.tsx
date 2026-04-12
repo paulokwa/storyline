@@ -265,7 +265,7 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
 
             {step === 'first_idea' && (
                 <StepBlock
-                    title={isScriptProject ? 'The pilot opening...' : 'The first chapter opening...'}
+                    title={isScriptProject ? 'The screenplay opening...' : 'The book opening...'}
                     hint="An evocative image or moment to bridge the gap to your first page."
                     optional
                 >

@@ -30,6 +30,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import ExportModal from '@/components/export/ExportModal'
+import { getProjectTypeLabel } from '@/lib/constants'
 import ProjectSettingsModal from '@/components/project/ProjectSettingsModal'
 import ShareModal from '@/components/project/ShareModal'
 import { cn, getUserColor } from '@/lib/utils'
@@ -122,6 +123,7 @@ export default function ProjectShell({
                         onOpenChange={setExportModalOpen} 
                         projectId={project.id}
                         projectTitle={project.title ?? 'Untitled'}
+                        projectType={project.type as any}
                         onOpenSettings={() => {
                             setExportModalOpen(false)
                             setSettingsModalOpen(true)
@@ -218,8 +220,10 @@ function ProjectShellInner({
                             <ChevronLeft className="w-5 h-5" />
                         </Link>
 
-                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${project.type === 'tv_script' ? 'bg-violet-100' : 'bg-amber-50'
-                            }`}>
+                        <div 
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${project.type === 'tv_script' ? 'bg-violet-100' : 'bg-amber-50'}`}
+                            title={getProjectTypeLabel(project.type)}
+                        >
                             {project.type === 'tv_script'
                                 ? <Tv className="w-4 h-4 text-violet-600" />
                                 : <BookOpen className="w-4 h-4 text-amber-600" />}

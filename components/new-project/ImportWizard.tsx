@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import type { ProjectType, WritingMode } from '@/lib/supabase/types'
+import { getProjectTypeLabel } from '@/lib/constants'
 
 interface ImportWizardProps {
     projectType: ProjectType
@@ -74,8 +75,6 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
             outputChunks = [{ title: 'Full Document', content: text }]
         } else if (strategy === 'chapter_keyword') {
             // Split natively where lines start with Chapter ignoring case
-            // The split string captures the "Chapter X" to keep it, but split doesn't do that nicely
-            // Let's use a regex that matches empty lines followed by Chapter, or line starts
             const parts = text.split(/\n(?=[ \t]*chapter\b)/i)
             outputChunks = parts.map((part, i) => {
                 const lines = part.split('\n')
@@ -138,10 +137,8 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
 
             for (let i = 0; i < detected.length; i++) {
                 const ch = detected[i]
-                // Pass 1: Exact Match (search from lastIdx, allow idx === 0 for first chapter)
                 let idx = rawText.indexOf(ch.markerSnippet, lastIdx)
 
-                // Pass 2: Normalized Match (strip whitespace + punctuation, case-insensitive)
                 if (idx === -1) {
                     const normalize = (s: string) => s.toLowerCase().replace(/[\s\p{P}]/gu, '')
                     const normSnippet = normalize(ch.markerSnippet)
@@ -150,13 +147,11 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                     const normWindow = normalize(searchWindow)
                     const winIdx = normWindow.indexOf(normSnippet)
                     if (winIdx !== -1) {
-                        // Estimate approximate position in raw text by ratio
                         const ratio = winIdx / normWindow.length
                         idx = lastIdx + Math.floor(ratio * windowSize)
                     }
                 }
 
-                // Accept idx >= lastIdx (not strictly >, to allow first chapter at position 0)
                 if (idx !== -1 && idx >= lastIdx) {
                     indices.push(idx)
                     lastIdx = idx + 1
@@ -167,7 +162,6 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                 throw new Error('AI found structure, but it could not be mapped to your file. Try using manual markers.')
             }
 
-            // Create Chunks
             const newChunks: { title: string, content: string }[] = []
             let start = 0
             for (let i = 0; i < indices.length; i++) {
@@ -178,15 +172,13 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                 })
                 start = end
             }
-            // Final chunk
             newChunks.push({
                 title: detected[indices.length - 1]?.title || 'Chapter ' + (indices.length + 1),
                 content: rawText.substring(start).trim()
             })
 
-            // Filter out empty segments and populate UI
             setChunks(newChunks.filter(c => c.content.length > 10))
-            setSplitStrategy('custom') // Set to custom so delimiter box doesn't override it easily
+            setSplitStrategy('custom')
             setAiStatus('')
 
         } catch (err: any) {
@@ -196,13 +188,15 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
         }
     }
 
+    const label = getProjectTypeLabel(projectType)
+
     return (
         <div className="space-y-10 animate-in fade-in duration-500">
             <div className="space-y-4">
                 <h2 className="text-4xl md:text-5xl font-serif text-slate-800 leading-tight">
                     Import your<br /><span className="text-slate-400 italic">manuscript</span>
                 </h2>
-                <p className="text-slate-500 font-medium">Upload a .docx, .epub, .pdf, .txt, or .md file to instantly structure your new project.</p>
+                <p className="text-slate-500 font-medium">Upload a document to instantly structure your new {label.toLowerCase()}.</p>
             </div>
 
             {!rawText ? (
@@ -293,7 +287,6 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                                 </div>
                             </div>
                             
-                            {/* Animated Background Flair */}
                             <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
                             <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none group-hover:bg-indigo-500/30 transition-all duration-700" />
                         </button>
@@ -343,7 +336,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                                 <div className="text-center p-8 text-slate-400 text-sm">No segments found</div>
                             ) : chunks.map((chunk, idx) => (
                                 <div key={idx} className="bg-white border rounded-xl p-4 flex gap-4 hover:shadow-md transition-all group">
-                                    <div className="flex-shrink-0 w-8 h-8 bg-[#546354]/10 text-[#546354] rounded-full flex items-center justify-center font-bold text-xs">
+                                    <div className="flex-shrink-0 w-8 h-8 bg-[#546354]/10 text-[#546354] rounded-full flex items-center justify-center font-bold text-xs" title="Segment order">
                                         {idx + 1}
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -390,13 +383,13 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
             {/* AI Progress Overlay */}
             {aiDetecting && (
                 <div className="absolute inset-0 bg-white/80 backdrop-blur-md z-40 flex flex-col items-center justify-center p-12 text-center rounded-[2.5rem] animate-in fade-in duration-500">
-                    <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-[2rem] flex items-center justify-center mb-6 shadow-xl shadow-indigo-100 animate-bounce-slow">
+                    <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-[2rem] flex items-center justify-center mb-6 shadow-xl shadow-indigo-100">
                         <Sparkles className="w-10 h-10" />
                     </div>
                     <h3 className="text-2xl font-serif text-slate-800 mb-2">Analyzing your soul's work…</h3>
                     <p className="text-slate-500 font-medium mb-6 animate-pulse">{aiStatus}</p>
                     <div className="w-64 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-indigo-500 animate-[loading-bar_3s_infinite_ease-in-out]" style={{width: '60%'}} />
+                        <div className="h-full bg-indigo-500" style={{width: '60%'}} />
                     </div>
                 </div>
             )}

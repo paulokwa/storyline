@@ -10,6 +10,7 @@ import { Film, BookOpen, Trash2, ChevronRight, Plus, Clock, Sparkles } from 'luc
 import type { Database } from '@/lib/supabase/types'
 import { formatDistanceToNow } from '@/lib/time'
 import { cn } from '@/lib/utils'
+import { PROJECT_TYPE_LABELS, DEFAULT_WRITING_MODE_BY_TYPE, getProjectTypeLabel } from '@/lib/constants'
 import {
     Tooltip,
     TooltipContent,
@@ -49,12 +50,12 @@ export default function ProjectGrid({ projects }: { projects: Project[] }) {
                 <div className="w-20 h-20 bg-stone-100 rounded-3xl flex items-center justify-center mx-auto mb-8">
                     <BookOpen className="w-10 h-10 text-stone-400" />
                 </div>
-                <h2 className="text-3xl font-serif text-slate-800 mb-4">Your Archive is Empty</h2>
-                <p className="text-slate-500 text-lg mb-10 max-w-md mx-auto font-medium">
-                    Every great story begins with a single word. Start your first journey today.
+                <h2 className="text-3xl font-serif text-slate-800 mb-4">Start your first project</h2>
+                <p className="text-slate-500 text-lg mb-10 max-w-md mx-auto font-medium leading-relaxed">
+                    Create a Book or Screenplay and begin writing your next masterpiece.
                 </p>
                 <Link href="/new">
-                    <Button className="sanctuary-btn-primary h-14 px-10 rounded-full text-base font-semibold gap-3">
+                    <Button className="sanctuary-btn-primary h-14 px-10 rounded-full text-base font-semibold gap-3 shadow-xl hover:shadow-primary/20 transition-all active:scale-[0.98]">
                         <Plus className="w-5 h-5" /> Start New Project
                     </Button>
                 </Link>
@@ -67,7 +68,7 @@ export default function ProjectGrid({ projects }: { projects: Project[] }) {
             <div className="max-w-[1440px] mx-auto px-6 py-16 md:py-24 fade-in">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-20 border-b border-slate-100 pb-12">
                     <div className="space-y-4">
-                        <h1 className="text-5xl md:text-7xl font-serif text-slate-800 tracking-tight leading-tight">
+                        <h1 className="text-5xl md:text-7xl font-serif text-slate-800 tracking-tight leading-tight" title={getProjectTypeLabel('tv_script')}>
                             The Manuscript<br /><span className="text-slate-400">Archive</span>
                         </h1>
                         <p className="text-lg text-slate-500 max-w-sm font-medium">
@@ -87,32 +88,32 @@ export default function ProjectGrid({ projects }: { projects: Project[] }) {
                             href="/new"
                             className="group block sanctuary-card border-2 border-dashed border-primary/20 bg-primary/5 rounded-[2rem] p-8 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl relative overflow-hidden active:scale-[0.98]"
                         >
-                            <div className="relative z-10 flex flex-col h-full">
-                                <div className="flex items-start justify-between mb-8">
-                                    <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+                            <div className="relative z-10 flex flex-col h-full gap-6">
+                                <div className="flex items-start justify-between">
+                                    <div className="w-14 h-14 rounded-2xl bg-primary shadow-lg shadow-primary/20 text-white flex items-center justify-center">
                                         <Sparkles className="w-7 h-7" />
                                     </div>
-                                    <Badge variant="default" className="bg-primary text-white text-[9px] uppercase tracking-widest px-3 py-1 font-bold">
-                                        In Progress
+                                    <Badge variant="default" className="bg-primary/10 text-primary border-none text-[9px] uppercase tracking-widest px-3 py-1 font-bold">
+                                        Incomplete Setup
                                     </Badge>
                                 </div>
-                                <div className="space-y-3 flex-1">
-                                    <h3 className="text-2xl font-serif text-slate-800 group-hover:text-primary transition-colors duration-300 leading-snug">
-                                        {draft.state.title || "Untitled Manuscript"}
+                                <div className="space-y-2 flex-1">
+                                    <h3 className="text-2xl font-serif text-slate-800">
+                                        Resume your setup
                                     </h3>
-                                    <p className="text-sm text-slate-500 font-medium italic">
-                                        Continue setting up your {draft.state.type === 'novel' ? 'novel' : 'script'}...
+                                    <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                                        You have an unfinished {getProjectTypeLabel(draft.state.type).toLowerCase()}. Pick up where you left off.
                                     </p>
                                 </div>
-                                <div className="mt-10 pt-6 flex items-center justify-between">
+                                <div className="mt-4 flex items-center justify-between gap-4 pt-6 border-t border-primary/10">
                                     <button 
                                         onClick={clearDraft}
-                                        className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-red-500 transition-colors"
+                                        className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-red-500 transition-colors py-2"
                                     >
-                                        Discard Draft
+                                        Start over
                                     </button>
-                                    <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center transform group-hover:scale-110 transition-transform">
-                                        <ChevronRight className="w-5 h-5" />
+                                    <div className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest group-hover:bg-[#3d4a3d] transition-all shadow-md">
+                                        Resume <ChevronRight className="w-4 h-4" />
                                     </div>
                                 </div>
                             </div>
@@ -169,6 +170,7 @@ function ProjectCard({ project }: { project: Project }) {
                                 >Cancel</button>
                                 <button
                                     onClick={handleDelete}
+                                    title={getProjectTypeLabel('novel')}
                                     disabled={isDeleting}
                                     className="px-3 py-1 text-[10px] font-bold bg-red-500 hover:bg-red-600 text-white rounded-full uppercase tracking-wider transition-colors disabled:opacity-50"
                                 >{isDeleting ? '...' : 'Delete'}</button>
@@ -191,7 +193,7 @@ function ProjectCard({ project }: { project: Project }) {
 
                     <div className="flex flex-wrap items-center gap-3">
                         <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 bg-slate-50 px-2.5 py-1 rounded-md group-hover:bg-primary/5 group-hover:text-primary/60 transition-colors">
-                            {isTV ? 'Script' : 'Novel'}
+                            {getProjectTypeLabel(project.type)}
                         </span>
                         
                         {project.role && project.role !== 'owner' && (

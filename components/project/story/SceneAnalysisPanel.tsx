@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { getProjectTypeLabel } from '@/lib/constants'
 import { X, Sparkles, FileText, Zap, Timer, MessageSquare, Lightbulb } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -26,8 +27,7 @@ const SECTIONS = [
 ] as const
 
 export default function SceneAnalysisPanel({ result, onClose, projectType }: SceneAnalysisPanelProps) {
-    const isNovel = projectType === 'novel'
-    const label = isNovel ? 'Chapter/Part' : 'Scene'
+    const label = getProjectTypeLabel(projectType)
     
     // Close on Escape key
     useEffect(() => {
@@ -56,7 +56,7 @@ export default function SceneAnalysisPanel({ result, onClose, projectType }: Sce
             <div
                 role="dialog"
                 aria-modal="true"
-                aria-label="Scene Analysis"
+                aria-label={`${label} Analysis`}
                 className={cn(
                     'fixed right-0 top-0 h-full z-50 w-[420px] max-w-[92vw]',
                     'bg-[#fcfbf9] border-l border-slate-200/60 shadow-[-20px_0_60px_rgba(0,0,0,0.06)]',
@@ -70,7 +70,7 @@ export default function SceneAnalysisPanel({ result, onClose, projectType }: Sce
                         <Sparkles className="w-4 h-4 text-violet-500" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-serif font-bold text-slate-800">{label} Analysis</h3>
+                        <h3 className="text-sm font-serif font-bold text-slate-800 tracking-tight">{label} Analysis</h3>
                         <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">AI Suggestions · Not Directives</p>
                     </div>
                     <button

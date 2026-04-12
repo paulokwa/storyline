@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useMemo, useRef, useEffect } from 'react'
+import { getProjectTypeLabel } from '@/lib/constants'
 import { useCompletion } from '@ai-sdk/react'
 import Link from 'next/link'
 import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Package, Bookmark } from 'lucide-react'
@@ -137,8 +138,8 @@ export default function AiHelperPanel({
     projectPremise, projectTone,
     activeNodeId, activeSceneId
 }: AiHelperPanelProps) {
+    const label = getProjectTypeLabel(projectType)
     const isNovel = projectType === 'novel'
-    const label = isNovel ? 'Chapter' : 'Scene'
 
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'
@@ -617,7 +618,7 @@ export default function AiHelperPanel({
                     <Sparkles className="w-4 h-4 text-indigo-500" />
                 </div>
                 <div className="flex-1">
-                    <h3 className="text-sm font-serif font-bold text-slate-800">{label} Helper</h3>
+                    <h3 className="text-sm font-serif font-bold text-slate-800 tracking-tight">{label} Partner</h3>
                     <div className="flex items-center gap-2">
                         <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">
                             {aiSettings.ai_provider === 'ollama' ? `Ollama (${aiSettings.ollama_model})` : 'Gemini'}
@@ -651,7 +652,7 @@ export default function AiHelperPanel({
 
             {/* Context Indicator */}
             <div className="bg-[#fcfbf9] px-6 py-2 border-b border-slate-200/60 flex flex-wrap items-center gap-2 text-[10px] text-slate-400 font-medium">
-                <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-slate-200 rounded-full"></div>Current {label.toLowerCase()}</span>
+                <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-slate-200 rounded-full"></div>Current Context</span>
                 {linkedCharacters.length > 0 && (
                     <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-indigo-200 rounded-full"></div>{linkedCharacters.length} character{linkedCharacters.length !== 1 ? 's' : ''}</span>
                 )}
