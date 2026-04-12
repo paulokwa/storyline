@@ -21,13 +21,17 @@ import {
     Bookmark,
     History,
     MoreHorizontal,
-    Image as ImageIcon
+    Image as ImageIcon,
+    Share,
+    FileDown,
+    Settings2
 } from 'lucide-react'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import ExportModal from '@/components/export/ExportModal'
@@ -216,71 +220,95 @@ function ProjectShellInner({
             <div className="bg-secondary/50 backdrop-blur-sm px-4 sm:px-6 lg:px-8 border-b border-border">
                 <div className="max-w-[1440px] mx-auto">
                     {/* Top row */}
-                    <div className="flex items-center gap-3 pt-4 pb-3">
-                        <Link href="/library" className="text-slate-400 hover:text-slate-700 transition-colors shrink-0">
-                            <ChevronLeft className="w-5 h-5" />
-                        </Link>
 
-                        <div 
-                            className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${project.type === 'tv_script' ? 'bg-violet-100' : 'bg-amber-50'}`}
-                            title={getProjectTypeLabel(project.type)}
-                        >
-                            {project.type === 'tv_script'
-                                ? <Tv className="w-4 h-4 text-violet-600" />
-                                : <BookOpen className="w-4 h-4 text-amber-600" />}
+                    <div className="flex items-center gap-2 pt-4 pb-2 border-b border-black/5 md:border-none">
+                        <div className="flex items-center gap-1.5 shrink-0">
+                            <Link 
+                                href="/library" 
+                                className="h-9 w-9 flex items-center justify-center rounded-xl bg-black/5 text-slate-500 hover:text-slate-800 transition-all active:scale-95"
+                                title="Back to library"
+                            >
+                                <ChevronLeft className="w-5 h-5" />
+                            </Link>
+
+                            {isStoryTab && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                                    className={cn(
+                                        "rounded-xl transition-all h-9 w-9 p-0",
+                                        sidebarOpen ? "bg-primary/10 text-primary hover:bg-primary/20" : "bg-black/5 text-slate-500 hover:bg-black/10"
+                                    )}
+                                    title="Toggle structure panel"
+                                >
+                                    <PanelLeft className="w-4 h-4" />
+                                </Button>
+                            )}
                         </div>
 
-                        {editingTitle ? (
-                            <div className="flex items-center gap-2 flex-1">
-                                <Input
-                                    value={titleDraft}
-                                    onChange={(e) => setTitleDraft(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') saveTitle()
-                                        if (e.key === 'Escape') setEditingTitle(false)
-                                    }}
-                                    className="h-8 text-base font-semibold max-w-sm"
-                                    autoFocus
-                                />
-                                <button onClick={saveTitle} className="text-green-600 hover:text-green-700">
-                                    <Check className="w-4 h-4" />
-                                </button>
-                                <button onClick={() => setEditingTitle(false)} className="text-slate-400 hover:text-slate-600">
-                                    <X className="w-4 h-4" />
-                                </button>
-                            </div>
-                        ) : (
-                            <button
-                                onClick={() => { setTitleDraft(project.title ?? ''); setEditingTitle(true) }}
-                                className="text-2xl sm:text-3xl font-serif text-foreground hover:text-primary transition-colors text-left flex-1 truncate py-2"
-                                title="Click to rename"
-                            >
-                                {project.title}
-                            </button>
-                        )}
+                        <div className="flex items-center gap-2 overflow-hidden flex-1 px-1">
+                            {!editingTitle ? (
+                                <>
+                                    <div className={cn(
+                                        "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm",
+                                        project.type === 'novel' ? "bg-indigo-50 text-indigo-600" : "bg-amber-50 text-amber-600"
+                                    )}>
+                                        {project.type === 'novel' ? <BookOpen className="w-4 h-4" /> : <Tv className="w-4 h-4" />}
+                                    </div>
+                                    <button 
+                                        onClick={() => {
+                                            if (role === 'owner') {
+                                                setTitleDraft(project.title)
+                                                setEditingTitle(true)
+                                            }
+                                        }}
+                                        className="text-sm sm:text-lg font-serif italic text-slate-800 hover:text-indigo-600 transition-colors truncate text-left"
+                                    >
+                                        {project.title}
+                                    </button>
+                                </>
+                            ) : (
+                                <div className="flex items-center gap-2 w-full animate-in fade-in slide-in-from-left-1 duration-200">
+                                    <Input
+                                        value={titleDraft}
+                                        onChange={(e) => setTitleDraft(e.target.value)}
+                                        className="h-8 text-sm font-serif italic border-indigo-200 focus:ring-indigo-500/20 bg-white"
+                                        autoFocus
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') saveTitle()
+                                            if (e.key === 'Escape') setEditingTitle(false)
+                                        }}
+                                    />
+                                    <button onClick={saveTitle} className="p-1 text-green-600 hover:bg-green-50 rounded-lg">
+                                        <Check className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={() => setEditingTitle(false)} className="p-1 text-red-600 hover:bg-red-50 rounded-lg">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
 
-                        <div className="flex items-center -space-x-2 mr-2 sm:mr-4 overflow-hidden shrink-0">
+                        <div className="flex items-center -space-x-2 shrink-0">
                              <AvatarPortal />
                         </div>
+                    </div>
 
-                        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 flex-1">
-                             {/* Tab Actions (Dynamic) */}
+                    <ProjectMenuPortal 
+                        onExport={() => setExportModalOpen(true)}
+                        onShare={() => setShareModalOpen(true)}
+                        onSettings={() => setSettingsModalOpen(true)}
+                        canShare={role === 'owner'}
+                    />
+                    
+                    {/* Action Buttons Row - Mobile Specific/Optimized */}
+                    <div className="relative group/actions mt-1">
+                        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 px-1">
+                             {/* AI Group */}
                              {isStoryTab && (
-                                <div className="flex items-center gap-1 sm:gap-1.5 mr-2 pr-2 border-r border-[#e0ded9]">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setSidebarOpen(!sidebarOpen)}
-                                        className={cn(
-                                            "rounded-xl transition-all h-9 px-2 sm:px-2.5",
-                                            sidebarOpen ? "bg-primary/10 text-primary hover:bg-primary/20" : "text-slate-500 hover:bg-black/5"
-                                        )}
-                                        title="Toggle structure panel"
-                                    >
-                                        <PanelLeft className="w-4 h-4" />
-                                    </Button>
-
-                                    <div className="flex items-center gap-1 bg-black/5 p-0.5 rounded-xl shrink-0">
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    <div className="flex items-center gap-1 bg-black/5 p-0.5 rounded-xl">
                                         <Button
                                             variant="ghost"
                                             size="sm"
@@ -289,7 +317,6 @@ function ProjectShellInner({
                                                 "rounded-lg transition-all h-8 px-2.5 gap-2",
                                                 isReading ? "bg-amber-100 text-amber-700 animate-pulse" : "text-slate-500 hover:bg-white"
                                             )}
-                                            title="Read aloud"
                                         >
                                             <Volume2 className={cn("w-4 h-4", isReading && "animate-bounce")} />
                                             <span className="text-xs font-medium hidden md:inline">Read Aloud</span>
@@ -304,7 +331,6 @@ function ProjectShellInner({
                                                 "rounded-lg transition-all h-8 px-2.5 gap-2",
                                                 isAnalyzing ? "bg-violet-100 text-violet-700 animate-pulse" : "text-slate-500 hover:bg-white"
                                             )}
-                                            title="Analyze scene"
                                         >
                                             <Wand2 className="w-4 h-4" />
                                             <span className="text-xs font-medium hidden md:inline">Analyze</span>
@@ -316,10 +342,9 @@ function ProjectShellInner({
                                         size="sm"
                                         onClick={handleToggleAi}
                                         className={cn(
-                                            "rounded-xl transition-all h-9 px-2 sm:px-2.5 gap-2",
-                                            aiPanelOpen ? "bg-violet-100 text-violet-700 hover:bg-violet-200" : "text-slate-500 hover:bg-black/5"
+                                            "rounded-xl transition-all h-9 px-3 gap-2",
+                                            aiPanelOpen ? "bg-violet-100 text-violet-700 hover:bg-violet-200" : "bg-black/5 text-slate-500 hover:bg-black/10"
                                         )}
-                                        title="Toggle AI helper"
                                     >
                                         <Sparkles className="w-4 h-4" />
                                         <span className="text-xs font-medium hidden md:inline">AI Helper</span>
@@ -330,74 +355,40 @@ function ProjectShellInner({
                                         size="sm"
                                         onClick={handleToggleComments}
                                         className={cn(
-                                            "rounded-xl transition-all h-9 px-2 sm:px-2.5 gap-2",
-                                            commentsPanelOpen ? "bg-primary/10 text-primary hover:bg-primary/20" : "text-slate-500 hover:bg-black/5"
+                                            "rounded-xl transition-all h-9 px-3 gap-2",
+                                            commentsPanelOpen ? "bg-primary/10 text-primary hover:bg-primary/20" : "bg-black/5 text-slate-500 hover:bg-black/10"
                                         )}
-                                        title="Toggle feedback panel"
                                     >
                                         <MessageSquare className="w-4 h-4" />
                                         <span className="text-xs font-medium hidden md:inline">Feedback</span>
                                     </Button>
-                                    
-
                                 </div>
-                            )}
-
-                            <div className="flex items-center gap-1 shrink-0 ml-auto sm:ml-0">
-                                <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    className="flex rounded-xl bg-card border-border text-primary hover:bg-primary/5 hover:border-primary/20 transition-all duration-300 gap-1.5 px-2.5 sm:px-4 h-9 shadow-sm"
-                                    onClick={() => setExportModalOpen(true)}
-                                    title="Export Project"
-                                >
-                                    <Download className="w-3.5 h-3.5" />
-                                    <span className="hidden sm:inline">Export</span>
-                                </Button>
-
-                                {role === 'owner' && (
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        className="flex rounded-xl bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-700 hover:border-indigo-600 transition-all duration-300 gap-1.5 px-2.5 sm:px-4 h-9 shadow-lg shadow-indigo-200"
-                                        onClick={() => setShareModalOpen(true)}
-                                        title="Share Project"
-                                    >
-                                        <Users className="w-3.5 h-3.5" />
-                                        <span className="hidden sm:inline">Share</span>
-                                    </Button>
-                                )}
-                                
-                                <Button
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    className="rounded-xl text-slate-400 hover:text-slate-600 hover:bg-black/5 h-9 w-9"
-                                    onClick={() => setSettingsModalOpen(true)}
-                                    title="Project Settings"
-                                >
-                                    <Settings className="w-4 h-4" />
-                                </Button>
-                            </div>
+                             )}
                         </div>
+                        {/* Scroll indicator gradient */}
+                        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#fcfbf9] to-transparent pointer-events-none" />
                     </div>
 
-                    {/* Tabs */}
-                    <div className="flex gap-1 mt-2 overflow-x-auto no-scrollbar scroll-smooth">
-                        {TABS.map(({ slug, label, icon: Icon }) => (
-                            <Link
-                                key={slug}
-                                href={`/project/${project.id}/${slug}`}
-                                className={cn(
-                                    'flex items-center gap-1.5 px-4 sm:px-6 py-3 text-sm font-medium transition-all duration-300 rounded-t-xl shrink-0',
-                                    activeTab === slug
-                                        ? 'bg-background text-primary shadow-[0_-4px_12px_rgba(0,0,0,0.03)]'
-                                        : 'text-slate-500 hover:text-slate-800 hover:bg-black/5'
-                                )}
-                            >
-                                <Icon className="w-3.5 h-3.5" />
-                                <span className="font-sans tracking-wide uppercase text-[10px]">{label}</span>
-                            </Link>
-                        ))}
+                    <div className="relative group/tabs mt-1">
+                        <div className="flex gap-1 overflow-x-auto no-scrollbar scroll-smooth">
+                            {TABS.map(({ slug, label, icon: Icon }) => (
+                                <Link
+                                    key={slug}
+                                    href={`/project/${project.id}/${slug}`}
+                                    className={cn(
+                                        'flex items-center gap-1.5 px-4 sm:px-6 py-3 text-sm font-medium transition-all duration-300 rounded-t-xl shrink-0',
+                                        activeTab === slug
+                                            ? 'bg-background text-primary shadow-[0_-4px_12px_rgba(0,0,0,0.03)]'
+                                            : 'text-slate-500 hover:text-slate-800 hover:bg-black/5'
+                                    )}
+                                >
+                                    <Icon className="w-3.5 h-3.5" />
+                                    <span className="font-sans tracking-wide uppercase text-[10px]">{label}</span>
+                                </Link>
+                            ))}
+                        </div>
+                        {/* Scroll indicator gradient */}
+                        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#fcfbf9] to-transparent pointer-events-none" />
                     </div>
                 </div>
             </div>
@@ -407,6 +398,48 @@ function ProjectShellInner({
                 {children}
             </div>
         </div>
+    )
+}
+
+function ProjectMenuPortal({ onExport, onShare, onSettings, canShare }: { onExport: () => void, onShare: () => void, onSettings: () => void, canShare: boolean }) {
+    const [mounted, setMounted] = useState(false)
+    useEffect(() => setMounted(true), [])
+    if (!mounted) return null
+    
+    const target = document.getElementById('project-menu-portal')
+    if (!target) return null
+    
+    return createPortal(
+        <>
+            <DropdownMenuItem 
+                onClick={onExport}
+                className="rounded-xl px-3 py-2 text-slate-600 focus:text-indigo-600 focus:bg-indigo-50 cursor-pointer gap-2 transition-all"
+            >
+                <Download className="w-4 h-4" />
+                <span className="font-medium text-sm">Export Project</span>
+            </DropdownMenuItem>
+            
+            {canShare && (
+                <DropdownMenuItem 
+                    onClick={onShare}
+                    className="rounded-xl px-3 py-2 text-slate-600 focus:text-indigo-600 focus:bg-indigo-50 cursor-pointer gap-2 transition-all"
+                >
+                    <Users className="w-4 h-4" />
+                    <span className="font-medium text-sm">Share Project</span>
+                </DropdownMenuItem>
+            )}
+
+            <DropdownMenuItem 
+                onClick={onSettings}
+                className="rounded-xl px-3 py-2 text-slate-600 focus:text-indigo-600 focus:bg-indigo-50 cursor-pointer gap-2 transition-all"
+            >
+                <Settings2 className="w-4 h-4" />
+                <span className="font-medium text-sm">Project Settings</span>
+            </DropdownMenuItem>
+            
+            <DropdownMenuSeparator className="my-1 bg-slate-100" />
+        </>,
+        target
     )
 }
 

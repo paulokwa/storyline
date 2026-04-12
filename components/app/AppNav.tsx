@@ -4,8 +4,20 @@ import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { PenLine, LogOut, Settings as SettingsIcon } from 'lucide-react'
+import { 
+    PenLine, LogOut, Settings as SettingsIcon, 
+    User as UserIcon, Download, Users, 
+    Settings2 
+} from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 export default function AppNav({ user }: { user: User }) {
     const router = useRouter()
@@ -30,27 +42,58 @@ export default function AppNav({ user }: { user: User }) {
                     <span className="font-semibold text-lg">Storyline</span>
                 </Link>
 
-                <div className="flex items-center gap-2 sm:gap-3">
-                    <span className="text-sm text-slate-500 hidden sm:block mr-2">Hi, {displayName}</span>
+                <div className="flex items-center gap-2 sm:gap-4">
                     <div id="app-nav-portal" className="flex items-center" />
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => router.push('/settings')}
-                        className="text-slate-500 hover:text-slate-800 gap-1.5"
-                    >
-                        <SettingsIcon className="w-4 h-4" />
-                        <span className="hidden sm:inline">Settings</span>
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleSignOut}
-                        className="text-slate-500 hover:text-slate-800 gap-1.5"
-                    >
-                        <LogOut className="w-4 h-4" />
-                        <span className="hidden sm:inline">Sign out</span>
-                    </Button>
+                    
+                    <DropdownMenu>
+                        <DropdownMenuTrigger>
+                            <div className="relative h-10 w-10 flex items-center justify-center rounded-full hover:bg-black/5 cursor-pointer">
+                                <Avatar className="h-9 w-9 border-2 border-white shadow-sm transition-transform active:scale-90">
+                                    {user.user_metadata?.avatar_url && (
+                                        <img 
+                                            src={user.user_metadata.avatar_url} 
+                                            alt={displayName}
+                                            className="h-full w-full object-cover rounded-full"
+                                        />
+                                    )}
+                                    <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white text-xs font-bold uppercase overflow-hidden">
+                                        {displayName.slice(0, 2)}
+                                    </AvatarFallback>
+                                </Avatar>
+                            </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56 mt-2 rounded-2xl p-2 shadow-xl border-slate-200 bg-white" align="end">
+                            <div className="px-2 py-2 mb-1">
+                                <div className="flex flex-col space-y-1">
+                                    <p className="text-sm font-semibold leading-none text-slate-900">{displayName}</p>
+                                    <p className="text-[11px] leading-none text-slate-400 truncate">{user.email}</p>
+                                </div>
+                            </div>
+                            
+                            <DropdownMenuSeparator className="my-1 bg-slate-100" />
+                            
+                            {/* Project-specific items will be portaled here */}
+                            <div id="project-menu-portal" />
+
+                            <DropdownMenuItem 
+                                onClick={() => router.push('/settings')}
+                                className="rounded-xl px-3 py-2 text-slate-600 focus:text-indigo-600 focus:bg-indigo-50 cursor-pointer gap-2 transition-all"
+                            >
+                                <SettingsIcon className="w-4 h-4" />
+                                <span className="font-medium">Account Settings</span>
+                            </DropdownMenuItem>
+                            
+                            <DropdownMenuSeparator className="my-1 bg-slate-100" />
+                            
+                            <DropdownMenuItem 
+                                onClick={handleSignOut}
+                                className="rounded-xl px-3 py-2 text-red-500 focus:text-red-600 focus:bg-red-50 cursor-pointer gap-2 transition-all"
+                            >
+                                <LogOut className="w-4 h-4" />
+                                <span className="font-medium">Sign out</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
         </nav>
