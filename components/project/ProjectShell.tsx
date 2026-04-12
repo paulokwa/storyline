@@ -1,6 +1,5 @@
-'use client'
-
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -259,10 +258,10 @@ function ProjectShellInner({
                         )}
 
                         <div className="flex items-center -space-x-2 mr-2 sm:mr-4 overflow-hidden shrink-0">
-                             <CollaborativeAvatars />
+                             <AvatarPortal />
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 flex-1">
                              {/* Tab Actions (Dynamic) */}
                              {isStoryTab && (
                                 <div className="flex items-center gap-1 sm:gap-1.5 mr-2 pr-2 border-r border-[#e0ded9]">
@@ -279,38 +278,36 @@ function ProjectShellInner({
                                         <PanelLeft className="w-4 h-4" />
                                     </Button>
 
-                                    {!isMobile && (
-                                        <>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => speak(currentSceneText, 'Scene')}
-                                                className={cn(
-                                                    "rounded-xl transition-all h-9 px-2.5 gap-2",
-                                                    isReading ? "bg-amber-100 text-amber-700 animate-pulse" : "text-slate-500 hover:bg-black/5"
-                                                )}
-                                                title="Read aloud"
-                                            >
-                                                <Volume2 className={cn("w-4 h-4", isReading && "animate-bounce")} />
-                                                <span className="text-xs font-medium hidden md:inline">Read Aloud</span>
-                                            </Button>
+                                    <div className="flex items-center gap-1 bg-black/5 p-0.5 rounded-xl shrink-0">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => speak(currentSceneText, 'Scene')}
+                                            className={cn(
+                                                "rounded-lg transition-all h-8 px-2.5 gap-2",
+                                                isReading ? "bg-amber-100 text-amber-700 animate-pulse" : "text-slate-500 hover:bg-white"
+                                            )}
+                                            title="Read aloud"
+                                        >
+                                            <Volume2 className={cn("w-4 h-4", isReading && "animate-bounce")} />
+                                            <span className="text-xs font-medium hidden md:inline">Read Aloud</span>
+                                        </Button>
 
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => analyzeScene()}
-                                                disabled={isAnalyzing || !currentSceneText}
-                                                className={cn(
-                                                    "rounded-xl transition-all h-9 px-2.5 gap-2",
-                                                    isAnalyzing ? "bg-violet-100 text-violet-700 animate-pulse" : "text-slate-500 hover:bg-black/5"
-                                                )}
-                                                title="Analyze scene"
-                                            >
-                                                <Wand2 className="w-4 h-4" />
-                                                <span className="text-xs font-medium hidden md:inline">Analyze</span>
-                                            </Button>
-                                        </>
-                                    )}
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => analyzeScene()}
+                                            disabled={isAnalyzing || !currentSceneText}
+                                            className={cn(
+                                                "rounded-lg transition-all h-8 px-2.5 gap-2",
+                                                isAnalyzing ? "bg-violet-100 text-violet-700 animate-pulse" : "text-slate-500 hover:bg-white"
+                                            )}
+                                            title="Analyze scene"
+                                        >
+                                            <Wand2 className="w-4 h-4" />
+                                            <span className="text-xs font-medium hidden md:inline">Analyze</span>
+                                        </Button>
+                                    </div>
 
                                     <Button
                                         variant="ghost"
@@ -340,65 +337,45 @@ function ProjectShellInner({
                                         <span className="text-xs font-medium hidden md:inline">Feedback</span>
                                     </Button>
                                     
-                                    {isMobile && (
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger render={
-                                                <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-xl text-slate-500">
-                                                    <MoreHorizontal className="w-4 h-4" />
-                                                </Button>
-                                            } />
-                                            <DropdownMenuContent align="end" className="rounded-2xl p-2 border-slate-200 shadow-xl">
-                                                <DropdownMenuItem onClick={() => speak(currentSceneText, 'Scene')} className="rounded-xl gap-2 font-medium text-slate-700">
-                                                    <Volume2 className="w-4 h-4" />
-                                                    Read Aloud
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem 
-                                                    onClick={() => analyzeScene()} 
-                                                    disabled={isAnalyzing || !currentSceneText}
-                                                    className="rounded-xl gap-2 font-medium text-slate-700"
-                                                >
-                                                    <Wand2 className="w-4 h-4" />
-                                                    Analyze Scene
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    )}
+
                                 </div>
                             )}
 
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="flex rounded-xl bg-card border-border text-primary hover:bg-primary/5 hover:border-primary/20 transition-all duration-300 gap-1.5 px-2.5 sm:px-4"
-                                onClick={() => setExportModalOpen(true)}
-                                title="Export Project"
-                            >
-                                <Download className="w-3.5 h-3.5" />
-                                <span className="hidden sm:inline">Export</span>
-                            </Button>
-
-                            {role === 'owner' && (
+                            <div className="flex items-center gap-1 shrink-0 ml-auto sm:ml-0">
                                 <Button 
                                     variant="outline" 
                                     size="sm" 
-                                    className="flex rounded-xl bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-700 hover:border-indigo-600 transition-all duration-300 gap-1.5 px-2.5 sm:px-4 shadow-lg shadow-indigo-200"
-                                    onClick={() => setShareModalOpen(true)}
-                                    title="Share Project"
+                                    className="flex rounded-xl bg-card border-border text-primary hover:bg-primary/5 hover:border-primary/20 transition-all duration-300 gap-1.5 px-2.5 sm:px-4 h-9 shadow-sm"
+                                    onClick={() => setExportModalOpen(true)}
+                                    title="Export Project"
                                 >
-                                    <Users className="w-3.5 h-3.5" />
-                                    <span className="hidden sm:inline">Share</span>
+                                    <Download className="w-3.5 h-3.5" />
+                                    <span className="hidden sm:inline">Export</span>
                                 </Button>
-                            )}
-                            
-                            <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                className="rounded-xl text-slate-400 hover:text-slate-600 hover:bg-[#efeee9]"
-                                onClick={() => setSettingsModalOpen(true)}
-                                title="Project Settings"
-                            >
-                                <Settings className="w-4 h-4" />
-                            </Button>
+
+                                {role === 'owner' && (
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="flex rounded-xl bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-700 hover:border-indigo-600 transition-all duration-300 gap-1.5 px-2.5 sm:px-4 h-9 shadow-lg shadow-indigo-200"
+                                        onClick={() => setShareModalOpen(true)}
+                                        title="Share Project"
+                                    >
+                                        <Users className="w-3.5 h-3.5" />
+                                        <span className="hidden sm:inline">Share</span>
+                                    </Button>
+                                )}
+                                
+                                <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    className="rounded-xl text-slate-400 hover:text-slate-600 hover:bg-black/5 h-9 w-9"
+                                    onClick={() => setSettingsModalOpen(true)}
+                                    title="Project Settings"
+                                >
+                                    <Settings className="w-4 h-4" />
+                                </Button>
+                            </div>
                         </div>
                     </div>
 
@@ -429,6 +406,17 @@ function ProjectShellInner({
             </div>
         </div>
     )
+}
+
+function AvatarPortal() {
+    const [mounted, setMounted] = useState(false)
+    useEffect(() => setMounted(true), [])
+    if (!mounted) return null
+    
+    const target = document.getElementById('app-nav-portal')
+    if (!target) return <CollaborativeAvatars />
+    
+    return createPortal(<CollaborativeAvatars />, target)
 }
 
 function CollaborativeAvatars() {

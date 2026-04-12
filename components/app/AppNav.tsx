@@ -32,6 +32,7 @@ export default function AppNav({ user }: { user: User }) {
 
                 <div className="flex items-center gap-2 sm:gap-3">
                     <span className="text-sm text-slate-500 hidden sm:block mr-2">Hi, {displayName}</span>
+                    <div id="app-nav-portal" className="flex items-center" />
                     <Button 
                         variant="ghost" 
                         size="sm" 
