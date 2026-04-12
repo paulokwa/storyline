@@ -18,17 +18,14 @@ import {
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
-interface ProjectAsset {
-    id: string
-    storage_path: string
-    file_name: string
-    mime_type: string
-}
+import { Tables } from '@/lib/supabase/types'
+
+type ProjectAsset = Tables<'project_assets'>
 
 interface SceneAsset {
     id: string
     asset_id: string
-    asset: ProjectAsset
+    asset: Pick<ProjectAsset, 'id' | 'storage_path' | 'file_name' | 'mime_type'>
 }
 
 interface SceneAssetsPanelProps {

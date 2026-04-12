@@ -141,6 +141,51 @@ export type Database = {
           },
         ]
       }
+      entity_assets: {
+        Row: {
+          asset_id: string
+          created_at: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          is_primary: boolean | null
+          project_id: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          is_primary?: boolean | null
+          project_id: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          is_primary?: boolean | null
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_assets_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "project_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_assets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entity_relationships: {
         Row: {
           created_at: string | null
@@ -314,6 +359,167 @@ export type Database = {
           },
         ]
       }
+      project_assets: {
+        Row: {
+          alt_text: string | null
+          asset_type: string
+          caption: string | null
+          created_at: string | null
+          file_name: string
+          file_size: number
+          height: number | null
+          id: string
+          mime_type: string
+          project_id: string
+          storage_path: string
+          updated_at: string | null
+          uploaded_by: string | null
+          width: number | null
+        }
+        Insert: {
+          alt_text?: string | null
+          asset_type?: string
+          caption?: string | null
+          created_at?: string | null
+          file_name: string
+          file_size: number
+          height?: number | null
+          id?: string
+          mime_type: string
+          project_id: string
+          storage_path: string
+          updated_at?: string | null
+          uploaded_by?: string | null
+          width?: number | null
+        }
+        Update: {
+          alt_text?: string | null
+          asset_type?: string
+          caption?: string | null
+          created_at?: string | null
+          file_name?: string
+          file_size?: number
+          height?: number | null
+          id?: string
+          mime_type?: string
+          project_id?: string
+          storage_path?: string
+          updated_at?: string | null
+          uploaded_by?: string | null
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_assets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_comments: {
+        Row: {
+          anchor_data: Json | null
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          node_id: string | null
+          order_index: number | null
+          parent_id: string | null
+          project_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          anchor_data?: Json | null
+          author_id?: string
+          content: string
+          created_at?: string
+          id?: string
+          node_id?: string | null
+          order_index?: number | null
+          parent_id?: string | null
+          project_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          anchor_data?: Json | null
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          node_id?: string | null
+          order_index?: number | null
+          parent_id?: string | null
+          project_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_comments_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "structure_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "project_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_comments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_members: {
+        Row: {
+          created_at: string | null
+          id: string
+          project_id: string
+          role: Database["public"]["Enums"]["project_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          project_id: string
+          role?: Database["public"]["Enums"]["project_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          project_id?: string
+          role?: Database["public"]["Enums"]["project_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_snapshots: {
         Row: {
           created_at: string | null
@@ -399,6 +605,55 @@ export type Database = {
           export_metadata?: Json | null
         }
         Relationships: []
+      }
+      scene_assets: {
+        Row: {
+          asset_id: string
+          created_at: string | null
+          id: string
+          project_id: string
+          scene_id: string
+          sort_order: number | null
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string | null
+          id?: string
+          project_id: string
+          scene_id: string
+          sort_order?: number | null
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string | null
+          id?: string
+          project_id?: string
+          scene_id?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scene_assets_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "project_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scene_assets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scene_assets_scene_id_fkey"
+            columns: ["scene_id"]
+            isOneToOne: false
+            referencedRelation: "scenes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scene_characters: {
         Row: {
@@ -585,27 +840,33 @@ export type Database = {
           content: Json | null
           deleted_at: string | null
           id: string
+          last_editor_id: string | null
           node_id: string
           project_id: string
           updated_at: string | null
+          version: number
           writing_mode: WritingMode
         }
         Insert: {
           content?: Json | null
           deleted_at?: string | null
           id?: string
+          last_editor_id?: string | null
           node_id: string
           project_id: string
           updated_at?: string | null
+          version?: number
           writing_mode?: WritingMode
         }
         Update: {
           content?: Json | null
           deleted_at?: string | null
           id?: string
-          node_id?: string
+          last_editor_id?: string | null
+          node_id?: string | null
           project_id?: string
           updated_at?: string | null
+          version?: number
           writing_mode?: WritingMode
         }
         Relationships: [
@@ -748,9 +1009,16 @@ export type Database = {
     }
     Functions: {
       delete_user: { Args: never; Returns: undefined }
+      get_project_member_email: {
+        Args: {
+          p_project_id: string
+          p_user_id: string
+        }
+        Returns: string | null
+      }
     }
     Enums: {
-      [_ in never]: never
+      project_role: "owner" | "editor" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -877,6 +1145,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      project_role: ["owner", "editor", "viewer"],
+    },
   },
 } as const

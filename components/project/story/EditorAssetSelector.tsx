@@ -11,12 +11,9 @@ import {
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
-interface ProjectAsset {
-    id: string
-    storage_path: string
-    file_name: string
-    alt_text?: string
-}
+import { Tables } from '@/lib/supabase/types'
+
+type ProjectAsset = Tables<'project_assets'>
 
 interface EditorAssetSelectorProps {
     projectId: string

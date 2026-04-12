@@ -17,19 +17,9 @@ import {
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
-interface ProjectAsset {
-    id: string
-    project_id: string
-    storage_path: string
-    file_name: string
-    mime_type: string
-    file_size: number
-    width: number | null
-    height: number | null
-    alt_text: string | null
-    caption: string | null
-    created_at: string
-}
+import { Tables } from '@/lib/supabase/types'
+
+type ProjectAsset = Tables<'project_assets'>
 
 interface AssetManagerProps {
     projectId: string
@@ -299,7 +289,7 @@ function AssetCard({ asset, url, onDelete }: { asset: ProjectAsset, url: string,
                     <div className="space-y-1.5 text-[11px]">
                         <div className="flex justify-between"><span className="text-muted-foreground">Type:</span> <span>{asset.mime_type}</span></div>
                         <div className="flex justify-between"><span className="text-muted-foreground">Path:</span> <span className="truncate max-w-[120px]" title={asset.storage_path}>{asset.storage_path}</span></div>
-                        <div className="flex justify-between"><span className="text-muted-foreground">Date:</span> <span>{new Date(asset.created_at).toLocaleDateString()}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Date:</span> <span>{asset.created_at ? new Date(asset.created_at).toLocaleDateString() : 'N/A'}</span></div>
                     </div>
                 </div>
             )}

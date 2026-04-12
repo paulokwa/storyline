@@ -480,8 +480,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         const { data: { user } } = await supabase.auth.getUser()
         
         // 1. Update scene content with version check
-        const { error: sceneError, count } = await (supabase
-            .from('scenes') as any)
+        const { error: sceneError, count } = await supabase
+            .from('scenes')
             .update({ 
                 content: newContent,
                 version: localVersion + 1,
@@ -497,7 +497,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         // 2. Update structure_node title if changed
         let nodeErrorResult = null
         if (currentTitle !== initialTitle) {
-            const { error: nodeError } = await (supabase as any)
+            const { error: nodeError } = await supabase
                 .from('structure_nodes')
                 .update({ title: currentTitle })
                 .eq('id', scene.node_id)
@@ -712,7 +712,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 // Use the RPC if available (like for comments) or fetch from project_members
                 // Since project_members doesn't have email, we look it up in public.project_members joined with a secure view
                 // For now, let's try a direct member fetch - if we want emails of others, we need a secure DEFINER RPC
-                const { data, error } = await (supabase as any).rpc('get_project_member_email', { 
+                const { data, error } = await supabase.rpc('get_project_member_email', { 
                     p_project_id: scene.project_id,
                     p_user_id: scene.last_editor_id
                 })
