@@ -27,6 +27,7 @@ interface TypingState {
 
 interface CommentsContextType {
     comments: Comment[]
+    setComments: React.Dispatch<React.SetStateAction<Comment[]>>
     isLoading: boolean
     fetchComments: (projectId: string) => Promise<void>
     addComment: (data: { project_id: string; node_id?: string; content: string; parent_id?: string, anchor_data?: any }) => Promise<Comment>
@@ -299,6 +300,7 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
     return (
         <CommentsContext.Provider value={{ 
             comments, 
+            setComments,
             isLoading, 
             fetchComments, 
             addComment, 
