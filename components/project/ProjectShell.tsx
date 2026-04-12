@@ -341,7 +341,7 @@ function ProjectShellInner({
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => speak(currentSceneText)}
+                                        onClick={() => speak(currentSceneText, 'Scene')}
                                         className={cn(
                                             "rounded-xl transition-all h-9 px-3 gap-2",
                                             isReading ? "bg-amber-100 text-amber-700 animate-pulse border border-amber-200 font-bold" : "bg-black/5 text-slate-500 hover:bg-black/10"
