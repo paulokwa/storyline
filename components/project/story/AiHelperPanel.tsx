@@ -4,7 +4,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { getProjectTypeLabel } from '@/lib/constants'
 import { useCompletion } from '@ai-sdk/react'
 import Link from 'next/link'
-import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Package, Bookmark } from 'lucide-react'
+import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Package, Bookmark, Database } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -150,6 +150,7 @@ export default function AiHelperPanel({
     // Holds the previous response while a new one is loading — avoids blank flash
     const [previousCompletion, setPreviousCompletion] = useState('')
     const [previewOpen, setPreviewOpen] = useState(false)
+    const [promptsOpen, setPromptsOpen] = useState(false)
     const [promptMode, setPromptMode] = useState('Review / Chat')
     const [isOllamaLoading, setIsOllamaLoading] = useState(false)
     const [ollamaStatus, setOllamaStatus] = useState<'online' | 'offline' | 'checking'>('online')
@@ -670,23 +671,43 @@ export default function AiHelperPanel({
             </div>
 
             {/* Context Indicator */}
-            <div className="bg-[#fcfbf9] px-6 py-1.5 border-b border-slate-200/60 flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] text-slate-400 font-medium shrink-0">
-                <span className="flex items-center gap-1"><div className="w-1 h-1 bg-slate-200 rounded-full"></div>Context</span>
-                {linkedCharacters.length > 0 && (
-                    <span className="flex items-center gap-1"><div className="w-1 h-1 bg-indigo-200 rounded-full"></div>{linkedCharacters.length} char{linkedCharacters.length !== 1 ? 's' : ''}</span>
-                )}
-                {linkedIdeas.length > 0 && (
-                    <span className="flex items-center gap-1"><div className="w-1 h-1 bg-amber-200 rounded-full"></div>{linkedIdeas.length} idea{linkedIdeas.length !== 1 ? 's' : ''}</span>
-                )}
-                {linkedLocations.length > 0 && (
-                    <span className="flex items-center gap-1"><div className="w-1 h-1 bg-emerald-200 rounded-full"></div>{linkedLocations.length} loc</span>
-                )}
-                {selectedNodes.length > 0 && (
-                    <span className="flex items-center gap-1 text-indigo-500 font-bold">
-                        <div className="w-1 h-1 bg-indigo-500 rounded-full"></div>
-                        {selectedNodes.length} elem{selectedNodes.length !== 1 ? 's' : ''}
-                    </span>
-                )}
+            <div className="bg-white/40 px-6 py-2 border-b border-slate-200/60 flex items-center gap-3 shrink-0 overflow-hidden">
+                <div className="flex items-center gap-2 text-[9px] uppercase tracking-widest text-slate-400 font-bold shrink-0 border-r border-slate-200 pr-3 mr-1">
+                    <Database className="w-3 h-3" />
+                    <span>Context</span>
+                </div>
+                
+                <div className="flex-1 flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+                    {linkedCharacters.length > 0 && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-50/50 border border-indigo-100/50 text-[9px] text-indigo-600 font-medium shrink-0 animate-in fade-in slide-in-from-left-2 transition-all">
+                            <div className="w-1 h-1 bg-indigo-400 rounded-full"></div>
+                            {linkedCharacters.length} Character{linkedCharacters.length !== 1 ? 's' : ''}
+                        </div>
+                    )}
+                    {linkedIdeas.length > 0 && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-50/50 border border-amber-100/50 text-[9px] text-amber-600 font-medium shrink-0 animate-in fade-in slide-in-from-left-2 transition-all">
+                            <div className="w-1 h-1 bg-amber-400 rounded-full"></div>
+                            {linkedIdeas.length} Idea{linkedIdeas.length !== 1 ? 's' : ''}
+                        </div>
+                    )}
+                    {linkedLocations.length > 0 && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50/50 border border-emerald-100/50 text-[9px] text-emerald-600 font-medium shrink-0 animate-in fade-in slide-in-from-left-2 transition-all">
+                            <div className="w-1 h-1 bg-emerald-400 rounded-full"></div>
+                            {linkedLocations.length} Location{linkedLocations.length !== 1 ? 's' : ''}
+                        </div>
+                    )}
+                    {selectedNodes.length > 0 && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-200/50 text-[9px] text-indigo-700 font-bold shrink-0 animate-in fade-in slide-in-from-left-2 transition-all shadow-sm">
+                            <div className="w-1 h-1 bg-indigo-500 rounded-full animate-pulse"></div>
+                            {selectedNodes.length} Node{selectedNodes.length !== 1 ? 's' : ''}
+                        </div>
+                    )}
+                    
+                    {/* Fallback if nothing linked */}
+                    {!linkedCharacters.length && !linkedIdeas.length && !linkedLocations.length && !selectedNodes.length && (
+                        <div className="text-[9px] text-slate-300 italic">No specific entities linked</div>
+                    )}
+                </div>
             </div>
 
             {/* Response Area */}
@@ -937,9 +958,9 @@ export default function AiHelperPanel({
                     <button
                         type="button"
                         onClick={() => setPreviewOpen(!previewOpen)}
-                        className="w-full px-4 py-2 flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
+                        className="w-full px-4 py-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
                     >
-                        <span>AI {label} Context Preview</span>
+                        <span>What the AI is noticing</span>
                         {previewOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
                     </button>
                     
@@ -1065,18 +1086,31 @@ export default function AiHelperPanel({
                     )}
                 </div>
 
-                {/* Prompt templates */}
-                <div className="px-4 pt-3 pb-2 flex flex-wrap gap-1.5">
-                    {PROMPT_TEMPLATES.map((t) => (
-                        <button
-                            key={t.label}
-                            type="button"
-                            onClick={() => handleTemplate(t.value)}
-                            className="px-2.5 py-1 text-[11px] font-medium rounded-full border border-slate-200 text-slate-500 bg-slate-50 hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50 transition-all active:scale-95"
-                        >
-                            {t.label}
-                        </button>
-                    ))}
+                {/* Prompt templates - Collapsible */}
+                <div className="border-b border-slate-100">
+                    <button
+                        type="button"
+                        onClick={() => setPromptsOpen(!promptsOpen)}
+                        className="w-full px-4 py-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
+                    >
+                        <span>Quick Writing Ideas</span>
+                        {promptsOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+                    </button>
+                    
+                    {promptsOpen && (
+                        <div className="px-4 pt-3 pb-3 flex flex-wrap gap-2.5 justify-center bg-slate-50 border-t border-slate-100 animate-in slide-in-from-top-1 duration-300">
+                            {PROMPT_TEMPLATES.map((t) => (
+                                <button
+                                    key={t.label}
+                                    type="button"
+                                    onClick={() => handleTemplate(t.value)}
+                                    className="px-3 py-1.5 text-[11px] font-medium rounded-xl border border-slate-200 text-slate-500 bg-white hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50/50 transition-all active:scale-95 shadow-sm whitespace-nowrap"
+                                >
+                                    {t.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 <div className="px-4 pb-4">
