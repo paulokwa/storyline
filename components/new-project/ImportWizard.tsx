@@ -4,6 +4,12 @@ import React, { useState, useRef } from 'react'
 import { UploadCloud, FileText, SplitSquareHorizontal, CheckCircle2, AlertCircle, Loader2, Info, Sparkles, Wand2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from '@/lib/utils'
 import type { ProjectType, WritingMode } from '@/lib/supabase/types'
 import { getProjectTypeLabel } from '@/lib/constants'
@@ -336,9 +342,14 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                                 <div className="text-center p-8 text-slate-400 text-sm">No segments found</div>
                             ) : chunks.map((chunk, idx) => (
                                 <div key={idx} className="bg-white border rounded-xl p-4 flex gap-4 hover:shadow-md transition-all group">
-                                    <div className="flex-shrink-0 w-8 h-8 bg-[#546354]/10 text-[#546354] rounded-full flex items-center justify-center font-bold text-xs" title="Segment order">
-                                        {idx + 1}
-                                    </div>
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <div className="flex-shrink-0 w-8 h-8 bg-[#546354]/10 text-[#546354] rounded-full flex items-center justify-center font-bold text-xs">
+                                                {idx + 1}
+                                            </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">Segment order</TooltipContent>
+                                    </Tooltip>
                                     <div className="flex-1 min-w-0">
                                         <div className="mb-2">
                                             <Input

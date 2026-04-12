@@ -5,6 +5,7 @@ import { Volume2, Play, Pause, Square, VolumeX, MoreHorizontal, Settings2, User 
 import { Button } from '@/components/ui/button'
 import { useSpeech } from '@/hooks/useSpeech'
 import { cn } from '@/lib/utils'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 
 export function ReaderControls({
     getSelection,
@@ -33,10 +34,15 @@ export function ReaderControls({
 
     if (!supported) {
         return (
-            <Button variant="ghost" size="sm" disabled className="text-slate-300 gap-2 px-3 h-8 rounded-full" title="Text-to-speech not supported">
-                <VolumeX className="w-4 h-4" />
-                <span className="hidden xs:inline">Read Aloud</span>
-            </Button>
+            <Tooltip>
+                <TooltipTrigger>
+                    <Button variant="ghost" size="sm" disabled className="text-slate-300 gap-2 px-3 h-8 rounded-full">
+                        <VolumeX className="w-4 h-4" />
+                        <span className="hidden xs:inline">Read Aloud</span>
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Text-to-speech not supported</TooltipContent>
+            </Tooltip>
         )
     }
 
@@ -52,19 +58,23 @@ export function ReaderControls({
     return (
         <div className="relative flex items-center" ref={menuRef}>
             <div className="flex items-center bg-white/40 hover:bg-white/60 border border-slate-200/50 rounded-full p-0.5 transition-all shadow-sm">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleQuickRead}
-                    className={cn(
-                        "h-7 px-3 gap-2 rounded-full transition-all font-serif italic",
-                        speechState !== 'idle' ? "text-indigo-600" : "text-slate-500 hover:text-indigo-600"
-                    )}
-                    title="Read selection or current scene"
-                >
-                    <Volume2 className={cn("w-3.5 h-3.5", speechState === 'speaking' && "animate-pulse")} />
-                    <span className="hidden lg:inline text-xs">Read Aloud</span>
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleQuickRead}
+                            className={cn(
+                                "h-7 px-3 gap-2 rounded-full transition-all font-serif italic",
+                                speechState !== 'idle' ? "text-indigo-600" : "text-slate-500 hover:text-indigo-600"
+                            )}
+                        >
+                            <Volume2 className={cn("w-3.5 h-3.5", speechState === 'speaking' && "animate-pulse")} />
+                            <span className="hidden lg:inline text-xs">Read Aloud</span>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Read selection or current scene</TooltipContent>
+                </Tooltip>
 
                 <div className="w-px h-4 bg-slate-200 mx-0.5" />
 

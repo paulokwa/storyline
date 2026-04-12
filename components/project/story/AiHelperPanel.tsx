@@ -641,32 +641,40 @@ export default function AiHelperPanel({
                     </div>
                 </div>
                 <div className="flex items-center gap-1">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setIncludeArchiveContext(!includeArchiveContext)}
-                        className={cn(
-                            "w-8 h-8 rounded-lg relative transition-all",
-                            includeArchiveContext ? "text-indigo-600 bg-indigo-50" : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                        )}
-                        title="Archive context"
-                    >
-                        {isLoadingArchive ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Package className="w-3.5 h-3.5" />}
-                        {selectedArchiveIds.length > 0 && (
-                            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-indigo-500 text-white text-[8px] flex items-center justify-center rounded-full font-bold border border-white">
-                                {selectedArchiveIds.length}
-                            </span>
-                        )}
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setIncludeArchiveContext(!includeArchiveContext)}
+                                className={cn(
+                                    "w-8 h-8 rounded-lg relative transition-all",
+                                    includeArchiveContext ? "text-indigo-600 bg-indigo-50" : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                                )}
+                            >
+                                {isLoadingArchive ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Package className="w-3.5 h-3.5" />}
+                                {selectedArchiveIds.length > 0 && (
+                                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-indigo-500 text-white text-[8px] flex items-center justify-center rounded-full font-bold border border-white">
+                                        {selectedArchiveIds.length}
+                                    </span>
+                                )}
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">Archive context</TooltipContent>
+                    </Tooltip>
                 </div>
                 {(completion || previousCompletion) && !isLoading && (
-                    <button
-                        onClick={handleClear}
-                        title="Clear response"
-                        className="p-1.5 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-all"
-                    >
-                        <X className="w-3.5 h-3.5" />
-                    </button>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <button
+                                onClick={handleClear}
+                                className="p-1.5 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-all"
+                            >
+                                <X className="w-3.5 h-3.5" />
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">Clear response</TooltipContent>
+                    </Tooltip>
                 )}
             </div>
 
@@ -850,34 +858,42 @@ export default function AiHelperPanel({
                                             <Plus className="w-3.5 h-3.5" />
                                             Insert into Scene
                                         </Button>
-                                        <Button
-                                            onClick={() => setSaveModalOpen(true)}
-                                            variant="outline"
-                                            size="sm"
-                                            title="Save to database"
-                                            className="rounded-xl gap-1.5 h-9 px-3 transition-all active:scale-95 border-slate-200 text-slate-500 hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50"
-                                        >
-                                            <Bookmark className="w-3.5 h-3.5" />
-                                            Save
-                                        </Button>
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <Button
+                                                    onClick={() => setSaveModalOpen(true)}
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="rounded-xl gap-1.5 h-9 px-3 transition-all active:scale-95 border-slate-200 text-slate-500 hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50"
+                                                >
+                                                    <Bookmark className="w-3.5 h-3.5" />
+                                                    Save
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">Save to database</TooltipContent>
+                                        </Tooltip>
                                     </>
                                 )}
-                                <Button
-                                    onClick={handleCopy}
-                                    variant="outline"
-                                    size="sm"
-                                    title="Copy to clipboard"
-                                    className={cn(
-                                        "rounded-xl gap-1.5 h-9 px-3 transition-all active:scale-95",
-                                        isReadOnly && "flex-1",
-                                        copied
-                                            ? "border-green-200 text-green-600 bg-green-50"
-                                            : "border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50"
-                                    )}
-                                >
-                                    {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                                    {copied ? 'Copied' : 'Copy'}
-                                </Button>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Button
+                                            onClick={handleCopy}
+                                            variant="outline"
+                                            size="sm"
+                                            className={cn(
+                                                "rounded-xl gap-1.5 h-9 px-3 transition-all active:scale-95",
+                                                isReadOnly && "flex-1",
+                                                copied
+                                                    ? "border-green-200 text-green-600 bg-green-50"
+                                                    : "border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50"
+                                            )}
+                                        >
+                                            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                                            {copied ? 'Copied' : 'Copy'}
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">Copy to clipboard</TooltipContent>
+                                </Tooltip>
                             </div>
                         )}
                         
@@ -922,23 +938,28 @@ export default function AiHelperPanel({
                             archiveResponses.map((r) => {
                                 const isSelected = selectedArchiveIds.includes(r.id)
                                 return (
-                                    <button
-                                        key={r.id}
-                                        onClick={() => toggleArchiveId(r.id)}
-                                        className={cn(
-                                            "text-[9px] px-2 py-1 rounded-lg border transition-all text-left truncate flex-1 min-w-[100px] flex items-center gap-1.5",
-                                            isSelected 
-                                                ? "bg-indigo-50 text-indigo-700 border-indigo-200 font-bold ring-1 ring-indigo-200" 
-                                                : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
-                                        )}
-                                        title={`${r.title} (${r.source_label})`}
-                                    >
-                                        <div className={cn(
-                                            "w-1 h-1 rounded-full shrink-0",
-                                            isSelected ? "bg-indigo-500" : "bg-slate-300"
-                                        )} />
-                                        <span className="truncate">{r.title}</span>
-                                    </button>
+                                    <Tooltip key={r.id}>
+                                        <TooltipTrigger>
+                                            <button
+                                                onClick={() => toggleArchiveId(r.id)}
+                                                className={cn(
+                                                    "text-[9px] px-2 py-1 rounded-lg border transition-all text-left truncate flex-1 min-w-[100px] flex items-center gap-1.5",
+                                                    isSelected 
+                                                        ? "bg-indigo-50 text-indigo-700 border-indigo-200 font-bold ring-1 ring-indigo-200" 
+                                                        : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
+                                                )}
+                                            >
+                                                <div className={cn(
+                                                    "w-1 h-1 rounded-full shrink-0",
+                                                    isSelected ? "bg-indigo-500" : "bg-slate-300"
+                                                )} />
+                                                <span className="truncate">{r.title}</span>
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">
+                                            {r.title} ({r.source_label})
+                                        </TooltipContent>
+                                    </Tooltip>
                                 )
                             })
                         ) : !isLoadingArchive && (

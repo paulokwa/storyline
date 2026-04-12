@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import StructureTree from './StructureTree'
 import SceneEditor, { SceneEditorRef } from './SceneEditor'
 import AiHelperPanel from './AiHelperPanel'
@@ -42,6 +42,7 @@ interface StoryTabProps {
 
 export default function StoryTab({ project, initialNodes, initialScenes, projectCharacters, projectIdeas, projectLocations, projectObjects, projectRelationships, aiSettings }: StoryTabProps) {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const { 
         sidebarOpen, setSidebarOpen, 
         aiPanelOpen, setAiPanelOpen, 
@@ -54,12 +55,19 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     const [nodes, setNodes] = useState(initialNodes)
     const [scenes, setScenes] = useState(initialScenes)
 
-    // On mobile, we want to go direct to the tab column (list) instead of an entry.
+    // Handle initial node selection
     useEffect(() => {
-        if (!activeNodeId) {
+        const nodeIdFromUrl = searchParams.get('nodeId')
+        
+        if (nodeIdFromUrl) {
+            setActiveNodeId(nodeIdFromUrl)
+        } else if (!activeNodeId) {
+             // Default to first scene if nothing is selected
              setActiveNodeId(initialNodes.find(n => n.type === 'scene')?.id ?? null)
         }
-        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+
+        // On small mobile, if no node is explicitly selected via URL, we show the tree (null id)
+        if (typeof window !== 'undefined' && window.innerWidth < 768 && !nodeIdFromUrl) {
             setActiveNodeId(null)
         }
     }, [])

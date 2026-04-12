@@ -424,28 +424,40 @@ const NodeItem = React.memo(({
                                 isActive && "md:opacity-100"
                             )} onClick={e => e.stopPropagation()}>
                                 {CHILD_TYPE[node.type as NodeType] && (
-                                    <button
-                                        onClick={() => onAddChild(node)}
-                                        className="p-2 rounded-lg hover:bg-primary/10 text-slate-400 hover:text-primary active:scale-95 transition-all"
-                                        title={CHILD_LABELS[node.type as NodeType]}
-                                    >
-                                        <Plus className="w-4 h-4 md:w-3.5 md:h-3.5" />
-                                    </button>
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <button
+                                                onClick={() => onAddChild(node)}
+                                                className="p-2 rounded-lg hover:bg-primary/10 text-slate-400 hover:text-primary active:scale-95 transition-all"
+                                            >
+                                                <Plus className="w-4 h-4 md:w-3.5 md:h-3.5" />
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">{CHILD_LABELS[node.type as NodeType]}</TooltipContent>
+                                    </Tooltip>
                                 )}
-                                <button
-                                    onClick={e => { e.stopPropagation(); setEditing(true) }}
-                                    className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 active:scale-95 transition-all"
-                                    title="Rename"
-                                >
-                                    <Pencil className="w-4 h-4 md:w-3.5 md:h-3.5" />
-                                </button>
-                                <button
-                                    onClick={e => { e.stopPropagation(); onRequestDelete(node.id) }}
-                                    className="p-2 rounded-lg hover:bg-amber-50 text-slate-400 hover:text-amber-600 active:scale-95 transition-all"
-                                    title="Move to Trash"
-                                >
-                                    <Trash2 className="w-4 h-4 md:w-3.5 md:h-3.5" />
-                                </button>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <button
+                                            onClick={e => { e.stopPropagation(); setEditing(true) }}
+                                            className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 active:scale-95 transition-all"
+                                        >
+                                            <Pencil className="w-4 h-4 md:w-3.5 md:h-3.5" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">Rename</TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <button
+                                            onClick={e => { e.stopPropagation(); onRequestDelete(node.id) }}
+                                            className="p-2 rounded-lg hover:bg-amber-50 text-slate-400 hover:text-amber-600 active:scale-95 transition-all"
+                                        >
+                                            <Trash2 className="w-4 h-4 md:w-3.5 md:h-3.5" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">Move to Trash</TooltipContent>
+                                </Tooltip>
                             </div>
                         )}
                     </div>

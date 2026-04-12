@@ -24,6 +24,12 @@ import {
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from '@/lib/utils'
 import { softDeleteEntity } from '@/lib/supabase/recovery'
 
@@ -400,16 +406,20 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
                                                 <Button size="sm" variant="ghost" onClick={() => setIsEditingTitle(false)} className="h-10 text-slate-400">Cancel</Button>
                                             </div>
                                         ) : (
-                                            <h2 
-                                                className="text-2xl font-serif font-bold text-slate-800 leading-tight group cursor-pointer hover:text-[#546354] transition-colors flex items-center gap-2"
-                                                onClick={() => {
-                                                    setTitleDraft(selectedResponse.title)
-                                                    setIsEditingTitle(true)
-                                                }}
-                                                title="Click to edit title"
-                                            >
-                                                {selectedResponse.title}
-                                            </h2>
+                                            <Tooltip>
+                                                <TooltipTrigger>
+                                                    <h2 
+                                                        className="text-2xl font-serif font-bold text-slate-800 leading-tight group cursor-pointer hover:text-[#546354] transition-colors flex items-center gap-2"
+                                                        onClick={() => {
+                                                            setTitleDraft(selectedResponse.title)
+                                                            setIsEditingTitle(true)
+                                                        }}
+                                                    >
+                                                        {selectedResponse.title}
+                                                    </h2>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top">Click to edit title</TooltipContent>
+                                            </Tooltip>
                                         )}
                                         <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
                                             <span className="flex items-center gap-1.5">
@@ -431,20 +441,26 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
                                         Inserted into Scene
                                     </span>
                                 )}
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setIsInserting(true)}
-                                    disabled={availableScenes.length === 0}
-                                    className={cn(
-                                        "rounded-xl h-10 px-4 transition-all active:scale-95 border-slate-200 text-[#546354]",
-                                        availableScenes.length > 0 ? "hover:bg-indigo-50 hover:border-indigo-200" : "opacity-50 cursor-not-allowed"
-                                    )}
-                                    title={availableScenes.length === 0 ? "No scenes available to insert into" : "Insert into a scene"}
-                                >
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Insert into Scene
-                                </Button>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setIsInserting(true)}
+                                            disabled={availableScenes.length === 0}
+                                            className={cn(
+                                                "rounded-xl h-10 px-4 transition-all active:scale-95 border-slate-200 text-[#546354]",
+                                                availableScenes.length > 0 ? "hover:bg-indigo-50 hover:border-indigo-200" : "opacity-50 cursor-not-allowed"
+                                            )}
+                                        >
+                                            <Plus className="w-4 h-4 mr-2" />
+                                            Insert into Scene
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">
+                                        {availableScenes.length === 0 ? "No scenes available to insert into" : "Insert into a scene"}
+                                    </TooltipContent>
+                                </Tooltip>
                                 <Button
                                     variant="outline"
                                     size="sm"
@@ -454,15 +470,19 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
                                     {copiedId === selectedResponse.id ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
                                     {copiedId === selectedResponse.id ? 'Copied' : 'Copy Response'}
                                 </Button>
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => deleteResponse(selectedResponse.id)}
-                                    className="rounded-xl h-10 w-10 border-slate-200 text-slate-400 hover:text-amber-500 hover:border-amber-100 hover:bg-amber-50 transition-all"
-                                    title="Move to Trash"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </Button>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={() => deleteResponse(selectedResponse.id)}
+                                            className="rounded-xl h-10 w-10 border-slate-200 text-slate-400 hover:text-amber-500 hover:border-amber-100 hover:bg-amber-50 transition-all"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">Move to Trash</TooltipContent>
+                                </Tooltip>
                             </div>
                         </div>
 

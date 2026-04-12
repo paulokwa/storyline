@@ -27,8 +27,10 @@ import {
     Settings2,
     Mic,
     MicOff,
-    Clock
+    Clock,
+    HelpCircle
 } from 'lucide-react'
+import { ShortcutsLegend } from './ShortcutsLegend'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useProjectActionsStore } from '@/lib/store/projectActionsStore'
 import {
@@ -62,6 +64,7 @@ type Project = Database['public']['Tables']['projects']['Row']
 
 const TABS = [
     { slug: 'story', label: 'Story', icon: BookOpen },
+    { slug: 'ai', label: 'AI Sanctuary', icon: Sparkles },
     { slug: 'characters', label: 'Characters', icon: Users },
     { slug: 'ideas', label: 'Ideas', icon: Lightbulb },
     { slug: 'locations', label: 'Locations', icon: MapPin },
@@ -88,6 +91,7 @@ export default function ProjectShell({
     const [exportModalOpen, setExportModalOpen] = useState(false)
     const [settingsModalOpen, setSettingsModalOpen] = useState(false)
     const [shareModalOpen, setShareModalOpen] = useState(false)
+    const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
     async function saveTitle() {
         if (!titleDraft.trim()) return setEditingTitle(false)
@@ -118,6 +122,8 @@ export default function ProjectShell({
                             setExportModalOpen={setExportModalOpen}
                             setSettingsModalOpen={setSettingsModalOpen}
                             setShareModalOpen={setShareModalOpen}
+                            shortcutsOpen={shortcutsOpen}
+                            setShortcutsOpen={setShortcutsOpen}
                             role={role}
                             pathname={pathname} 
                         >
@@ -148,6 +154,8 @@ export default function ProjectShell({
                             projectId={project.id}
                         />
 
+                        <ShortcutsLegend open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+
                         <FloatingPlayer />
                     </ReaderProvider>
                 </CommentsProvider>
@@ -175,6 +183,8 @@ function ProjectShellInner({
     setExportModalOpen, 
     setSettingsModalOpen, 
     setShareModalOpen,
+    shortcutsOpen,
+    setShortcutsOpen,
     role,
     pathname, 
     children 
@@ -225,39 +235,77 @@ function ProjectShellInner({
 
     const { speak, speechState } = useSpeech()
     const isReading = speechState === 'speaking'
+
+    // Global shortcut for help
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === '?' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName) && !(e.target as HTMLElement).isContentEditable) {
+                setShortcutsOpen(true)
+            }
+        }
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [setShortcutsOpen])
+
     const isStoryTab = pathname.includes('/story')
     const activeTab = TABS.find(t => pathname.includes(`/${t.slug}`))?.slug ?? 'story'
 
     return (
-        <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Project header */}
-            <div className="bg-secondary/50 backdrop-blur-sm px-4 sm:px-6 lg:px-8 border-b border-border">
+        <TooltipProvider>
+            <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Project header */}
+                <div className="bg-secondary/50 backdrop-blur-sm px-4 sm:px-6 lg:px-8 border-b border-border">
                 <div className="max-w-[1440px] mx-auto">
                     {/* Top row */}
 
                     <div className="flex items-center gap-2 pt-4 pb-2 border-b border-black/5 md:border-none">
                         <div className="flex items-center gap-1.5 shrink-0">
-                            <Link 
-                                href="/library" 
-                                className="h-9 w-9 flex items-center justify-center rounded-xl bg-black/5 text-slate-500 hover:text-slate-800 transition-all active:scale-95"
-                                title="Back to library"
-                            >
-                                <ChevronLeft className="w-5 h-5" />
-                            </Link>
+                            <Tooltip>
+                                <TooltipTrigger>
+                                    <Link 
+                                        href="/library" 
+                                        className="h-9 w-9 flex items-center justify-center rounded-xl bg-black/5 text-slate-500 hover:text-slate-800 transition-all active:scale-95"
+                                    >
+                                        <ChevronLeft className="w-5 h-5" />
+                                    </Link>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" sideOffset={-57}>Back to library</TooltipContent>
+                            </Tooltip>
 
                             {isStoryTab && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setSidebarOpen(!sidebarOpen)}
-                                    className={cn(
-                                        "rounded-xl transition-all h-9 w-9 p-0",
-                                        sidebarOpen ? "bg-primary/10 text-primary hover:bg-primary/20" : "bg-black/5 text-slate-500 hover:bg-black/10"
-                                    )}
-                                    title="Toggle structure panel"
-                                >
-                                    <PanelLeft className="w-4 h-4" />
-                                </Button>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setSidebarOpen(!sidebarOpen)}
+                                            className={cn(
+                                                "rounded-xl transition-all h-9 w-9 p-0",
+                                                sidebarOpen ? "bg-primary/10 text-primary hover:bg-primary/20" : "bg-black/5 text-slate-500 hover:bg-black/10"
+                                            )}
+                                        >
+                                            <PanelLeft className="w-4 h-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom"sideOffset={-57}>Toggle structure panel</TooltipContent>
+                                </Tooltip>
+                            )}
+
+                            {!isStoryTab && (
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => router.push(`/project/${project.id}/story${activeNodeId ? `?nodeId=${activeNodeId}` : ''}`)}
+                                            className="h-9 px-3 gap-2 rounded-xl bg-indigo-50/50 text-indigo-600 hover:bg-indigo-50 transition-all active:scale-95 ml-1"
+                                        >
+                                            <BookOpen className="w-3.5 h-3.5" />
+                                            <span className="hidden lg:inline text-[10px] font-bold uppercase tracking-[0.1em]">Editor</span>
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom">Return to your last active scene</TooltipContent>
+                                </Tooltip>
                             )}
                         </div>
 
@@ -304,8 +352,24 @@ function ProjectShellInner({
                             )}
                         </div>
 
-                        <div className="flex items-center -space-x-2 shrink-0">
-                             <AvatarPortal />
+                        <div className="flex items-center gap-4">
+                            <AvatarPortal />
+                            
+                            <div className="h-6 w-px bg-slate-200/50" />
+                            
+                            <Tooltip>
+                                <TooltipTrigger>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setShortcutsOpen(true)}
+                                        className="h-9 w-9 p-0 rounded-xl bg-black/5 text-slate-500 hover:text-primary hover:bg-primary/5 transition-all"
+                                    >
+                                        <HelpCircle className="w-5 h-5" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom">Shortcuts & Help</TooltipContent>
+                            </Tooltip>
                         </div>
                     </div>
 
@@ -317,85 +381,112 @@ function ProjectShellInner({
                                 <div className="flex items-center gap-2 shrink-0">
                                     {/* AI Tools - Generative stuff first */}
                                     <div className="flex items-center gap-1 bg-violet-50 p-1 rounded-2xl border border-violet-100/50">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => analyzeScene()}
-                                            disabled={isAnalyzing || !currentSceneText}
-                                            className={cn(
-                                                "rounded-xl transition-all h-9 px-3 gap-2",
-                                                isAnalyzing ? "bg-white text-violet-600 shadow-sm animate-pulse font-bold" : "text-slate-500 hover:bg-white"
-                                            )}
-                                        >
-                                            <Wand2 className="w-4 h-4" />
-                                            <span className="text-xs font-medium">Analyze</span>
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={handleToggleAi}
-                                            className={cn(
-                                                "rounded-xl transition-all h-9 px-3 gap-2",
-                                                aiPanelOpen ? "bg-white text-indigo-600 shadow-sm font-bold border-indigo-100" : "text-slate-500 hover:bg-white"
-                                            )}
-                                        >
-                                            <Sparkles className="w-4 h-4" />
-                                            <span className="text-xs font-medium">Helper</span>
-                                        </Button>
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => analyzeScene()}
+                                                    disabled={isAnalyzing || !currentSceneText}
+                                                    className={cn(
+                                                        "rounded-xl transition-all h-9 px-3 gap-2",
+                                                        isAnalyzing ? "bg-white text-violet-600 shadow-sm animate-pulse font-bold" : "text-slate-500 hover:bg-white"
+                                                    )}
+                                                >
+                                                    <Wand2 className="w-4 h-4" />
+                                                    <span className="text-xs font-medium">Analyze</span>
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="bottom">AI Scene Analysis</TooltipContent>
+                                        </Tooltip>
+
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={handleToggleAi}
+                                                    className={cn(
+                                                        "rounded-xl transition-all h-9 px-3 gap-2",
+                                                        aiPanelOpen ? "bg-white text-indigo-600 shadow-sm font-bold border-indigo-100" : "text-slate-500 hover:bg-white"
+                                                    )}
+                                                >
+                                                    <Sparkles className="w-4 h-4" />
+                                                    <span className="text-xs font-medium">Helper</span>
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="bottom">AI Writing Assistant</TooltipContent>
+                                        </Tooltip>
                                     </div>
 
                                     {/* Reading/Interaction */}
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => speak(currentSceneText, 'Scene')}
-                                        className={cn(
-                                            "rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center shrink-0",
-                                            isReading ? "bg-amber-100 text-amber-700 animate-pulse border border-amber-200 font-bold" : "bg-black/5 text-slate-500 hover:bg-black/10"
-                                        )}
-                                        title="Read Aloud"
-                                    >
-                                        <Volume2 className={cn("w-4 h-4", isReading && "animate-bounce")} />
-                                    </Button>
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => speak(currentSceneText, 'Scene')}
+                                                className={cn(
+                                                    "rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center shrink-0",
+                                                    isReading ? "bg-amber-100 text-amber-700 animate-pulse border border-amber-200 font-bold" : "bg-black/5 text-slate-500 hover:bg-black/10"
+                                                )}
+                                            >
+                                                <Volume2 className={cn("w-4 h-4", isReading && "animate-bounce")} />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="bottom">Read Aloud</TooltipContent>
+                                    </Tooltip>
 
                                     {/* Dictate */}
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={requestDictation}
-                                        className={cn(
-                                            "rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center shrink-0 border border-transparent",
-                                            isDictating ? "bg-red-50 text-red-600 border-red-100 font-bold shadow-sm animate-pulse" : "bg-black/5 text-slate-500 hover:bg-black/10"
-                                        )}
-                                        title="Dictate"
-                                    >
-                                        {isDictating ? <Mic className="w-4 h-4 text-red-500" /> : <MicOff className="w-4 h-4" />}
-                                    </Button>
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={requestDictation}
+                                                className={cn(
+                                                    "rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center shrink-0 border border-transparent",
+                                                    isDictating ? "bg-red-50 text-red-600 border-red-100 font-bold shadow-sm animate-pulse" : "bg-black/5 text-slate-500 hover:bg-black/10"
+                                                )}
+                                            >
+                                                {isDictating ? <Mic className="w-4 h-4 text-red-500" /> : <MicOff className="w-4 h-4" />}
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="bottom">Dictate</TooltipContent>
+                                    </Tooltip>
 
                                     {/* Feedback */}
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={handleToggleComments}
-                                        className={cn(
-                                            "rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center shrink-0 border border-transparent",
-                                            commentsPanelOpen ? "bg-rose-50 text-rose-600 border-rose-100 font-bold shadow-sm" : "bg-black/5 text-slate-500 hover:bg-black/10"
-                                        )}
-                                        title="Feedback"
-                                    >
-                                        <MessageSquare className="w-4 h-4" />
-                                    </Button>
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={handleToggleComments}
+                                                className={cn(
+                                                    "rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center shrink-0 border border-transparent",
+                                                    commentsPanelOpen ? "bg-rose-50 text-rose-600 border-rose-100 font-bold shadow-sm" : "bg-black/5 text-slate-500 hover:bg-black/10"
+                                                )}
+                                            >
+                                                <MessageSquare className="w-4 h-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="bottom">Feedback</TooltipContent>
+                                    </Tooltip>
 
                                     {/* History */}
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => router.push(`/project/${project.id}/recovery?section=history&sceneId=${activeNodeId}`)}
-                                        className="rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center shrink-0 bg-black/5 text-slate-500 hover:bg-black/10"
-                                        title="History"
-                                    >
-                                        <Clock className="w-4 h-4" />
-                                    </Button>
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => router.push(`/project/${project.id}/recovery?section=history&sceneId=${activeNodeId}`)}
+                                                className="rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center shrink-0 bg-black/5 text-slate-500 hover:bg-black/10"
+                                            >
+                                                <Clock className="w-4 h-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="bottom">History</TooltipContent>
+                                    </Tooltip>
                                 </div>
                             )}
                         </div>
@@ -406,19 +497,23 @@ function ProjectShellInner({
                     <div className="relative group/tabs mt-1">
                         <div className="flex gap-1 overflow-x-auto no-scrollbar scroll-smooth">
                             {TABS.map(({ slug, label, icon: Icon }) => (
-                                <Link
-                                    key={slug}
-                                    href={`/project/${project.id}/${slug}`}
-                                    className={cn(
-                                        'flex items-center gap-1.5 px-4 sm:px-6 py-3 text-sm font-medium transition-all duration-300 rounded-t-xl shrink-0',
-                                        activeTab === slug
-                                            ? 'bg-background text-primary shadow-[0_-4px_12px_rgba(0,0,0,0.03)]'
-                                            : 'text-slate-500 hover:text-slate-800 hover:bg-black/5'
-                                    )}
-                                >
-                                    <Icon className="w-3.5 h-3.5" />
-                                    <span className="font-sans tracking-wide uppercase text-[10px]">{label}</span>
-                                </Link>
+                                <Tooltip key={slug}>
+                                    <TooltipTrigger>
+                                        <Link
+                                            href={`/project/${project.id}/${slug}${slug === 'story' && activeNodeId ? `?nodeId=${activeNodeId}` : ''}`}
+                                            className={cn(
+                                                'flex items-center gap-1.5 px-4 sm:px-6 py-3 text-sm font-medium transition-all duration-300 rounded-t-xl shrink-0',
+                                                activeTab === slug
+                                                    ? 'bg-background text-primary shadow-[0_-4px_12px_rgba(0,0,0,0.03)]'
+                                                    : 'text-slate-500 hover:text-slate-800 hover:bg-black/5'
+                                            )}
+                                        >
+                                            <Icon className="w-3.5 h-3.5" />
+                                            <span className="font-sans tracking-wide uppercase text-[10px]">{label}</span>
+                                        </Link>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">Go to {label}</TooltipContent>
+                                </Tooltip>
                             ))}
                         </div>
                         {/* Scroll indicator gradient */}
@@ -431,7 +526,10 @@ function ProjectShellInner({
             <div className="flex-1 overflow-hidden max-w-[1440px] w-full mx-auto flex flex-col">
                 {children}
             </div>
-        </div>
+            
+            </div>
+            <ShortcutsLegend open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+        </TooltipProvider>
     )
 }
 
@@ -457,45 +555,43 @@ function CollaborativeAvatars() {
     const remainingCount = filteredUsers.length - MAX_VISIBLE
     
     return (
-        <TooltipProvider>
-            <div className="flex items-center -space-x-1.5 hover:-space-x-1 transition-all duration-300">
-                {visibleUsers.map((user) => {
-                    const statusLabel = user.status === 'editing' ? 'writing' : 'reading'
-                    const userColor = getUserColor(user.email)
-                    
-                    return (
-                        <Tooltip key={user.user_id}>
-                            <TooltipTrigger>
-                                <Avatar className={cn(
-                                    "w-8 h-8 ring-2 ring-white transition-all cursor-default",
-                                    userColor
-                                )}>
-                                    <AvatarFallback className="text-[10px] font-bold bg-transparent">
-                                        {(() => {
-                                            const name = user.display_name || user.email.split('@')[0]
-                                            return name.includes(' ')
-                                                ? name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
-                                                : name.slice(0, 2).toUpperCase()
-                                        })()}
-                                    </AvatarFallback>
-                                </Avatar>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom" className="flex flex-col gap-0.5 px-3 py-2 rounded-xl shadow-xl border-slate-200">
-                                <p className="text-xs font-bold text-slate-900">{user.email}</p>
-                                <p className="text-[10px] text-slate-500 font-medium">
-                                    Currently <span className="text-primary/70">{statusLabel}</span> {user.scene_id ? 'this scene' : 'the project'}
-                                </p>
-                            </TooltipContent>
-                        </Tooltip>
-                    )
-                })}
+        <div className="flex items-center -space-x-1.5 hover:-space-x-1 transition-all duration-300">
+            {visibleUsers.map((user) => {
+                const statusLabel = user.status === 'editing' ? 'writing' : 'reading'
+                const userColor = getUserColor(user.email)
                 
-                {remainingCount > 0 && (
-                    <div className="w-8 h-8 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-slate-500 ring-2 ring-white cursor-default">
-                        +{remainingCount}
-                    </div>
-                )}
-            </div>
-        </TooltipProvider>
+                return (
+                    <Tooltip key={user.user_id}>
+                        <TooltipTrigger>
+                            <Avatar className={cn(
+                                "w-8 h-8 ring-2 ring-white transition-all cursor-default",
+                                userColor
+                            )}>
+                                <AvatarFallback className="text-[10px] font-bold bg-transparent">
+                                    {(() => {
+                                        const name = user.display_name || user.email.split('@')[0]
+                                        return name.includes(' ')
+                                            ? name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+                                            : name.slice(0, 2).toUpperCase()
+                                    })()}
+                                </AvatarFallback>
+                            </Avatar>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="flex flex-col gap-0.5 px-3 py-2 rounded-xl shadow-xl border-slate-200">
+                            <p className="text-xs font-bold text-slate-900">{user.email}</p>
+                            <p className="text-[10px] text-slate-500 font-medium">
+                                Currently <span className="text-primary/70">{statusLabel}</span> {user.scene_id ? 'this scene' : 'the project'}
+                            </p>
+                        </TooltipContent>
+                    </Tooltip>
+                )
+            })}
+            
+            {remainingCount > 0 && (
+                <div className="w-8 h-8 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-slate-500 ring-2 ring-white cursor-default">
+                    +{remainingCount}
+                </div>
+            )}
+        </div>
     )
 }

@@ -3,6 +3,12 @@
 import { useEffect } from 'react'
 import { getProjectTypeLabel } from '@/lib/constants'
 import { X, Sparkles, FileText, Zap, Timer, MessageSquare, Lightbulb } from 'lucide-react'
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from '@/lib/utils'
 
 interface AnalysisResult {
@@ -73,13 +79,17 @@ export default function SceneAnalysisPanel({ result, onClose, projectType }: Sce
                         <h3 className="text-sm font-serif font-bold text-slate-800 tracking-tight">{label} Analysis</h3>
                         <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">AI Suggestions · Not Directives</p>
                     </div>
-                    <button
-                        onClick={onClose}
-                        title="Close (Esc)"
-                        className="p-1.5 rounded-lg text-slate-300 hover:text-slate-600 hover:bg-slate-100 transition-all shrink-0"
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <button
+                                onClick={onClose}
+                                className="p-1.5 rounded-lg text-slate-300 hover:text-slate-600 hover:bg-slate-100 transition-all shrink-0"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">Close (Esc)</TooltipContent>
+                    </Tooltip>
                 </div>
 
                 {/* Scrollable content */}

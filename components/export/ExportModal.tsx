@@ -22,6 +22,12 @@ import {
     CheckCircle2,
     AlertCircle
 } from 'lucide-react'
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from '@/lib/utils'
 import { buildExportPayload, ExportOptions } from '@/lib/export/buildExportPayload'
 import { toMarkdown } from '@/lib/export/toMarkdown'
@@ -170,20 +176,25 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
                         </label>
                         <div className="flex gap-2 p-1 bg-slate-900/5 rounded-2xl w-fit">
                             {(['entire_project', 'selected_chapters', 'selected_scenes'] as const).map((s) => (
-                                <button
-                                    key={s}
-                                    onClick={() => setOptions({ ...options, scope: s })}
-                                    className={cn(
-                                        "px-4 py-2 rounded-xl text-xs font-medium transition-all duration-300",
-                                        options.scope === s
-                                            ? "bg-white text-slate-900 shadow-sm"
-                                            : "text-slate-500 hover:text-slate-700 hover:bg-white/40",
-                                        s !== 'entire_project' && "opacity-50 grayscale cursor-not-allowed" // Disabled for V1
+                                <Tooltip key={s}>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            onClick={() => setOptions({ ...options, scope: s })}
+                                            className={cn(
+                                                "px-4 py-2 rounded-xl text-xs font-medium transition-all duration-300",
+                                                options.scope === s
+                                                    ? "bg-white text-slate-900 shadow-sm"
+                                                    : "text-slate-500 hover:text-slate-700 hover:bg-white/40",
+                                                s !== 'entire_project' && "opacity-50 grayscale cursor-not-allowed" // Disabled for V1
+                                            )}
+                                        >
+                                            {s === 'entire_project' ? 'Entire Project' : s === 'selected_chapters' ? (projectType === 'tv_script' ? 'Episodes' : 'Chapters') : 'Scenes'}
+                                        </button>
+                                    </TooltipTrigger>
+                                    {s !== 'entire_project' && (
+                                        <TooltipContent side="top">Coming soon in V2</TooltipContent>
                                     )}
-                                    title={s !== 'entire_project' ? 'Coming soon in V2' : ''}
-                                >
-                                    {s === 'entire_project' ? 'Entire Project' : s === 'selected_chapters' ? (projectType === 'tv_script' ? 'Episodes' : 'Chapters') : 'Scenes'}
-                                </button>
+                                </Tooltip>
                             ))}
                         </div>
                     </div>

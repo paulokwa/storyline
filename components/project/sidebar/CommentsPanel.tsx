@@ -23,6 +23,7 @@ import {
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn, getUserColor } from '@/lib/utils'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { createClient } from '@/lib/supabase/client'
@@ -193,28 +194,36 @@ export default function CommentsPanel({
                     <h3 className="font-serif italic font-bold text-slate-800">Feedback</h3>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className={cn("h-8 px-2 w-auto min-w-[32px] rounded-lg gap-1.5", filterByNode ? "text-primary bg-primary/5" : "text-slate-400")}
-                        onClick={() => setFilterByNode(!filterByNode)}
-                        title={filterByNode ? "Switch to: All Project Feedback" : "Switch to: Current Scene Only"}
-                    >
-                        <Filter className="w-3.5 h-3.5" />
-                        <span className="text-[10px] font-bold">{filterByNode ? currentSceneCount : allProjectCount}</span>
-                    </Button>
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className={cn("h-8 px-2 w-auto min-w-[32px] rounded-lg gap-1.5", showResolved ? "text-emerald-500 bg-emerald-50" : "text-slate-400")}
-                        onClick={() => setShowResolved(!showResolved)}
-                        title={showResolved ? "Hide resolved items" : "Show resolved items"}
-                    >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        {resolvedCount > 0 && (
-                            <span className="text-[10px] font-bold">{resolvedCount}</span>
-                        )}
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className={cn("h-8 px-2 w-auto min-w-[32px] rounded-lg gap-1.5", filterByNode ? "text-primary bg-primary/5" : "text-slate-400")}
+                                onClick={() => setFilterByNode(!filterByNode)}
+                            >
+                                <Filter className="w-3.5 h-3.5" />
+                                <span className="text-[10px] font-bold">{filterByNode ? currentSceneCount : allProjectCount}</span>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">{filterByNode ? "Switch to: All Project Feedback" : "Switch to: Current Scene Only"}</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className={cn("h-8 px-2 w-auto min-w-[32px] rounded-lg gap-1.5", showResolved ? "text-emerald-500 bg-emerald-50" : "text-slate-400")}
+                                onClick={() => setShowResolved(!showResolved)}
+                            >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                {resolvedCount > 0 && (
+                                    <span className="text-[10px] font-bold">{resolvedCount}</span>
+                                )}
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">{showResolved ? "Hide resolved items" : "Show resolved items"}</TooltipContent>
+                    </Tooltip>
                 </div>
             </div>
 
@@ -592,15 +601,19 @@ function CommentItem({
                     <div className="mt-4 pt-3 border-t border-slate-100/50 flex items-center justify-between">
                         <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
                             {onJumpTo && !isReply && (
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-7 w-7 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/5" 
-                                    onClick={(e) => { e.stopPropagation(); onJumpTo(); }}
-                                    title="Jump to position"
-                                >
-                                    <Target className="w-4 h-4" />
-                                </Button>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-7 w-7 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/5" 
+                                            onClick={(e) => { e.stopPropagation(); onJumpTo(); }}
+                                        >
+                                            <Target className="w-4 h-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">Jump to position</TooltipContent>
+                                </Tooltip>
                             )}
                             {!isReply && onReply && comment.status !== 'resolved' && (
                                 <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/5" onClick={(e) => { e.stopPropagation(); onReply(); }}>
@@ -608,30 +621,44 @@ function CommentItem({
                                 </Button>
                             )}
                             {!isReply && onResolve && isOwnerOrEditor && (
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className={cn(
-                                        "h-7 w-7 rounded-lg transition-all",
-                                        comment.status === 'resolved' 
-                                            ? "text-emerald-500 bg-emerald-50" 
-                                            : "text-slate-400 hover:text-emerald-500 hover:bg-emerald-50"
-                                    )}
-                                    onClick={(e) => { e.stopPropagation(); onResolve(); }}
-                                    title={comment.status === 'resolved' ? "Reopen" : "Resolve"}
-                                >
-                                    <CheckCircle2 className="w-4 h-4" />
-                                </Button>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className={cn(
+                                                "h-7 w-7 rounded-lg transition-all",
+                                                comment.status === 'resolved' 
+                                                    ? "text-emerald-500 bg-emerald-50" 
+                                                    : "text-slate-400 hover:text-emerald-500 hover:bg-emerald-50"
+                                            )}
+                                            onClick={(e) => { e.stopPropagation(); onResolve(); }}
+                                        >
+                                            <CheckCircle2 className="w-4 h-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">{comment.status === 'resolved' ? "Reopen" : "Resolve"}</TooltipContent>
+                                </Tooltip>
                             )}
                             {isAuthor && (
-                                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/5" onClick={(e) => { e.stopPropagation(); onEdit(); }} title="Edit">
-                                    <Edit3 className="w-4 h-4" />
-                                </Button>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/5" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+                                            <Edit3 className="w-4 h-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">Edit</TooltipContent>
+                                </Tooltip>
                             )}
                             {(isAuthor || role === 'owner') && (
-                                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-slate-400 hover:text-destructive hover:bg-destructive/5" onClick={(e) => { e.stopPropagation(); onDelete(); }} title="Delete">
-                                    <Trash2 className="w-4 h-4" />
-                                </Button>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-slate-400 hover:text-destructive hover:bg-destructive/5" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">Delete</TooltipContent>
+                                </Tooltip>
                             )}
                         </div>
 

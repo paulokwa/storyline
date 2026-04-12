@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
 import { softDeleteEntity } from '@/lib/supabase/recovery'
 import AssetPicker from '@/components/project/assets/AssetPicker'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 type StoryObject = any // Flexibility for custom schema
 
@@ -163,6 +164,7 @@ export default function ObjectsTab({
     }
 
     return (
+        <TooltipProvider>
         <div className="flex-1 flex overflow-hidden bg-[#fbf9f5] relative">
             <div className={cn("w-full md:w-80 md:min-w-80 bg-[#f5f4ef] flex flex-col border-r border-slate-200/50 transition-all duration-300", selectedId && "hidden md:flex")}>
                 <div className="p-6 flex items-center justify-between">
@@ -170,9 +172,18 @@ export default function ObjectsTab({
                         <Package className="w-4 h-4 text-[#546354]/60" />
                         <h2 className="text-[11px] font-sans tracking-[0.2em] uppercase text-[#546354]/60 font-medium">Items & Artefacts</h2>
                     </div>
-                    <button onClick={handleCreateObject} disabled={isCreating} className="w-8 h-8 rounded-full bg-white/40 ring-1 ring-white/60 flex items-center justify-center hover:bg-white transition-all">
-                        {isCreating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-4 h-4 text-stone-400" />}
-                    </button>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <button 
+                                onClick={handleCreateObject}
+                                disabled={isCreating}
+                                className="w-8 h-8 rounded-full bg-white/40 ring-1 ring-white/60 flex items-center justify-center hover:bg-white transition-all active:scale-95 disabled:opacity-50"
+                            >
+                                {isCreating ? <Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin" /> : <Plus className="w-4 h-4 text-blue-400/60" />}
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">Add object</TooltipContent>
+                    </Tooltip>
                 </div>
 
                 <DragDropContext onDragEnd={handleReorder}>
@@ -213,7 +224,17 @@ export default function ObjectsTab({
                                                     )}
                                                 </div>
                                                 {selectedId === obj.id && renamingId !== obj.id && (
-                                                    <button onClick={e => startRename(obj, e)} className="opacity-0 group-hover:opacity-100 p-1 text-stone-300 hover:text-[#546354]"><Pencil className="w-3 h-3" /></button>
+                                                    <Tooltip>
+                                                        <TooltipTrigger>
+                                                            <button
+                                                                onClick={e => startRename(obj, e)}
+                                                                className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-blue-50 text-stone-300 hover:text-blue-500 transition-all duration-200 flex-shrink-0"
+                                                            >
+                                                                <Pencil className="w-3 h-3" />
+                                                            </button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent side="top">Rename object</TooltipContent>
+                                                    </Tooltip>
                                                 )}
                                             </div>
                                         )}
@@ -249,7 +270,14 @@ export default function ObjectsTab({
                                             </button>
                                         </div>
                                     ) : (
-                                        <button onClick={() => setShowDeleteConfirm(true)} className="p-2 hover:bg-amber-50 text-stone-300 hover:text-amber-400 rounded-full transition-all" title="Move to Trash"><Trash2 className="w-3.5 h-3.5" /></button>
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <button onClick={() => setShowDeleteConfirm(true)} className="p-2 hover:bg-blue-50 text-stone-300 hover:text-blue-500 rounded-full transition-all duration-300 active:scale-90">
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">Move to Trash</TooltipContent>
+                                        </Tooltip>
                                     )}
                                 </div>
                                 <div className="flex flex-col sm:flex-row items-start sm:items-end gap-8">
@@ -304,6 +332,7 @@ export default function ObjectsTab({
                 </div>
             </div>
         </div>
+        </TooltipProvider>
     )
 }
 

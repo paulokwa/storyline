@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
 import { softDeleteEntity } from '@/lib/supabase/recovery'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 type Idea = Database['public']['Tables']['ideas']['Row']
 
@@ -193,14 +194,18 @@ export default function IdeasTab({
                         <h2 className="text-[11px] font-sans tracking-[0.2em] uppercase text-[#546354]/60 font-medium">Idea Archive</h2>
                     </div>
                     {/* Add button */}
-                    <button 
-                        onClick={handleCreateIdea}
-                        disabled={isCreating}
-                        className="w-8 h-8 rounded-full bg-white/40 ring-1 ring-white/60 flex items-center justify-center hover:bg-white transition-all active:scale-95 disabled:opacity-50"
-                        title="Add idea"
-                    >
-                        {isCreating ? <Loader2 className="w-3.5 h-3.5 text-amber-500 animate-spin" /> : <Plus className="w-4 h-4 text-amber-500/40" />}
-                    </button>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <button 
+                                onClick={handleCreateIdea}
+                                disabled={isCreating}
+                                className="w-8 h-8 rounded-full bg-white/40 ring-1 ring-white/60 flex items-center justify-center hover:bg-white transition-all active:scale-95 disabled:opacity-50"
+                            >
+                                {isCreating ? <Loader2 className="w-3.5 h-3.5 text-amber-500 animate-spin" /> : <Plus className="w-4 h-4 text-amber-500/40" />}
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">Add idea</TooltipContent>
+                    </Tooltip>
                 </div>
 
                 <DragDropContext onDragEnd={handleReorder}>
@@ -263,13 +268,17 @@ export default function IdeasTab({
                                                     )}
                                                 </div>
                                                 {selectedId === idea.id && renamingId !== idea.id && (
-                                                    <button
-                                                        onClick={e => startRename(idea, e)}
-                                                        className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-amber-50 text-stone-300 hover:text-amber-500 transition-all duration-200 flex-shrink-0"
-                                                        title="Rename idea"
-                                                    >
-                                                        <Pencil className="w-3 h-3" />
-                                                    </button>
+                                                    <Tooltip>
+                                                        <TooltipTrigger>
+                                                            <button
+                                                                onClick={e => startRename(idea, e)}
+                                                                className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-amber-50 text-stone-300 hover:text-amber-500 transition-all duration-200 flex-shrink-0"
+                                                            >
+                                                                <Pencil className="w-3 h-3" />
+                                                            </button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent side="top">Rename idea</TooltipContent>
+                                                    </Tooltip>
                                                 )}
                                             </div>
                                         )}
@@ -321,9 +330,14 @@ export default function IdeasTab({
                                             </button>
                                         </div>
                                     ) : (
-                                        <button onClick={() => setShowDeleteConfirm(true)} className="p-2 hover:bg-amber-50 text-stone-300 hover:text-amber-400 rounded-full transition-all duration-300 active:scale-90" title="Move to Trash">
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <button onClick={() => setShowDeleteConfirm(true)} className="p-2 hover:bg-amber-50 text-stone-300 hover:text-amber-400 rounded-full transition-all duration-300 active:scale-90">
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">Move to Trash</TooltipContent>
+                                        </Tooltip>
                                     )}
                                 </div>
                                 

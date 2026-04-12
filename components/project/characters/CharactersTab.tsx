@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
 import { softDeleteEntity } from '@/lib/supabase/recovery'
 import RelationshipManager from './RelationshipManager'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import AssetPicker from '@/components/project/assets/AssetPicker'
 
 type Character = Database['public']['Tables']['characters']['Row']
@@ -224,14 +225,18 @@ export default function CharactersTab({
                         </h2>
                     </div>
                     {/* Add button */}
-                    <button 
-                        onClick={handleCreateCharacter}
-                        disabled={isCreating}
-                        className="w-8 h-8 rounded-full bg-white/40 ring-1 ring-white/60 flex items-center justify-center hover:bg-white transition-all active:scale-95 disabled:opacity-50"
-                        title="Add character"
-                    >
-                        {isCreating ? <Loader2 className="w-3.5 h-3.5 text-stone-400 animate-spin" /> : <Plus className="w-4 h-4 text-stone-400" />}
-                    </button>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <button 
+                                onClick={handleCreateCharacter}
+                                disabled={isCreating}
+                                className="w-8 h-8 rounded-full bg-white/40 ring-1 ring-white/60 flex items-center justify-center hover:bg-white transition-all active:scale-95 disabled:opacity-50"
+                            >
+                                {isCreating ? <Loader2 className="w-3.5 h-3.5 text-stone-400 animate-spin" /> : <Plus className="w-4 h-4 text-stone-400" />}
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">Add character</TooltipContent>
+                    </Tooltip>
                 </div>
 
                 <DragDropContext onDragEnd={handleReorder}>
@@ -304,13 +309,17 @@ export default function CharactersTab({
                                                     )}
                                                 </div>
                                                 {selectedId === char.id && renamingId !== char.id ? (
-                                                    <button
-                                                        onClick={e => startRename(char, e)}
-                                                        className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-slate-50 text-stone-300 hover:text-[#546354] transition-all duration-200 flex-shrink-0"
-                                                        title="Rename character"
-                                                    >
-                                                        <Pencil className="w-3 h-3" />
-                                                    </button>
+                                                    <Tooltip>
+                                                        <TooltipTrigger>
+                                                            <button
+                                                                onClick={e => startRename(char, e)}
+                                                                className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-slate-50 text-stone-300 hover:text-[#546354] transition-all duration-200 flex-shrink-0"
+                                                            >
+                                                                <Pencil className="w-3 h-3" />
+                                                            </button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent side="top">Rename character</TooltipContent>
+                                                    </Tooltip>
                                                 ) : selectedId === char.id && (
                                                     <div className="w-1.5 h-1.5 rounded-full bg-[#546354]/40 flex-shrink-0" />
                                                 )}
@@ -364,9 +373,14 @@ export default function CharactersTab({
                                             </button>
                                         </div>
                                     ) : (
-                                        <button onClick={() => setShowDeleteConfirm(true)} className="p-2 hover:bg-amber-50 text-stone-300 hover:text-amber-400 rounded-full transition-all duration-300 active:scale-90" title="Move to Trash">
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <button onClick={() => setShowDeleteConfirm(true)} className="p-2 hover:bg-amber-50 text-stone-300 hover:text-amber-400 rounded-full transition-all duration-300 active:scale-90">
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">Move to Trash</TooltipContent>
+                                        </Tooltip>
                                     )}
                                 </div>
                                 
