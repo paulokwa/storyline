@@ -93,9 +93,9 @@ export default function ProjectSettingsModal({
             <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden rounded-3xl border border-slate-200/50 shadow-2xl bg-[#fbf9f5] !opacity-100 backdrop-blur-none">
                 {!showDeleteConfirm ? (
                     <>
-                        <DialogHeader className="bg-white/50 p-8 border-b border-[#f0eee9]">
-                            <DialogTitle className="text-3xl font-serif text-foreground">Project Settings</DialogTitle>
-                            <DialogDescription className="text-muted-foreground font-medium">
+                        <DialogHeader className="bg-white/50 p-6 pt-12 sm:p-8 border-b border-[#f0eee9]">
+                            <DialogTitle className="text-2xl sm:text-3xl font-serif text-foreground">Project Settings</DialogTitle>
+                            <DialogDescription className="text-xs sm:text-sm text-muted-foreground font-medium">
                                 Configure the foundations of your story.
                             </DialogDescription>
                         </DialogHeader>

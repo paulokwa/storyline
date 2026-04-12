@@ -150,15 +150,15 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[640px] p-0 overflow-hidden rounded-3xl border-none shadow-2xl bg-[#fbf9f5]">
-                <DialogHeader className="p-8 pb-4 bg-white border-b border-[#f0eee9]">
-                    <DialogTitle className="text-2xl font-serif text-[#31332f] flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-                            <Download className="w-5 h-5 text-amber-600" />
+            <DialogContent className="w-[95vw] sm:max-w-[640px] p-0 overflow-hidden rounded-3xl border-none shadow-2xl bg-[#fbf9f5] max-h-[90vh] flex flex-col">
+                <DialogHeader className="p-6 pt-12 sm:p-8 sm:pb-4 bg-white border-b border-[#f0eee9] shrink-0">
+                    <DialogTitle className="text-xl sm:text-2xl font-serif text-[#31332f] flex items-center gap-3">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                            <Download className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
                         </div>
                         Export Project
                     </DialogTitle>
-                    <DialogDescription className="text-slate-500 font-sans mt-2">
+                    <DialogDescription className="text-xs sm:text-sm text-slate-500 font-sans mt-2">
                         Collect your work into a single file for sharing or publishing.
                     </DialogDescription>
                 </DialogHeader>
@@ -206,12 +206,12 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
                                             : "border-slate-100 bg-white/40 hover:bg-white hover:border-slate-200"
                                     )}
                                 >
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <f.icon className={cn("w-4 h-4", options.format === f.id ? "text-amber-600" : "text-slate-400")} />
-                                        <span className={cn("font-medium", options.format === f.id ? "text-slate-900" : "text-slate-600")}>
+                                    <div className="flex items-center gap-1.5 mb-1.5 overflow-hidden w-full">
+                                        <f.icon className={cn("w-3.5 h-3.5 shrink-0", options.format === f.id ? "text-amber-600" : "text-slate-400")} />
+                                        <span className={cn("font-medium text-xs sm:text-sm truncate", options.format === f.id ? "text-slate-900" : "text-slate-600")}>
                                             {f.label}
                                         </span>
-                                        <span className="text-[10px] text-slate-400 font-mono">{f.ext}</span>
+                                        <span className="text-[9px] text-slate-400 font-mono shrink-0">{f.ext}</span>
                                     </div>
                                     <p className="text-[11px] text-slate-400 leading-tight">
                                         {f.desc}
