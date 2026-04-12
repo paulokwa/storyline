@@ -20,6 +20,11 @@ interface ProjectContextType {
     setActiveNodeId: (val: string | null) => void
     sceneAssetsOpen: boolean
     setSceneAssetsOpen: (val: boolean | ((prev: boolean) => boolean)) => void
+    // Dictation global sync
+    isDictating: boolean
+    setIsDictating: (val: boolean) => void
+    dictationRequest: number // timestamp logic
+    requestDictation: () => void
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined)
@@ -40,6 +45,10 @@ export function ProjectProvider({
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [analysisResult, setAnalysisResult] = useState<any | null>(null)
     const [activeNodeId, setActiveNodeId] = useState<string | null>(null)
+    const [isDictating, setIsDictating] = useState(false)
+    const [dictationRequest, setDictationRequest] = useState(0)
+
+    const requestDictation = () => setDictationRequest(Date.now())
 
     const analyzeScene = async () => {
         if (!currentSceneText.trim()) return
@@ -80,7 +89,11 @@ export function ProjectProvider({
             activeNodeId,
             setActiveNodeId,
             sceneAssetsOpen,
-            setSceneAssetsOpen
+            setSceneAssetsOpen,
+            isDictating,
+            setIsDictating,
+            dictationRequest,
+            requestDictation
         }}>
             {children}
         </ProjectContext.Provider>

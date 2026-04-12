@@ -24,7 +24,10 @@ import {
     Image as ImageIcon,
     Share,
     FileDown,
-    Settings2
+    Settings2,
+    Mic,
+    MicOff,
+    Clock
 } from 'lucide-react'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useProjectActionsStore } from '@/lib/store/projectActionsStore'
@@ -176,11 +179,15 @@ function ProjectShellInner({
     pathname, 
     children 
 }: any) {
+    const router = useRouter()
     const { 
         sidebarOpen, setSidebarOpen, 
         aiPanelOpen, setAiPanelOpen, 
         currentSceneText, 
-        analyzeScene, isAnalyzing 
+        analyzeScene, isAnalyzing,
+        sceneAssetsOpen, setSceneAssetsOpen,
+        isDictating, requestDictation,
+        activeNodeId
     } = useProjectActions()
 
     // Register actions in the global state for AppNav access
@@ -343,12 +350,26 @@ function ProjectShellInner({
                                         size="sm"
                                         onClick={() => speak(currentSceneText, 'Scene')}
                                         className={cn(
-                                            "rounded-xl transition-all h-9 px-3 gap-2",
+                                            "rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center shrink-0",
                                             isReading ? "bg-amber-100 text-amber-700 animate-pulse border border-amber-200 font-bold" : "bg-black/5 text-slate-500 hover:bg-black/10"
                                         )}
+                                        title="Read Aloud"
                                     >
                                         <Volume2 className={cn("w-4 h-4", isReading && "animate-bounce")} />
-                                        <span className="text-xs font-medium">Read Aloud</span>
+                                    </Button>
+
+                                    {/* Dictate */}
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={requestDictation}
+                                        className={cn(
+                                            "rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center shrink-0 border border-transparent",
+                                            isDictating ? "bg-red-50 text-red-600 border-red-100 font-bold shadow-sm animate-pulse" : "bg-black/5 text-slate-500 hover:bg-black/10"
+                                        )}
+                                        title="Dictate"
+                                    >
+                                        {isDictating ? <Mic className="w-4 h-4 text-red-500" /> : <MicOff className="w-4 h-4" />}
                                     </Button>
 
                                     {/* Feedback */}
@@ -357,12 +378,23 @@ function ProjectShellInner({
                                         size="sm"
                                         onClick={handleToggleComments}
                                         className={cn(
-                                            "rounded-xl transition-all h-9 px-3 gap-2 border border-transparent",
+                                            "rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center shrink-0 border border-transparent",
                                             commentsPanelOpen ? "bg-rose-50 text-rose-600 border-rose-100 font-bold shadow-sm" : "bg-black/5 text-slate-500 hover:bg-black/10"
                                         )}
+                                        title="Feedback"
                                     >
                                         <MessageSquare className="w-4 h-4" />
-                                        <span className="text-xs font-medium">Feedback</span>
+                                    </Button>
+
+                                    {/* History */}
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => router.push(`/project/${project.id}/recovery?section=history&sceneId=${activeNodeId}`)}
+                                        className="rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center shrink-0 bg-black/5 text-slate-500 hover:bg-black/10"
+                                        title="History"
+                                    >
+                                        <Clock className="w-4 h-4" />
                                     </Button>
                                 </div>
                             )}

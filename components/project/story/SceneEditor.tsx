@@ -181,6 +181,28 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     aiSettings
 }, ref) => {
     const router = useRouter()
+
+    const { 
+        sidebarOpen, setSidebarOpen, 
+        aiPanelOpen, setAiPanelOpen, 
+        sceneAssetsOpen, setSceneAssetsOpen, 
+        currentSceneText, setCurrentSceneText, 
+        role,
+        isDictating, setIsDictating,
+        dictationRequest
+    } = useProjectActions()
+    const { 
+        setCommentsPanelOpen, 
+        addComment, 
+        activeCommentId, 
+        setActiveCommentId,
+        comments,
+        isLoading,
+        scrollTrigger
+    } = useComments()
+    const { activeSceneUsers, setMyStatus } = usePresence()
+    
+    const isReadOnly = role === 'viewer'
     const [title, setTitle] = useState(initialTitle)
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
     const [isRestoring, setIsRestoring] = useState(false)
@@ -222,6 +244,18 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             }
         }
     })
+
+    // Sync local recording state to global context
+    useEffect(() => {
+        setIsDictating(isRecording)
+    }, [isRecording, setIsDictating])
+
+    // Listen for global dictation requests (e.g. from ProjectShell)
+    useEffect(() => {
+        if (dictationRequest > 0 && speechSupported && !isReadOnly) {
+            toggleDictation()
+        }
+    }, [dictationRequest, speechSupported, isReadOnly])
 
     const [viewSettings, setViewSettings] = useState({
         fontSize: '18px',
@@ -309,20 +343,6 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
         return base
     }, [writingMode, projectType, aiSettings])
-
-    const { sidebarOpen, setSidebarOpen, aiPanelOpen, setAiPanelOpen, sceneAssetsOpen, setSceneAssetsOpen, currentSceneText, setCurrentSceneText, role } = useProjectActions()
-    const { 
-        setCommentsPanelOpen, 
-        addComment, 
-        activeCommentId, 
-        setActiveCommentId,
-        comments,
-        isLoading,
-        scrollTrigger
-    } = useComments()
-    const { activeSceneUsers, setMyStatus } = usePresence()
-    
-    const isReadOnly = role === 'viewer'
 
     const editor = useEditor({
         immediatelyRender: false,
@@ -902,7 +922,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             variant="ghost" 
                             size="sm"
                             onClick={() => setCommentsPanelOpen(true)}
-                            className="h-6 px-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary hover:bg-white transition-all"
+                            className="hidden md:inline-flex h-6 px-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary hover:bg-white transition-all"
                         >
                             <MessageSquare className="w-3 h-3 mr-1" />
                              Feedback
@@ -926,7 +946,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                 variant="ghost" 
                                 size="sm"
                                 onClick={() => router.push(`/project/${scene.project_id}/recovery?section=history&sceneId=${scene.id}`)}
-                                className="h-6 px-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-[#546354] hover:bg-white transition-all"
+                                className="hidden md:inline-flex h-6 px-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-[#546354] hover:bg-white transition-all"
                             >
                                 <HistoryIcon className="w-3 h-3 mr-1" />
                                  History
@@ -939,7 +959,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                 size="sm"
                                 onClick={toggleDictation}
                                 className={cn(
-                                    "h-6 px-2 text-[10px] font-bold uppercase tracking-widest transition-all",
+                                    "hidden md:inline-flex h-6 px-2 text-[10px] font-bold uppercase tracking-widest transition-all",
                                     isRecording 
                                         ? "text-red-500 bg-red-50 hover:bg-red-100 animate-pulse" 
                                         : "text-slate-400 hover:text-slate-600 hover:bg-white"
