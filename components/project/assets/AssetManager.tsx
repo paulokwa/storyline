@@ -12,8 +12,10 @@ import {
     Trash2, 
     Search,
     Info,
-    Expand
+    Expand,
+    Clock
 } from 'lucide-react'
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -165,7 +167,8 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
     }
 
     return (
-        <div className="flex-1 flex flex-col min-h-0 bg-background">
+        <TooltipProvider>
+            <div className="flex-1 flex flex-col min-h-0 bg-background">
             <div className="p-6 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-serif text-foreground">Project Assets</h1>
@@ -232,7 +235,8 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
                     </div>
                 )}
             </div>
-        </div>
+            </div>
+        </TooltipProvider>
     )
 }
 
@@ -251,12 +255,23 @@ function AssetCard({ asset, url, onDelete }: { asset: ProjectAsset, url: string,
                 
                 {/* Overlay actions */}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
-                    <Button size="icon" variant="secondary" className="rounded-full w-9 h-9" onClick={() => window.open(url, '_blank')}>
-                        <Expand className="w-4 h-4" />
-                    </Button>
-                    <Button size="icon" variant="destructive" className="rounded-full w-9 h-9" onClick={onDelete}>
-                        <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button size="icon" variant="secondary" className="rounded-full w-9 h-9" onClick={() => window.open(url, '_blank')}>
+                                <Expand className="w-4 h-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">Open in new tab</TooltipContent>
+                    </Tooltip>
+                    
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button size="icon" variant="destructive" className="rounded-full w-9 h-9" onClick={onDelete}>
+                                <Trash2 className="w-4 h-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">Delete Asset</TooltipContent>
+                    </Tooltip>
                 </div>
 
                 <button 
@@ -268,9 +283,14 @@ function AssetCard({ asset, url, onDelete }: { asset: ProjectAsset, url: string,
             </div>
 
             <div className="p-3">
-                <h4 className="font-medium text-sm truncate text-foreground" title={asset.file_name}>
-                    {asset.file_name}
-                </h4>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <h4 className="font-medium text-sm truncate text-foreground cursor-help">
+                            {asset.file_name}
+                        </h4>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{asset.file_name}</TooltipContent>
+                </Tooltip>
                 <div className="flex items-center justify-between mt-1 text-[10px] text-muted-foreground font-mono uppercase tracking-tight">
                     <span>{formattedSize}</span>
                     {asset.width && asset.height && (
@@ -288,7 +308,15 @@ function AssetCard({ asset, url, onDelete }: { asset: ProjectAsset, url: string,
                     </div>
                     <div className="space-y-1.5 text-[11px]">
                         <div className="flex justify-between"><span className="text-muted-foreground">Type:</span> <span>{asset.mime_type}</span></div>
-                        <div className="flex justify-between"><span className="text-muted-foreground">Path:</span> <span className="truncate max-w-[120px]" title={asset.storage_path}>{asset.storage_path}</span></div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Path:</span> 
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <span className="truncate max-w-[120px] cursor-help">{asset.storage_path}</span>
+                                </TooltipTrigger>
+                                <TooltipContent side="left">{asset.storage_path}</TooltipContent>
+                            </Tooltip>
+                        </div>
                         <div className="flex justify-between"><span className="text-muted-foreground">Date:</span> <span>{asset.created_at ? new Date(asset.created_at).toLocaleDateString() : 'N/A'}</span></div>
                     </div>
                 </div>

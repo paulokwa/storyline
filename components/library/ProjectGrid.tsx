@@ -68,9 +68,14 @@ export default function ProjectGrid({ projects }: { projects: Project[] }) {
             <div className="max-w-[1440px] mx-auto px-6 py-16 md:py-24 fade-in">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-20 border-b border-slate-100 pb-12">
                     <div className="space-y-4">
-                        <h1 className="text-5xl md:text-7xl font-serif text-slate-800 tracking-tight leading-tight" title={getProjectTypeLabel('tv_script')}>
-                            The Manuscript<br /><span className="text-slate-400">Archive</span>
-                        </h1>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <h1 className="text-5xl md:text-7xl font-serif text-slate-800 tracking-tight leading-tight cursor-help">
+                                    The Manuscript<br /><span className="text-slate-400">Archive</span>
+                                </h1>
+                            </TooltipTrigger>
+                            <TooltipContent side="right">Manuscript Management</TooltipContent>
+                        </Tooltip>
                         <p className="text-lg text-slate-500 max-w-sm font-medium">
                             Your creative sanctuary. Select a project below or start a new journey.
                         </p>
@@ -168,20 +173,29 @@ function ProjectCard({ project }: { project: Project }) {
                                     onClick={e => { e.preventDefault(); e.stopPropagation(); setConfirmDelete(false) }}
                                     className="px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider"
                                 >Cancel</button>
-                                <button
-                                    onClick={handleDelete}
-                                    title={getProjectTypeLabel('novel')}
-                                    disabled={isDeleting}
-                                    className="px-3 py-1 text-[10px] font-bold bg-red-500 hover:bg-red-600 text-white rounded-full uppercase tracking-wider transition-colors disabled:opacity-50"
-                                >{isDeleting ? '...' : 'Delete'}</button>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                onClick={handleDelete}
+                                                disabled={isDeleting}
+                                                className="px-3 py-1 text-[10px] font-bold bg-red-500 hover:bg-red-600 text-white rounded-full uppercase tracking-wider transition-colors disabled:opacity-50"
+                                            >{isDeleting ? '...' : 'Delete'}</button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">Permanently delete this project</TooltipContent>
+                                    </Tooltip>
                             </div>
                         ) : (
-                            <button
-                                onClick={e => { e.preventDefault(); e.stopPropagation(); setConfirmDelete(true) }}
-                                className="opacity-0 group-hover:opacity-100 transition-all duration-300 p-2.5 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50"
-                            >
-                                <Trash2 className="w-5 h-5" />
-                            </button>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            onClick={e => { e.preventDefault(); e.stopPropagation(); setConfirmDelete(true) }}
+                                            className="opacity-0 group-hover:opacity-100 transition-all duration-300 p-2.5 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">Delete Project</TooltipContent>
+                                </Tooltip>
                         )
                     )}
                 </div>
@@ -207,10 +221,17 @@ function ProjectCard({ project }: { project: Project }) {
                             </Badge>
                         )}
 
-                        <span className="text-xs text-slate-400 font-medium flex items-center gap-1.5" title={`Last updated: ${formatDistanceToNow(project.updated_at || new Date().toISOString())}`}>
-                            <Clock className="w-3.5 h-3.5" />
-                            {formatDistanceToNow(project.last_accessed_at || new Date().toISOString())}
-                        </span>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <span className="text-xs text-slate-400 font-medium flex items-center gap-1.5 cursor-help">
+                                    <Clock className="w-3.5 h-3.5" />
+                                    {formatDistanceToNow(project.last_accessed_at || new Date().toISOString())}
+                                </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                                {`Last updated: ${formatDistanceToNow(project.updated_at || new Date().toISOString())}`}
+                            </TooltipContent>
+                        </Tooltip>
                     </div>
                 </div>
 

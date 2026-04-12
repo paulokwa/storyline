@@ -343,7 +343,7 @@ function EmptyState({ onCreate, isCreating }: { onCreate: () => void, isCreating
                 <div className="w-24 h-24 bg-stone-50 rounded-[30%] flex items-center justify-center mb-8 rotate-3 shadow-inner"><MapPin className="w-12 h-12 text-stone-200" /></div>
                 <h2 className="text-4xl font-serif italic text-slate-800 mb-4 tracking-tight">An Unmapped World</h2>
                 <p className="text-[11px] font-sans tracking-[0.4em] uppercase text-stone-300 mb-10 font-bold">World Locations Atlas Empty</p>
-                <p className="text-slate-500 font-medium leading-relaxed italic text-lg mb-12 max-w-md">"The world is but a canvas to our imagination. Currently, your canvas is blank."</p>
+                <p className="text-slate-500 font-medium leading-relaxed italic text-lg mb-12 max-w-md">Add a location to start building your world.</p>
                 <Button variant="outline" onClick={onCreate} disabled={isCreating} className="rounded-full px-10 py-7 h-auto border-stone-100 text-stone-500 hover:bg-stone-50 uppercase tracking-widest text-[10px] font-bold">
                     {isCreating ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Plus className="w-3.5 h-3.5 mr-2" />}
                     Chart First Location

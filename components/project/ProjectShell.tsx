@@ -217,6 +217,35 @@ function ProjectShellInner({
     const isMobile = useMediaQuery('(max-width: 768px)')
     const isVerySmall = useMediaQuery('(max-width: 480px)')
 
+    const [showStructureHint, setShowStructureHint] = useState(false)
+
+    useEffect(() => {
+        if (!isMobile) return
+        const discovered = localStorage.getItem('storyline-mobile-structure-discovered')
+        if (!discovered) {
+            setShowStructureHint(true)
+            const timer = setTimeout(() => {
+                setShowStructureHint(false)
+            }, 7000)
+            return () => clearTimeout(timer)
+        }
+    }, [isMobile])
+
+    const handleDismissStructureHint = (e?: React.MouseEvent) => {
+        if (e) {
+            e.preventDefault()
+            e.stopPropagation()
+        }
+        setShowStructureHint(false)
+        localStorage.setItem('storyline-mobile-structure-discovered', 'true')
+    }
+
+    const handleToggleStructure = (e?: React.MouseEvent) => {
+        if (e) e.preventDefault()
+        handleDismissStructureHint()
+        setSidebarOpen(!sidebarOpen)
+    }
+
     const handleToggleAi = () => {
         const nextState = !aiPanelOpen
         if (nextState && isMobile) {
@@ -224,6 +253,37 @@ function ProjectShellInner({
         }
         setAiPanelOpen(nextState)
     }
+
+    const isStoryTab = pathname.includes('/story')
+    const activeTab = TABS.find(t => pathname.includes(`/${t.slug}`))?.slug ?? 'story'
+
+    const [showAiHint, setShowAiHint] = useState(false)
+
+    useEffect(() => {
+        if (aiPanelOpen) {
+            localStorage.setItem('storyline-ai-helper-discovered', 'true')
+            setShowAiHint(false)
+        }
+    }, [aiPanelOpen])
+
+    useEffect(() => {
+        if (!isStoryTab || aiPanelOpen || role === 'viewer') return
+        
+        const timer = setTimeout(() => {
+            const discovered = localStorage.getItem('storyline-ai-helper-discovered')
+            const shownThisSession = sessionStorage.getItem('storyline-ai-helper-shown')
+            
+            if (discovered || shownThisSession) return
+            
+            const len = currentSceneText?.trim().length || 0
+            if (len < 50) {
+                setShowAiHint(true)
+                sessionStorage.setItem('storyline-ai-helper-shown', 'true')
+            }
+        }, 5000)
+        
+        return () => clearTimeout(timer)
+    }, [currentSceneText, isStoryTab, aiPanelOpen, role])
 
     const handleToggleComments = () => {
         const nextState = !commentsPanelOpen
@@ -246,9 +306,6 @@ function ProjectShellInner({
         window.addEventListener('keydown', handleKeyDown)
         return () => window.removeEventListener('keydown', handleKeyDown)
     }, [setShortcutsOpen])
-
-    const isStoryTab = pathname.includes('/story')
-    const activeTab = TABS.find(t => pathname.includes(`/${t.slug}`))?.slug ?? 'story'
 
     return (
         <TooltipProvider>
@@ -273,22 +330,33 @@ function ProjectShellInner({
                             </Tooltip>
 
                             {isStoryTab && (
-                                <Tooltip>
-                                    <TooltipTrigger>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setSidebarOpen(!sidebarOpen)}
-                                            className={cn(
-                                                "rounded-xl transition-all h-9 w-9 p-0",
-                                                sidebarOpen ? "bg-primary/10 text-primary hover:bg-primary/20" : "bg-black/5 text-slate-500 hover:bg-black/10"
-                                            )}
-                                        >
-                                            <PanelLeft className="w-4 h-4" />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="bottom"sideOffset={-57}>Toggle structure panel</TooltipContent>
-                                </Tooltip>
+                                <div className="relative">
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={handleToggleStructure}
+                                                className={cn(
+                                                    "rounded-xl transition-all h-9 w-9 p-0",
+                                                    sidebarOpen ? "bg-primary/10 text-primary hover:bg-primary/20" : "bg-black/5 text-slate-500 hover:bg-black/10"
+                                                )}
+                                            >
+                                                <PanelLeft className="w-4 h-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="bottom" sideOffset={-57}>Toggle structure panel</TooltipContent>
+                                    </Tooltip>
+                                    {showStructureHint && (
+                                        <div className="absolute left-1/2 top-full mt-2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 duration-500 bg-slate-800 text-white text-[11px] font-medium py-1.5 pl-3 pr-2 rounded-full shadow-lg shadow-black/10 flex items-center gap-2 whitespace-nowrap md:hidden">
+                                            <div className="absolute -top-1 left-1/2 -ml-1 border-4 border-transparent border-b-slate-800 border-t-0" />
+                                            Tip: Tap here to navigate your scenes
+                                            <button onClick={handleDismissStructureHint} className="bg-white/20 hover:bg-white/30 rounded-full p-0.5 ml-1 transition-colors">
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             )}
 
                             {!isStoryTab && (
@@ -417,6 +485,25 @@ function ProjectShellInner({
                                             </TooltipTrigger>
                                             <TooltipContent side="bottom">AI Writing Assistant</TooltipContent>
                                         </Tooltip>
+
+                                        {showAiHint && (
+                                            <div className="absolute left-1/2 top-full mt-2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 duration-500 bg-violet-600 text-white text-[11px] font-medium py-1.5 pl-3 pr-2 rounded-full shadow-lg shadow-violet-900/10 flex items-center gap-2 whitespace-nowrap">
+                                                <div className="absolute -top-1 left-1/2 -ml-1 border-4 border-transparent border-b-violet-600 border-t-0" />
+                                                <Sparkles className="w-3.5 h-3.5" />
+                                                AI can help outline this scene
+                                                <button 
+                                                    onClick={(e) => {
+                                                        e.preventDefault()
+                                                        e.stopPropagation()
+                                                        setShowAiHint(false)
+                                                        localStorage.setItem('storyline-ai-helper-discovered', 'true')
+                                                    }} 
+                                                    className="bg-white/20 hover:bg-white/30 rounded-full p-0.5 ml-1 transition-colors"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Reading/Interaction */}

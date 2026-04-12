@@ -61,7 +61,8 @@ import {
     ArrowRight,
     Type as TypeIcon,
     Clock,
-    Image as ImageIcon
+    Image as ImageIcon,
+    X
 } from 'lucide-react'
 import { restoreStructureNode, captureSceneVersion } from '@/lib/supabase/recovery'
 import { Button } from '@/components/ui/button'
@@ -197,6 +198,17 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         dictationRequest
     } = useProjectActions()
     const [showTabHint, setShowTabHint] = useState(false)
+    const [showAtHint, setShowAtHint] = useState(false)
+    const atHintTimerRef = useRef<NodeJS.Timeout | null>(null)
+    
+    // AI Helper discovery rule
+    // (Moved to ProjectShell.tsx in Phase 2B so it anchors globally)
+
+    useEffect(() => {
+        return () => {
+            if (atHintTimerRef.current) clearTimeout(atHintTimerRef.current)
+        }
+    }, [])
 
     useEffect(() => {
         const dismissed = localStorage.getItem('hide-tab-hint')
@@ -327,7 +339,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             }),
             Highlight.configure({ multicolor: true }),
             Placeholder.configure({
-                placeholder: writingMode === 'screenplay' ? 'Start your script...' : 'Once upon a time...',
+                placeholder: writingMode === 'screenplay' ? 'Start with INT. or EXT., or press Tab for options.' : 'Start writing your scene here.',
             }),
             BubbleMenuExtension.configure({
                 element: null, 
@@ -381,6 +393,36 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             if (!isInternal && transaction.docChanged) {
                 setSaveStatus('idle') 
                 setIsDirty(true)
+                
+                // Phase 2B: Character linking discovery
+                if (projectCharacters?.length > 0) {
+                    const discovered = localStorage.getItem('storyline-character-link-discovered')
+                    
+                    const { from } = editor.state.selection
+                    const textBefore = editor.state.doc.textBetween(Math.max(0, from - 20), from, ' ')
+                    
+                    if (textBefore.includes('@')) {
+                        localStorage.setItem('storyline-character-link-discovered', 'true')
+                        setShowAtHint(false)
+                    } else if (!discovered) {
+                        const shownThisSession = sessionStorage.getItem('storyline-character-link-shown')
+                        if (!shownThisSession) {
+                            if (atHintTimerRef.current) clearTimeout(atHintTimerRef.current)
+                            const words = textBefore.trim().split(/\s+/)
+                            const lastWord = words[words.length - 1]
+                            
+                            // Basic heuristic: check if they typed a capitalized word and paused
+                            if (lastWord && lastWord.match(/^[A-Z][a-z]{2,}$/)) {
+                                atHintTimerRef.current = setTimeout(() => {
+                                    if (!localStorage.getItem('storyline-character-link-discovered')) {
+                                        setShowAtHint(true)
+                                        sessionStorage.setItem('storyline-character-link-shown', 'true')
+                                    }
+                                }, 1500)
+                            }
+                        }
+                    }
+                }
             }
             
             setMyStatus('editing')
@@ -1337,8 +1379,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                 Tab
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-[10px] uppercase font-bold tracking-widest text-indigo-500">Screenplay Hack</span>
-                                <span className="text-[11px] font-medium text-slate-600">Press Tab to cycle element types</span>
+                                <span className="text-[10px] uppercase font-bold tracking-widest text-indigo-500">Writing Tip</span>
+                                <span className="text-[11px] font-medium text-slate-600">Tip: Press Tab to switch elements</span>
                             </div>
                             <button 
                                 onClick={dismissHint}
@@ -1416,6 +1458,24 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             </p>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {showAtHint && (
+                <div className="absolute right-4 bottom-4 z-50 animate-in fade-in slide-in-from-bottom-2 duration-300 bg-slate-800 text-white text-[12px] font-medium py-2 px-3 rounded-xl shadow-lg border border-slate-700 flex items-center gap-2">
+                    <User className="w-3.5 h-3.5 text-blue-400" />
+                    Tip: Use @ to link characters
+                    <button 
+                        onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            setShowAtHint(false)
+                            localStorage.setItem('storyline-character-link-discovered', 'true')
+                        }}
+                        className="p-1 hover:bg-slate-700 rounded-md transition-colors ml-1"
+                    >
+                        <X className="w-3 h-3" />
+                    </button>
                 </div>
             )}
 

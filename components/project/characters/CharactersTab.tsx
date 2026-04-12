@@ -516,7 +516,7 @@ function EmptyCharactersState({ onCreate, isCreating, projectType }: { onCreate:
 
                 <div className="space-y-8 max-w-md">
                     <p className="text-slate-500 font-medium leading-relaxed italic text-lg">
-                        "A story is only as profound as the souls who inhabit it. Your archive is currently quiet."
+                        Start your story by adding a character.
                     </p>
                     <div className="h-px w-16 bg-stone-100 mx-auto" />
                     <p className="text-stone-400 text-sm leading-relaxed px-6">

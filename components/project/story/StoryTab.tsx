@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import StructureTree from './StructureTree'
@@ -9,7 +10,7 @@ import AiHelperPanel from './AiHelperPanel'
 import SceneAssetsPanel from './SceneAssetsPanel'
 import LinkedContext from './LinkedContext'
 import WritingModeToggle from '@/components/shared/WritingModeToggle'
-import { PanelLeftClose, PanelLeftOpen, BookOpen, Sparkles } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, BookOpen, Sparkles, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { Database, WritingMode } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
@@ -145,6 +146,32 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         }
     }, [project.id, activeNodeId, setActiveNodeId])
 
+    const [showExportHint, setShowExportHint] = useState(false)
+    const [portalRoot, setPortalRoot] = useState<Element | null>(null)
+
+    useEffect(() => {
+        setPortalRoot(document.getElementById('app-nav-portal'))
+        
+        if (nodes.length >= 5) {
+            const discovered = localStorage.getItem('storyline-export-discovered')
+            const shownSession = sessionStorage.getItem('storyline-export-shown')
+            if (!discovered && !shownSession) {
+                const timer = setTimeout(() => {
+                    setShowExportHint(true)
+                    sessionStorage.setItem('storyline-export-shown', 'true')
+                }, 4000)
+                return () => clearTimeout(timer)
+            }
+        }
+    }, [nodes.length])
+
+    const dismissExportHint = useCallback((e: React.MouseEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        setShowExportHint(false)
+        localStorage.setItem('storyline-export-discovered', 'true')
+    }, [])
+
     const handleWritingModeChange = useCallback(async (mode: WritingMode) => {
         setWritingMode(mode)
         const supabase = createClient()
@@ -240,8 +267,9 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 {/* Linked Context (Sticky) */}
                 {activeNodeId && activeScene && (
                     <div className="bg-[#fbf9f5] border-b border-slate-100 z-10">
-                        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-                             <LinkedContext
+                        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-start sm:items-center justify-between gap-4">
+                            <div className="flex-1 overflow-x-auto no-scrollbar">
+                                <LinkedContext
                                 sceneId={activeScene.id}
                                 sceneCharacters={activeScene.scene_characters}
                                 sceneIdeas={activeScene.scene_ideas}
@@ -263,7 +291,11 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                 selectedNodeIds={selectedNodeIds}
                                 onToggleNodeSelection={handleNodeToggleSelection}
                                 allNodes={nodes}
-                            />
+                                />
+                            </div>
+                            <div className="shrink-0 relative hidden sm:block">
+                                <WritingModeToggle mode={writingMode} onChange={handleWritingModeChange} />
+                            </div>
                         </div>
                     </div>
                 )}
@@ -390,6 +422,22 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                         />
                     </div>
                 </div>
+            )}
+
+            {showExportHint && portalRoot && createPortal(
+                <div className="mr-2 animate-in fade-in slide-in-from-right-4 duration-500 hidden sm:flex items-center">
+                    <div className="bg-emerald-600 text-white text-[11px] font-medium py-1.5 pl-3 pr-2 rounded-full shadow-lg shadow-emerald-900/10 flex items-center gap-2 whitespace-nowrap relative">
+                        <div className="absolute right-[-4px] top-1/2 -translate-y-1/2 border-4 border-transparent border-l-emerald-600" />
+                        You can export your project from the menu.
+                        <button 
+                            onClick={dismissExportHint} 
+                            className="bg-white/20 hover:bg-white/30 rounded-full p-0.5 ml-1 transition-colors"
+                        >
+                            <X className="w-3 h-3" />
+                        </button>
+                    </div>
+                </div>,
+                portalRoot
             )}
         </div>
     )
