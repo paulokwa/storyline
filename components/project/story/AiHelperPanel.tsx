@@ -613,24 +613,24 @@ export default function AiHelperPanel({
     return (
         <div className="flex flex-col h-full bg-[#fcfbf9] border-l border-slate-200/60 shadow-[-20px_0_50px_rgba(0,0,0,0.02)]">
             {/* Header */}
-            <div className="px-6 py-5 border-b border-slate-200/60 flex items-center gap-3 bg-white/50 backdrop-blur-sm">
-                <div className="p-2 bg-indigo-50 rounded-xl">
-                    <Sparkles className="w-4 h-4 text-indigo-500" />
+            <div className="px-6 py-3 border-b border-slate-200/60 flex items-center gap-3 bg-white/50 backdrop-blur-sm shrink-0">
+                <div className="p-1.5 bg-indigo-50 rounded-xl">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-50" />
                 </div>
                 <div className="flex-1">
-                    <h3 className="text-sm font-serif font-bold text-slate-800 tracking-tight">{label} Partner</h3>
-                    <div className="flex items-center gap-2">
-                        <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">
-                            {aiSettings.ai_provider === 'ollama' ? `Ollama (${aiSettings.ollama_model})` : 'Gemini'}
+                    <h3 className="text-sm font-serif font-bold text-slate-800 tracking-tight leading-none">{label} Partner</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                        <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold">
+                            {aiSettings.ai_provider === 'ollama' ? `Ollama` : 'Gemini'}
                         </p>
                         <div className="flex items-center gap-1">
                             <div className={cn(
-                                "w-1.5 h-1.5 rounded-full",
-                                (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'online' ? "bg-green-400 shadow-[0_0_5px_rgba(74,222,128,0.5)]" : 
+                                "w-1 h-1 rounded-full",
+                                (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'online' ? "bg-green-400" : 
                                 (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'checking' ? "bg-slate-300 animate-pulse" : "bg-red-400"
                             )} />
                             <span className={cn(
-                                "text-[9px] font-bold uppercase tracking-tight",
+                                "text-[8px] font-bold uppercase tracking-tight",
                                 (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'online' ? "text-green-600" : 
                                 (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'checking' ? "text-slate-400" : "text-red-500"
                             )}>
@@ -638,6 +638,25 @@ export default function AiHelperPanel({
                             </span>
                         </div>
                     </div>
+                </div>
+                <div className="flex items-center gap-1">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIncludeArchiveContext(!includeArchiveContext)}
+                        className={cn(
+                            "w-8 h-8 rounded-lg relative transition-all",
+                            includeArchiveContext ? "text-indigo-600 bg-indigo-50" : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                        )}
+                        title="Archive context"
+                    >
+                        {isLoadingArchive ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Package className="w-3.5 h-3.5" />}
+                        {selectedArchiveIds.length > 0 && (
+                            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-indigo-500 text-white text-[8px] flex items-center justify-center rounded-full font-bold border border-white">
+                                {selectedArchiveIds.length}
+                            </span>
+                        )}
+                    </Button>
                 </div>
                 {(completion || previousCompletion) && !isLoading && (
                     <button
@@ -651,24 +670,21 @@ export default function AiHelperPanel({
             </div>
 
             {/* Context Indicator */}
-            <div className="bg-[#fcfbf9] px-6 py-2 border-b border-slate-200/60 flex flex-wrap items-center gap-2 text-[10px] text-slate-400 font-medium">
-                <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-slate-200 rounded-full"></div>Current Context</span>
+            <div className="bg-[#fcfbf9] px-6 py-1.5 border-b border-slate-200/60 flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] text-slate-400 font-medium shrink-0">
+                <span className="flex items-center gap-1"><div className="w-1 h-1 bg-slate-200 rounded-full"></div>Context</span>
                 {linkedCharacters.length > 0 && (
-                    <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-indigo-200 rounded-full"></div>{linkedCharacters.length} character{linkedCharacters.length !== 1 ? 's' : ''}</span>
+                    <span className="flex items-center gap-1"><div className="w-1 h-1 bg-indigo-200 rounded-full"></div>{linkedCharacters.length} char{linkedCharacters.length !== 1 ? 's' : ''}</span>
                 )}
                 {linkedIdeas.length > 0 && (
-                    <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-amber-200 rounded-full"></div>{linkedIdeas.length} idea{linkedIdeas.length !== 1 ? 's' : ''}</span>
+                    <span className="flex items-center gap-1"><div className="w-1 h-1 bg-amber-200 rounded-full"></div>{linkedIdeas.length} idea{linkedIdeas.length !== 1 ? 's' : ''}</span>
                 )}
                 {linkedLocations.length > 0 && (
-                    <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-emerald-200 rounded-full"></div>{linkedLocations.length} location{linkedLocations.length !== 1 ? 's' : ''}</span>
-                )}
-                {linkedObjects.length > 0 && (
-                    <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-blue-200 rounded-full"></div>{linkedObjects.length} object{linkedObjects.length !== 1 ? 's' : ''}</span>
+                    <span className="flex items-center gap-1"><div className="w-1 h-1 bg-emerald-200 rounded-full"></div>{linkedLocations.length} loc</span>
                 )}
                 {selectedNodes.length > 0 && (
-                    <span className="flex items-center gap-1.5 text-indigo-500 bg-indigo-50/50 px-2 py-0.5 rounded-full border border-indigo-100">
-                        <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></div>
-                        {selectedNodes.length} story element{selectedNodes.length !== 1 ? 's' : ''}
+                    <span className="flex items-center gap-1 text-indigo-500 font-bold">
+                        <div className="w-1 h-1 bg-indigo-500 rounded-full"></div>
+                        {selectedNodes.length} elem{selectedNodes.length !== 1 ? 's' : ''}
                     </span>
                 )}
             </div>
@@ -866,59 +882,53 @@ export default function AiHelperPanel({
                 )}
             </div>
             
-            <div className="px-6 py-4 border-b border-slate-200/60 bg-white/30 space-y-4">
-                <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                        <Label htmlFor="archive-context" className="text-[11px] font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
-                             Use Archive Context
-                             {isLoadingArchive && <Loader2 className="w-3 h-3 animate-spin text-indigo-500" />}
-                        </Label>
-                        <p className="text-[10px] text-slate-400 font-medium">Include top 5 most recent saved responses</p>
+            {includeArchiveContext && (
+                <div className="px-6 py-3 border-b border-slate-200/60 bg-white/50 animate-in slide-in-from-top-2 duration-300">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Saved Context</span>
+                            {isLoadingArchive && <Loader2 className="w-3 h-3 animate-spin text-indigo-400" />}
+                        </div>
+                        <button 
+                            onClick={() => setIncludeArchiveContext(false)}
+                            className="text-[9px] text-slate-400 hover:text-slate-600 underline"
+                        >
+                            Disable
+                        </button>
                     </div>
-                    <Switch 
-                        id="archive-context" 
-                        checked={includeArchiveContext} 
-                        onCheckedChange={setIncludeArchiveContext}
-                        className="scale-90 data-[state=checked]:bg-indigo-500"
-                    />
-                </div>
-                <div className={cn(
-                    "flex flex-wrap gap-1 mt-2 transition-all duration-300",
-                    includeArchiveContext ? "opacity-100 max-h-40 overflow-y-auto" : "opacity-0 max-h-0 overflow-hidden pointer-events-none"
-                )}>
-                    {archiveResponses.length > 0 ? (
-                        archiveResponses.map((r) => {
-                            const isSelected = selectedArchiveIds.includes(r.id)
-                            return (
-                                <button
-                                    key={r.id}
-                                    onClick={() => toggleArchiveId(r.id)}
-                                    className={cn(
-                                        "text-[9px] px-2 py-1 rounded-lg border transition-all text-left truncate max-w-[140px] flex items-center gap-1.5",
-                                        isSelected 
-                                            ? "bg-indigo-50 text-indigo-700 border-indigo-200 font-bold" 
-                                            : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
-                                    )}
-                                    title={`${r.title} (${r.source_label})`}
-                                >
-                                    <div className={cn(
-                                        "w-1 h-1 rounded-full",
-                                        isSelected ? "bg-indigo-500" : "bg-slate-300"
-                                    )} />
-                                    {r.title}
-                                </button>
-                            )
-                        })
-                    ) : includeArchiveContext && !isLoadingArchive ? (
-                        <p className="text-[10px] text-slate-400 italic px-1">No saved responses found.</p>
-                    ) : null}
+                    <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1 scrollbar-thin">
+                        {archiveResponses.length > 0 ? (
+                            archiveResponses.map((r) => {
+                                const isSelected = selectedArchiveIds.includes(r.id)
+                                return (
+                                    <button
+                                        key={r.id}
+                                        onClick={() => toggleArchiveId(r.id)}
+                                        className={cn(
+                                            "text-[9px] px-2 py-1 rounded-lg border transition-all text-left truncate flex-1 min-w-[100px] flex items-center gap-1.5",
+                                            isSelected 
+                                                ? "bg-indigo-50 text-indigo-700 border-indigo-200 font-bold ring-1 ring-indigo-200" 
+                                                : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
+                                        )}
+                                        title={`${r.title} (${r.source_label})`}
+                                    >
+                                        <div className={cn(
+                                            "w-1 h-1 rounded-full shrink-0",
+                                            isSelected ? "bg-indigo-500" : "bg-slate-300"
+                                        )} />
+                                        <span className="truncate">{r.title}</span>
+                                    </button>
+                                )
+                            })
+                        ) : !isLoadingArchive && (
+                            <p className="text-[10px] text-slate-400 italic">No saved responses found.</p>
+                        )}
+                    </div>
                     {selectedArchiveIds.length >= 5 && (
-                        <p className="text-[9px] text-amber-600 font-medium px-1 mt-1 w-full flex items-center gap-1">
-                            <Info className="w-2 h-2" /> Max selection reached
-                        </p>
+                        <p className="text-[8px] text-amber-600 font-bold uppercase mt-2">Max selection reached</p>
                     )}
                 </div>
-            </div>
+            )}
 
             {/* Input Area */}
             <div className="bg-white border-t border-slate-200/60 z-10">

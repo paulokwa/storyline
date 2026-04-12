@@ -303,68 +303,69 @@ function ProjectShellInner({
                     </div>
 
                     
-                    {/* Action Buttons Row - Mobile Specific/Optimized */}
-                    <div className="relative group/actions mt-1">
+                    {/* Action Buttons Row - Mobile Only */}
+                    <div className="md:hidden relative group/actions border-b border-black/5">
                         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 px-1">
-                             {/* AI Group */}
-                             {isStoryTab && (
-                                <div className="flex items-center gap-1.5 shrink-0">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => speak(currentSceneText, 'Scene')}
-                                        className={cn(
-                                            "rounded-xl transition-all h-9 px-3 gap-2",
-                                            isReading ? "bg-amber-100 text-amber-700 animate-pulse" : "bg-black/5 text-slate-500 hover:bg-black/10"
-                                        )}
-                                    >
-                                        <Volume2 className={cn("w-4 h-4", isReading && "animate-bounce")} />
-                                        <span className="text-xs font-medium hidden md:inline">Read Aloud</span>
-                                    </Button>
-
-                                    <div className="flex items-center gap-1 bg-black/5 p-0.5 rounded-xl">
+                            {isStoryTab && (
+                                <div className="flex items-center gap-2 shrink-0">
+                                    {/* AI Tools - Generative stuff first */}
+                                    <div className="flex items-center gap-1 bg-violet-50 p-1 rounded-2xl border border-violet-100/50">
                                         <Button
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => analyzeScene()}
                                             disabled={isAnalyzing || !currentSceneText}
                                             className={cn(
-                                                "rounded-lg transition-all h-8 px-2.5 gap-2",
-                                                isAnalyzing ? "bg-violet-100 text-violet-700 animate-pulse" : "text-slate-500 hover:bg-white"
+                                                "rounded-xl transition-all h-9 px-3 gap-2",
+                                                isAnalyzing ? "bg-white text-violet-600 shadow-sm animate-pulse font-bold" : "text-slate-500 hover:bg-white"
                                             )}
                                         >
                                             <Wand2 className="w-4 h-4" />
-                                            <span className="text-xs font-medium hidden md:inline">Analyze</span>
+                                            <span className="text-xs font-medium">Analyze</span>
                                         </Button>
-
                                         <Button
                                             variant="ghost"
                                             size="sm"
                                             onClick={handleToggleAi}
                                             className={cn(
-                                                "rounded-lg transition-all h-8 px-2.5 gap-2",
-                                                aiPanelOpen ? "bg-violet-100 text-violet-700 focus:bg-violet-200" : "text-slate-500 hover:bg-white"
+                                                "rounded-xl transition-all h-9 px-3 gap-2",
+                                                aiPanelOpen ? "bg-white text-indigo-600 shadow-sm font-bold border-indigo-100" : "text-slate-500 hover:bg-white"
                                             )}
                                         >
                                             <Sparkles className="w-4 h-4" />
-                                            <span className="text-xs font-medium hidden md:inline">AI Helper</span>
+                                            <span className="text-xs font-medium">Helper</span>
                                         </Button>
                                     </div>
 
+                                    {/* Reading/Interaction */}
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => speak(currentSceneText)}
+                                        className={cn(
+                                            "rounded-xl transition-all h-9 px-3 gap-2",
+                                            isReading ? "bg-amber-100 text-amber-700 animate-pulse border border-amber-200 font-bold" : "bg-black/5 text-slate-500 hover:bg-black/10"
+                                        )}
+                                    >
+                                        <Volume2 className={cn("w-4 h-4", isReading && "animate-bounce")} />
+                                        <span className="text-xs font-medium">Read Aloud</span>
+                                    </Button>
+
+                                    {/* Feedback */}
                                     <Button
                                         variant="ghost"
                                         size="sm"
                                         onClick={handleToggleComments}
                                         className={cn(
-                                            "rounded-xl transition-all h-9 px-3 gap-2",
-                                            commentsPanelOpen ? "bg-primary/10 text-primary hover:bg-primary/20" : "bg-black/5 text-slate-500 hover:bg-black/10"
+                                            "rounded-xl transition-all h-9 px-3 gap-2 border border-transparent",
+                                            commentsPanelOpen ? "bg-rose-50 text-rose-600 border-rose-100 font-bold shadow-sm" : "bg-black/5 text-slate-500 hover:bg-black/10"
                                         )}
                                     >
                                         <MessageSquare className="w-4 h-4" />
-                                        <span className="text-xs font-medium hidden md:inline">Feedback</span>
+                                        <span className="text-xs font-medium">Feedback</span>
                                     </Button>
                                 </div>
-                             )}
+                            )}
                         </div>
                         {/* Scroll indicator gradient */}
                         <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#fcfbf9] to-transparent pointer-events-none" />
