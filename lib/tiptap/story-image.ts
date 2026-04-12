@@ -1,5 +1,16 @@
 import { Node, mergeAttributes } from '@tiptap/core'
 
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    storyImage: {
+      /**
+       * Add an image
+       */
+      setImage: (options: { assetId: string; src: string; alt?: string; caption?: string; width?: string; alignment?: string }) => ReturnType
+    }
+  }
+}
+
 /**
  * Story Image Node
  * A controlled block for project illustrations. 
@@ -61,7 +72,7 @@ export const StoryImage = Node.create({
 
   addCommands() {
     return {
-      setImage: options => ({ chain }) => {
+      setImage: (options: { assetId: string; src: string; alt?: string; caption?: string; width?: string; alignment?: string }) => ({ chain }) => {
         return chain()
           .insertContent({
             type: this.name,

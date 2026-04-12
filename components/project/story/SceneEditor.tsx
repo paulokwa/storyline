@@ -21,6 +21,14 @@ import { ScreenplayKeyboard } from '@/lib/tiptap/screenplay-keyboard'
 import { createClient } from '@/lib/supabase/client'
 import type { Database, WritingMode } from '@/lib/supabase/types'
 import { cn, getUserColor } from '@/lib/utils'
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    storyImage: {
+      setImage: (options: { assetId: string; src: string; alt?: string; caption?: string; width?: string; alignment?: string }) => ReturnType
+    }
+  }
+}
 import { 
     Trash2, 
     RotateCcw, 
@@ -282,7 +290,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             StoryImage
         ]
 
-        const isScriptProject = projectType === 'tv_script' || projectType === 'feature_film';
+        const isScriptProject = projectType === 'tv_script';
 
         if (writingMode === 'screenplay' || isScriptProject) {
             base.push(
