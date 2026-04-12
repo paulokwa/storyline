@@ -42,7 +42,7 @@ export default function AssetPicker({ projectId, entityId, entityType, className
         try {
             const { data, error } = await supabase
                 .from('entity_assets')
-                .select('asset:project_assets(id, storage_path, file_name)')
+                .select('asset:project_assets(*)')
                 .eq('entity_id', entityId)
                 .eq('is_primary', true)
                 .maybeSingle()
@@ -62,7 +62,7 @@ export default function AssetPicker({ projectId, entityId, entityType, className
         try {
             const { data, error } = await supabase
                 .from('project_assets')
-                .select('id, storage_path, file_name')
+                .select('*')
                 .eq('project_id', projectId)
                 .eq('asset_type', 'image')
                 .order('created_at', { ascending: false })

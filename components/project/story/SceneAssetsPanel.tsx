@@ -55,7 +55,7 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose }: SceneA
         try {
             const { data, error } = await supabase
                 .from('scene_assets')
-                .select('id, asset_id, asset:project_assets(id, storage_path, file_name, mime_type)')
+                .select('id, asset_id, asset:project_assets(*)')
                 .eq('scene_id', sceneId)
                 .order('sort_order', { ascending: true })
 
@@ -74,7 +74,7 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose }: SceneA
         try {
             const { data, error } = await supabase
                 .from('project_assets')
-                .select('id, storage_path, file_name, mime_type')
+                .select('*')
                 .eq('project_id', projectId)
                 .eq('asset_type', 'image')
                 .order('created_at', { ascending: false })

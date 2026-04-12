@@ -38,7 +38,7 @@ export default function EditorAssetSelector({ projectId, isOpen, onClose, onSele
         try {
             const { data, error } = await supabase
                 .from('project_assets')
-                .select('id, storage_path, file_name, alt_text')
+                .select('*')
                 .eq('project_id', projectId)
                 .eq('asset_type', 'image')
                 .order('created_at', { ascending: false })
