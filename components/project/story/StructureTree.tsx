@@ -274,7 +274,6 @@ const NodeItem = React.memo(({
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'
     const [expanded, setExpanded] = useState(true)
-    const [hovered, setHovered] = useState(false)
     const [editing, setEditing] = useState(false)
     const [draft, setDraft] = useState(node.title)
 
@@ -319,9 +318,7 @@ const NodeItem = React.memo(({
                             isSelected && 'bg-indigo-50/40 border-indigo-200/50',
                             snapshot.isDragging && 'shadow-2xl z-50 bg-white ring-2 ring-[#546354]/10'
                         )}
-                        style={{ paddingLeft: `${(typeof window !== 'undefined' && window.innerWidth < 640 ? 12 : 16) + depth * (typeof window !== 'undefined' && window.innerWidth < 640 ? 16 : 24)}px` }}
-                        onMouseEnter={() => setHovered(true)}
-                        onMouseLeave={() => setHovered(false)}
+                        style={{ paddingLeft: `${depth * 24 + (isScene ? 12 : 0)}px` }}
                         onClick={handleClick}
                     >
                         {isActive && (
@@ -333,7 +330,8 @@ const NodeItem = React.memo(({
                                 {...provided.dragHandleProps}
                                 className={cn(
                                     "p-1 -ml-1 opacity-0 transition-opacity cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-400 shrink-0",
-                                    hovered && "opacity-100"
+                                    "group-hover:opacity-100",
+                                    isActive && "opacity-100"
                                 )}
                             >
                                 <GripVertical className="w-3.5 h-3.5" />
@@ -419,10 +417,11 @@ const NodeItem = React.memo(({
                         )}
 
                         {/* Hover actions — only when not confirming */}
-                        {(!editing && !isReadOnly && confirmingDeleteId !== node.id && (hovered || isActive || (typeof window !== 'undefined' && window.innerWidth < 768))) && (
+                        {(!editing && !isReadOnly && confirmingDeleteId !== node.id) && (
                             <div className={cn(
-                                "flex items-center gap-1 shrink-0 transition-opacity duration-300 md:opacity-0 md:group-hover:opacity-100",
-                                (isActive || (typeof window !== 'undefined' && window.innerWidth < 768)) && "opacity-100"
+                                "flex items-center gap-1 shrink-0 transition-opacity duration-300",
+                                "opacity-100 md:opacity-0 md:group-hover:opacity-100",
+                                isActive && "md:opacity-100"
                             )} onClick={e => e.stopPropagation()}>
                                 {CHILD_TYPE[node.type as NodeType] && (
                                     <button
