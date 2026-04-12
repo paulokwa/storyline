@@ -27,6 +27,7 @@ import {
     Settings2
 } from 'lucide-react'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { useProjectActionsStore } from '@/lib/store/projectActionsStore'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -108,48 +109,45 @@ export default function ProjectShell({
                             project={project} 
                             editingTitle={editingTitle} 
                             setEditingTitle={setEditingTitle} 
-                        titleDraft={titleDraft} 
-                        setTitleDraft={setTitleDraft} 
-                        saveTitle={saveTitle} 
-                        exportModalOpen={exportModalOpen}
-                        setExportModalOpen={setExportModalOpen}
-                        settingsModalOpen={settingsModalOpen}
-                        setSettingsModalOpen={setSettingsModalOpen}
-                        shareModalOpen={shareModalOpen}
-                        setShareModalOpen={setShareModalOpen}
-                        role={role}
-                        pathname={pathname} 
-                    >
-                        {children}
-                    </ProjectShellInner>
-                    
-                    <ExportModal 
-                        open={exportModalOpen} 
-                        onOpenChange={setExportModalOpen} 
-                        projectId={project.id}
-                        projectTitle={project.title ?? 'Untitled'}
-                        projectType={project.type as any}
-                        onOpenSettings={() => {
-                            setExportModalOpen(false)
-                            setSettingsModalOpen(true)
-                        }}
-                    />
-                    
-                    <ProjectSettingsModal 
-                        open={settingsModalOpen} 
-                        onOpenChange={setSettingsModalOpen} 
-                        project={project} 
-                    />
+                            titleDraft={titleDraft} 
+                            setTitleDraft={setTitleDraft} 
+                            saveTitle={saveTitle} 
+                            setExportModalOpen={setExportModalOpen}
+                            setSettingsModalOpen={setSettingsModalOpen}
+                            setShareModalOpen={setShareModalOpen}
+                            role={role}
+                            pathname={pathname} 
+                        >
+                            {children}
+                        </ProjectShellInner>
+                        
+                        <ExportModal 
+                            open={exportModalOpen} 
+                            onOpenChange={setExportModalOpen} 
+                            projectId={project.id}
+                            projectTitle={project.title ?? 'Untitled'}
+                            projectType={project.type as any}
+                            onOpenSettings={() => {
+                                setExportModalOpen(false)
+                                setSettingsModalOpen(true)
+                            }}
+                        />
+                        
+                        <ProjectSettingsModal 
+                            open={settingsModalOpen} 
+                            onOpenChange={setSettingsModalOpen} 
+                            project={project} 
+                        />
 
-                    <ShareModal
-                        open={shareModalOpen}
-                        onOpenChange={setShareModalOpen}
-                        projectId={project.id}
-                    />
+                        <ShareModal
+                            open={shareModalOpen}
+                            onOpenChange={setShareModalOpen}
+                            projectId={project.id}
+                        />
 
-                    <FloatingPlayer />
-                </ReaderProvider>
-            </CommentsProvider>
+                        <FloatingPlayer />
+                    </ReaderProvider>
+                </CommentsProvider>
             </PresenceWrapper>
         </ProjectProvider>
     )
@@ -171,11 +169,8 @@ function ProjectShellInner({
     titleDraft, 
     setTitleDraft, 
     saveTitle, 
-    exportModalOpen,
     setExportModalOpen, 
-    settingsModalOpen,
     setSettingsModalOpen, 
-    shareModalOpen,
     setShareModalOpen,
     role,
     pathname, 
@@ -187,6 +182,18 @@ function ProjectShellInner({
         currentSceneText, 
         analyzeScene, isAnalyzing 
     } = useProjectActions()
+
+    // Register actions in the global state for AppNav access
+    const setActions = useProjectActionsStore(state => state.setActions)
+    useEffect(() => {
+        setActions({
+            export: () => setExportModalOpen(true),
+            share: () => setShareModalOpen(true),
+            settings: () => setSettingsModalOpen(true),
+            canShare: role === 'owner'
+        })
+        return () => setActions(null)
+    }, [role, setActions, setExportModalOpen, setShareModalOpen, setSettingsModalOpen])
     const { commentsPanelOpen, setCommentsPanelOpen } = useComments()
     
     // Responsive checks
@@ -295,12 +302,6 @@ function ProjectShellInner({
                         </div>
                     </div>
 
-                    <ProjectMenuPortal 
-                        onExport={() => setExportModalOpen(true)}
-                        onShare={() => setShareModalOpen(true)}
-                        onSettings={() => setSettingsModalOpen(true)}
-                        canShare={role === 'owner'}
-                    />
                     
                     {/* Action Buttons Row - Mobile Specific/Optimized */}
                     <div className="relative group/actions mt-1">
@@ -401,48 +402,6 @@ function ProjectShellInner({
     )
 }
 
-function ProjectMenuPortal({ onExport, onShare, onSettings, canShare }: { onExport: () => void, onShare: () => void, onSettings: () => void, canShare: boolean }) {
-    const [mounted, setMounted] = useState(false)
-    useEffect(() => setMounted(true), [])
-    if (!mounted) return null
-    
-    const target = document.getElementById('project-menu-portal')
-    if (!target) return null
-    
-    return createPortal(
-        <>
-            <DropdownMenuItem 
-                onClick={onExport}
-                className="rounded-xl px-3 py-2 text-slate-600 focus:text-indigo-600 focus:bg-indigo-50 cursor-pointer gap-2 transition-all"
-            >
-                <Download className="w-4 h-4" />
-                <span className="font-medium text-sm">Export Project</span>
-            </DropdownMenuItem>
-            
-            {canShare && (
-                <DropdownMenuItem 
-                    onClick={onShare}
-                    className="rounded-xl px-3 py-2 text-slate-600 focus:text-indigo-600 focus:bg-indigo-50 cursor-pointer gap-2 transition-all"
-                >
-                    <Users className="w-4 h-4" />
-                    <span className="font-medium text-sm">Share Project</span>
-                </DropdownMenuItem>
-            )}
-
-            <DropdownMenuItem 
-                onClick={onSettings}
-                className="rounded-xl px-3 py-2 text-slate-600 focus:text-indigo-600 focus:bg-indigo-50 cursor-pointer gap-2 transition-all"
-            >
-                <Settings2 className="w-4 h-4" />
-                <span className="font-medium text-sm">Project Settings</span>
-            </DropdownMenuItem>
-            
-            <DropdownMenuSeparator className="my-1 bg-slate-100" />
-        </>,
-        target
-    )
-}
-
 function AvatarPortal() {
     const [mounted, setMounted] = useState(false)
     useEffect(() => setMounted(true), [])
@@ -455,11 +414,14 @@ function AvatarPortal() {
 }
 
 function CollaborativeAvatars() {
-    const { presenceUsers } = usePresence()
+    const { presenceUsers, currentUser } = usePresence()
     const MAX_VISIBLE = 4
     
-    const visibleUsers = presenceUsers.slice(0, MAX_VISIBLE)
-    const remainingCount = presenceUsers.length - MAX_VISIBLE
+    // Filter out the current user to avoid "Two Circles" for the same person
+    const filteredUsers = presenceUsers.filter(u => u.user_id !== currentUser?.id)
+    
+    const visibleUsers = filteredUsers.slice(0, MAX_VISIBLE)
+    const remainingCount = filteredUsers.length - MAX_VISIBLE
     
     return (
         <TooltipProvider>
@@ -476,7 +438,12 @@ function CollaborativeAvatars() {
                                     userColor
                                 )}>
                                     <AvatarFallback className="text-[10px] font-bold bg-transparent">
-                                        {user.email.substring(0, 2).toUpperCase()}
+                                        {(() => {
+                                            const name = user.display_name || user.email.split('@')[0]
+                                            return name.includes(' ')
+                                                ? name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+                                                : name.slice(0, 2).toUpperCase()
+                                        })()}
                                     </AvatarFallback>
                                 </Avatar>
                             </TooltipTrigger>

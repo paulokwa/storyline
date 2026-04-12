@@ -9,6 +9,7 @@ export type PresenceStatus = 'viewing' | 'editing'
 export interface PresenceUser {
     user_id: string
     email: string
+    display_name: string
     scene_id: string | null
     status: PresenceStatus
     last_active: number
@@ -19,6 +20,7 @@ interface PresenceContextType {
     myStatus: PresenceStatus
     setMyStatus: (status: PresenceStatus) => void
     activeSceneUsers: PresenceUser[]
+    currentUser: any | null
 }
 
 const PresenceContext = createContext<PresenceContextType | undefined>(undefined)
@@ -74,6 +76,7 @@ export function PresenceProvider({
                     await channel.track({
                         user_id: user.id,
                         email: user.email,
+                        display_name: user.user_metadata?.display_name || user.email.split('@')[0],
                         scene_id: currentSceneId,
                         status: myStatus,
                         last_active: Date.now()
@@ -93,6 +96,7 @@ export function PresenceProvider({
             channelRef.current.track({
                 user_id: user.id,
                 email: user.email,
+                display_name: user.user_metadata?.display_name || user.email.split('@')[0],
                 scene_id: currentSceneId,
                 status: myStatus,
                 last_active: Date.now()
@@ -107,7 +111,8 @@ export function PresenceProvider({
             presenceUsers, 
             myStatus, 
             setMyStatus,
-            activeSceneUsers 
+            activeSceneUsers,
+            currentUser: user
         }}>
             {children}
         </PresenceContext.Provider>
