@@ -309,20 +309,20 @@ function ProjectShellInner({
                              {/* AI Group */}
                              {isStoryTab && (
                                 <div className="flex items-center gap-1.5 shrink-0">
-                                    <div className="flex items-center gap-1 bg-black/5 p-0.5 rounded-xl">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => speak(currentSceneText, 'Scene')}
-                                            className={cn(
-                                                "rounded-lg transition-all h-8 px-2.5 gap-2",
-                                                isReading ? "bg-amber-100 text-amber-700 animate-pulse" : "text-slate-500 hover:bg-white"
-                                            )}
-                                        >
-                                            <Volume2 className={cn("w-4 h-4", isReading && "animate-bounce")} />
-                                            <span className="text-xs font-medium hidden md:inline">Read Aloud</span>
-                                        </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => speak(currentSceneText, 'Scene')}
+                                        className={cn(
+                                            "rounded-xl transition-all h-9 px-3 gap-2",
+                                            isReading ? "bg-amber-100 text-amber-700 animate-pulse" : "bg-black/5 text-slate-500 hover:bg-black/10"
+                                        )}
+                                    >
+                                        <Volume2 className={cn("w-4 h-4", isReading && "animate-bounce")} />
+                                        <span className="text-xs font-medium hidden md:inline">Read Aloud</span>
+                                    </Button>
 
+                                    <div className="flex items-center gap-1 bg-black/5 p-0.5 rounded-xl">
                                         <Button
                                             variant="ghost"
                                             size="sm"
@@ -336,20 +336,20 @@ function ProjectShellInner({
                                             <Wand2 className="w-4 h-4" />
                                             <span className="text-xs font-medium hidden md:inline">Analyze</span>
                                         </Button>
-                                    </div>
 
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={handleToggleAi}
-                                        className={cn(
-                                            "rounded-xl transition-all h-9 px-3 gap-2",
-                                            aiPanelOpen ? "bg-violet-100 text-violet-700 hover:bg-violet-200" : "bg-black/5 text-slate-500 hover:bg-black/10"
-                                        )}
-                                    >
-                                        <Sparkles className="w-4 h-4" />
-                                        <span className="text-xs font-medium hidden md:inline">AI Helper</span>
-                                    </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleToggleAi}
+                                            className={cn(
+                                                "rounded-lg transition-all h-8 px-2.5 gap-2",
+                                                aiPanelOpen ? "bg-violet-100 text-violet-700 focus:bg-violet-200" : "text-slate-500 hover:bg-white"
+                                            )}
+                                        >
+                                            <Sparkles className="w-4 h-4" />
+                                            <span className="text-xs font-medium hidden md:inline">AI Helper</span>
+                                        </Button>
+                                    </div>
 
                                     <Button
                                         variant="ghost"
