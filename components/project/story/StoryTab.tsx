@@ -49,7 +49,12 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         aiPanelOpen, setAiPanelOpen, 
         sceneAssetsOpen, setSceneAssetsOpen,
         currentSceneText, setCurrentSceneText,
-        activeNodeId, setActiveNodeId
+        activeNodeId, setActiveNodeId,
+        activeCharacters, setActiveCharacters,
+        activeIdeas, setActiveIdeas,
+        activeLocations, setActiveLocations,
+        activeObjects, setActiveObjects,
+        selectedNodeIds, setSelectedNodeIds
     } = useProjectActions()
     const { commentsPanelOpen, setCommentsPanelOpen, fetchComments } = useComments()
     
@@ -78,11 +83,6 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     }, [project.id, fetchComments])
     const [writingMode, setWritingMode] = useState<WritingMode>(project.writing_mode ?? 'simple')
     
-    const [activeCharacters, setActiveCharacters] = useState<Record<string, boolean>>({})
-    const [activeIdeas, setActiveIdeas] = useState<Record<string, boolean>>({})
-    const [activeLocations, setActiveLocations] = useState<Record<string, boolean>>({})
-    const [activeObjects, setActiveObjects] = useState<Record<string, boolean>>({})
-    const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([])
     const editorRef = useRef<SceneEditorRef>(null)
 
     const activeScene = scenes.find((s: Scene) => s.node_id === activeNodeId)
@@ -200,13 +200,47 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             }
             const targetIds = [nodeId, ...getDescendantIds(nodeId)]
             if (isSelected) {
-                return prev.filter(id => !targetIds.includes(id))
+                // Deselecting: remove node and all its descendants
+                let newSelected = prev.filter(id => !targetIds.includes(id))
+                
+                // Recursively check parents. If a parent has NO remaining selected children, deselect the parent too.
+                const removeEmptyParents = (childId: string, currentSel: string[]): string[] => {
+                    const child = nodes.find(n => n.id === childId)
+                    if (child && child.parent_id) {
+                        const parentId = child.parent_id
+                        const siblingIds = nodes.filter(n => n.parent_id === parentId).map(n => n.id)
+                        const hasSelectedSiblings = siblingIds.some(id => currentSel.includes(id))
+                        if (!hasSelectedSiblings && currentSel.includes(parentId)) {
+                            // Uncheck parent
+                            const nextSel = currentSel.filter(id => id !== parentId)
+                            return removeEmptyParents(parentId, nextSel)
+                        }
+                    }
+                    return currentSel
+                }
+                
+                return removeEmptyParents(nodeId, newSelected)
             } else {
+                // Selecting: add node and all its descendants
                 const newSelected = [...prev]
                 targetIds.forEach(id => {
                     if (!newSelected.includes(id)) newSelected.push(id)
                 })
-                return newSelected
+                
+                // Also select all ascendants (parents) so the tree accurately reflects the checked state
+                const selectParents = (childId: string, currentSel: string[]): string[] => {
+                    const child = nodes.find(n => n.id === childId)
+                    if (child && child.parent_id) {
+                        const parentId = child.parent_id
+                        if (!currentSel.includes(parentId)) {
+                            currentSel.push(parentId)
+                        }
+                        return selectParents(parentId, currentSel)
+                    }
+                    return currentSel
+                }
+
+                return selectParents(nodeId, newSelected)
             }
         })
     }, [nodes])

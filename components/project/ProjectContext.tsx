@@ -25,6 +25,18 @@ interface ProjectContextType {
     setIsDictating: (val: boolean) => void
     dictationRequest: number // timestamp logic
     requestDictation: () => void
+
+    // AI Selection Context persistence
+    activeCharacters: Record<string, boolean>
+    setActiveCharacters: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
+    activeIdeas: Record<string, boolean>
+    setActiveIdeas: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
+    activeLocations: Record<string, boolean>
+    setActiveLocations: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
+    activeObjects: Record<string, boolean>
+    setActiveObjects: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
+    selectedNodeIds: string[]
+    setSelectedNodeIds: React.Dispatch<React.SetStateAction<string[]>>
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined)
@@ -47,6 +59,12 @@ export function ProjectProvider({
     const [activeNodeId, setActiveNodeId] = useState<string | null>(null)
     const [isDictating, setIsDictating] = useState(false)
     const [dictationRequest, setDictationRequest] = useState(0)
+
+    const [activeCharacters, setActiveCharacters] = useState<Record<string, boolean>>({})
+    const [activeIdeas, setActiveIdeas] = useState<Record<string, boolean>>({})
+    const [activeLocations, setActiveLocations] = useState<Record<string, boolean>>({})
+    const [activeObjects, setActiveObjects] = useState<Record<string, boolean>>({})
+    const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([])
 
     const requestDictation = () => setDictationRequest(Date.now())
 
@@ -93,7 +111,17 @@ export function ProjectProvider({
             isDictating,
             setIsDictating,
             dictationRequest,
-            requestDictation
+            requestDictation,
+            activeCharacters,
+            setActiveCharacters,
+            activeIdeas,
+            setActiveIdeas,
+            activeLocations,
+            setActiveLocations,
+            activeObjects,
+            setActiveObjects,
+            selectedNodeIds,
+            setSelectedNodeIds
         }}>
             {children}
         </ProjectContext.Provider>

@@ -254,6 +254,62 @@ export default function AiHelperPanel({
         }
     }, [linkedCharacters, linkedIdeas, linkedLocations, linkedObjects, selectedNodes])
 
+    const storySelectionLabel = useMemo(() => {
+        if (!selectedNodes.length) return ''
+        
+        const selectedScenes = selectedNodes.filter(n => n.type === 'scene')
+        if (selectedScenes.length === 0) {
+            // Only folders were selected, no scenes
+            const folders = selectedNodes.filter(n => n.type !== 'scene')
+            return folders.map(f => f.title).join(', ')
+        }
+
+        const parentGroups = new Map<string, any[]>()
+        const standaloneScenes = []
+        
+        for (const scene of selectedScenes) {
+            const parentId = scene.parent_id
+            if (parentId) {
+                if (!parentGroups.has(parentId)) parentGroups.set(parentId, [])
+                parentGroups.get(parentId)!.push(scene)
+            } else {
+                standaloneScenes.push(scene)
+            }
+        }
+        
+        const labels: string[] = []
+        
+        parentGroups.forEach((scenes, parentId) => {
+            const parent = allNodes.find(n => n.id === parentId)
+            const parentTitle = parent?.title || 'Group'
+            
+            const totalScenesInParent = allNodes.filter(n => n.type === 'scene' && n.parent_id === parentId).length
+            
+            if (scenes.length === totalScenesInParent && totalScenesInParent > 0) {
+                labels.push(parentTitle)
+            } else if (scenes.length === 1) {
+                labels.push(`${parentTitle} (${scenes[0].title || 'Scene'})`)
+            } else {
+                labels.push(`${parentTitle} (${scenes.length} scenes)`)
+            }
+        })
+        
+        if (standaloneScenes.length > 0) {
+            if (standaloneScenes.length === 1) {
+                labels.push(standaloneScenes[0].title || 'Unbound scene')
+            } else {
+                labels.push(`${standaloneScenes.length} unbound scenes`)
+            }
+        }
+        
+        return labels.join(', ')
+    }, [selectedNodes, allNodes])
+
+    const charactersLabel = useMemo(() => linkedCharacters.length === 1 ? (linkedCharacters[0].name || 'Character') : `${linkedCharacters.length} Characters`, [linkedCharacters])
+    const ideasLabel = useMemo(() => linkedIdeas.length === 1 ? (linkedIdeas[0].title || 'Idea') : `${linkedIdeas.length} Ideas`, [linkedIdeas])
+    const locationsLabel = useMemo(() => linkedLocations.length === 1 ? (linkedLocations[0].name || 'Location') : `${linkedLocations.length} Locations`, [linkedLocations])
+    const objectsLabel = useMemo(() => linkedObjects.length === 1 ? (linkedObjects[0].name || 'Object') : `${linkedObjects.length} Objects`, [linkedObjects])
+
     const contextSnapshotString = useMemo(() => {
         const parts = []
         if (projectId) parts.push(`Project: ${projectId}`)
@@ -261,11 +317,13 @@ export default function AiHelperPanel({
             const node = allNodes.find(n => n.id === activeNodeId)
             if (node) parts.push(`${node.type === 'scene' ? 'Scene' : 'Chapter'}: ${node.title}`)
         }
-        if (linkedCharacters.length > 0) parts.push(`${linkedCharacters.length} Chars`)
-        if (linkedIdeas.length > 0) parts.push(`${linkedIdeas.length} Ideas`)
-        if (selectedNodes.length > 0) parts.push(`${selectedNodes.length} Nodes`)
+        if (linkedCharacters.length > 0) parts.push(charactersLabel)
+        if (linkedIdeas.length > 0) parts.push(ideasLabel)
+        if (linkedLocations.length > 0) parts.push(locationsLabel)
+        if (linkedObjects.length > 0) parts.push(objectsLabel)
+        if (selectedNodes.length > 0) parts.push(storySelectionLabel)
         return parts.join(' | ')
-    }, [projectId, activeNodeId, allNodes, linkedCharacters, linkedIdeas, selectedNodes])
+    }, [projectId, activeNodeId, allNodes, linkedCharacters, linkedIdeas, linkedLocations, linkedObjects, selectedNodes, charactersLabel, ideasLabel, locationsLabel, objectsLabel, storySelectionLabel])
 
     const sourceLabel = useMemo(() => {
         if (activeNodeId) {
@@ -689,25 +747,31 @@ export default function AiHelperPanel({
                     {linkedCharacters.length > 0 && (
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-50/50 border border-indigo-100/50 text-[9px] text-indigo-600 font-medium shrink-0 animate-in fade-in slide-in-from-left-2 transition-all">
                             <div className="w-1 h-1 bg-indigo-400 rounded-full"></div>
-                            {linkedCharacters.length} Character{linkedCharacters.length !== 1 ? 's' : ''}
+                            {charactersLabel}
                         </div>
                     )}
                     {linkedIdeas.length > 0 && (
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-50/50 border border-amber-100/50 text-[9px] text-amber-600 font-medium shrink-0 animate-in fade-in slide-in-from-left-2 transition-all">
                             <div className="w-1 h-1 bg-amber-400 rounded-full"></div>
-                            {linkedIdeas.length} Idea{linkedIdeas.length !== 1 ? 's' : ''}
+                            {ideasLabel}
                         </div>
                     )}
                     {linkedLocations.length > 0 && (
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50/50 border border-emerald-100/50 text-[9px] text-emerald-600 font-medium shrink-0 animate-in fade-in slide-in-from-left-2 transition-all">
                             <div className="w-1 h-1 bg-emerald-400 rounded-full"></div>
-                            {linkedLocations.length} Location{linkedLocations.length !== 1 ? 's' : ''}
+                            {locationsLabel}
+                        </div>
+                    )}
+                    {linkedObjects.length > 0 && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-sky-50/50 border border-sky-100/50 text-[9px] text-sky-600 font-medium shrink-0 animate-in fade-in slide-in-from-left-2 transition-all">
+                            <div className="w-1 h-1 bg-sky-400 rounded-full"></div>
+                            {objectsLabel}
                         </div>
                     )}
                     {selectedNodes.length > 0 && (
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-200/50 text-[9px] text-indigo-700 font-bold shrink-0 animate-in fade-in slide-in-from-left-2 transition-all shadow-sm">
                             <div className="w-1 h-1 bg-indigo-500 rounded-full animate-pulse"></div>
-                            {selectedNodes.length} Node{selectedNodes.length !== 1 ? 's' : ''}
+                            {storySelectionLabel}
                         </div>
                     )}
                     

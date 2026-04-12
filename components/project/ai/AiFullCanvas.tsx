@@ -33,7 +33,18 @@ export default function AiFullCanvas({
     aiSettings
 }: AiFullCanvasProps) {
     const router = useRouter()
-    const { currentSceneText, activeNodeId } = useProjectActions()
+    const { 
+        currentSceneText, 
+        activeNodeId,
+        activeCharacters,
+        activeIdeas,
+        activeLocations,
+        activeObjects,
+        selectedNodeIds
+    } = useProjectActions()
+
+    const activeScene = allScenes.find(s => s.node_id === activeNodeId)
+    const selectedNodes = allNodes.filter(n => selectedNodeIds.includes(n.id))
 
     return (
         <div className="flex-1 flex flex-col bg-[#fbf9f5] overflow-hidden">
@@ -77,10 +88,11 @@ export default function AiFullCanvas({
                             console.log("Full Canvas: AI wants to insert content", content)
                             // We can use the global state if available, but for now we just show the output
                         }}
-                        linkedCharacters={projectCharacters}
-                        linkedIdeas={projectIdeas}
-                        linkedLocations={projectLocations}
-                        linkedObjects={projectObjects}
+                        linkedCharacters={projectCharacters.filter(c => activeCharacters[c.id] !== false && activeScene?.scene_characters?.some((sc: any) => sc.characters?.id === c.id))}
+                        linkedIdeas={projectIdeas.filter(i => activeIdeas[i.id] !== false && activeScene?.scene_ideas?.some((si: any) => si.ideas?.id === i.id))}
+                        linkedLocations={projectLocations.filter(l => activeLocations[l.id] !== false && activeScene?.scene_locations?.some((sl: any) => sl.locations?.id === l.id))}
+                        linkedObjects={projectObjects.filter(o => activeObjects[o.id] !== false && activeScene?.scene_objects?.some((so: any) => so.objects?.id === o.id))}
+                        selectedNodes={selectedNodes}
                         projectRelationships={projectRelationships}
                         allNodes={allNodes}
                         allScenes={allScenes}
@@ -88,7 +100,8 @@ export default function AiFullCanvas({
                         projectType={project.type}
                         projectPremise={project.premise}
                         projectTone={project.tone}
-                        activeNodeId={null} // Global chat mode
+                        activeNodeId={activeNodeId}
+                        activeSceneId={activeScene?.id}
                     />
                 </div>
             </div>
