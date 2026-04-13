@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
     BookOpen, Users, Lightbulb,
-    ChevronLeft, Settings, Check, X,
+    ChevronLeft, Settings, Check, X, Home,
     Tv,
     Download,
     MapPin,
@@ -354,7 +354,7 @@ function ProjectShellInner({
                                         href="/library" 
                                         className="h-9 w-9 flex items-center justify-center rounded-xl bg-black/5 text-slate-500 hover:text-slate-800 transition-all active:scale-95"
                                     >
-                                        <ChevronLeft className="w-5 h-5" />
+                                        <Home className="w-4 h-4" />
                                     </Link>
                                 </TooltipTrigger>
                                 <TooltipContent side="bottom" sideOffset={-57}>Back to library</TooltipContent>

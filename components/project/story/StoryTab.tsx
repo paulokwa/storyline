@@ -65,6 +65,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         activeObjects, setActiveObjects,
         selectedNodeIds, setSelectedNodeIds
     } = useProjectActions()
+    const [isPeeking, setIsPeeking] = useState(false)
     const { commentsPanelOpen, setCommentsPanelOpen, fetchComments } = useComments()
     
     const [nodes, setNodes] = useState(initialNodes)
@@ -154,6 +155,25 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             channel.unsubscribe()
         }
     }, [project.id, activeNodeId, setActiveNodeId])
+
+    useEffect(() => {
+        const isMobile = window.innerWidth < 768
+        if (isMobile || sidebarOpen) {
+            if (isPeeking) setIsPeeking(false)
+            return
+        }
+
+        const handleMouseMove = (e: MouseEvent) => {
+            if (e.clientX < 40) {
+                setIsPeeking(true)
+            } else if (e.clientX > 100) {
+                setIsPeeking(false)
+            }
+        }
+
+        window.addEventListener('mousemove', handleMouseMove)
+        return () => window.removeEventListener('mousemove', handleMouseMove)
+    }, [sidebarOpen, isPeeking])
 
     const [showExportHint, setShowExportHint] = useState(false)
     const [portalRoot, setPortalRoot] = useState<Element | null>(null)
@@ -279,12 +299,20 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             {/* Left sidebar */}
             <div 
                 data-tour="structure-panel"
+                onClick={() => {
+                    if (isPeeking && !sidebarOpen) {
+                        setSidebarOpen(true)
+                        setIsPeeking(false)
+                    }
+                }}
                 className={cn(
-                'bg-[#f5f4ef] flex flex-col transition-all duration-300 ease-in-out overflow-hidden z-40 md:z-20',
+                'bg-[#f5f4ef] flex flex-col transition-all duration-500 ease-in-out overflow-hidden z-40 md:z-20',
                 'absolute top-0 bottom-0 left-0 md:relative md:inset-auto md:h-full',
                 sidebarOpen 
                     ? 'w-[280px] lg:w-[320px] border-r border-slate-200 opacity-100 translate-x-0' 
-                    : 'w-0 border-none opacity-0 -translate-x-full md:translate-x-0 md:opacity-100'
+                    : isPeeking
+                        ? 'w-4 border-r-2 border-primary/20 bg-primary/5 cursor-pointer opacity-100 translate-x-0 hover:bg-primary/10 transition-colors shadow-[4px_0_12px_rgba(0,0,0,0.02)]'
+                        : 'w-0 border-none opacity-0 -translate-x-full md:translate-x-0 md:opacity-100'
             )}>
                 <div className="w-[280px] lg:w-[320px] h-full flex flex-col">
                     <StructureTree
