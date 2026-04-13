@@ -166,11 +166,18 @@
   box-sizing: border-box;
 }
 
+html, body {
+  overscroll-behavior: none;
+  height: 100%;
+}
+
 body {
   font-family: var(--ui-font);
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
   -webkit-font-smoothing: antialiased;
+  position: relative;
+  overflow-x: hidden;
 }
 
 /* Editor typography */
