@@ -1237,11 +1237,6 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 {editor && !isReadOnly && (
                     <BubbleMenu 
                         editor={editor} 
-                        tippyOptions={{ 
-                            offset: [0, isMobile ? 60 : 10],
-                            duration: 200,
-                            zIndex: 100
-                        }}
                         className="flex items-center gap-0.5 bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl p-1 animate-in fade-in zoom-in duration-200 z-[100] max-w-[calc(100vw-2rem)] overflow-x-auto no-scrollbar scroll-smooth cursor-default"
                     >
                         {writingMode === 'screenplay' ? (
