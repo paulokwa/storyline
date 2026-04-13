@@ -52,13 +52,13 @@ const CHILD_TYPE: Partial<Record<NodeType, NodeType>> = {
 const CHILD_LABELS: Partial<Record<NodeType, string>> = {
     episode: 'Add Act',
     act: 'Add Scene',
-    chapter: 'Add Part',
+    chapter: 'Add Scene',
 }
 
 const CHILD_DISPLAY_NAMES: Partial<Record<NodeType, string>> = {
     episode: 'Act',
     act: 'Scene',
-    chapter: 'Part',
+    chapter: 'Scene',
 }
 
 function buildTree(nodes: StructureNode[], parentId: string | null = null): StructureNode[] {

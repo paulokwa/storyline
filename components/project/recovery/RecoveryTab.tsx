@@ -343,7 +343,7 @@ export default function RecoveryTab({
                         <h1 className="text-3xl font-serif italic text-slate-800">Project Timeline & Safety</h1>
                     </div>
 
-                    <div className="flex p-1 bg-white/50 backdrop-blur-sm rounded-2xl border border-slate-200/50 shadow-sm w-fit">
+                    <div className="flex p-1 bg-white/50 backdrop-blur-sm rounded-2xl border border-slate-200/50 shadow-sm w-full sm:w-fit overflow-x-auto no-scrollbar">
                         {[
                             { id: 'trash', label: 'Trash', icon: Trash2 },
                             { id: 'history', label: 'History', icon: History },
@@ -353,14 +353,14 @@ export default function RecoveryTab({
                                 key={s.id}
                                 onClick={() => setActiveSection(s.id as RecoverySection)}
                                 className={cn(
-                                    "flex items-center gap-2 px-6 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer",
+                                    "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer whitespace-nowrap",
                                     activeSection === s.id 
                                         ? "bg-white text-[#546354] shadow-sm ring-1 ring-slate-100" 
                                         : "text-slate-400 hover:text-slate-600"
                                 )}
                             >
                                 <s.icon className="w-3.5 h-3.5" />
-                                {s.label}
+                                <span>{s.label}</span>
                             </button>
                         ))}
                     </div>
@@ -437,24 +437,26 @@ export default function RecoveryTab({
                             ) : (
                                 <div className="grid grid-cols-1 gap-3 pb-20">
                                     {trashItems.map((item) => (
-                                        <div key={item.id} className="group relative bg-white rounded-2xl p-5 border border-slate-100 hover:shadow-md transition-all">
-                                            <div className="flex items-center gap-5">
-                                                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-slate-50 border border-slate-50">
-                                                    <item.icon className="w-5 h-5 text-slate-400" />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border bg-slate-50 text-slate-500">
-                                                            {item.typeLabel}
-                                                        </span>
-                                                        <span className="text-[10px] text-slate-300 font-medium flex items-center gap-1">
-                                                            <Clock className="w-3 h-3" />
-                                                            {new Date(item.deleted_at).toLocaleDateString()}
-                                                        </span>
+                                        <div key={item.id} className="group relative bg-white rounded-2xl p-4 sm:p-5 border border-slate-100 hover:shadow-md transition-all">
+                                            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                                                <div className="flex items-center gap-4 flex-1 min-w-0">
+                                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-slate-50 border border-slate-50 shrink-0">
+                                                        <item.icon className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
                                                     </div>
-                                                    <h3 className="text-lg font-serif italic text-slate-800 truncate">{item.title || item.name || 'Untitled'}</h3>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center flex-wrap gap-2 mb-1">
+                                                            <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border bg-slate-50 text-slate-500">
+                                                                {item.typeLabel}
+                                                            </span>
+                                                            <span className="text-[10px] text-slate-300 font-medium flex items-center gap-1">
+                                                                <Clock className="w-3 h-3" />
+                                                                {new Date(item.deleted_at).toLocaleDateString()}
+                                                            </span>
+                                                        </div>
+                                                        <h3 className="text-base sm:text-lg font-serif italic text-slate-800 truncate">{item.title || item.name || 'Untitled'}</h3>
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center justify-end gap-2 shrink-0 border-t sm:border-t-0 border-slate-50 pt-3 sm:pt-0">
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
@@ -463,9 +465,9 @@ export default function RecoveryTab({
                                                             else handleRestoreEntity(item.trashType === 'ai' ? 'ai_responses' : item.typeLabel.toLowerCase() + 's', item.id)
                                                         }}
                                                         disabled={isRestoring === item.id}
-                                                        className="rounded-full bg-white border-slate-100 text-[#546354] hover:bg-[#546354] hover:text-white uppercase tracking-widest text-[9px] font-bold h-9 px-6 transition-all"
+                                                        className="rounded-full bg-white border-slate-100 text-[#546354] hover:bg-[#546354] hover:text-white uppercase tracking-widest text-[9px] font-bold h-8 sm:h-9 px-4 sm:px-6 transition-all"
                                                     >
-                                                        {isRestoring === item.id ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" /> : <RotateCcw className="w-3.5 h-3.5 mr-2" />}
+                                                        {isRestoring === item.id ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <RotateCcw className="w-3 h-3 mr-2" />}
                                                         Restore
                                                     </Button>
                                                     <button 
@@ -511,23 +513,30 @@ export default function RecoveryTab({
                              {/* History List */}
                              <div className="grid grid-cols-1 gap-3 pb-20">
                                  {filteredHistory.map((version) => (
-                                     <div key={version.id} className="group relative bg-white rounded-2xl p-5 border border-slate-100 hover:shadow-md transition-all">
-                                         <div className="flex items-center gap-5">
-                                             <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-slate-50 text-slate-400">
-                                                 <Clock className="w-5 h-5" />
-                                             </div>
-                                             <div className="flex-1 min-w-0">
-                                                 <div className="flex items-center gap-2 mb-1">
-                                                     <span className="text-[10px] text-slate-300 font-medium">{new Date(version.created_at).toLocaleString()}</span>
+                                     <div key={version.id} className="group relative bg-white rounded-2xl p-4 sm:p-5 border border-slate-100 hover:shadow-md transition-all">
+                                         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                                             <div className="flex items-center gap-4 flex-1 min-w-0">
+                                                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-slate-50 text-slate-400 shrink-0">
+                                                     <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
                                                  </div>
-                                                 <h3 className="text-lg font-serif italic text-slate-800 truncate">{version.scenes?.structure_nodes?.title || 'Untitled Scene'}</h3>
+                                                 <div className="flex-1 min-w-0">
+                                                     <div className="flex items-center gap-2 mb-0.5">
+                                                         <span className="text-[10px] text-slate-300 font-medium">
+                                                            {new Date(version.created_at).toLocaleDateString()} · {new Date(version.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                         </span>
+                                                     </div>
+                                                     <h3 className="text-base sm:text-lg font-serif italic text-slate-800 truncate leading-snug">
+                                                        {version.scenes?.structure_nodes?.title || 'Untitled Scene'}
+                                                     </h3>
+                                                 </div>
                                              </div>
-                                             <div className="flex items-center gap-2">
-                                                 <Button variant="ghost" size="sm" onClick={() => setPreviewVersion(version)} className="rounded-full text-slate-400 hover:text-[#546354] uppercase tracking-widest text-[9px] font-bold h-9 px-4">
-                                                     <Eye className="w-3.5 h-3.5 mr-2" /> Preview
+                                             <div className="flex items-center justify-end gap-1.5 shrink-0 border-t sm:border-t-0 border-slate-50 pt-3 sm:pt-0">
+                                                 <Button variant="ghost" size="sm" onClick={() => setPreviewVersion(version)} className="rounded-full text-slate-400 hover:text-[#546354] uppercase tracking-widest text-[9px] font-bold h-8 sm:h-9 px-3 sm:px-4">
+                                                     <Eye className="w-3.5 h-3.5 sm:mr-2" />
+                                                     <span className="hidden sm:inline">Preview</span>
                                                  </Button>
-                                                 <Button variant="outline" size="sm" onClick={() => handleRestoreVersion(version)} disabled={isRestoring === version.id} className="rounded-full bg-white border-slate-100 text-[#546354] uppercase tracking-widest text-[9px] font-bold h-9 px-6 shadow-sm">
-                                                     {isRestoring === version.id ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" /> : <RotateCcw className="w-3.5 h-3.5 mr-2" />}
+                                                 <Button variant="outline" size="sm" onClick={() => handleRestoreVersion(version)} disabled={isRestoring === version.id} className="rounded-full bg-white border-slate-100 text-[#546354] uppercase tracking-widest text-[9px] font-bold h-8 sm:h-9 px-4 sm:px-6 shadow-sm">
+                                                     {isRestoring === version.id ? <Loader2 className="w-3 h-3 animate-spin sm:mr-2" /> : <RotateCcw className="w-3 h-3 sm:mr-2" />}
                                                      Restore
                                                  </Button>
                                                  <button 
