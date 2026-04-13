@@ -4,7 +4,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { getProjectTypeLabel } from '@/lib/constants'
 import { useCompletion } from '@ai-sdk/react'
 import Link from 'next/link'
-import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Package, Bookmark, Database } from 'lucide-react'
+import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Package, Bookmark, Database, Maximize2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -32,6 +32,7 @@ interface AiHelperPanelProps {
     projectType?: 'tv_script' | 'novel'
     projectPremise?: string | null
     projectTone?: string | null
+    isFullCanvas?: boolean
     aiSettings: {
         ai_enabled: boolean
         ai_provider: string
@@ -136,7 +137,8 @@ export default function AiHelperPanel({
     projectRelationships = [],
     selectedNodes = [], allNodes = [], allScenes = [], onClearSelection, aiSettings, projectType,
     projectPremise, projectTone,
-    activeNodeId, activeSceneId
+    activeNodeId, activeSceneId,
+    isFullCanvas = false
 }: AiHelperPanelProps) {
     const label = getProjectTypeLabel(projectType)
     const isNovel = projectType === 'novel'
@@ -699,8 +701,25 @@ export default function AiHelperPanel({
                     </div>
                 </div>
                 <div className="flex items-center gap-1">
+                    {!isFullCanvas && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Link href={`/project/${projectId}/ai`}>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all border border-transparent hover:border-indigo-100"
+                                    >
+                                        <Maximize2 className="w-3.5 h-3.5" />
+                                    </Button>
+                                </Link>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">Open full AI canvas</TooltipContent>
+                        </Tooltip>
+                    )}
+
                     <Tooltip>
-                        <TooltipTrigger>
+                        <TooltipTrigger asChild>
                             <Button
                                 variant="ghost"
                                 size="icon"

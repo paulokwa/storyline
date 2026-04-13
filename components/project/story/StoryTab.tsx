@@ -10,13 +10,19 @@ import AiHelperPanel from './AiHelperPanel'
 import SceneAssetsPanel from './SceneAssetsPanel'
 import LinkedContext from './LinkedContext'
 import WritingModeToggle from '@/components/shared/WritingModeToggle'
-import { PanelLeftClose, PanelLeftOpen, BookOpen, Sparkles, X } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, BookOpen, Sparkles, X, Wand2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { Database, WritingMode } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { useComments } from '@/components/project/CommentsContext'
 import CommentsPanel from '@/components/project/sidebar/CommentsPanel'
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 type Project = Database['public']['Tables']['projects']['Row']
 type StructureNode = Database['public']['Tables']['structure_nodes']['Row']
@@ -49,6 +55,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         aiPanelOpen, setAiPanelOpen, 
         sceneAssetsOpen, setSceneAssetsOpen,
         currentSceneText, setCurrentSceneText,
+        analyzeScene, isAnalyzing,
         activeNodeId, setActiveNodeId,
         activeCharacters, setActiveCharacters,
         activeIdeas, setActiveIdeas,
@@ -329,8 +336,49 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                 allNodes={nodes}
                                 />
                             </div>
-                            <div data-tour="writing-mode" className="shrink-0 relative hidden sm:block">
-                                <WritingModeToggle mode={writingMode} onChange={handleWritingModeChange} />
+                            <div className="flex items-center gap-4 shrink-0">
+                                <div className="hidden lg:flex items-center gap-1.5 p-1 bg-violet-50/50 rounded-2xl border border-violet-100/50">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => analyzeScene()}
+                                                    disabled={isAnalyzing || !currentSceneText}
+                                                    className={cn(
+                                                        "rounded-xl transition-all h-9 w-9 p-0",
+                                                        isAnalyzing ? "bg-white text-violet-600 shadow-sm animate-pulse font-bold" : "text-slate-500 hover:bg-white hover:text-violet-600"
+                                                    )}
+                                                >
+                                                    <Wand2 className="w-4 h-4" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="bottom">AI Scene Analysis</TooltipContent>
+                                        </Tooltip>
+
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => setAiPanelOpen(!aiPanelOpen)}
+                                                    className={cn(
+                                                        "rounded-xl transition-all h-9 w-9 p-0",
+                                                        aiPanelOpen ? "bg-white text-indigo-600 shadow-sm font-bold" : "text-slate-500 hover:bg-white hover:text-indigo-600"
+                                                    )}
+                                                >
+                                                    <Sparkles className="w-4 h-4" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="bottom">AI Writing Assistant</TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </div>
+
+                                <div data-tour="writing-mode" className="relative hidden sm:block">
+                                    <WritingModeToggle mode={writingMode} onChange={handleWritingModeChange} />
+                                </div>
                             </div>
                         </div>
                         {/* Mobile Writing Mode Toggle */}

@@ -452,6 +452,45 @@ function ProjectShellInner({
                         <div className="flex items-center gap-4">
                             <AvatarPortal />
                             
+                            {isStoryTab && (
+                                <div className="hidden md:flex lg:hidden items-center gap-1.5 p-1 bg-violet-50/50 rounded-2xl border border-violet-100/50">
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => analyzeScene()}
+                                                disabled={isAnalyzing || !currentSceneText}
+                                                className={cn(
+                                                    "rounded-xl transition-all h-9 w-9 p-0",
+                                                    isAnalyzing ? "bg-white text-violet-600 shadow-sm animate-pulse" : "text-slate-500 hover:bg-white hover:text-violet-600"
+                                                )}
+                                            >
+                                                <Wand2 className="w-4 h-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="bottom">AI Scene Analysis</TooltipContent>
+                                    </Tooltip>
+
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={handleToggleAi}
+                                                className={cn(
+                                                    "rounded-xl transition-all h-9 w-9 p-0",
+                                                    aiPanelOpen ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:bg-white hover:text-indigo-600"
+                                                )}
+                                            >
+                                                <Sparkles className="w-4 h-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="bottom">AI Writing Assistant</TooltipContent>
+                                    </Tooltip>
+                                </div>
+                            )}
+
                             <div className="h-6 w-px bg-slate-200/50" />
                             
                             <Tooltip>

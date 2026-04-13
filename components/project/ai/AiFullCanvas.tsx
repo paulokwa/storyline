@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Sparkles, ArrowLeft, Send, Loader2, MessageSquare, Copy, ChevronLeft, Layout } from 'lucide-react'
+import { Sparkles, ArrowLeft, Send, Loader2, MessageSquare, Copy, ChevronLeft, Layout, Maximize2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import AiHelperPanel from '../story/AiHelperPanel'
@@ -40,7 +40,8 @@ export default function AiFullCanvas({
         activeIdeas,
         activeLocations,
         activeObjects,
-        selectedNodeIds
+        selectedNodeIds,
+        setAiPanelOpen
     } = useProjectActions()
 
     const activeScene = allScenes.find(s => s.node_id === activeNodeId)
@@ -54,11 +55,15 @@ export default function AiFullCanvas({
                     <Button 
                         variant="ghost" 
                         size="sm" 
-                        onClick={() => router.push(`/project/${projectId}/story${activeNodeId ? `?nodeId=${activeNodeId}` : ''}`)}
-                        className="rounded-xl text-slate-500 hover:text-primary hover:bg-primary/5 gap-2"
+                        onClick={() => {
+                            setAiPanelOpen(true)
+                            router.push(`/project/${projectId}/story${activeNodeId ? `?nodeId=${activeNodeId}` : ''}`)
+                        }}
+                        className="rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50/50 gap-2 transition-all"
                     >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back to Editor
+                        <Layout className="w-4 h-4" />
+                        <span className="hidden sm:inline">Return to Side Panel</span>
+                        <span className="sm:hidden">Sidebar</span>
                     </Button>
                     <div className="h-4 w-px bg-slate-200" />
                     <div className="flex items-center gap-2">
@@ -71,7 +76,7 @@ export default function AiFullCanvas({
 
                 <div className="flex items-center gap-3">
                     <p className="text-[10px] items-center gap-2 uppercase tracking-[0.2em] font-bold text-slate-400 hidden sm:flex">
-                        <Layout className="w-3 h-3 text-slate-300" />
+                        <Maximize2 className="w-3 h-3 text-indigo-400" />
                         Full Canvas Mode
                     </p>
                 </div>
@@ -102,6 +107,7 @@ export default function AiFullCanvas({
                         projectTone={project.tone}
                         activeNodeId={activeNodeId}
                         activeSceneId={activeScene?.id}
+                        isFullCanvas={true}
                     />
                 </div>
             </div>
