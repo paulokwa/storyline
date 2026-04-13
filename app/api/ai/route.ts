@@ -149,9 +149,14 @@ export async function POST(req: Request) {
             return match?.name || 'Unknown'
         }
 
+        console.log('--- AI BACKEND DEBUG ---')
+        console.log('Project ID:', projectId)
+        console.log('Input Length:', input.length)
+        console.log('Characters linked:', (linkedCharacters || []).length)
+        console.log('Ideas linked:', (linkedIdeas || []).length)
+
         let contextBlock = `CURRENT SCENE:\n${input}\n\n`
         
-
         if (linkedCharacters && linkedCharacters.length > 0) {
             contextBlock += `LINKED CHARACTERS:\n`
             linkedCharacters.forEach(c => {
@@ -213,6 +218,8 @@ export async function POST(req: Request) {
         }
 
         userMessage = `${contextBlock}USER REQUEST: ${prompt}`
+        console.log('Final userMessage Length:', userMessage.length)
+        console.log('Final userMessage Preview:', userMessage.substring(0, 500))
     }
 
     const { data: keyRecord } = (await supabase

@@ -13,6 +13,8 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
 import { useProjectActions } from '@/components/project/ProjectContext'
+import { analyzeContextSize, ContextSizingResult, SAFEGUARD_THRESHOLDS } from '@/lib/ai/config'
+import { AiSafeguardDialogs } from '@/components/project/ai/AiSafeguardDialogs'
 
 interface AiHelperPanelProps {
     projectId: string
@@ -115,6 +117,24 @@ const EMPTY_HINTS = [
     'What is my character feeling right now?',
 ]
 
+const MAX_SCENE_CHARS_FULL = 45000
+const MAX_SCENE_CHARS_TAIL = 10000
+
+type ContextStrategy = 'continuation' | 'full-scene'
+
+function getContextStrategy(mode: string): ContextStrategy {
+    if (mode === 'Continue Writing') return 'continuation'
+    return 'full-scene' // Includes Improve, Conflict, Emotion, Script, and Review/Chat
+}
+
+function buildContextText(text: string, strategy: ContextStrategy): string {
+    if (strategy === 'continuation') {
+        return text.slice(-MAX_SCENE_CHARS_TAIL)
+    }
+    // Q&A / Review / Improve: Take as much as possible from the start
+    return text.slice(0, MAX_SCENE_CHARS_FULL)
+}
+
 const MODE_EXPLANATIONS: Record<string, string> = {
     'Continue Writing': 'Seamlessly continues the scene based on your prompt.',
     'Improve Scene': 'Refines the clarity, flow, and overall prose quality.',
@@ -159,6 +179,17 @@ export default function AiHelperPanel({
     const [geminiStatus, setGeminiStatus] = useState<'online' | 'offline' | 'checking'>('online')
     const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
     const [lastUsedProvider, setLastUsedProvider] = useState<'gemini' | 'ollama' | null>(null)
+    const [contextWarning, setContextWarning] = useState<string | null>(null)
+    
+    // Safeguard States
+    const [preflight, setPreflight] = useState<ContextSizingResult | null>(null)
+    const [isConfirmingCost, setIsConfirmingCost] = useState(false)
+    const [isExtremeContext, setIsExtremeContext] = useState(false)
+    const [pendingRequest, setPendingRequest] = useState<{
+        finalPrompt: string,
+        contextText: string,
+        strategy: ContextStrategy
+    } | null>(null)
 
     // Phase 5 AI Reuse Context
     const [includeArchiveContext, setIncludeArchiveContext] = useState(false)
@@ -406,13 +437,21 @@ export default function AiHelperPanel({
     }
 
     // --- Provider Orchestration ---
-    const runGeminiCloud = async (finalPrompt: string) => {
+    const runGeminiCloud = async (finalPrompt: string, contextText: string, strategy: ContextStrategy) => {
         setLastUsedProvider('gemini')
+        console.log(`--- AI DEBUG: runGeminiCloud [Mode: ${strategy}] ---`)
+        console.log('Active Scene ID:', activeSceneId)
+        console.log('Scene Text Length (original):', sceneTextRef.current.length)
+        console.log('Scene Text Length (sent):', contextText.length)
+        console.log('Final Prompt prefix:', finalPrompt.substring(0, 200))
+        console.log('Scene Text Preview (sent):', contextText.substring(0, 200))
+        
         await complete(finalPrompt, {
             body: {
                 action: 'helper',
                 projectId,
-                input: sceneTextRef.current.slice(-10000),
+                sceneId: activeSceneId,
+                input: contextText,
                 archiveContext: archiveContextString,
                 linkedCharacters: linkedCharacters.map((c: any) => ({
                     id: c.id,
@@ -452,7 +491,7 @@ export default function AiHelperPanel({
         })
     }
 
-    const runLocalOllama = async (finalPrompt: string) => {
+    const runLocalOllama = async (finalPrompt: string, contextText: string, strategy: ContextStrategy) => {
         // Build the prompt with context
         const projectContext = `Project: ${projectId}. ${projectPremise ? `Premise: ${projectPremise}. ` : ''}${projectTone ? `Tone: ${projectTone}. ` : ''}`
         const charactersContext = linkedCharacters.length > 0 
@@ -473,7 +512,12 @@ export default function AiHelperPanel({
             ? `STORY CONTEXT:\n${storySelectionContext.map(s => `[${s.title}]\n${s.content.slice(0, 5000)}`).join('\n\n')}\n\n`
             : ''
         
-        const fullInternalPrompt = `${projectContext}${charactersContext}${ideasContext}${locationsContext}\n\n${storyContextString}SCENE:\n${sceneTextRef.current.slice(-6000)}\n\nUSER REQUEST: ${finalPrompt}`
+        const fullInternalPrompt = `${projectContext}${charactersContext}${ideasContext}${locationsContext}\n\n${storyContextString}SCENE:\n${contextText}\n\nUSER REQUEST: ${finalPrompt}`
+
+        console.log(`--- AI DEBUG: runLocalOllama [Mode: ${strategy}] ---`)
+        console.log('Active Scene ID:', activeSceneId)
+        console.log('Full Prompt Preview (first 500):', fullInternalPrompt.substring(0, 500))
+        console.log('Scene Text Sent Length:', contextText.length)
 
         setIsOllamaLoading(true)
         const abortController = new AbortController()
@@ -555,6 +599,37 @@ export default function AiHelperPanel({
         setPreviousCompletion('')
         setLastPrompt('')
         setCopied(false)
+        setPreflight(null)
+    }
+
+    const executeAiRequest = async (finalPrompt: string, contextText: string, strategy: ContextStrategy) => {
+        setCompletion('') // Clear for new run
+        setLastUsedProvider(null)
+        setContextWarning(null)
+        
+        if (displayedCompletion) setPreviousCompletion(displayedCompletion)
+
+        // Check for oversized scene warning (fallback UI)
+        if (strategy === 'full-scene' && sceneTextRef.current.length > MAX_SCENE_CHARS_FULL && !preflight) {
+            setContextWarning("This scene is very long, so AI answers may use a reduced context window.")
+        }
+        
+        if (preflight?.level === 'medium' && aiSettings.ai_provider !== 'ollama') {
+            setContextWarning(`Note: This request is moderately large (Est. ${preflight.estimatedTokens.toLocaleString()} tokens).`)
+        }
+        
+        try {
+            if (aiSettings.ai_provider === 'ollama') {
+                await runLocalOllama(finalPrompt, contextText, strategy)
+            } else {
+                await runGeminiCloud(finalPrompt, contextText, strategy)
+            }
+        } catch (err: any) {
+            console.error('AI Processing Error:', err)
+        } finally {
+            setPreviousCompletion('')
+            setPendingRequest(null)
+        }
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -607,24 +682,40 @@ export default function AiHelperPanel({
         setLastPrompt(currentPrompt || promptMode)
         setPrompt('')
         setCopied(false)
-        setCompletion('') // Clear for new run
-        setLastUsedProvider(null)
+        setContextWarning(null)
         
-        if (displayedCompletion) setPreviousCompletion(displayedCompletion)
-        
-        try {
-            if (aiSettings.ai_provider === 'ollama') {
-                // We use a manual fetch for Ollama to handle the 127.0.0.1 browser routing requirement
-                // useCompletion is used for Gemini
-                await runLocalOllama(finalPrompt)
-            } else {
-                await runGeminiCloud(finalPrompt)
-            }
-        } catch (err: any) {
-            console.error('AI Processing Error:', err)
-        } finally {
-            setPreviousCompletion('')
+        // Select strategy and prepare context
+        const strategy = getContextStrategy(promptMode)
+        const contextText = buildContextText(sceneTextRef.current, strategy)
+
+        // Safeguard Preflight
+        const analysis = analyzeContextSize(
+            contextText, 
+            aiSettings.ai_provider, 
+            aiSettings.ai_provider === 'gemini' ? (aiSettings.ai_fallback_enabled ? 'gemini-1.5-flash' : 'gemini-1.5-pro') : 'default'
+        )
+        setPreflight(analysis)
+
+        const requestPayload = { finalPrompt, contextText, strategy }
+
+        if (analysis.level === 'extreme') {
+            setPendingRequest(requestPayload)
+            setIsExtremeContext(true)
+            return
         }
+
+        if (analysis.level === 'high') {
+            setPendingRequest(requestPayload)
+            setIsConfirmingCost(true)
+            return
+        }
+
+        // Performance warning for local models (Ollama)
+        if (aiSettings.ai_provider === 'ollama' && contextText.length > SAFEGUARD_THRESHOLDS.PERFORMANCE_WARNING_LOCAL_CHARS) {
+            setContextWarning(`Warning: Large request for local model (${contextText.length.toLocaleString()} chars). It may be slow.`)
+        }
+
+        executeAiRequest(finalPrompt, contextText, strategy)
     }
 
     // Check Ollama status on mount
@@ -872,7 +963,26 @@ export default function AiHelperPanel({
             </div>
 
             {/* Response Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {contextWarning && (
+                    <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-100 rounded-xl animate-in fade-in slide-in-from-top-2 duration-300">
+                        <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                            <p className="text-[11px] text-amber-900 leading-relaxed font-bold">
+                                Long Scene detected
+                            </p>
+                            <p className="text-[10px] text-amber-700 leading-relaxed font-serif italic">
+                                {contextWarning}
+                            </p>
+                        </div>
+                        <button 
+                            onClick={() => setContextWarning(null)}
+                            className="text-amber-400 hover:text-amber-600 transition-colors p-0.5"
+                        >
+                            <X className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+                )}
 
                 {/* Empty state */}
                 {!displayedCompletion && !isLoading && !error && (
@@ -1346,6 +1456,28 @@ export default function AiHelperPanel({
                     </form>
                 </div>
             </div>
+
+            <AiSafeguardDialogs 
+                preflight={preflight}
+                isConfirmingCost={isConfirmingCost}
+                setIsConfirmingCost={setIsConfirmingCost}
+                isExtremeContext={isExtremeContext}
+                setIsExtremeContext={setIsExtremeContext}
+                provider={aiSettings.ai_provider}
+                onConfirm={() => {
+                    setIsConfirmingCost(false);
+                    setIsExtremeContext(false);
+                    if (pendingRequest) {
+                        executeAiRequest(pendingRequest.finalPrompt, pendingRequest.contextText, pendingRequest.strategy);
+                    }
+                }}
+                onCancel={() => {
+                    setIsConfirmingCost(false);
+                    setIsExtremeContext(false);
+                    setPendingRequest(null);
+                    setPreflight(null);
+                }}
+            />
         </div>
     )
 }

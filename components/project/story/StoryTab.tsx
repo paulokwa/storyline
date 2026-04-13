@@ -24,6 +24,8 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { analyzeContextSize, ContextSizingResult } from '@/lib/ai/config'
+import { AiSafeguardDialogs } from '@/components/project/ai/AiSafeguardDialogs'
 
 type Project = Database['public']['Tables']['projects']['Row']
 type StructureNode = Database['public']['Tables']['structure_nodes']['Row']
@@ -71,6 +73,11 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     
     const [nodes, setNodes] = useState(initialNodes)
     const [scenes, setScenes] = useState(initialScenes)
+
+    // Safeguard States for Analysis
+    const [preflight, setPreflight] = useState<ContextSizingResult | null>(null)
+    const [isConfirmingCost, setIsConfirmingCost] = useState(false)
+    const [isExtremeContext, setIsExtremeContext] = useState(false)
 
     // Handle initial node selection
     useEffect(() => {
@@ -279,6 +286,29 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         setNodes((prev: any[]) => prev.map((n: any) => n.id === activeNodeId ? { ...n, title: newTitle } : n))
     }, [activeNodeId])
 
+    const handleAnalyzeTrigger = () => {
+        if (!currentSceneText) return
+        
+        const analysis = analyzeContextSize(
+            currentSceneText, 
+            aiSettings.ai_provider, 
+            aiSettings.ai_provider === 'gemini' ? (aiSettings.ai_fallback_enabled ? 'gemini-1.5-flash' : 'gemini-1.5-pro') : 'default'
+        )
+        setPreflight(analysis)
+
+        if (analysis.level === 'extreme') {
+            setIsExtremeContext(true)
+            return
+        }
+        if (analysis.level === 'high') {
+            setIsConfirmingCost(true)
+            return
+        }
+
+        // Proceed normally
+        analyzeScene()
+    }
+
     return (
         <div className="flex flex-1 overflow-hidden relative">
             {/* Backdrop for mobile */}
@@ -371,7 +401,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    onClick={() => analyzeScene()}
+                                                    onClick={handleAnalyzeTrigger}
                                                     disabled={isAnalyzing || !currentSceneText}
                                                     className={cn(
                                                         "rounded-xl transition-all h-9 w-9 p-0",
@@ -579,6 +609,25 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 projectType={project.type as any}
                 projectId={project.id}
                 sceneId={activeNodeId || undefined}
+            />
+
+            <AiSafeguardDialogs
+                preflight={preflight}
+                isConfirmingCost={isConfirmingCost}
+                setIsConfirmingCost={setIsConfirmingCost}
+                isExtremeContext={isExtremeContext}
+                setIsExtremeContext={setIsExtremeContext}
+                provider={aiSettings.ai_provider}
+                onConfirm={() => {
+                    setIsConfirmingCost(false)
+                    setIsExtremeContext(false)
+                    analyzeScene()
+                }}
+                onCancel={() => {
+                    setIsConfirmingCost(false)
+                    setIsExtremeContext(false)
+                    setPreflight(null)
+                }}
             />
         </div>
     )
