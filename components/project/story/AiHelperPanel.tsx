@@ -806,18 +806,18 @@ export default function AiHelperPanel({
     }, [promptMode, hint])
 
     return (
-        <div className="flex flex-col h-full bg-[#fcfbf9] border-l border-slate-200/60 shadow-[-20px_0_50px_rgba(0,0,0,0.02)]">
+        <div className="flex flex-col h-full bg-[#fcfbf9] border-l border-slate-200/60 shadow-[-20px_0_50px_rgba(0,0,0,0.02)] overflow-hidden">
             {/* Header */}
-            <div className="px-6 py-3 border-b border-slate-200/60 flex items-center gap-3 bg-white/50 backdrop-blur-sm shrink-0">
+            <div className="px-4 md:px-6 py-3 border-b border-slate-200/60 flex items-center gap-2 md:gap-3 bg-white/50 backdrop-blur-sm shrink-0 overflow-hidden">
                 <div className="p-1.5 bg-indigo-50 rounded-xl">
                     <Sparkles className="w-3.5 h-3.5 text-indigo-50" />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                     {!isFullCanvas && (
                         <h3 className="text-sm font-serif font-bold text-slate-800 tracking-tight leading-none mb-1">AI Partner</h3>
                     )}
-                    <div className="flex items-center gap-2">
-                        <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold uppercase">
+                    <div className="flex items-center gap-1.5 md:gap-2 overflow-hidden">
+                        <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold uppercase truncate">
                             {aiSettings.ai_provider === 'ollama' ? `Ollama` : 'Gemini'}
                         </p>
                         <div className="flex items-center gap-1 border-r border-slate-200 pr-2 mr-1">
@@ -834,24 +834,24 @@ export default function AiHelperPanel({
                                 {(aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus)}
                             </span>
                         </div>
-                        <div className="flex items-center gap-1.5 ml-1">
+                        <div className="flex items-center gap-1 md:gap-1.5 ml-1 min-w-0">
                             <select 
                                 value={promptMode}
                                 onChange={(e) => setPromptMode(e.target.value)}
-                                className="bg-transparent text-indigo-500 text-[9px] font-bold uppercase tracking-[0.1em] outline-none cursor-pointer appearance-none border-b border-transparent hover:border-indigo-200 transition-colors"
+                                className="bg-transparent text-indigo-500 text-[9px] font-bold uppercase tracking-[0.05em] md:tracking-[0.1em] outline-none cursor-pointer appearance-none border-b border-transparent hover:border-indigo-200 transition-colors truncate max-w-[80px] md:max-w-none"
                                 suppressHydrationWarning
                             >
-                                <option value="Continue Writing">Continue Writing</option>
-                                <option value="Improve Scene">Improve Scene</option>
-                                <option value="Add Conflict">Add Conflict</option>
-                                <option value="Rewrite with Emotion">Rewrite with Emotion</option>
-                                {!isNovel && <option value="Write as Script Scene">Write as Script Scene</option>}
-                                <option value="Review / Chat">Review / Chat</option>
+                                <option value="Continue Writing">Continue</option>
+                                <option value="Improve Scene">Improve</option>
+                                <option value="Add Conflict">Conflict</option>
+                                <option value="Rewrite with Emotion">Emotion</option>
+                                {!isNovel && <option value="Write as Script Scene">Script</option>}
+                                <option value="Review / Chat">Chat</option>
                             </select>
                             <TooltipProvider delay={300}>
                                 <Tooltip>
-                                    <TooltipTrigger>
-                                        <Info className="w-3 h-3 text-slate-300 hover:text-slate-400 cursor-help transition-colors" />
+                                    <TooltipTrigger className="shrink-0">
+                                        <Info className="w-2.5 h-2.5 md:w-3 md:h-3 text-slate-300 hover:text-slate-400 cursor-help transition-colors" />
                                     </TooltipTrigger>
                                     <TooltipContent side="bottom" className="text-[10px] max-w-[200px]">
                                         {MODE_EXPLANATIONS[promptMode]}
@@ -861,7 +861,7 @@ export default function AiHelperPanel({
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5 md:gap-1 shrink-0">
                     {!isFullCanvas && (
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -903,12 +903,12 @@ export default function AiHelperPanel({
                 </div>
                 {(completion || previousCompletion) && !isLoading && (
                     <Tooltip>
-                        <TooltipTrigger>
+                        <TooltipTrigger className="shrink-0">
                             <button
                                 onClick={handleClear}
-                                className="p-1.5 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-all"
+                                className="p-1 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-all"
                             >
-                                <X className="w-3.5 h-3.5" />
+                                <X className="w-3 md:w-3.5 h-3 md:h-3.5" />
                             </button>
                         </TooltipTrigger>
                         <TooltipContent side="top">Clear response</TooltipContent>
