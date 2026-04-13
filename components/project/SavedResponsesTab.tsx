@@ -255,7 +255,7 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
             <div className="flex-1 flex items-center justify-center bg-[#fbf9f5]">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-10 h-10 border-4 border-[#546354]/10 border-t-[#546354] rounded-full animate-spin" />
-                    <p className="text-sm font-serif italic text-slate-400">Opening the archive...</p>
+                    <p className="text-sm font-serif italic text-slate-400">Opening AI Memory...</p>
                 </div>
             </div>
         )
@@ -267,7 +267,7 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
                 <div className="w-20 h-20 bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 flex items-center justify-center mb-6 border border-slate-50">
                     <Archive className="w-8 h-8 text-slate-200" />
                 </div>
-                <h3 className="text-2xl font-serif text-slate-800 mb-2">Empty Archive</h3>
+                <h3 className="text-2xl font-serif text-slate-800 mb-2">AI Memory is Empty</h3>
                 <p className="text-slate-500 max-w-sm font-medium leading-relaxed mb-6">
                     You haven't saved any AI responses yet. When working with your AI Partner, click "Save" to archive useful outputs here.
                 </p>
@@ -379,7 +379,7 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
                                 className="text-[#546354] gap-2 px-0 hover:bg-transparent"
                             >
                                 <ChevronRight className="w-4 h-4 rotate-180" />
-                                Back to Archive
+                                Back to AI Memory
                             </Button>
                         </div>
                         {/* Detail Header */}
@@ -643,7 +643,7 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
                             <Bookmark className="w-10 h-10 text-slate-200" />
                         </div>
                         <div className="space-y-1.5">
-                            <h3 className="text-2xl font-serif text-slate-700">Archive Viewer</h3>
+                            <h3 className="text-2xl font-serif text-slate-700">AI Memory Viewer</h3>
                             <p className="text-sm text-slate-500 max-w-[240px] font-medium leading-relaxed">
                                 Select a response from the sidebar to view full details and linked entities.
                             </p>

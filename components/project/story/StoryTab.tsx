@@ -536,6 +536,8 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 result={analysisResult} 
                 onClose={() => setAnalysisResult(null)} 
                 projectType={project.type as any}
+                projectId={project.id}
+                sceneId={activeNodeId || undefined}
             />
         </div>
     )

@@ -185,6 +185,7 @@ export default function AiHelperPanel({
                     .from('ai_responses' as any) as any)
                     .select('id, title, response, type, source_label')
                     .eq('project_id', projectId)
+                    .neq('type', 'analysis') // Don't allow linking analysis results
                     .order('created_at', { ascending: false })
                     .limit(8)
                 
@@ -352,6 +353,8 @@ export default function AiHelperPanel({
     const actualLoading = isLoading || isOllamaLoading
     const displayedCompletion = completion || (actualLoading ? previousCompletion : '')
     const isShowingPrevious = actualLoading && !completion && !!previousCompletion
+
+
 
     const handleInsert = () => {
         console.log('AI Helper: handleInsert called', { promptMode, completionExist: !!displayedCompletion })
@@ -671,6 +674,46 @@ export default function AiHelperPanel({
         setHint(EMPTY_HINTS[Math.floor(Math.random() * EMPTY_HINTS.length)])
     }, [])
 
+    const promptPlaceholder = useMemo(() => {
+        if (actualLoading) return ""
+        switch (promptMode) {
+            case 'Continue Writing':
+                return "What should happen next? (e.g. 'They find a hidden door')"
+            case 'Improve Scene':
+                return "Focus on... (e.g. 'making the dialogue snappier' or 'vivid detail')"
+            case 'Add Conflict':
+                return "Who starts the trouble? (e.g. 'A sudden storm arrives')"
+            case 'Rewrite with Emotion':
+                return "What's the mood? (e.g. 'Heavy with grief' or 'Nervous tension')"
+            case 'Write as Script Scene':
+                return "What's the scene? (e.g. 'A tense interrogation in the rain')"
+            default:
+                return `Ask anything about this ${label.toLowerCase()}...`
+        }
+    }, [promptMode, actualLoading, label])
+
+    const emptyStateCall = useMemo(() => {
+        switch (promptMode) {
+            case 'Continue Writing': return "Ready to write?"
+            case 'Improve Scene': return "Let's polish this up."
+            case 'Add Conflict': return "Time for some trouble?"
+            case 'Rewrite with Emotion': return "Deepen the mood."
+            case 'Write as Script Scene': return "Lights, camera, action."
+            default: return `How can I help with this ${label.toLowerCase()}?`
+        }
+    }, [promptMode, label])
+
+    const emptyStateHint = useMemo(() => {
+        switch (promptMode) {
+            case 'Continue Writing': return "Let's pick up right where you left off or type a direction below."
+            case 'Improve Scene': return "I'll help you find the perfect flow. Type a focus if you have one!"
+            case 'Add Conflict': return "Let's introduce some drama or a sudden twist to pick up the pace."
+            case 'Rewrite with Emotion': return "I'll help you capture the emotional heart of this specific moment."
+            case 'Write as Script Scene': return "Describe a situation and I'll adapt it into professional script format."
+            default: return hint || "Ask for feedback, brainstorm ideas, or just chat about the story."
+        }
+    }, [promptMode, hint])
+
     return (
         <div className="flex flex-col h-full bg-[#fcfbf9] border-l border-slate-200/60 shadow-[-20px_0_50px_rgba(0,0,0,0.02)]">
             {/* Header */}
@@ -683,10 +726,10 @@ export default function AiHelperPanel({
                         <h3 className="text-sm font-serif font-bold text-slate-800 tracking-tight leading-none mb-1">AI Partner</h3>
                     )}
                     <div className="flex items-center gap-2">
-                        <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold">
+                        <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold uppercase">
                             {aiSettings.ai_provider === 'ollama' ? `Ollama` : 'Gemini'}
                         </p>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 border-r border-slate-200 pr-2 mr-1">
                             <div className={cn(
                                 "w-1 h-1 rounded-full",
                                 (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'online' ? "bg-green-400" : 
@@ -699,6 +742,31 @@ export default function AiHelperPanel({
                             )}>
                                 {(aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus)}
                             </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 ml-1">
+                            <select 
+                                value={promptMode}
+                                onChange={(e) => setPromptMode(e.target.value)}
+                                className="bg-transparent text-indigo-500 text-[9px] font-bold uppercase tracking-[0.1em] outline-none cursor-pointer appearance-none border-b border-transparent hover:border-indigo-200 transition-colors"
+                                suppressHydrationWarning
+                            >
+                                <option value="Continue Writing">Continue Writing</option>
+                                <option value="Improve Scene">Improve Scene</option>
+                                <option value="Add Conflict">Add Conflict</option>
+                                <option value="Rewrite with Emotion">Rewrite with Emotion</option>
+                                {!isNovel && <option value="Write as Script Scene">Write as Script Scene</option>}
+                                <option value="Review / Chat">Review / Chat</option>
+                            </select>
+                            <TooltipProvider delay={300}>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Info className="w-3 h-3 text-slate-300 hover:text-slate-400 cursor-help transition-colors" />
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="text-[10px] max-w-[200px]">
+                                        {MODE_EXPLANATIONS[promptMode]}
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                         </div>
                     </div>
                 </div>
@@ -739,7 +807,7 @@ export default function AiHelperPanel({
                                 )}
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent side="top">Archive context</TooltipContent>
+                        <TooltipContent side="top">AI Memory</TooltipContent>
                     </Tooltip>
                 </div>
                 {(completion || previousCompletion) && !isLoading && (
@@ -812,12 +880,12 @@ export default function AiHelperPanel({
                         <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center">
                             <MessageSquare className="w-5 h-5 text-indigo-300" />
                         </div>
-                        <div className="space-y-1.5">
+                        <div className="space-y-1.5 flex flex-col items-center">
                             <p className="text-sm font-serif font-medium text-slate-600">
-                                How can I help with this {label.toLowerCase()}?
+                                {emptyStateCall}
                             </p>
-                            <p className="text-xs text-slate-400 font-serif italic max-w-[180px] leading-relaxed">
-                                "{hint}"
+                            <p className="text-xs text-slate-400 font-serif italic max-w-[200px] leading-relaxed">
+                                "{emptyStateHint}"
                             </p>
                         </div>
                     </div>
@@ -1008,7 +1076,7 @@ export default function AiHelperPanel({
                 <div className="px-6 py-3 border-b border-slate-200/60 bg-white/50 animate-in slide-in-from-top-2 duration-300">
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Saved Context</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">AI Memory</span>
                             {isLoadingArchive && <Loader2 className="w-3 h-3 animate-spin text-indigo-400" />}
                         </div>
                         <button 
@@ -1048,7 +1116,7 @@ export default function AiHelperPanel({
                                 )
                             })
                         ) : !isLoadingArchive && (
-                            <p className="text-[10px] text-slate-400 italic">No saved responses found.</p>
+                            <p className="text-[10px] text-slate-400 italic">No memories found in your archive.</p>
                         )}
                     </div>
                     {selectedArchiveIds.length >= 5 && (
@@ -1249,7 +1317,7 @@ export default function AiHelperPanel({
                                         handleSubmit(e as any)
                                     }
                                 }}
-                                placeholder={actualLoading ? "" : `Ask anything about this ${label.toLowerCase()}...`}
+                                placeholder={promptPlaceholder}
                                 rows={3}
                                 className={cn(
                                     "w-full border border-slate-200 rounded-2xl py-3.5 pl-4 pr-12 text-sm focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all resize-none outline-none placeholder:text-slate-400 font-serif leading-relaxed shadow-sm",
@@ -1274,40 +1342,7 @@ export default function AiHelperPanel({
                                 )}
                             </button>
                         </div>
-                        
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center" suppressHydrationWarning>
-                                    AI Mode:
-                                    <TooltipProvider delay={300}>
-                                        <Tooltip>
-                                            <TooltipTrigger>
-                                                <Info className="w-3.5 h-3.5 ml-1.5 text-slate-300 hover:text-slate-500 cursor-help transition-colors" />
-                                            </TooltipTrigger>
-                                            <TooltipContent side="top" className="text-xs">
-                                                {MODE_EXPLANATIONS[promptMode]}
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                </label>
-                                <select 
-                                    value={promptMode}
-                                    onChange={(e) => setPromptMode(e.target.value)}
-                                    className="bg-transparent text-slate-600 text-[11px] font-medium outline-none cursor-pointer appearance-none border-b border-transparent hover:border-slate-300 transition-colors"
-                                    suppressHydrationWarning
-                                >
-                                    <option value="Continue Writing">Continue Writing</option>
-                                    <option value="Improve Scene">Improve Scene</option>
-                                    <option value="Add Conflict">Add Conflict</option>
-                                    <option value="Rewrite with Emotion">Rewrite with Emotion</option>
-                                    {!isNovel && <option value="Write as Script Scene">Write as Script Scene</option>}
-                                    <option value="Review / Chat">Review / Chat</option>
-                                </select>
-                            </div>
-                            <p className="text-[10px] text-center text-slate-300 font-bold uppercase tracking-tight">
-                                Enter to send • Shift+Enter for new line
-                            </p>
-                        </div>
+
                     </form>
                 </div>
             </div>

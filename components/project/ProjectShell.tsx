@@ -66,12 +66,12 @@ type Project = Database['public']['Tables']['projects']['Row']
 const TABS = [
     { slug: 'story', label: 'Story', icon: BookOpen },
     { slug: 'ai', label: 'AI Partner', icon: Sparkles },
+    { slug: 'archive', label: 'AI Memory', icon: Bookmark },
     { slug: 'characters', label: 'Characters', icon: Users },
     { slug: 'ideas', label: 'Ideas', icon: Lightbulb },
     { slug: 'locations', label: 'Locations', icon: MapPin },
     { slug: 'objects', label: 'Objects', icon: Package },
     { slug: 'assets', label: 'Assets', icon: ImageIcon },
-    { slug: 'archive', label: 'Archive', icon: Bookmark },
     { slug: 'recovery', label: 'Recovery', icon: History },
 ] as const
 
@@ -224,6 +224,7 @@ function ProjectShellInner({
         aiPanelOpen, setAiPanelOpen, 
         currentSceneText, 
         analyzeScene, isAnalyzing,
+        setAnalysisResult,
         sceneAssetsOpen, setSceneAssetsOpen,
         isDictating, requestDictation,
         activeNodeId
