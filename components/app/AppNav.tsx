@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { 
     PenLine, LogOut, Settings as SettingsIcon, 
     User as UserIcon, Download, Users, 
-    Settings2 
+    Settings2, BarChart3 
 } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import {
@@ -32,7 +32,7 @@ export default function AppNav({ user }: { user: User }) {
     }
 
     const displayName = (user.user_metadata?.display_name as string) || user.email?.split('@')[0] || 'Writer'
-    const { exportAction, shareAction, settingsAction, canShare } = useProjectActionsStore()
+    const { exportAction, shareAction, settingsAction, statsAction, canShare } = useProjectActionsStore()
 
     return (
         <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-sm border-b border-slate-200 px-4 sm:px-6 lg:px-8">
@@ -102,6 +102,16 @@ export default function AppNav({ user }: { user: User }) {
                                         >
                                             <Settings2 className="w-4 h-4" />
                                             <span className="font-semibold text-sm">Project Settings</span>
+                                        </DropdownMenuItem>
+                                    )}
+
+                                    {statsAction && (
+                                        <DropdownMenuItem 
+                                            onClick={statsAction}
+                                            className="rounded-xl px-3 py-2.5 text-slate-600 focus:text-indigo-600 focus:bg-indigo-50 cursor-pointer gap-3 transition-all"
+                                        >
+                                            <BarChart3 className="w-4 h-4" />
+                                            <span className="font-semibold text-sm">Project Stats</span>
                                         </DropdownMenuItem>
                                     )}
                                     

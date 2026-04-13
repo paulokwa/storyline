@@ -238,6 +238,7 @@ function ProjectShellInner({
             export: () => setExportModalOpen(true),
             share: () => setShareModalOpen(true),
             settings: () => setSettingsModalOpen(true),
+            stats: () => router.push(`/project/${project.id}/stats`),
             canShare: role === 'owner'
         })
         return () => setActions(null)
