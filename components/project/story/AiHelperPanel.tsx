@@ -854,7 +854,7 @@ export default function AiHelperPanel({
                                 value={promptMode}
                                 onChange={(e) => setPromptMode(e.target.value)}
                                 data-tour="ai-mode-selector"
-                                className="bg-transparent text-indigo-500 text-[9px] font-bold uppercase tracking-[0.05em] md:tracking-[0.1em] outline-none cursor-pointer appearance-none border-b border-transparent hover:border-indigo-200 transition-colors truncate max-w-[80px] md:max-w-none"
+                                className="bg-transparent text-indigo-500 text-[9px] font-bold uppercase tracking-[0.05em] md:tracking-[0.1em] outline-none cursor-pointer appearance-none border-b border-transparent hover:border-indigo-200 transition-colors truncate max-w-[80px] md:max-w-none text-center"
                                 suppressHydrationWarning
                             >
                                 <option value="Continue Writing">Continue</option>
