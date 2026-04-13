@@ -7,10 +7,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
-import { ChevronLeft, Moon, Sun, Palette, Check } from 'lucide-react'
+import { ChevronLeft, Moon, Sun, Palette, Check, HelpCircle } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import { useTheme } from '@/components/providers/ThemeProvider'
 import { cn } from '@/lib/utils'
+import AiSetupGuide from '@/components/app/AiSetupGuide'
 
 export default function SettingsView({ user, maskedApiKey, aiSettings }: { 
     user: User, 
@@ -41,6 +42,9 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
     const [aiFallback, setAiFallback] = useState(aiSettings.ai_fallback_enabled)
     const [ollamaModel, setOllamaModel] = useState(aiSettings.ollama_model)
     const [ollamaUrl, setOllamaUrl] = useState(aiSettings.ollama_url)
+
+    // AI Setup Guide
+    const [showAiGuide, setShowAiGuide] = useState(false)
 
     // Deletion states
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -350,7 +354,25 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
             <div className="grid gap-8">
                 {/* AI API Settings */}
                 <Card className="p-6">
-                    <h2 className="text-xl font-semibold mb-4">AI Features Settings</h2>
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-semibold">AI Features Settings</h2>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowAiGuide(true)}
+                            className="gap-1.5 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 text-xs font-semibold"
+                        >
+                            <HelpCircle className="w-3.5 h-3.5" />
+                            Help me choose
+                        </Button>
+                    </div>
+
+                    <AiSetupGuide
+                        open={showAiGuide}
+                        onOpenChange={setShowAiGuide}
+                        onNavigateToProvider={(provider) => setAiProvider(provider)}
+                    />
                     
                     <form onSubmit={handleSaveAiSettings} className="space-y-6">
                         
