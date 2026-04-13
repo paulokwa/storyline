@@ -123,15 +123,11 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
     }
 
     async function handleDelete(asset: ProjectAsset) {
-        if (!confirm(`Are you sure you want to delete "${asset.file_name}"?`)) return
-
         try {
-            // 1. Delete from Storage
             await supabase.storage
                 .from('project-assets')
                 .remove([asset.storage_path])
 
-            // 2. Delete from DB
             const { error } = await supabase
                 .from('project_assets')
                 .delete()
@@ -243,6 +239,15 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
 function AssetCard({ asset, url, onDelete }: { asset: ProjectAsset, url: string, onDelete: () => void }) {
     const formattedSize = (asset.file_size / 1024).toFixed(1) + ' KB'
     const [showInfo, setShowInfo] = useState(false)
+    const [confirmDelete, setConfirmDelete] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
+
+    async function handleConfirmedDelete() {
+        setIsDeleting(true)
+        await onDelete()
+        setIsDeleting(false)
+        setConfirmDelete(false)
+    }
 
     return (
         <div className="group relative bg-card border border-border rounded-2xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300">
@@ -253,30 +258,21 @@ function AssetCard({ asset, url, onDelete }: { asset: ProjectAsset, url: string,
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 
-                {/* Overlay actions */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
+                {/* Overlay - only expand button */}
+                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-2">
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button size="icon" variant="secondary" className="rounded-full w-9 h-9" onClick={() => window.open(url, '_blank')}>
+                            <Button size="icon" variant="secondary" className="rounded-full w-8 h-8" onClick={() => window.open(url, '_blank')}>
                                 <Expand className="w-4 h-4" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent side="top">Open in new tab</TooltipContent>
                     </Tooltip>
-                    
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button size="icon" variant="destructive" className="rounded-full w-9 h-9" onClick={onDelete}>
-                                <Trash2 className="w-4 h-4" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top">Delete Asset</TooltipContent>
-                    </Tooltip>
                 </div>
 
                 <button 
                     onClick={() => setShowInfo(!showInfo)}
-                    className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-black/50 text-white backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all"
+                    className="absolute bottom-2 left-2 p-1.5 rounded-lg bg-black/50 text-white backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all"
                 >
                     <Info className="w-4 h-4" />
                 </button>
@@ -291,10 +287,34 @@ function AssetCard({ asset, url, onDelete }: { asset: ProjectAsset, url: string,
                     </TooltipTrigger>
                     <TooltipContent side="top">{asset.file_name}</TooltipContent>
                 </Tooltip>
-                <div className="flex items-center justify-between mt-1 text-[10px] text-muted-foreground font-mono uppercase tracking-tight">
-                    <span>{formattedSize}</span>
-                    {asset.width && asset.height && (
-                        <span>{asset.width} × {asset.height}</span>
+                <div className="flex items-center justify-between mt-1">
+                    <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-tight">
+                        <span>{formattedSize}</span>
+                        {asset.width && asset.height && (
+                            <span className="ml-2">{asset.width} × {asset.height}</span>
+                        )}
+                    </div>
+
+                    {confirmDelete ? (
+                        <div className="flex items-center gap-1.5 animate-in slide-in-from-right-2 duration-200">
+                            <span className="text-[10px] text-red-500 font-bold uppercase tracking-tight">Delete?</span>
+                            <button
+                                onClick={() => setConfirmDelete(false)}
+                                className="text-[10px] font-bold text-slate-400 hover:text-slate-600 px-1.5 py-0.5"
+                            >No</button>
+                            <button
+                                onClick={handleConfirmedDelete}
+                                disabled={isDeleting}
+                                className="text-[10px] font-bold text-white bg-red-500 hover:bg-red-600 px-2 py-0.5 rounded-md transition-colors disabled:opacity-50"
+                            >{isDeleting ? '...' : 'Yes'}</button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => setConfirmDelete(true)}
+                            className="opacity-0 group-hover:opacity-100 transition-all duration-300 p-1 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
                     )}
                 </div>
             </div>

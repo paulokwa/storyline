@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { Lightbulb, Plus, Hash, Loader2, Sparkles, PenTool, Trash2, Pencil, ChevronRight, GripVertical } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
-import { cn, reorder } from '@/lib/utils'
+import { cn, reorder, getNextAvailableName } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
@@ -33,7 +33,7 @@ export default function IdeasTab({
     const [justSaved, setJustSaved] = useState(false)
     const [renamingId, setRenamingId] = useState<string | null>(null)
     const [renameValue, setRenameValue] = useState('')
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const renameInputRef = useRef<HTMLInputElement>(null)
@@ -89,27 +89,27 @@ export default function IdeasTab({
         }, 1000)
     }
 
-    async function handleDeleteIdea() {
-        if (!selectedId) return
+    async function handleDeleteIdea(id: string) {
         setIsSaving(true)
         const supabase = createClient()
         try {
-            await softDeleteEntity(supabase, 'ideas', selectedId)
-            const index = localIdeas.findIndex(i => i.id === selectedId)
-            const newIdeas = localIdeas.filter(i => i.id !== selectedId)
+            await softDeleteEntity(supabase, 'ideas', id)
+            const index = localIdeas.findIndex(i => i.id === id)
+            const newIdeas = localIdeas.filter(i => i.id !== id)
             setLocalIdeas(newIdeas)
             
-            // Select next available idea or null
-            if (newIdeas.length > 0) {
-                const nextIndex = index < newIdeas.length ? index : newIdeas.length - 1
-                setSelectedId(newIdeas[nextIndex].id)
-            } else {
-                setSelectedId(null)
+            if (id === selectedId) {
+                if (newIdeas.length > 0) {
+                    const nextIndex = index < newIdeas.length ? index : newIdeas.length - 1
+                    setSelectedId(newIdeas[nextIndex].id)
+                } else {
+                    setSelectedId(null)
+                }
             }
         } catch (error) {
             console.error('Error soft deleting idea:', error)
         }
-        setShowDeleteConfirm(false)
+        setConfirmDeleteId(null)
         setIsSaving(false)
     }
 
@@ -118,12 +118,13 @@ export default function IdeasTab({
         const supabase = createClient() as any
         
         const nextOrderIndex = Math.max(0, ...localIdeas.map((i: Idea) => i.order_index)) + 1
-        
+        const newTitle = getNextAvailableName('New Idea', localIdeas.map(i => i.title))
+
         const { data, error } = await supabase
             .from('ideas')
             .insert({
                 project_id: projectId,
-                title: 'New Idea',
+                title: newTitle,
                 content: '',
                 order_index: nextOrderIndex
             })
@@ -135,7 +136,7 @@ export default function IdeasTab({
             setSelectedId(data.id)
             // Auto-open rename for new idea
             setRenamingId(data.id)
-            setRenameValue('New Idea')
+            setRenameValue(newTitle)
         } else if (error) {
             console.error('Error creating idea:', error)
         }
@@ -267,19 +268,61 @@ export default function IdeasTab({
                                                         </>
                                                     )}
                                                 </div>
-                                                {selectedId === idea.id && renamingId !== idea.id && (
-                                                    <Tooltip>
-                                                        <TooltipTrigger>
-                                                            <button
-                                                                onClick={e => startRename(idea, e)}
-                                                                className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-amber-50 text-stone-300 hover:text-amber-500 transition-all duration-200 flex-shrink-0"
+                                                <div className="flex items-center gap-1">
+                                                    {confirmDeleteId === idea.id ? (
+                                                        <div className="flex items-center gap-1 animate-in fade-in slide-in-from-right-2 duration-200" onClick={e => e.stopPropagation()}>
+                                                            <button 
+                                                                onClick={() => setConfirmDeleteId(null)} 
+                                                                className="p-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider"
                                                             >
-                                                                <Pencil className="w-3 h-3" />
+                                                                No
                                                             </button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent side="top">Rename idea</TooltipContent>
-                                                    </Tooltip>
-                                                )}
+                                                            <button 
+                                                                onClick={() => handleDeleteIdea(idea.id)} 
+                                                                disabled={isSaving}
+                                                                className="px-2 py-0.5 text-[10px] font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-lg uppercase tracking-wider transition-colors disabled:opacity-50"
+                                                            >
+                                                                {isSaving ? '...' : 'Yes'}
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <div className={cn(
+                                                                "flex items-center gap-0.5 transition-opacity",
+                                                                selectedId === idea.id ? "opacity-100" : "opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                                                            )}>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger>
+                                                                        <button
+                                                                            onClick={e => startRename(idea, e)}
+                                                                            className="p-1 rounded-lg hover:bg-blue-50 text-stone-300 hover:text-blue-500 transition-all duration-200 flex-shrink-0"
+                                                                        >
+                                                                            <Pencil className="w-3 h-3" />
+                                                                        </button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent side="top">Rename</TooltipContent>
+                                                                </Tooltip>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger>
+                                                                        <button
+                                                                            onClick={e => {
+                                                                                e.stopPropagation()
+                                                                                setConfirmDeleteId(idea.id)
+                                                                            }}
+                                                                            className="p-1 rounded-lg hover:bg-red-50 text-stone-300 hover:text-red-500 transition-all duration-200 flex-shrink-0"
+                                                                        >
+                                                                            <Trash2 className="w-3 h-3" />
+                                                                        </button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent side="top">Delete</TooltipContent>
+                                                                </Tooltip>
+                                                            </div>
+                                                            {selectedId === idea.id && renamingId === null && confirmDeleteId === null && (
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-[#546354]/40 flex-shrink-0 group-hover:hidden" />
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
                                         )}
                                     </Draggable>
@@ -293,11 +336,11 @@ export default function IdeasTab({
 
             {/* Main Content - Detail view */}
             <div className={cn(
-                "flex-1 flex flex-col overflow-hidden bg-[#fbf9f5]",
+                "flex-1 flex flex-col overflow-hidden bg-[#fbf9f5] w-full max-w-full",
                 !selectedId && "hidden md:flex"
             )}>
                 {selectedId && (
-                    <div className="md:hidden px-6 pt-6 -mb-4">
+                    <div className="md:hidden sticky top-0 z-20 px-6 py-4 bg-[#fbf9f5] border-b border-stone-200/50">
                         <Button 
                             variant="ghost" 
                             size="sm" 
@@ -305,47 +348,29 @@ export default function IdeasTab({
                             className="text-amber-600 gap-2 px-0 hover:bg-transparent"
                         >
                             <ChevronRight className="w-4 h-4 rotate-180" />
-                            Back to Ideas
+                            Back
                         </Button>
                     </div>
                 )}
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
                     {selectedIdea ? (
-                        <div className="max-w-3xl mx-auto px-6 py-8 sm:px-12 sm:py-16 space-y-12 sm:space-y-16 animate-in fade-in duration-700 slide-in-from-bottom-4">
+                        <div className="max-w-3xl mx-auto px-4 py-8 sm:px-12 sm:py-16 space-y-12 sm:space-y-16 animate-in fade-in duration-700 slide-in-from-bottom-4">
                             {/* Header section with Title */}
                             <div className="space-y-6">
-                                <div className="flex items-center gap-4">
+                                <div className="hidden sm:flex items-center gap-4">
                                     <div className="h-px w-8 bg-stone-200" />
                                     <div className="flex items-center gap-2 text-[11px] font-sans tracking-[0.25em] uppercase text-stone-400 font-bold">
                                         <Hash className="w-3.5 h-3.5" />
                                         <span>Fragment</span>
                                     </div>
                                     <div className="h-px flex-1 bg-stone-200/50" />
-                                    {showDeleteConfirm ? (
-                                        <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200">
-                                            <span className="text-[10px] text-amber-400 font-medium tracking-tight">Move to Trash?</span>
-                                            <button onClick={() => setShowDeleteConfirm(false)} className="px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider">Cancel</button>
-                                            <button onClick={handleDeleteIdea} disabled={isSaving} className="px-3 py-1 text-[10px] font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-full uppercase tracking-wider transition-colors disabled:opacity-50">
-                                                {isSaving ? 'Moving...' : 'Trash'}
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <Tooltip>
-                                            <TooltipTrigger>
-                                                <button onClick={() => setShowDeleteConfirm(true)} className="p-2 hover:bg-amber-50 text-stone-300 hover:text-amber-400 rounded-full transition-all duration-300 active:scale-90">
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                </button>
-                                            </TooltipTrigger>
-                                            <TooltipContent side="top">Move to Trash</TooltipContent>
-                                        </Tooltip>
-                                    )}
                                 </div>
                                 
                                 <input
                                     type="text"
                                     value={selectedIdea.title ?? ''}
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange(selectedIdea.id, 'title', e.target.value)}
-                                    className="w-full bg-transparent text-4xl sm:text-6xl font-serif italic text-slate-800 tracking-tight leading-tight outline-none border-none placeholder:text-slate-200"
+                                    className="w-full bg-transparent text-4xl sm:text-6xl font-serif italic text-slate-800 tracking-tight leading-tight outline-none border-none placeholder:text-slate-200 min-w-0"
                                     placeholder="Untitled Idea"
                                 />
                             </div>
@@ -401,14 +426,14 @@ export default function IdeasTab({
                             </div>
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-center space-y-6 max-w-sm mx-auto animate-in fade-in duration-1000">
-                             <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-50">
-                                <Lightbulb className="w-5 h-5 text-amber-200" />
-                             </div>
-                             <p className="text-slate-400 font-serif italic text-lg">
-                                Select an idea to reveal its creative potential.
-                             </p>
-                        </div>
+                         <div className="hidden sm:flex flex-col items-center justify-center h-full text-center space-y-6 max-w-sm mx-auto animate-in fade-in duration-1000">
+                              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-50">
+                                 <Lightbulb className="w-5 h-5 text-stone-200" />
+                              </div>
+                              <p className="text-slate-400 font-serif italic text-lg">
+                                 Select an idea to reveal its creative potential.
+                              </p>
+                         </div>
                     )}
                 </div>
             </div>
@@ -418,8 +443,8 @@ export default function IdeasTab({
 
 function EmptyIdeasState({ onCreate, isCreating }: { onCreate: () => void, isCreating: boolean }) {
     return (
-        <div className="min-h-full bg-[#fbf9f5] flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-700">
-            <div className="max-w-2xl w-full py-20 px-10 rounded-[3rem] bg-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.04)] ring-1 ring-slate-100 flex flex-col items-center">
+        <div className="min-h-full bg-[#fbf9f5] flex flex-col items-center sm:justify-center py-12 p-6 text-center animate-in fade-in duration-700 overflow-y-auto">
+            <div className="max-w-2xl w-full py-12 sm:py-20 px-6 sm:px-10 rounded-[3rem] bg-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.04)] ring-1 ring-slate-100 flex flex-col items-center">
                 <div className="w-24 h-24 bg-amber-50 rounded-[30%] flex items-center justify-center mb-8 rotate-3 shadow-inner">
                     <Lightbulb className="w-12 h-12 text-amber-200" />
                 </div>

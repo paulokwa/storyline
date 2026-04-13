@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { MapPin, Plus, Search, ChevronRight, PenTool, Hash, Loader2, Trash2, Pencil, GripVertical } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
-import { cn, reorder } from '@/lib/utils'
+import { cn, reorder, getNextAvailableName } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
@@ -34,7 +34,7 @@ export default function LocationsTab({
     const [justSaved, setJustSaved] = useState(false)
     const [renamingId, setRenamingId] = useState<string | null>(null)
     const [renameValue, setRenameValue] = useState('')
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
     
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const renameInputRef = useRef<HTMLInputElement>(null)
@@ -82,25 +82,27 @@ export default function LocationsTab({
         }, 1000)
     }
 
-    async function handleDeleteLocation() {
-        if (!selectedId) return
+    async function handleDeleteLocation(id: string) {
         setIsSaving(true)
         const supabase = createClient()
         try {
-            await softDeleteEntity(supabase, 'locations', selectedId)
-            const index = localLocations.findIndex(l => l.id === selectedId)
-            const newLocs = localLocations.filter(l => l.id !== selectedId)
+            await softDeleteEntity(supabase, 'locations', id)
+            const index = localLocations.findIndex(l => l.id === id)
+            const newLocs = localLocations.filter(l => l.id !== id)
             setLocalLocations(newLocs)
-            if (newLocs.length > 0) {
-                const nextIndex = index < newLocs.length ? index : newLocs.length - 1
-                setSelectedId(newLocs[nextIndex].id)
-            } else {
-                setSelectedId(null)
+            
+            if (id === selectedId) {
+                if (newLocs.length > 0) {
+                    const nextIndex = index < newLocs.length ? index : newLocs.length - 1
+                    setSelectedId(newLocs[nextIndex].id)
+                } else {
+                    setSelectedId(null)
+                }
             }
         } catch (error) {
             console.error('Error soft deleting location:', error)
         }
-        setShowDeleteConfirm(false)
+        setConfirmDeleteId(null)
         setIsSaving(false)
     }
 
@@ -108,11 +110,13 @@ export default function LocationsTab({
         setIsCreating(true)
         const supabase = createClient()
         const nextOrderIndex = Math.max(0, ...localLocations.map((l: any) => l.order_index)) + 1
+        const newName = getNextAvailableName('New Location', localLocations.map(l => l.name))
+
         const { data, error } = await supabase
             .from('locations' as any)
             .insert({
                 project_id: projectId,
-                name: 'New Location',
+                name: newName,
                 description: '',
                 atmosphere: '',
                 order_index: nextOrderIndex
@@ -125,7 +129,7 @@ export default function LocationsTab({
             setLocalLocations((prev: any[]) => [...prev, loc])
             setSelectedId(loc.id)
             setRenamingId(loc.id)
-            setRenameValue('New Location')
+            setRenameValue(newName)
         }
         setIsCreating(false)
     }
@@ -223,19 +227,61 @@ export default function LocationsTab({
                                                         </>
                                                     )}
                                                 </div>
-                                                {selectedId === loc.id && renamingId !== loc.id && (
-                                                    <Tooltip>
-                                                        <TooltipTrigger>
-                                                            <button
-                                                                onClick={e => startRename(loc, e)}
-                                                                className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-emerald-50 text-stone-300 hover:text-emerald-500 transition-all duration-200 flex-shrink-0"
+                                                 <div className="flex items-center gap-1">
+                                                    {confirmDeleteId === loc.id ? (
+                                                        <div className="flex items-center gap-1 animate-in fade-in slide-in-from-right-2 duration-200" onClick={e => e.stopPropagation()}>
+                                                            <button 
+                                                                onClick={() => setConfirmDeleteId(null)} 
+                                                                className="p-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider"
                                                             >
-                                                                <Pencil className="w-3 h-3" />
+                                                                No
                                                             </button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent side="top">Rename location</TooltipContent>
-                                                    </Tooltip>
-                                                )}
+                                                            <button 
+                                                                onClick={() => handleDeleteLocation(loc.id)} 
+                                                                disabled={isSaving}
+                                                                className="px-2 py-0.5 text-[10px] font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-lg uppercase tracking-wider transition-colors disabled:opacity-50"
+                                                            >
+                                                                {isSaving ? '...' : 'Yes'}
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <div className={cn(
+                                                                "flex items-center gap-0.5 transition-opacity",
+                                                                selectedId === loc.id ? "opacity-100" : "opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                                                            )}>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger>
+                                                                        <button
+                                                                            onClick={e => startRename(loc, e)}
+                                                                            className="p-1 rounded-lg hover:bg-blue-50 text-stone-300 hover:text-blue-500 transition-all duration-200 flex-shrink-0"
+                                                                        >
+                                                                            <Pencil className="w-3 h-3" />
+                                                                        </button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent side="top">Rename</TooltipContent>
+                                                                </Tooltip>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger>
+                                                                        <button
+                                                                            onClick={e => {
+                                                                                e.stopPropagation()
+                                                                                setConfirmDeleteId(loc.id)
+                                                                            }}
+                                                                            className="p-1 rounded-lg hover:bg-red-50 text-stone-300 hover:text-red-500 transition-all duration-200 flex-shrink-0"
+                                                                        >
+                                                                            <Trash2 className="w-3 h-3" />
+                                                                        </button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent side="top">Delete</TooltipContent>
+                                                                </Tooltip>
+                                                            </div>
+                                                            {selectedId === loc.id && renamingId === null && confirmDeleteId === null && (
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-[#546354]/40 flex-shrink-0 group-hover:hidden" />
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
                                         )}
                                     </Draggable>
@@ -247,46 +293,37 @@ export default function LocationsTab({
                 </DragDropContext>
             </div>
 
-            <div className={cn("flex-1 flex flex-col overflow-hidden bg-[#fbf9f5]", !selectedId && "hidden md:flex")}>
+            <div className={cn("flex-1 flex flex-col overflow-hidden bg-[#fbf9f5] w-full max-w-full", !selectedId && "hidden md:flex")}>
                 {selectedId && (
-                    <div className="md:hidden px-6 pt-6 -mb-4">
-                        <Button variant="ghost" size="sm" onClick={() => setSelectedId(null)} className="text-[#546354] gap-2 px-0"><ChevronRight className="w-4 h-4 rotate-180" />Back</Button>
+                    <div className="md:hidden sticky top-0 z-20 px-6 py-4 bg-[#fbf9f5] border-b border-stone-200/50">
+                        <Button variant="ghost" size="sm" onClick={() => setSelectedId(null)} className="text-[#546354] gap-2 px-0 hover:bg-transparent"><ChevronRight className="w-4 h-4 rotate-180" />Back</Button>
                     </div>
                 )}
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
                     {selectedLocation ? (
-                        <div className="max-w-3xl mx-auto px-6 py-8 sm:px-12 sm:py-16 space-y-12">
+                        <div className="max-w-3xl mx-auto px-4 py-8 sm:px-12 sm:py-16 space-y-12">
                             <div className="space-y-6">
-                                <div className="flex items-center gap-4">
+                                <div className="hidden sm:flex items-center gap-4">
                                     <div className="h-px w-8 bg-stone-200" />
-                                    <div className="flex items-center gap-2 text-[11px] font-sans tracking-[0.25em] uppercase text-stone-400 font-bold"><Hash className="w-3.5 h-3.5" /><span>Location Atlas</span></div>
+                                    <div className="flex items-center gap-2 text-[11px] font-sans tracking-[0.25em] uppercase text-stone-400 font-bold">
+                                        <Hash className="w-3.5 h-3.5" />
+                                        <span>Atlas</span>
+                                    </div>
                                     <div className="h-px flex-1 bg-stone-200/50" />
-                                    {showDeleteConfirm ? (
-                                        <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200">
-                                            <span className="text-[10px] text-amber-400 font-medium tracking-tight">Move to Trash?</span>
-                                            <button onClick={() => setShowDeleteConfirm(false)} className="px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider">Cancel</button>
-                                            <button onClick={handleDeleteLocation} disabled={isSaving} className="px-3 py-1 text-[10px] font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-full uppercase tracking-wider transition-colors disabled:opacity-50">
-                                                {isSaving ? 'Moving...' : 'Trash'}
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <Tooltip>
-                                            <TooltipTrigger>
-                                                <button onClick={() => setShowDeleteConfirm(true)} className="p-2 hover:bg-emerald-50 text-stone-300 hover:text-emerald-500 rounded-full transition-all duration-300 active:scale-90">
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                </button>
-                                            </TooltipTrigger>
-                                            <TooltipContent side="top">Move to Trash</TooltipContent>
-                                        </Tooltip>
-                                    )}
                                 </div>
-                                <div className="flex flex-col sm:flex-row items-start sm:items-end gap-8">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-end gap-6 sm:gap-8">
                                     <AssetPicker 
                                         projectId={projectId}
                                         entityId={selectedLocation.id}
                                         entityType="location"
                                     />
-                                    <input type="text" value={selectedLocation.name} onChange={(e) => handleFieldChange(selectedLocation.id, 'name', e.target.value)} className="flex-1 bg-transparent text-4xl sm:text-6xl font-serif italic text-slate-800 outline-none placeholder:text-slate-200" placeholder="Location Name" />
+                                    <input
+                                        type="text"
+                                        value={selectedLocation.name}
+                                        onChange={(e) => handleFieldChange(selectedLocation.id, 'name', e.target.value)}
+                                        className="w-full sm:flex-1 bg-transparent text-4xl sm:text-6xl font-serif italic text-slate-800 tracking-tight leading-tight outline-none border-none placeholder:text-slate-200 text-left min-w-0"
+                                        placeholder="Location Name"
+                                    />
                                 </div>
                             </div>
 
@@ -327,7 +364,14 @@ export default function LocationsTab({
                             </div>
                         </div>
                     ) : (
-                        <div className="flex items-center justify-center h-full italic text-slate-300">Select a region from your atlas.</div>
+                         <div className="hidden sm:flex flex-col items-center justify-center h-full text-center space-y-6 max-w-sm mx-auto animate-in fade-in duration-1000">
+                             <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-50">
+                                <MapPin className="w-5 h-5 text-stone-200" />
+                             </div>
+                             <p className="text-slate-400 font-serif italic text-lg">
+                                Select a region from your atlas.
+                             </p>
+                         </div>
                     )}
                 </div>
             </div>
@@ -338,8 +382,8 @@ export default function LocationsTab({
 
 function EmptyState({ onCreate, isCreating }: { onCreate: () => void, isCreating: boolean }) {
     return (
-        <div className="min-h-full bg-[#fbf9f5] flex flex-col items-center justify-center text-center p-6 animate-in fade-in">
-            <div className="max-w-2xl w-full py-20 px-10 rounded-[3rem] bg-white shadow-sm ring-1 ring-slate-100 flex flex-col items-center">
+        <div className="min-h-full bg-[#fbf9f5] flex flex-col items-center sm:justify-center py-12 p-6 text-center animate-in fade-in duration-700 overflow-y-auto">
+            <div className="max-w-2xl w-full py-12 sm:py-20 px-6 sm:px-10 rounded-[3rem] bg-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.04)] ring-1 ring-slate-100 flex flex-col items-center">
                 <div className="w-24 h-24 bg-stone-50 rounded-[30%] flex items-center justify-center mb-8 rotate-3 shadow-inner"><MapPin className="w-12 h-12 text-stone-200" /></div>
                 <h2 className="text-4xl font-serif italic text-slate-800 mb-4 tracking-tight">An Unmapped World</h2>
                 <p className="text-[11px] font-sans tracking-[0.4em] uppercase text-stone-300 mb-10 font-bold">World Locations Atlas Empty</p>

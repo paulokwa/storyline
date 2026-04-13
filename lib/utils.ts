@@ -31,3 +31,15 @@ export const getUserColor = (email: string) => {
   
   return colors[Math.abs(hash) % colors.length]
 }
+
+export function getNextAvailableName(baseName: string, existingNames: string[]) {
+  if (!existingNames.includes(baseName)) {
+    return baseName
+  }
+
+  let counter = 2
+  while (existingNames.includes(`${baseName} ${counter}`)) {
+    counter++
+  }
+  return `${baseName} ${counter}`
+}

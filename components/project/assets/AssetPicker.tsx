@@ -31,6 +31,8 @@ export default function AssetPicker({ projectId, entityId, entityType, className
     const [isSelecting, setIsSelecting] = useState(false)
     const [availableAssets, setAvailableAssets] = useState<ProjectAsset[]>([])
     const [fetchingAssets, setFetchingAssets] = useState(false)
+    const [confirmingAssetId, setConfirmingAssetId] = useState<string | null>(null)
+    const [isDeletingAsset, setIsDeletingAsset] = useState(false)
     const supabase = createClient()
 
     useEffect(() => {
@@ -107,6 +109,27 @@ export default function AssetPicker({ projectId, entityId, entityType, className
         }
     }
 
+    async function handleDeleteProjectAsset(e: React.MouseEvent, asset: ProjectAsset) {
+        e.stopPropagation()
+        setIsDeletingAsset(true)
+
+        try {
+            await supabase.storage.from('project-assets').remove([asset.storage_path])
+            const { error } = await supabase.from('project_assets').delete().eq('id', asset.id)
+            if (error) throw error
+
+            setAvailableAssets(prev => prev.filter(a => a.id !== asset.id))
+            if (selectedAsset?.id === asset.id) setSelectedAsset(null)
+            toast.success('Asset deleted')
+        } catch (error: any) {
+            console.error('Delete failed:', error)
+            toast.error('Failed to delete asset')
+        } finally {
+            setIsDeletingAsset(false)
+            setConfirmingAssetId(null)
+        }
+    }
+
     async function removeAsset() {
         try {
             const { error } = await supabase
@@ -156,7 +179,7 @@ export default function AssetPicker({ projectId, entityId, entityType, className
                             className="w-8 h-8 rounded-full"
                             onClick={removeAsset}
                         >
-                            <Trash2 className="w-4 h-4" />
+                            <X className="w-4 h-4" />
                         </Button>
                     </div>
                 </div>
@@ -206,26 +229,56 @@ export default function AssetPicker({ projectId, entityId, entityType, className
                             ) : (
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                     {availableAssets.map((asset) => (
-                                        <div 
-                                            key={asset.id}
-                                            onClick={() => attachAsset(asset.id)}
-                                            className={cn(
-                                                "relative aspect-square rounded-2xl overflow-hidden cursor-pointer ring-offset-2 transition-all hover:scale-[1.02]",
-                                                selectedAsset?.id === asset.id ? "ring-2 ring-[#546354]" : "ring-1 ring-stone-100 hover:ring-[#546354]/40"
-                                            )}
-                                        >
-                                            <img 
-                                                src={getImageUrl(asset.storage_path)} 
-                                                alt={asset.file_name}
-                                                className="w-full h-full object-cover"
-                                            />
-                                            {selectedAsset?.id === asset.id && (
-                                                <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[#546354] flex items-center justify-center">
-                                                    <Check className="w-3.5 h-3.5 text-white" />
+                                        <div key={asset.id} className="flex flex-col group/asset">
+                                            <div 
+                                                onClick={() => attachAsset(asset.id)}
+                                                className={cn(
+                                                    "relative aspect-square rounded-xl overflow-hidden cursor-pointer ring-offset-2 transition-all",
+                                                    selectedAsset?.id === asset.id ? "ring-2 ring-[#546354]" : "ring-1 ring-stone-100 hover:ring-stone-200"
+                                                )}
+                                            >
+                                                <img 
+                                                    src={getImageUrl(asset.storage_path)} 
+                                                    alt={asset.file_name}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                {selectedAsset?.id === asset.id && (
+                                                    <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[#546354] flex items-center justify-center">
+                                                        <Check className="w-3.5 h-3.5 text-white" />
+                                                    </div>
+                                                )}
+                                                <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover/asset:opacity-100 transition-opacity">
+                                                    <p className="text-[9px] text-white truncate text-center font-medium">{asset.file_name}</p>
                                                 </div>
-                                            )}
-                                            <div className="absolute inset-x-0 bottom-0 p-2 bg-black/40 backdrop-blur-sm opacity-0 hover:opacity-100 transition-opacity">
-                                                <p className="text-[9px] text-white truncate text-center">{asset.file_name}</p>
+                                            </div>
+                                            
+                                            <div className="mt-2 px-1 min-h-[24px]">
+                                                {confirmingAssetId === asset.id ? (
+                                                    <div className="flex items-center gap-2 animate-in slide-in-from-right-1 duration-200">
+                                                        <span className="text-[10px] text-red-500 font-bold uppercase tracking-tight">Delete?</span>
+                                                        <div className="flex items-center gap-1 ml-auto">
+                                                            <button 
+                                                                onClick={(e) => { e.stopPropagation(); setConfirmingAssetId(null) }}
+                                                                className="text-[10px] font-bold text-slate-400 hover:text-slate-600 px-1 py-1"
+                                                            >No</button>
+                                                            <button 
+                                                                onClick={(e) => handleDeleteProjectAsset(e, asset)}
+                                                                disabled={isDeletingAsset}
+                                                                className="text-[10px] font-bold text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded-md transition-colors disabled:opacity-50"
+                                                            >{isDeletingAsset ? '...' : 'Yes'}</button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center justify-between opacity-0 group-hover/asset:opacity-100 transition-opacity duration-300">
+                                                        <span className="text-[9px] text-slate-400 truncate max-w-[70%] font-medium uppercase tracking-tight">{asset.file_name}</span>
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); setConfirmingAssetId(asset.id) }}
+                                                            className="text-slate-300 hover:text-red-500 transition-colors p-1"
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     ))}

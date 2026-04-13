@@ -371,7 +371,7 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
                 {selectedResponse ? (
                     <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 duration-500 overflow-hidden">
                         {/* Mobile Back Button */}
-                        <div className="md:hidden px-8 pt-6 -mb-4">
+                        <div className="md:hidden sticky top-0 z-20 px-8 py-4 bg-[#fbf9f5] border-b border-slate-100">
                             <Button 
                                 variant="ghost" 
                                 size="sm" 
@@ -379,7 +379,7 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
                                 className="text-[#546354] gap-2 px-0 hover:bg-transparent"
                             >
                                 <ChevronRight className="w-4 h-4 rotate-180" />
-                                Back to AI Memory
+                                Back
                             </Button>
                         </div>
                         {/* Detail Header */}

@@ -41,6 +41,8 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose }: SceneA
     const [availableAssets, setAvailableAssets] = useState<ProjectAsset[]>([])
     const [fetchingAssets, setFetchingAssets] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
+    const [confirmingAssetId, setConfirmingAssetId] = useState<string | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
     
     const supabase = createClient()
 
@@ -121,6 +123,27 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose }: SceneA
         }
     }
 
+    async function handleDeleteProjectAsset(e: React.MouseEvent, asset: ProjectAsset) {
+        e.stopPropagation()
+        setIsDeleting(true)
+
+        try {
+            await supabase.storage.from('project-assets').remove([asset.storage_path])
+            const { error } = await supabase.from('project_assets').delete().eq('id', asset.id)
+            if (error) throw error
+
+            setAvailableAssets(prev => prev.filter(a => a.id !== asset.id))
+            setAttachedAssets(prev => prev.filter(a => a.asset_id !== asset.id))
+            toast.success('Asset deleted')
+        } catch (error: any) {
+            console.error('Delete failed:', error)
+            toast.error('Failed to delete asset')
+        } finally {
+            setIsDeleting(false)
+            setConfirmingAssetId(null)
+        }
+    }
+
     const getImageUrl = (path: string) => {
         return supabase.storage.from('project-assets').getPublicUrl(path).data.publicUrl
     }
@@ -177,12 +200,14 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose }: SceneA
                                         alt={item.asset.file_name}
                                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                     />
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full" onClick={() => window.open(getImageUrl(item.asset.storage_path), '_blank')}>
                                             <Expand className="w-4 h-4" />
                                         </Button>
-                                        <Button size="icon" variant="destructive" className="w-8 h-8 rounded-full" onClick={() => toggleAsset(item.asset_id)}>
-                                            <Trash2 className="w-4 h-4" />
+                                    </div>
+                                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Button size="icon" variant="destructive" className="w-7 h-7 rounded-full shadow-lg" onClick={() => toggleAsset(item.asset_id)}>
+                                            <X className="w-3.5 h-3.5" />
                                         </Button>
                                     </div>
                                     <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
@@ -238,24 +263,54 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose }: SceneA
                             ) : filteredAvailable.map((asset) => {
                                 const isAttached = attachedAssets.some(a => a.asset_id === asset.id)
                                 return (
-                                    <div 
-                                        key={asset.id}
-                                        onClick={() => toggleAsset(asset.id)}
-                                        className={cn(
-                                            "relative aspect-square rounded-2xl overflow-hidden cursor-pointer transition-all",
-                                            isAttached ? "ring-2 ring-[#546354] scale-[0.98]" : "ring-1 ring-stone-100 hover:scale-[1.02]"
-                                        )}
-                                    >
-                                        <img src={getImageUrl(asset.storage_path)} className="w-full h-full object-cover" />
-                                        {isAttached && (
-                                            <div className="absolute inset-0 bg-[#546354]/40 flex items-center justify-center">
-                                                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-lg">
-                                                    <Check className="w-4 h-4 text-[#546354]" />
+                                    <div key={asset.id} className="flex flex-col group/asset">
+                                        <div 
+                                            onClick={() => toggleAsset(asset.id)}
+                                            className={cn(
+                                                "relative aspect-square rounded-xl overflow-hidden cursor-pointer transition-all",
+                                                isAttached ? "ring-2 ring-[#546354] scale-[0.98]" : "ring-1 ring-stone-100 hover:ring-stone-200"
+                                            )}
+                                        >
+                                            <img src={getImageUrl(asset.storage_path)} className="w-full h-full object-cover" />
+                                            {isAttached && (
+                                                <div className="absolute inset-0 bg-[#546354]/40 flex items-center justify-center animate-in fade-in duration-200">
+                                                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-lg">
+                                                        <Check className="w-4 h-4 text-[#546354]" />
+                                                    </div>
                                                 </div>
+                                            )}
+                                            <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover/asset:opacity-100 transition-opacity">
+                                                <p className="text-[9px] text-white truncate text-center font-medium">{asset.file_name}</p>
                                             </div>
-                                        )}
-                                        <div className="absolute inset-x-0 bottom-0 p-2 bg-black/40 backdrop-blur-sm opacity-0 hover:opacity-100 transition-opacity">
-                                            <p className="text-[9px] text-white truncate text-center">{asset.file_name}</p>
+                                        </div>
+                                        
+                                        <div className="mt-2 px-1 min-h-[24px]">
+                                            {confirmingAssetId === asset.id ? (
+                                                <div className="flex items-center gap-2 animate-in slide-in-from-right-1 duration-200">
+                                                    <span className="text-[10px] text-red-500 font-bold uppercase tracking-tight">Delete?</span>
+                                                    <div className="flex items-center gap-1 ml-auto">
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); setConfirmingAssetId(null) }}
+                                                            className="text-[10px] font-bold text-slate-400 hover:text-slate-600 px-2 py-1"
+                                                        >No</button>
+                                                        <button 
+                                                            onClick={(e) => handleDeleteProjectAsset(e, asset)}
+                                                            disabled={isDeleting}
+                                                            className="text-[10px] font-bold text-white bg-red-500 hover:bg-red-600 px-2.5 py-1 rounded-md transition-colors disabled:opacity-50"
+                                                        >{isDeleting ? '...' : 'Yes'}</button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center justify-between opacity-0 group-hover/asset:opacity-100 transition-opacity duration-300">
+                                                    <span className="text-[9px] text-slate-400 truncate max-w-[70%] font-medium uppercase tracking-tight">{asset.file_name}</span>
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); setConfirmingAssetId(asset.id) }}
+                                                        className="text-slate-300 hover:text-red-500 transition-colors p-1"
+                                                    >
+                                                        <X className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )
