@@ -506,8 +506,8 @@ function ProjectShellInner({
 
                     
                     {/* Action Buttons Row - Mobile Only */}
-                    <div className="md:hidden relative group/actions border-b border-black/5">
-                        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 px-1">
+                    <div className="md:hidden border-b border-black/5">
+                        <div className="snap-row flex items-center gap-2 py-2 pl-1">
                             {isStoryTab && (
                                 <div className="flex items-center gap-2 shrink-0">
                                     {/* AI Tools - Generative stuff first */}
@@ -571,6 +571,7 @@ function ProjectShellInner({
                                     </div>
 
                                     {/* Reading/Interaction */}
+                                    <span className="shrink-0">
                                     <Tooltip>
                                         <TooltipTrigger>
                                             <Button
@@ -587,8 +588,10 @@ function ProjectShellInner({
                                         </TooltipTrigger>
                                         <TooltipContent side="bottom">Read Aloud</TooltipContent>
                                     </Tooltip>
+                                    </span>
 
                                     {/* Dictate */}
+                                    <span className="shrink-0">
                                     <Tooltip>
                                         <TooltipTrigger>
                                             <Button
@@ -605,8 +608,10 @@ function ProjectShellInner({
                                         </TooltipTrigger>
                                         <TooltipContent side="bottom">Dictate</TooltipContent>
                                     </Tooltip>
+                                    </span>
 
                                     {/* Feedback */}
+                                    <span className="shrink-0">
                                     <Tooltip>
                                         <TooltipTrigger>
                                             <Button
@@ -623,30 +628,31 @@ function ProjectShellInner({
                                         </TooltipTrigger>
                                         <TooltipContent side="bottom">Feedback</TooltipContent>
                                     </Tooltip>
+                                    </span>
 
                                     {/* History */}
+                                    <span className="shrink-0">
                                     <Tooltip>
                                         <TooltipTrigger>
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => router.push(`/project/${project.id}/recovery?section=history&sceneId=${activeNodeId}`)}
-                                                className="rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center shrink-0 bg-black/5 text-slate-500 hover:bg-black/10"
+                                                className="rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center bg-black/5 text-slate-500 hover:bg-black/10"
                                             >
                                                 <Clock className="w-4 h-4" />
                                             </Button>
                                         </TooltipTrigger>
                                         <TooltipContent side="bottom">History</TooltipContent>
                                     </Tooltip>
+                                    </span>
                                 </div>
                             )}
                         </div>
-                        {/* Scroll indicator gradient */}
-                        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#fcfbf9] to-transparent pointer-events-none" />
                     </div>
 
-                    <div className="relative group/tabs mt-1">
-                        <div className="flex gap-1 overflow-x-auto no-scrollbar scroll-smooth">
+                    <div className="mt-1">
+                        <div className="snap-row flex gap-1 pl-1">
                             {TABS.map(({ slug, label, icon: Icon }) => (
                                 <Tooltip key={slug}>
                                     <TooltipTrigger>
@@ -668,8 +674,6 @@ function ProjectShellInner({
                                 </Tooltip>
                             ))}
                         </div>
-                        {/* Scroll indicator gradient */}
-                        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#fcfbf9] to-transparent pointer-events-none" />
                     </div>
                 </div>
             </div>

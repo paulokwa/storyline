@@ -133,12 +133,12 @@ export default function LinkedContext({
     }
 
     return (
-        <div className="flex flex-wrap items-center gap-2 pb-1">
+        <div className="flex items-center gap-2 pb-1">
              {/* Linked Characters */}
              {linkedChars.map(char => {
                 const isActive = activeCharacters?.[char.id] !== false
                 return (
-                    <div key={char.id} className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all", isActive ? "bg-[#546354]/10 text-[#546354] border-transparent" : "bg-white text-slate-300 border-slate-100 grayscale opacity-60")}>
+                    <div key={char.id} className={cn("flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all", isActive ? "bg-[#546354]/10 text-[#546354] border-transparent" : "bg-white text-slate-300 border-slate-100 grayscale opacity-60")}>
                         <input
                             type="checkbox"
                             checked={isActive}
@@ -160,7 +160,7 @@ export default function LinkedContext({
             {linkedIdeas.map(idea => {
                 const isActive = activeIdeas?.[idea.id] !== false
                 return (
-                    <div key={idea.id} className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all", isActive ? "bg-indigo-50 text-indigo-700 border-indigo-100" : "bg-white text-slate-300 border-slate-100 grayscale opacity-60")}>
+                    <div key={idea.id} className={cn("flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all", isActive ? "bg-indigo-50 text-indigo-700 border-indigo-100" : "bg-white text-slate-300 border-slate-100 grayscale opacity-60")}>
                         <input
                             type="checkbox"
                             checked={isActive}
@@ -182,7 +182,7 @@ export default function LinkedContext({
             {linkedLocs.map(loc => {
                 const isActive = activeLocations?.[loc.id] !== false
                 return (
-                    <div key={loc.id} className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all", isActive ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-white text-slate-300 border-slate-100 grayscale opacity-60")}>
+                    <div key={loc.id} className={cn("flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all", isActive ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-white text-slate-300 border-slate-100 grayscale opacity-60")}>
                         <input
                             type="checkbox"
                             checked={isActive}
@@ -204,7 +204,7 @@ export default function LinkedContext({
             {linkedObjs.map(obj => {
                 const isActive = activeObjects?.[obj.id] !== false
                 return (
-                    <div key={obj.id} className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all", isActive ? "bg-blue-50 text-blue-700 border-blue-100" : "bg-white text-slate-300 border-slate-100 grayscale opacity-60")}>
+                    <div key={obj.id} className={cn("flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all", isActive ? "bg-blue-50 text-blue-700 border-blue-100" : "bg-white text-slate-300 border-slate-100 grayscale opacity-60")}>
                         <input
                             type="checkbox"
                             checked={isActive}
@@ -229,7 +229,7 @@ export default function LinkedContext({
                 const Icon = node.type === 'scene' ? FileText : Folder
                 
                 return (
-                    <div key={nodeId} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border bg-amber-50 text-amber-700 border-amber-200">
+                    <div key={nodeId} className="flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border bg-amber-50 text-amber-700 border-amber-200">
                         <Icon className="w-3 h-3 opacity-60" />
                         {node.title}
                         {!isReadOnly && (
@@ -246,7 +246,7 @@ export default function LinkedContext({
 
             {/* Add Context Actions */}
             {!isReadOnly && (
-                <div className="flex items-center gap-1.5 ml-2 border-l border-slate-200 pl-3">
+                <div className="flex shrink-0 items-center gap-1.5 ml-2 border-l border-slate-200 pl-3">
                     {unlinkedCharacters.length > 0 && (
                         <select 
                             className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-[#546354] transition-colors"

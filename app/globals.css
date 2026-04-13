@@ -477,6 +477,36 @@ body {
   scrollbar-width: none;
 }
 
+/* ─── Shared peek-and-snap row ──────────────────────────────────────────────
+   Apply to the scroll container. Children must have shrink-0 (no shrinking)  
+   and will snap to their start edge. A small end-padding leaves the next    
+   item intentionally cut off so the user infers more content exists.        
+   On md+ screens snap is turned off so items lay out normally.              
+──────────────────────────────────────────────────────────────────────────── */
+.snap-row {
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-padding-left: 0.5rem;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  /* end padding creates the "peek" of the next item */
+  padding-right: 2.5rem;
+}
+.snap-row::-webkit-scrollbar {
+  display: none;
+}
+.snap-row > * {
+  scroll-snap-align: start;
+}
+/* Disable snapping on desktop — items fit without scrolling */
+@media (min-width: 768px) {
+  .snap-row {
+    overflow-x: visible;
+    scroll-snap-type: none;
+    padding-right: 0;
+  }
+}
+
 /* 
   Editor Novel Mode View Settings Overrides
   Ensures font size, line height, and alignment variables are 
