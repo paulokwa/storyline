@@ -22,6 +22,12 @@ const STEPS: Step[] = [
         placement: 'right'
     },
     {
+        target: '[data-tour="structure-toggle"]',
+        title: 'Quick Navigation',
+        content: 'You can toggle the structure panel any time from this icon, next to the home button.',
+        placement: 'bottom'
+    },
+    {
         target: '[data-tour="main-editor"]',
         title: 'Editor',
         content: 'Write your story here. Everything starts in the editor.',

@@ -62,8 +62,8 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         activeCharacters, setActiveCharacters,
         activeIdeas, setActiveIdeas,
         activeLocations, setActiveLocations,
-        activeObjects, setActiveObjects,
-        selectedNodeIds, setSelectedNodeIds
+        selectedNodeIds, setSelectedNodeIds,
+        showStructureHint, setShowStructureHint
     } = useProjectActions()
     const [isPeeking, setIsPeeking] = useState(false)
     const { commentsPanelOpen, setCommentsPanelOpen, fetchComments } = useComments()
@@ -458,9 +458,30 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                     <Sparkles className="w-10 h-10 animate-pulse" />
                                     <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-white" />
                                 </div>
-                                <div className="space-y-2">
-                                    <h3 className="text-2xl font-serif italic text-slate-400">Your story awaits...</h3>
-                                    <p className="text-sm text-slate-300 font-medium uppercase tracking-[0.2em]">Select a scene to begin writing</p>
+                                <div className="space-y-6">
+                                    <div className="space-y-2">
+                                        <h3 className="text-2xl font-serif italic text-slate-400">Your story awaits...</h3>
+                                        <p className="text-sm text-slate-300 font-medium uppercase tracking-[0.2em]">Select a scene to begin writing</p>
+                                    </div>
+                                    <div className="md:hidden pt-4 flex justify-center">
+                                        <button 
+                                            onClick={() => {
+                                                setSidebarOpen(true)
+                                                // Trigger onboarding hint if not discovered
+                                                const discovered = localStorage.getItem('storyline-mobile-structure-discovered')
+                                                if (!discovered) {
+                                                    setShowStructureHint(true)
+                                                    // Note: ProjectShell handles persistence when dismissed
+                                                }
+                                            }}
+                                            className="flex flex-col items-center gap-3 group animate-in zoom-in-95 duration-700 delay-300"
+                                        >
+                                            <div className="w-16 h-16 rounded-[2rem] bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-[#546354] group-hover:scale-110 group-hover:shadow-xl transition-all duration-500">
+                                                <PanelLeftOpen className="w-7 h-7" />
+                                            </div>
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em] group-hover:text-[#546354] transition-colors">Open Structure</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}

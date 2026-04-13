@@ -37,6 +37,8 @@ interface ProjectContextType {
     setActiveObjects: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
     selectedNodeIds: string[]
     setSelectedNodeIds: React.Dispatch<React.SetStateAction<string[]>>
+    showStructureHint: boolean
+    setShowStructureHint: (val: boolean) => void
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined)
@@ -65,6 +67,7 @@ export function ProjectProvider({
     const [activeLocations, setActiveLocations] = useState<Record<string, boolean>>({})
     const [activeObjects, setActiveObjects] = useState<Record<string, boolean>>({})
     const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([])
+    const [showStructureHint, setShowStructureHint] = useState(false)
 
     const requestDictation = () => setDictationRequest(Date.now())
 
@@ -121,7 +124,9 @@ export function ProjectProvider({
             activeObjects,
             setActiveObjects,
             selectedNodeIds,
-            setSelectedNodeIds
+            setSelectedNodeIds,
+            showStructureHint,
+            setShowStructureHint
         }}>
             {children}
         </ProjectContext.Provider>

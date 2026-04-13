@@ -227,7 +227,8 @@ function ProjectShellInner({
         setAnalysisResult,
         sceneAssetsOpen, setSceneAssetsOpen,
         isDictating, requestDictation,
-        activeNodeId
+        activeNodeId,
+        showStructureHint, setShowStructureHint
     } = useProjectActions()
 
     // Register actions in the global state for AppNav access
@@ -247,19 +248,9 @@ function ProjectShellInner({
     const isMobile = useMediaQuery('(max-width: 768px)')
     const isVerySmall = useMediaQuery('(max-width: 480px)')
 
-    const [showStructureHint, setShowStructureHint] = useState(false)
 
-    useEffect(() => {
-        if (!isMobile) return
-        const discovered = localStorage.getItem('storyline-mobile-structure-discovered')
-        if (!discovered) {
-            setShowStructureHint(true)
-            const timer = setTimeout(() => {
-                setShowStructureHint(false)
-            }, 7000)
-            return () => clearTimeout(timer)
-        }
-    }, [isMobile])
+
+
 
     const handleDismissStructureHint = (e?: React.MouseEvent) => {
         if (e) {
@@ -368,6 +359,7 @@ function ProjectShellInner({
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={handleToggleStructure}
+                                                data-tour="structure-toggle"
                                                 className={cn(
                                                     "rounded-xl transition-all h-9 w-9 p-0",
                                                     sidebarOpen ? "bg-primary/10 text-primary hover:bg-primary/20" : "bg-black/5 text-slate-500 hover:bg-black/10"
@@ -379,10 +371,10 @@ function ProjectShellInner({
                                         <TooltipContent side="bottom" sideOffset={-57}>Toggle structure panel</TooltipContent>
                                     </Tooltip>
                                     {showStructureHint && (
-                                        <div className="absolute left-1/2 top-full mt-2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 duration-500 bg-slate-800 text-white text-[11px] font-medium py-1.5 pl-3 pr-2 rounded-full shadow-lg shadow-black/10 flex items-center gap-2 whitespace-nowrap md:hidden">
-                                            <div className="absolute -top-1 left-1/2 -ml-1 border-4 border-transparent border-b-slate-800 border-t-0" />
-                                            Tip: Tap here to navigate your scenes
-                                            <button onClick={handleDismissStructureHint} className="bg-white/20 hover:bg-white/30 rounded-full p-0.5 ml-1 transition-colors">
+                                        <div className="absolute left-1/2 top-full mt-2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 duration-500 bg-[#546354] text-white text-[11px] leading-relaxed font-medium py-2.5 pl-4 pr-3 rounded-2xl shadow-xl shadow-black/10 flex items-center gap-3 whitespace-normal w-[240px] md:hidden">
+                                            <div className="absolute -top-1 left-1/2 -ml-1 border-4 border-transparent border-b-[#546354] border-t-0" />
+                                            <p>In future you can also access the side bar structure from the icon next to the home icon.</p>
+                                            <button onClick={handleDismissStructureHint} className="bg-white/20 hover:bg-white/30 rounded-full p-1 shrink-0 transition-colors">
                                                 <X className="w-3 h-3" />
                                             </button>
                                         </div>
