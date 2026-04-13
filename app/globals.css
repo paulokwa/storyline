@@ -257,6 +257,49 @@ body {
   transform: scale(0.995);
 }
 
+/* Story Image Wrapper (positioning context for delete button) */
+.story-image-wrapper {
+  position: relative;
+  display: block;
+  width: 100%;
+  line-height: 0;
+}
+
+/* Story Image Delete Button */
+.story-image-delete-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.story-image-wrapper:hover .story-image-delete-btn {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.story-image-delete-btn:hover {
+  background: rgba(220, 38, 38, 0.85);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
 /* Ensure no focus ring on the editor itself */
 .ProseMirror:focus {
   outline: none !important;

@@ -43,7 +43,15 @@ const ShortcutGroup = ({ title, shortcuts }: ShortcutGroupProps) => (
     </div>
 )
 
-export function ShortcutsLegend({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+export function ShortcutsLegend({ 
+    open, 
+    onOpenChange,
+    onStartTour
+}: { 
+    open: boolean; 
+    onOpenChange: (open: boolean) => void;
+    onStartTour?: () => void;
+}) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-3xl sm:max-w-3xl w-[95vw] md:w-[90vw] bg-white/98 backdrop-blur-xl border-slate-200 rounded-[2.5rem] shadow-2xl p-0 overflow-hidden font-sans border-none outline-none">
@@ -117,11 +125,20 @@ export function ShortcutsLegend({ open, onOpenChange }: { open: boolean; onOpenC
                                     Contextual awareness active
                                 </span>
                             </div>
-                            <div className="flex items-center gap-6">
-                                <div className="flex items-center gap-2 text-primary/60 font-serif italic text-xs sm:text-sm">
-                                    <Sparkles className="w-3.5 h-3.5" />
-                                    <span>Write with flow</span>
-                                </div>
+                             <div className="flex items-center gap-6">
+                                 {onStartTour && (
+                                     <button 
+                                         onClick={onStartTour}
+                                         className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary hover:text-[#3d4a3d] transition-all bg-primary/5 hover:bg-primary/10 px-4 py-2 rounded-xl"
+                                     >
+                                         <Zap className="w-3 h-3" />
+                                         Take the tour
+                                     </button>
+                                 )}
+                                 <div className="flex items-center gap-2 text-primary/60 font-serif italic text-xs sm:text-sm">
+                                     <Sparkles className="w-3.5 h-3.5" />
+                                     <span>Write with flow</span>
+                                 </div>
                                 <div className="h-4 w-px bg-slate-200" />
                                 <span className="text-[9px] text-slate-300 font-bold uppercase tracking-[0.2em]">Storyline v1.8</span>
                             </div>

@@ -272,7 +272,9 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             )}
 
             {/* Left sidebar */}
-            <div className={cn(
+            <div 
+                data-tour="structure-panel"
+                className={cn(
                 'bg-[#f5f4ef] flex flex-col transition-all duration-300 ease-in-out overflow-hidden z-40 md:z-20',
                 'absolute top-0 bottom-0 left-0 md:relative md:inset-auto md:h-full',
                 sidebarOpen 
@@ -297,7 +299,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             </div>
 
             {/* Main editor area */}
-            <div className="flex-1 flex flex-col overflow-hidden bg-[#fbf9f5] w-full">
+            <div data-tour="main-editor" className="flex-1 flex flex-col overflow-hidden bg-[#fbf9f5] w-full">
                 {/* Linked Context (Sticky) */}
                 {activeNodeId && activeScene && (
                     <div className="bg-[#fbf9f5] border-b border-slate-100 z-10">
@@ -327,9 +329,13 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                 allNodes={nodes}
                                 />
                             </div>
-                            <div className="shrink-0 relative hidden sm:block">
+                            <div data-tour="writing-mode" className="shrink-0 relative hidden sm:block">
                                 <WritingModeToggle mode={writingMode} onChange={handleWritingModeChange} />
                             </div>
+                        </div>
+                        {/* Mobile Writing Mode Toggle */}
+                        <div data-tour="writing-mode" className="sm:hidden flex justify-end px-4 pb-2">
+                            <WritingModeToggle mode={writingMode} onChange={handleWritingModeChange} />
                         </div>
                     </div>
                 )}

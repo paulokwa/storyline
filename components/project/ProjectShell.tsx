@@ -59,6 +59,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { Avatar, AvatarFallback } from "../ui/avatar"
+import OnboardingTour from './OnboardingTour'
 
 type Project = Database['public']['Tables']['projects']['Row']
 
@@ -92,6 +93,7 @@ export default function ProjectShell({
     const [settingsModalOpen, setSettingsModalOpen] = useState(false)
     const [shareModalOpen, setShareModalOpen] = useState(false)
     const [shortcutsOpen, setShortcutsOpen] = useState(false)
+    const [tourOpen, setTourOpen] = useState(false)
 
     async function saveTitle() {
         if (!titleDraft.trim()) return setEditingTitle(false)
@@ -106,6 +108,15 @@ export default function ProjectShell({
         setEditingTitle(false)
         router.refresh()
     }
+
+    useEffect(() => {
+        const completed = localStorage.getItem('storyline-onboarding-complete')
+        if (!completed) {
+            // Delay slightly to ensure elements are rendered
+            const timer = setTimeout(() => setTourOpen(true), 1500)
+            return () => clearTimeout(timer)
+        }
+    }, [])
 
     return (
         <ProjectProvider role={role}>
@@ -126,9 +137,19 @@ export default function ProjectShell({
                             setShortcutsOpen={setShortcutsOpen}
                             role={role}
                             pathname={pathname} 
+                            onStartTour={() => setTourOpen(true)}
                         >
                             {children}
                         </ProjectShellInner>
+
+                        <OnboardingTour 
+                            open={tourOpen} 
+                            onClose={() => setTourOpen(false)}
+                            onComplete={() => {
+                                setTourOpen(false)
+                                localStorage.setItem('storyline-onboarding-complete', 'true')
+                            }}
+                        />
                         
                         <ExportModal 
                             open={exportModalOpen} 
@@ -154,7 +175,14 @@ export default function ProjectShell({
                             projectId={project.id}
                         />
 
-                        <ShortcutsLegend open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+                        <ShortcutsLegend 
+                            open={shortcutsOpen} 
+                            onOpenChange={setShortcutsOpen} 
+                            onStartTour={() => {
+                                setShortcutsOpen(false)
+                                setTourOpen(true)
+                            }}
+                        />
 
                         <FloatingPlayer />
                     </ReaderProvider>
@@ -187,6 +215,7 @@ function ProjectShellInner({
     setShortcutsOpen,
     role,
     pathname, 
+    onStartTour,
     children 
 }: any) {
     const router = useRouter()
@@ -431,6 +460,7 @@ function ProjectShellInner({
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => setShortcutsOpen(true)}
+                                        data-tour="help-icon"
                                         className="h-9 w-9 p-0 rounded-xl bg-black/5 text-slate-500 hover:text-primary hover:bg-primary/5 transition-all"
                                     >
                                         <HelpCircle className="w-5 h-5" />
@@ -474,6 +504,7 @@ function ProjectShellInner({
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={handleToggleAi}
+                                                    data-tour="ai-helper"
                                                     className={cn(
                                                         "rounded-xl transition-all h-9 px-3 gap-2",
                                                         aiPanelOpen ? "bg-white text-indigo-600 shadow-sm font-bold border-indigo-100" : "text-slate-500 hover:bg-white"
@@ -588,6 +619,7 @@ function ProjectShellInner({
                                     <TooltipTrigger>
                                         <Link
                                             href={`/project/${project.id}/${slug}${slug === 'story' && activeNodeId ? `?nodeId=${activeNodeId}` : ''}`}
+                                            data-tour={slug === 'ai' ? 'ai-helper' : undefined}
                                             className={cn(
                                                 'flex items-center gap-1.5 px-4 sm:px-6 py-3 text-sm font-medium transition-all duration-300 rounded-t-xl shrink-0',
                                                 activeTab === slug
