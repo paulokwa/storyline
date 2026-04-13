@@ -126,7 +126,7 @@ export default function CharactersTab({
         const supabase = createClient() as any
         
         const nextOrderIndex = Math.max(0, ...localCharacters.map((c: Character) => c.order_index)) + 1
-        const newName = getNextAvailableName('New Character', localCharacters.map(c => c.name))
+        const newName = getNextAvailableName('New Character', localCharacters.map(c => c.name || ''))
 
         const { data, error } = await supabase
             .from('characters')

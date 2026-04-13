@@ -110,7 +110,7 @@ export default function LocationsTab({
         setIsCreating(true)
         const supabase = createClient()
         const nextOrderIndex = Math.max(0, ...localLocations.map((l: any) => l.order_index)) + 1
-        const newName = getNextAvailableName('New Location', localLocations.map(l => l.name))
+        const newName = getNextAvailableName('New Location', localLocations.map(l => l.name || ''))
 
         const { data, error } = await supabase
             .from('locations' as any)

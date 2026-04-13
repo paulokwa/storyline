@@ -110,7 +110,7 @@ export default function ObjectsTab({
         setIsCreating(true)
         const supabase = createClient()
         const nextOrderIndex = Math.max(0, ...localObjects.map((o: any) => o.order_index)) + 1
-        const newName = getNextAvailableName('New Item', localObjects.map(o => o.name))
+        const newName = getNextAvailableName('New Object', localObjects.map(o => o.name || ''))
 
         const { data, error } = await supabase
             .from('objects' as any)

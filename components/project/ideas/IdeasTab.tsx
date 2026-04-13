@@ -118,7 +118,7 @@ export default function IdeasTab({
         const supabase = createClient() as any
         
         const nextOrderIndex = Math.max(0, ...localIdeas.map((i: Idea) => i.order_index)) + 1
-        const newTitle = getNextAvailableName('New Idea', localIdeas.map(i => i.title))
+        const newTitle = getNextAvailableName('New Idea', localIdeas.map(i => i.title || ''))
 
         const { data, error } = await supabase
             .from('ideas')
