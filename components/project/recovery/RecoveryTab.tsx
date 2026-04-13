@@ -470,7 +470,7 @@ export default function RecoveryTab({
                                                     </Button>
                                                     <button 
                                                         onClick={() => setItemToPermanentlyDelete(item)}
-                                                        className="p-2 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 text-slate-300 rounded-full transition-all"
+                                                        className="p-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 text-slate-300 rounded-full transition-all"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -531,9 +531,9 @@ export default function RecoveryTab({
                                                      Restore
                                                  </Button>
                                                  <button 
-                                                    onClick={() => setVersionToDelete(version)}
-                                                    className="p-2 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 text-slate-300 rounded-full transition-all"
-                                                 >
+                                                     onClick={() => setVersionToDelete(version)}
+                                                     className="p-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 text-slate-300 rounded-full transition-all"
+                                                  >
                                                      <Trash2 className="w-4 h-4" />
                                                  </button>
                                              </div>
@@ -575,7 +575,7 @@ export default function RecoveryTab({
                                                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{new Date(snapshot.created_at).toLocaleDateString()}</p>
                                                         </div>
                                                     </div>
-                                                    <button onClick={() => setSnapshotToDelete(snapshot)} className="p-2 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 text-slate-300 rounded-full transition-all">
+                                                    <button onClick={() => setSnapshotToDelete(snapshot)} className="p-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 text-slate-300 rounded-full transition-all">
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
                                                 </div>

@@ -13,7 +13,8 @@ import {
     Search,
     Info,
     Expand,
-    Clock
+    Clock,
+    ExternalLink
 } from 'lucide-react'
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
@@ -258,21 +259,9 @@ function AssetCard({ asset, url, onDelete }: { asset: ProjectAsset, url: string,
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 
-                {/* Overlay - only expand button */}
-                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-2">
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button size="icon" variant="secondary" className="rounded-full w-8 h-8" onClick={() => window.open(url, '_blank')}>
-                                <Expand className="w-4 h-4" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top">Open in new tab</TooltipContent>
-                    </Tooltip>
-                </div>
-
                 <button 
                     onClick={() => setShowInfo(!showInfo)}
-                    className="absolute bottom-2 left-2 p-1.5 rounded-lg bg-black/50 text-white backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all"
+                    className="absolute bottom-2 left-2 p-1.5 rounded-lg bg-black/50 text-white backdrop-blur-md opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all"
                 >
                     <Info className="w-4 h-4" />
                 </button>
@@ -294,28 +283,40 @@ function AssetCard({ asset, url, onDelete }: { asset: ProjectAsset, url: string,
                             <span className="ml-2">{asset.width} × {asset.height}</span>
                         )}
                     </div>
-
-                    {confirmDelete ? (
-                        <div className="flex items-center gap-1.5 animate-in slide-in-from-right-2 duration-200">
-                            <span className="text-[10px] text-red-500 font-bold uppercase tracking-tight">Delete?</span>
+                    <div className="flex items-center gap-1">
+                        {!confirmDelete && (
                             <button
-                                onClick={() => setConfirmDelete(false)}
-                                className="text-[10px] font-bold text-slate-400 hover:text-slate-600 px-1.5 py-0.5"
-                            >No</button>
+                                onClick={() => window.open(url, '_blank')}
+                                className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 p-1 rounded-lg text-slate-300 hover:text-indigo-500 hover:bg-indigo-50"
+                                title="Open in new tab"
+                            >
+                                <ExternalLink className="w-4 h-4" />
+                            </button>
+                        )}
+                        {confirmDelete ? (
+                            <div className="flex items-center gap-1 animate-in slide-in-from-right-1 duration-200">
+                                <span className="text-[10px] text-red-500 font-bold uppercase tracking-tight">Delete?</span>
+                                <div className="flex items-center gap-1">
+                                    <button 
+                                        onClick={() => setConfirmDelete(false)}
+                                        className="text-[10px] font-bold text-slate-400 hover:text-slate-600 px-2 py-1"
+                                    >No</button>
+                                    <button 
+                                        onClick={handleConfirmedDelete}
+                                        disabled={isDeleting}
+                                        className="text-[10px] font-bold text-white bg-red-500 hover:bg-red-600 px-2.5 py-1 rounded-md transition-colors disabled:opacity-50"
+                                    >{isDeleting ? '...' : 'Yes'}</button>
+                                </div>
+                            </div>
+                        ) : (
                             <button
-                                onClick={handleConfirmedDelete}
-                                disabled={isDeleting}
-                                className="text-[10px] font-bold text-white bg-red-500 hover:bg-red-600 px-2 py-0.5 rounded-md transition-colors disabled:opacity-50"
-                            >{isDeleting ? '...' : 'Yes'}</button>
-                        </div>
-                    ) : (
-                        <button
-                            onClick={() => setConfirmDelete(true)}
-                            className="opacity-0 group-hover:opacity-100 transition-all duration-300 p-1 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50"
-                        >
-                            <Trash2 className="w-4 h-4" />
-                        </button>
-                    )}
+                                onClick={() => setConfirmDelete(true)}
+                                className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 p-1 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 

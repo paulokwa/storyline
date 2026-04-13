@@ -118,7 +118,7 @@ export default function EditorAssetSelector({ projectId, isOpen, onClose, onSele
                                             alt={asset.file_name}
                                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                         />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-end p-4">
                                             <p className="text-[10px] text-white font-bold uppercase tracking-widest truncate w-full">
                                                 {asset.file_name}
                                             </p>

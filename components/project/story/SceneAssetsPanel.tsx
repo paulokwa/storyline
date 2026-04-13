@@ -13,7 +13,8 @@ import {
     Expand,
     Search,
     ChevronRight,
-    LayoutGrid
+    LayoutGrid,
+    ExternalLink
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -200,12 +201,12 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose }: SceneA
                                         alt={item.asset.file_name}
                                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                     />
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <div className="absolute inset-0 bg-black/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full" onClick={() => window.open(getImageUrl(item.asset.storage_path), '_blank')}>
                                             <Expand className="w-4 h-4" />
                                         </Button>
                                     </div>
-                                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                                         <Button size="icon" variant="destructive" className="w-7 h-7 rounded-full shadow-lg" onClick={() => toggleAsset(item.asset_id)}>
                                             <X className="w-3.5 h-3.5" />
                                         </Button>
@@ -279,7 +280,7 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose }: SceneA
                                                     </div>
                                                 </div>
                                             )}
-                                            <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover/asset:opacity-100 transition-opacity">
+                                            <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-100 md:opacity-0 md:group-hover/asset:opacity-100 transition-opacity">
                                                 <p className="text-[9px] text-white truncate text-center font-medium">{asset.file_name}</p>
                                             </div>
                                         </div>
@@ -301,14 +302,23 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose }: SceneA
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div className="flex items-center justify-between opacity-0 group-hover/asset:opacity-100 transition-opacity duration-300">
-                                                    <span className="text-[9px] text-slate-400 truncate max-w-[70%] font-medium uppercase tracking-tight">{asset.file_name}</span>
-                                                    <button 
-                                                        onClick={(e) => { e.stopPropagation(); setConfirmingAssetId(asset.id) }}
-                                                        className="text-slate-300 hover:text-red-500 transition-colors p-1"
-                                                    >
-                                                        <X className="w-3.5 h-3.5" />
-                                                    </button>
+                                                <div className="flex items-center justify-between opacity-100 md:opacity-0 md:group-hover/asset:opacity-100 transition-opacity duration-300">
+                                                    <span className="text-[9px] text-slate-400 truncate max-w-[50%] font-medium uppercase tracking-tight">{asset.file_name}</span>
+                                                    <div className="flex items-center gap-1">
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); window.open(getImageUrl(asset.storage_path), '_blank') }}
+                                                            className="text-slate-300 hover:text-indigo-500 transition-colors p-1"
+                                                            title="Open in new tab"
+                                                        >
+                                                            <ExternalLink className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); setConfirmingAssetId(asset.id) }}
+                                                            className="text-slate-300 hover:text-red-500 transition-colors p-1"
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>

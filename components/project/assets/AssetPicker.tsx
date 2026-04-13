@@ -9,7 +9,8 @@ import {
     X, 
     Loader2, 
     Trash2,
-    Check
+    Check,
+    ExternalLink
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -269,14 +270,23 @@ export default function AssetPicker({ projectId, entityId, entityType, className
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <div className="flex items-center justify-between opacity-0 group-hover/asset:opacity-100 transition-opacity duration-300">
-                                                        <span className="text-[9px] text-slate-400 truncate max-w-[70%] font-medium uppercase tracking-tight">{asset.file_name}</span>
-                                                        <button 
-                                                            onClick={(e) => { e.stopPropagation(); setConfirmingAssetId(asset.id) }}
-                                                            className="text-slate-300 hover:text-red-500 transition-colors p-1"
-                                                        >
-                                                            <X className="w-3.5 h-3.5" />
-                                                        </button>
+                                                    <div className="flex items-center justify-between opacity-100 md:opacity-0 md:group-hover/asset:opacity-100 transition-opacity duration-300">
+                                                        <span className="text-[9px] text-slate-400 truncate max-w-[50%] font-medium uppercase tracking-tight">{asset.file_name}</span>
+                                                        <div className="flex items-center gap-1">
+                                                            <button 
+                                                                onClick={(e) => { e.stopPropagation(); window.open(supabase.storage.from('project-assets').getPublicUrl(asset.storage_path).data.publicUrl, '_blank') }}
+                                                                className="text-slate-300 hover:text-indigo-500 transition-colors p-1"
+                                                                title="Open in new tab"
+                                                            >
+                                                                <ExternalLink className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button 
+                                                                onClick={(e) => { e.stopPropagation(); setConfirmingAssetId(asset.id) }}
+                                                                className="text-slate-300 hover:text-red-500 transition-colors p-1"
+                                                            >
+                                                                <X className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
