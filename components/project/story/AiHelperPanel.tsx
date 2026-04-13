@@ -586,7 +586,7 @@ export default function AiHelperPanel({
         } catch (err: any) {
             if (aiSettings.ai_fallback_enabled && aiSettings.api_key) {
                 console.warn('Ollama failed, falling back to Gemini:', err.message)
-                await runGeminiCloud(finalPrompt)
+                await runGeminiCloud(finalPrompt, contextText, strategy)
             } else {
                 throw err
             }
