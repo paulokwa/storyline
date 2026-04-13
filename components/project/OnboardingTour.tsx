@@ -28,12 +28,6 @@ const STEPS: Step[] = [
         placement: 'center'
     },
     {
-        target: '[data-tour="writing-mode"]',
-        title: 'Writing Mode',
-        content: 'Switch between Book and Screenplay depending on how you write.',
-        placement: 'bottom'
-    },
-    {
         target: '[data-tour="ai-helper"]',
         title: 'AI Partner',
         content: 'Use AI to brainstorm, expand, or analyze your writing.',

@@ -68,14 +68,9 @@ export default function ProjectGrid({ projects }: { projects: Project[] }) {
             <div className="max-w-[1440px] mx-auto px-6 py-16 md:py-24 fade-in">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-20 border-b border-slate-100 pb-12">
                     <div className="space-y-4">
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <h1 className="text-5xl md:text-7xl font-serif text-slate-800 tracking-tight leading-tight cursor-help">
-                                    The Manuscript<br /><span className="text-slate-400">Archive</span>
-                                </h1>
-                            </TooltipTrigger>
-                            <TooltipContent side="right">Manuscript Management</TooltipContent>
-                        </Tooltip>
+                        <h1 className="text-5xl md:text-7xl font-serif text-slate-800 tracking-tight leading-tight">
+                            The Manuscript<br /><span className="text-slate-400">Archive</span>
+                        </h1>
                         <p className="text-lg text-slate-500 max-w-sm font-medium">
                             Your creative sanctuary. Select a project below or start a new journey.
                         </p>

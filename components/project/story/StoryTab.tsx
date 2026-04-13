@@ -10,7 +10,7 @@ import AiHelperPanel from './AiHelperPanel'
 import SceneAssetsPanel from './SceneAssetsPanel'
 import LinkedContext from './LinkedContext'
 import SceneAnalysisPanel from './SceneAnalysisPanel'
-import WritingModeToggle from '@/components/shared/WritingModeToggle'
+
 import { PanelLeftClose, PanelLeftOpen, BookOpen, Sparkles, X, Wand2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { Database, WritingMode } from '@/lib/supabase/types'
@@ -90,7 +90,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     useEffect(() => {
         fetchComments(project.id)
     }, [project.id, fetchComments])
-    const [writingMode, setWritingMode] = useState<WritingMode>(project.writing_mode ?? 'simple')
+    const writingMode = (project.writing_mode ?? 'simple') as WritingMode
     
     const editorRef = useRef<SceneEditorRef>(null)
 
@@ -181,11 +181,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         localStorage.setItem('storyline-export-discovered', 'true')
     }, [])
 
-    const handleWritingModeChange = useCallback(async (mode: WritingMode) => {
-        setWritingMode(mode)
-        const supabase = createClient()
-        await (supabase as any).from('projects').update({ writing_mode: mode }).eq('id', project.id)
-    }, [project.id])
+
 
     const handleNodesChange = useCallback((updated: StructureNode[]) => {
         setNodes(updated)
@@ -381,15 +377,10 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                     </TooltipProvider>
                                 </div>
 
-                                <div data-tour="writing-mode" className="relative hidden sm:block">
-                                    <WritingModeToggle mode={writingMode} onChange={handleWritingModeChange} />
-                                </div>
+
                             </div>
                         </div>
-                        {/* Mobile Writing Mode Toggle */}
-                        <div data-tour="writing-mode" className="sm:hidden flex justify-end px-4 pb-2">
-                            <WritingModeToggle mode={writingMode} onChange={handleWritingModeChange} />
-                        </div>
+
                     </div>
                 )}
 
