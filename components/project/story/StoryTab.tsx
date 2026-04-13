@@ -62,6 +62,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         activeCharacters, setActiveCharacters,
         activeIdeas, setActiveIdeas,
         activeLocations, setActiveLocations,
+        activeObjects, setActiveObjects,
         selectedNodeIds, setSelectedNodeIds,
         showStructureHint, setShowStructureHint
     } = useProjectActions()
