@@ -81,7 +81,7 @@ export function ProjectProvider({
             if (res.ok) {
                 const data = await res.json()
                 setAnalysisResult(data)
-                setAiPanelOpen(true) // Automatically open AI helper to show results
+                setAiPanelOpen(false) // Close AI Partner when showing analysis
             }
         } catch (e) {
             console.error('Analysis failed', e)

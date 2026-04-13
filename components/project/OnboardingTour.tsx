@@ -35,7 +35,7 @@ const STEPS: Step[] = [
     },
     {
         target: '[data-tour="ai-helper"]',
-        title: 'AI Helper',
+        title: 'AI Partner',
         content: 'Use AI to brainstorm, expand, or analyze your writing.',
         placement: 'bottom'
     },

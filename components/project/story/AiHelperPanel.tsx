@@ -679,8 +679,10 @@ export default function AiHelperPanel({
                     <Sparkles className="w-3.5 h-3.5 text-indigo-50" />
                 </div>
                 <div className="flex-1">
-                    <h3 className="text-sm font-serif font-bold text-slate-800 tracking-tight leading-none">{label} Partner</h3>
-                    <div className="flex items-center gap-2 mt-1">
+                    {!isFullCanvas && (
+                        <h3 className="text-sm font-serif font-bold text-slate-800 tracking-tight leading-none mb-1">AI Partner</h3>
+                    )}
+                    <div className="flex items-center gap-2">
                         <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold">
                             {aiSettings.ai_provider === 'ollama' ? `Ollama` : 'Gemini'}
                         </p>
@@ -812,7 +814,7 @@ export default function AiHelperPanel({
                         </div>
                         <div className="space-y-1.5">
                             <p className="text-sm font-serif font-medium text-slate-600">
-                                Ask your writing partner
+                                How can I help with this {label.toLowerCase()}?
                             </p>
                             <p className="text-xs text-slate-400 font-serif italic max-w-[180px] leading-relaxed">
                                 "{hint}"
@@ -841,7 +843,7 @@ export default function AiHelperPanel({
                                 <div className="space-y-1">
                                     <p className="text-sm font-semibold text-red-900">API Key Missing</p>
                                     <p className="text-xs text-red-500 leading-relaxed font-serif italic">
-                                        Please provide an AI API key in your account settings to use the Scene Helper.
+                                        Please provide an AI API key in your account settings to use the AI Partner.
                                     </p>
                                 </div>
                                 <Button
@@ -1247,7 +1249,7 @@ export default function AiHelperPanel({
                                         handleSubmit(e as any)
                                     }
                                 }}
-                                placeholder={actualLoading ? "" : `Ask anything about this ${label.toLowerCase()}…`}
+                                placeholder={actualLoading ? "" : `Ask anything about this ${label.toLowerCase()}...`}
                                 rows={3}
                                 className={cn(
                                     "w-full border border-slate-200 rounded-2xl py-3.5 pl-4 pr-12 text-sm focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all resize-none outline-none placeholder:text-slate-400 font-serif leading-relaxed shadow-sm",

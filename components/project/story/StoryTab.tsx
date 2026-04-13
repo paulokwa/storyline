@@ -9,6 +9,7 @@ import SceneEditor, { SceneEditorRef } from './SceneEditor'
 import AiHelperPanel from './AiHelperPanel'
 import SceneAssetsPanel from './SceneAssetsPanel'
 import LinkedContext from './LinkedContext'
+import SceneAnalysisPanel from './SceneAnalysisPanel'
 import WritingModeToggle from '@/components/shared/WritingModeToggle'
 import { PanelLeftClose, PanelLeftOpen, BookOpen, Sparkles, X, Wand2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -56,6 +57,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         sceneAssetsOpen, setSceneAssetsOpen,
         currentSceneText, setCurrentSceneText,
         analyzeScene, isAnalyzing,
+        analysisResult, setAnalysisResult,
         activeNodeId, setActiveNodeId,
         activeCharacters, setActiveCharacters,
         activeIdeas, setActiveIdeas,
@@ -354,7 +356,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                                     <Wand2 className="w-4 h-4" />
                                                 </Button>
                                             </TooltipTrigger>
-                                            <TooltipContent side="bottom">AI Scene Analysis</TooltipContent>
+                                            <TooltipContent side="bottom">Analyze with AI</TooltipContent>
                                         </Tooltip>
 
                                         <Tooltip>
@@ -362,7 +364,10 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    onClick={() => setAiPanelOpen(!aiPanelOpen)}
+                                                    onClick={() => {
+                                                        setAnalysisResult(null)
+                                                        setAiPanelOpen(!aiPanelOpen)
+                                                    }}
                                                     className={cn(
                                                         "rounded-xl transition-all h-9 w-9 p-0",
                                                         aiPanelOpen ? "bg-white text-indigo-600 shadow-sm font-bold" : "text-slate-500 hover:bg-white hover:text-indigo-600"
@@ -371,7 +376,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                                     <Sparkles className="w-4 h-4" />
                                                 </Button>
                                             </TooltipTrigger>
-                                            <TooltipContent side="bottom">AI Writing Assistant</TooltipContent>
+                                            <TooltipContent side="bottom">Ask AI Partner</TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>
                                 </div>
@@ -527,6 +532,11 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 </div>,
                 portalRoot
             )}
+            <SceneAnalysisPanel 
+                result={analysisResult} 
+                onClose={() => setAnalysisResult(null)} 
+                projectType={project.type as any}
+            />
         </div>
     )
 }

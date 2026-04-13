@@ -65,7 +65,7 @@ type Project = Database['public']['Tables']['projects']['Row']
 
 const TABS = [
     { slug: 'story', label: 'Story', icon: BookOpen },
-    { slug: 'ai', label: 'AI Sanctuary', icon: Sparkles },
+    { slug: 'ai', label: 'AI Partner', icon: Sparkles },
     { slug: 'characters', label: 'Characters', icon: Users },
     { slug: 'ideas', label: 'Ideas', icon: Lightbulb },
     { slug: 'locations', label: 'Locations', icon: MapPin },
@@ -277,8 +277,9 @@ function ProjectShellInner({
 
     const handleToggleAi = () => {
         const nextState = !aiPanelOpen
-        if (nextState && isMobile) {
-            setCommentsPanelOpen(false)
+        if (nextState) {
+            setAnalysisResult(null) // Close analysis panel if opening AI Partner
+            if (isMobile) setCommentsPanelOpen(false)
         }
         setAiPanelOpen(nextState)
     }
@@ -469,7 +470,7 @@ function ProjectShellInner({
                                                 <Wand2 className="w-4 h-4" />
                                             </Button>
                                         </TooltipTrigger>
-                                        <TooltipContent side="bottom">AI Scene Analysis</TooltipContent>
+                                        <TooltipContent side="bottom">Analyze with AI</TooltipContent>
                                     </Tooltip>
 
                                     <Tooltip>
@@ -486,7 +487,7 @@ function ProjectShellInner({
                                                 <Sparkles className="w-4 h-4" />
                                             </Button>
                                         </TooltipTrigger>
-                                        <TooltipContent side="bottom">AI Writing Assistant</TooltipContent>
+                                        <TooltipContent side="bottom">Ask AI Partner</TooltipContent>
                                     </Tooltip>
                                 </div>
                             )}
@@ -534,7 +535,7 @@ function ProjectShellInner({
                                                     <span className="text-xs font-medium">Analyze</span>
                                                 </Button>
                                             </TooltipTrigger>
-                                            <TooltipContent side="bottom">AI Scene Analysis</TooltipContent>
+                                            <TooltipContent side="bottom">Analyze with AI Partner</TooltipContent>
                                         </Tooltip>
 
                                         <Tooltip>
@@ -550,17 +551,17 @@ function ProjectShellInner({
                                                     )}
                                                 >
                                                     <Sparkles className="w-4 h-4" />
-                                                    <span className="text-xs font-medium">Helper</span>
+                                                    <span className="text-xs font-medium">Ask AI</span>
                                                 </Button>
                                             </TooltipTrigger>
-                                            <TooltipContent side="bottom">AI Writing Assistant</TooltipContent>
+                                            <TooltipContent side="bottom">Ask AI Partner</TooltipContent>
                                         </Tooltip>
 
                                         {showAiHint && (
                                             <div className="absolute left-1/2 top-full mt-2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 duration-500 bg-violet-600 text-white text-[11px] font-medium py-1.5 pl-3 pr-2 rounded-full shadow-lg shadow-violet-900/10 flex items-center gap-2 whitespace-nowrap">
                                                 <div className="absolute -top-1 left-1/2 -ml-1 border-4 border-transparent border-b-violet-600 border-t-0" />
                                                 <Sparkles className="w-3.5 h-3.5" />
-                                                AI can help outline this scene
+                                                AI Partner can help outline this scene
                                                 <button 
                                                     onClick={(e) => {
                                                         e.preventDefault()

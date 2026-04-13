@@ -355,7 +355,7 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
                 {/* AI API Settings */}
                 <Card className="p-6">
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-semibold">AI Features Settings</h2>
+                        <h2 className="text-xl font-semibold">AI Partner Settings</h2>
                         <Button
                             type="button"
                             variant="ghost"
@@ -379,8 +379,8 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
                         {/* Master Toggle */}
                         <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-lg">
                             <div className="space-y-0.5">
-                                <Label className="text-base">Enable AI Features</Label>
-                                <p className="text-sm text-slate-500">Master switch to turn all AI features on or off.</p>
+                                <Label className="text-base">Enable AI Partner</Label>
+                                <p className="text-sm text-slate-500">Master switch to enable or disable your AI Partner.</p>
                             </div>
                             <input 
                                 type="checkbox" 

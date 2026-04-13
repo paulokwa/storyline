@@ -269,7 +269,7 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
                 </div>
                 <h3 className="text-2xl font-serif text-slate-800 mb-2">Empty Archive</h3>
                 <p className="text-slate-500 max-w-sm font-medium leading-relaxed mb-6">
-                    You haven't saved any AI responses yet. When using the AI Helper, click "Save" to archive useful outputs here.
+                    You haven't saved any AI responses yet. When working with your AI Partner, click "Save" to archive useful outputs here.
                 </p>
             </div>
         )

@@ -70,15 +70,15 @@ export default function AiFullCanvas({
                         <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center">
                             <Sparkles className="w-4 h-4 text-indigo-500" />
                         </div>
-                        <h1 className="text-sm font-serif italic text-slate-800 font-bold">The AI Sanctuary</h1>
+                        <h1 className="text-sm font-serif italic text-slate-800 font-bold">AI Partner</h1>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <p className="text-[10px] items-center gap-2 uppercase tracking-[0.2em] font-bold text-slate-400 hidden sm:flex">
-                        <Maximize2 className="w-3 h-3 text-indigo-400" />
-                        Full Canvas Mode
-                    </p>
+                    <div className="px-3 py-1.5 rounded-full bg-indigo-50/50 border border-indigo-100/50 flex items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-500 hidden sm:flex">
+                        <Sparkles className="w-3 h-3 text-indigo-400" />
+                        <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-indigo-600/70">Workspace Mode</span>
+                    </div>
                 </div>
             </div>
 
@@ -122,7 +122,7 @@ export default function AiFullCanvas({
                     <span>AI Model: {aiSettings.ai_provider}</span>
                 </div>
                 <div className="hidden sm:block italic lowercase capitalize tracking-normal font-serif text-slate-300">
-                    Your story stays private and protected in the Sanctuary.
+                    Your story stays private and protected with your AI Partner.
                 </div>
             </div>
         </div>

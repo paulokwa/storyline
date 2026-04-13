@@ -1423,7 +1423,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             {isProjectEmpty && (
                 <div className="mt-12 p-8 rounded-3xl bg-amber-50/50 border border-amber-100 border-dashed text-center">
                     <p className="text-amber-700 font-serif italic text-lg mb-2">Your journey begins with a single word.</p>
-                    <p className="text-amber-600/60 text-sm">Use the AI Helper on the right if you need a spark of inspiration.</p>
+                    <p className="text-amber-600/60 text-sm">Ask your AI Partner on the right if you need a spark of inspiration.</p>
                 </div>
             )}
 

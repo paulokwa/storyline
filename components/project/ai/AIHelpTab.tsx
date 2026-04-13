@@ -28,7 +28,7 @@ export default function AIHelpTab({ projectId }: { projectId: string }) {
                         </div>
                     </div>
 
-                    <h2 className="text-3xl md:text-4xl font-serif italic text-slate-800 mb-4 tracking-tight">The AI Sanctuary</h2>
+                    <h2 className="text-3xl md:text-4xl font-serif italic text-slate-800 mb-4 tracking-tight">AI Partner</h2>
                     <p className="text-[11px] font-sans tracking-[0.2em] uppercase text-slate-300 mb-12">Narrative Intelligence</p>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full text-left">
