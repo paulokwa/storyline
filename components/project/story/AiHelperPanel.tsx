@@ -1139,10 +1139,10 @@ export default function AiHelperPanel({
                     </button>
                     
                     {previewOpen && (
-                        <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 max-h-48 overflow-y-auto text-[11px] font-mono whitespace-pre-wrap text-slate-600 space-y-4">
+                        <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 max-h-80 md:max-h-64 overflow-y-auto text-[11px] font-mono whitespace-pre-wrap text-slate-600 space-y-4 overscroll-contain touch-auto custom-scrollbar">
                             <div>
                                 <div className="font-bold text-slate-400 mb-1">{label.toUpperCase()}:</div>
-                                <div className="line-clamp-4 hover:line-clamp-none italic bg-white p-2 border border-slate-100 rounded-lg">{sceneTextRef.current.slice(-1000) || '(empty)'}</div>
+                                <div className="italic bg-white p-2 border border-slate-100 rounded-lg">{sceneTextRef.current.slice(-1000) || '(empty)'}</div>
                             </div>
                             
                             {linkedCharacters.length > 0 && (
