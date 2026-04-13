@@ -373,9 +373,9 @@ export default function RecoveryTab({
                     {activeSection === 'trash' ? (
                         <div className="space-y-8 animate-in fade-in duration-500">
                             {/* Trash Filters and Search */}
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <div className="flex items-center gap-2 p-1 bg-white rounded-full ring-1 ring-slate-100 shadow-sm overflow-x-auto no-scrollbar max-w-full">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 min-w-0">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 min-w-0 w-full sm:w-auto">
+                                    <div className="flex items-center gap-2 p-1 bg-white rounded-full ring-1 ring-slate-100 shadow-sm overflow-x-auto w-full sm:w-auto no-scrollbar">
                                         {[
                                             { id: 'all', label: 'All Items' },
                                             { id: 'structure', label: 'Story Structure' },
@@ -484,9 +484,9 @@ export default function RecoveryTab({
                     ) : activeSection === 'history' ? (
                         <div className="space-y-8 animate-in fade-in duration-500">
                              {/* History Filters and Search */}
-                             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                                 <div className="flex items-center gap-2 p-1 bg-white rounded-xl ring-1 ring-slate-100 shadow-sm">
-                                     <Filter className="w-3 h-3 text-slate-400 ml-3" />
+                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 min-w-0">
+                                 <div className="flex items-center gap-2 p-1 bg-white rounded-xl ring-1 ring-slate-100 shadow-sm w-full sm:w-auto overflow-hidden">
+                                     <Filter className="w-3 h-3 text-slate-400 ml-3 shrink-0" />
                                      <select 
                                          value={selectedSceneId}
                                          onChange={(e) => setSelectedSceneId(e.target.value)}
