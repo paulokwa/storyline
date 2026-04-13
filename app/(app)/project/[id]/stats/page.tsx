@@ -53,11 +53,11 @@ export default function ProjectStatsPage() {
                 { data: charactersData },
                 { data: ideasData },
             ] = await Promise.all([
-                supabase.from('projects').select('*').eq('id', id).single(),
-                supabase.from('structure_nodes').select('*').eq('project_id', id).is('deleted_at', null),
-                supabase.from('scenes').select('*').eq('project_id', id),
-                supabase.from('characters').select('id').eq('project_id', id),
-                supabase.from('ideas').select('id').eq('project_id', id),
+                supabase.from('projects').select('*').eq('id', id as string).single(),
+                supabase.from('structure_nodes').select('*').eq('project_id', id as string).is('deleted_at', null),
+                supabase.from('scenes').select('*').eq('project_id', id as string),
+                supabase.from('characters').select('id').eq('project_id', id as string),
+                supabase.from('ideas').select('id').eq('project_id', id as string),
             ])
 
             if (projectData && nodesData && scenesData) {
