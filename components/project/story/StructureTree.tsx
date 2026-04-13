@@ -276,6 +276,32 @@ const NodeItem = React.memo(({
     const [expanded, setExpanded] = useState(true)
     const [editing, setEditing] = useState(false)
     const [draft, setDraft] = useState(node.title)
+    const [mobileOptionsActive, setMobileOptionsActive] = useState(false)
+    const touchStartTimer = React.useRef<NodeJS.Timeout | null>(null)
+    const autoHideTimer = React.useRef<NodeJS.Timeout | null>(null)
+
+    const handleTouchStart = () => {
+        if (isReadOnly) return
+        touchStartTimer.current = setTimeout(() => {
+            setMobileOptionsActive(true)
+            if (autoHideTimer.current) clearTimeout(autoHideTimer.current)
+            autoHideTimer.current = setTimeout(() => setMobileOptionsActive(false), 10000)
+        }, 600)
+    }
+
+    const handleTouchEnd = () => {
+        if (touchStartTimer.current) {
+            clearTimeout(touchStartTimer.current)
+            touchStartTimer.current = null
+        }
+    }
+
+    const handleTouchMove = () => {
+        if (touchStartTimer.current) {
+            clearTimeout(touchStartTimer.current)
+            touchStartTimer.current = null
+        }
+    }
 
     const children = useMemo(() => buildTree(nodes, node.id), [nodes, node.id])
     const Icon = NODE_ICONS[node.type as NodeType] ?? FileText
@@ -320,6 +346,9 @@ const NodeItem = React.memo(({
                         )}
                         style={{ paddingLeft: `${depth * 24 + (isScene ? 12 : 0)}px` }}
                         onClick={handleClick}
+                        onTouchStart={handleTouchStart}
+                        onTouchEnd={handleTouchEnd}
+                        onTouchMove={handleTouchMove}
                     >
                         {isActive && (
                             <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#546354] rounded-full shadow-[0_0_12px_rgba(84,99,84,0.3)]" />
@@ -393,7 +422,8 @@ const NodeItem = React.memo(({
                                 className={cn(
                                     "flex-1 truncate",
                                     isRoot && "tracking-tight text-[#485748]",
-                                    isScene && "text-slate-600 font-medium"
+                                    isScene && "text-slate-600 font-medium",
+                                    mobileOptionsActive && "hidden md:block"
                                 )}
                                 onDoubleClick={isReadOnly ? undefined : (e) => { e.stopPropagation(); setEditing(true) }}
                             >
@@ -416,12 +446,15 @@ const NodeItem = React.memo(({
                             </div>
                         )}
 
-                        {/* Hover actions — only when not confirming */}
+                        {/* Hover/Long Press actions — only when not confirming */}
                         {(!editing && !isReadOnly && confirmingDeleteId !== node.id) && (
                             <div className={cn(
-                                "flex items-center gap-1 shrink-0 transition-opacity duration-300",
-                                "opacity-100 md:opacity-0 md:group-hover:opacity-100",
-                                isActive && "md:opacity-100"
+                                "flex items-center gap-1 shrink-0 transition-all duration-300",
+                                // On desktop: hide unless hover or active (active only if it's a scene)
+                                "opacity-0 md:group-hover:opacity-100",
+                                isActive && "md:opacity-100",
+                                // On mobile: only show if long-pressed
+                                mobileOptionsActive ? "opacity-100 flex-1 justify-end" : "w-0 overflow-hidden pointer-events-none md:w-auto md:overflow-visible md:pointer-events-auto"
                             )} onClick={e => e.stopPropagation()}>
                                 {CHILD_TYPE[node.type as NodeType] && (
                                     <Tooltip>
