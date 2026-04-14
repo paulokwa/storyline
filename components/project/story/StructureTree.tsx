@@ -191,61 +191,65 @@ export default function StructureTree({
                 </div>
 
                 <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y py-2">
-                    {rootNodes.length === 0 ? (
-                        <div className="text-center py-16 px-6">
-                            <p className="text-sm text-slate-400 mb-6 font-serif italic">
-                                Start your story by creating your first {rootLabel.toLowerCase()}.
-                            </p>
-                            <Button
-                                onClick={addRootNode}
-                                className="bg-white hover:bg-slate-50 text-[#546354] border border-[#546354]/10 shadow-sm transition-all duration-300 rounded-xl px-6"
-                            >
-                                <Plus className="w-4 h-4 mr-2" />
-                                + Create {rootLabel}
-                            </Button>
+                    <div className="min-h-full flex flex-col">
+                        <div className="flex-grow">
+                            {rootNodes.length === 0 ? (
+                                <div className="text-center py-16 px-6">
+                                    <p className="text-sm text-slate-400 mb-6 font-serif italic">
+                                        Start your story by creating your first {rootLabel.toLowerCase()}.
+                                    </p>
+                                    <Button
+                                        onClick={addRootNode}
+                                        className="bg-white hover:bg-slate-50 text-[#546354] border border-[#546354]/10 shadow-sm transition-all duration-300 rounded-xl px-6"
+                                    >
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        + Create {rootLabel}
+                                    </Button>
+                                </div>
+                            ) : (
+                                <DragDropContext onDragEnd={handleReorder}>
+                                    <Droppable droppableId="root" isDropDisabled={isReadOnly}>
+                                        {(provided) => (
+                                            <div {...provided.droppableProps} ref={provided.innerRef}>
+                                                {rootNodes.map((node, index) => (
+                                                    <NodeItem
+                                                        key={node.id}
+                                                        node={node}
+                                                        nodes={nodes}
+                                                        index={index}
+                                                        activeNodeId={activeNodeId}
+                                                        depth={0}
+                                                        onSelect={onNodeSelect}
+                                                        onToggleSelection={onNodeToggleSelection}
+                                                        selectedNodeIds={selectedNodeIds}
+                                                        onAddChild={addChild}
+                                                        onDelete={deleteNode}
+                                                        onRename={renameNode}
+                                                        confirmingDeleteId={confirmingDeleteId}
+                                                        onRequestDelete={setConfirmingDeleteId}
+                                                    />
+                                                ))}
+                                                {provided.placeholder}
+                                            </div>
+                                        )}
+                                    </Droppable>
+                                </DragDropContext>
+                            )}
                         </div>
-                    ) : (
-                        <DragDropContext onDragEnd={handleReorder}>
-                            <Droppable droppableId="root" isDropDisabled={isReadOnly}>
-                                {(provided) => (
-                                    <div {...provided.droppableProps} ref={provided.innerRef}>
-                                        {rootNodes.map((node, index) => (
-                                            <NodeItem
-                                                key={node.id}
-                                                node={node}
-                                                nodes={nodes}
-                                                index={index}
-                                                activeNodeId={activeNodeId}
-                                                depth={0}
-                                                onSelect={onNodeSelect}
-                                                onToggleSelection={onNodeToggleSelection}
-                                                selectedNodeIds={selectedNodeIds}
-                                                onAddChild={addChild}
-                                                onDelete={deleteNode}
-                                                onRename={renameNode}
-                                                confirmingDeleteId={confirmingDeleteId}
-                                                onRequestDelete={setConfirmingDeleteId}
-                                            />
-                                        ))}
-                                        {provided.placeholder}
-                                    </div>
-                                )}
-                            </Droppable>
-                        </DragDropContext>
-                    )}
 
-                    {!isReadOnly && (
-                        <div className="px-4 pt-6 pb-24">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={addRootNode}
-                                className="w-full justify-start text-slate-400 hover:text-[#546354] hover:bg-white/50 text-[10px] uppercase tracking-widest gap-2 px-3 h-10 rounded-xl"
-                            >
-                                <Plus className="w-3.5 h-3.5" /> Add {rootLabel}
-                            </Button>
-                        </div>
-                    )}
+                        {!isReadOnly && rootNodes.length > 0 && (
+                            <div className="px-4 pt-8 pb-16">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={addRootNode}
+                                    className="w-full justify-start text-slate-400 hover:text-[#546354] hover:bg-white/50 text-[10px] uppercase tracking-widest gap-2 px-3 h-10 rounded-xl"
+                                >
+                                    <Plus className="w-3.5 h-3.5" /> Add {rootLabel}
+                                </Button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </TooltipProvider>
