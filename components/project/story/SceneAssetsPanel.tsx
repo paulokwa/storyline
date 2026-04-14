@@ -154,7 +154,7 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose }: SceneA
     )
 
     return (
-        <div className="flex flex-col h-full bg-white border-l border-slate-100 shadow-2xl overflow-hidden">
+        <div className="flex flex-col h-full min-h-0 bg-white border-l border-slate-100 shadow-2xl overflow-hidden">
             {/* Header */}
             <div className="p-6 border-b border-slate-50 bg-[#fbf9f5]/50 flex items-center justify-between">
                 <div>

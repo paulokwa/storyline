@@ -819,7 +819,7 @@ export default function AiHelperPanel({
     }, [promptMode, hint])
 
     return (
-        <div className="flex flex-col h-full bg-[#fcfbf9] border-l border-slate-200/60 shadow-[-20px_0_50px_rgba(0,0,0,0.02)] overflow-hidden">
+        <div className="flex flex-col h-full min-h-0 bg-[#fcfbf9] border-l border-slate-200/60 shadow-[-20px_0_50px_rgba(0,0,0,0.02)] overflow-hidden">
             {/* Header */}
             <div 
                 data-tour="ai-header"
