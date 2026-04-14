@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useComments } from '@/components/project/CommentsContext'
 import { useProjectActions } from '@/components/project/ProjectContext'
+import { useRouter } from 'next/navigation'
 import { 
     MessageSquare, 
     Send, 
@@ -18,7 +19,10 @@ import {
     MessageCircle,
     AlertCircle,
     GripVertical,
-    Target
+    Target,
+    BrainCircuit,
+    Check,
+    Loader2
 } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { Button } from '@/components/ui/button'
@@ -27,16 +31,22 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { cn, getUserColor } from '@/lib/utils'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 
 export default function CommentsPanel({ 
     projectId, 
     activeNodeId, 
-    onSelectNode 
+    activeSceneId,
+    onSelectNode,
+    onClose
 }: { 
     projectId: string, 
     activeNodeId: string | null,
-    onSelectNode?: (id: string) => void
+    activeSceneId?: string,
+    onSelectNode?: (id: string) => void,
+    onClose?: () => void
 }) {
+    const router = useRouter()
     const { 
         comments, 
         isLoading, 
@@ -53,6 +63,12 @@ export default function CommentsPanel({
         reorderComments
     } = useComments()
     const { role } = useProjectActions()
+    const supabase = createClient()
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+
+    useEffect(() => {
+        supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id || null))
+    }, [])
     
     const [filterByNode, setFilterByNode] = useState(true)
     const [showResolved, setShowResolved] = useState(false)
@@ -61,13 +77,9 @@ export default function CommentsPanel({
     const [replyText, setReplyText] = useState('')
     const [editingId, setEditingId] = useState<string | null>(null)
     const [editText, setEditText] = useState('')
+    const [addingIdeaId, setAddingIdeaId] = useState<string | null>(null)
+    const [addedCommentIds, setAddedCommentIds] = useState<Set<string>>(new Set())
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-    const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-    const supabaseClient = createClient()
-    
-    useEffect(() => {
-        supabaseClient.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id || null))
-    }, [])
 
     const handleTyping = (threadId: string | null) => {
         sendTypingIndicator(threadId)
@@ -78,6 +90,56 @@ export default function CommentsPanel({
             sendTypingIndicator(null)
             typingTimeoutRef.current = null
         }, 3000)
+    }
+
+    const handleAddAsIdea = async (comment: any) => {
+        if (!projectId || !comment.content) return
+        setAddingIdeaId(comment.id)
+        
+        try {
+            // 1. Create the idea
+            const content = comment.content
+            const titleInitial = content.length > 30 ? content.slice(0, 27) + '...' : content
+            const { data: idea, error: ideaError } = await (supabase as any)
+                .from('ideas')
+                .insert({
+                    project_id: projectId,
+                    title: `Feedback: ${titleInitial}`,
+                    content: content,
+                    order_index: 0
+                })
+                .select()
+                .single()
+
+            if (ideaError) throw ideaError
+
+            // 2. Link to scene if possible
+            if (activeSceneId) {
+                const { error: linkError } = await supabase
+                    .from('scene_ideas')
+                    .insert({
+                        scene_id: activeSceneId,
+                        idea_id: idea.id
+                    })
+                
+                if (linkError) {
+                    console.error('Failed to link idea to scene:', linkError)
+                }
+            }
+
+            setAddedCommentIds(prev => new Set(prev).add(comment.id))
+            toast.success('Added as Project Idea', {
+                description: activeSceneId 
+                    ? 'This feedback is now linked to the AI Assistant context.' 
+                    : 'This feedback was saved as a project idea.'
+            })
+            router.refresh()
+        } catch (err: any) {
+            console.error('Failed to add comment as idea:', err)
+            toast.error('Failed to link to extension')
+        } finally {
+            setAddingIdeaId(null)
+        }
     }
 
     const onDragEnd = (result: any) => {
@@ -222,8 +284,21 @@ export default function CommentsPanel({
                                 )}
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent side="bottom">{showResolved ? "Hide resolved items" : "Show resolved items"}</TooltipContent>
+                        <TooltipContent side="bottom">{showResolved ? "Hide Resolved" : "Show Resolved"}</TooltipContent>
                     </Tooltip>
+                    {onClose && (
+                        <div className="w-px h-4 bg-slate-200 mx-1"></div>
+                    )}
+                    {onClose && (
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                            onClick={onClose}
+                        >
+                            <X className="w-4 h-4" />
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -300,6 +375,10 @@ export default function CommentsPanel({
                                                         typingUsers={typingUsers.filter(u => u.threadId === comment.id)}
                                                         onTypingChange={(isTyping: boolean) => sendTypingIndicator(isTyping ? comment.id : null)}
                                                         dragHandleProps={role !== 'viewer' ? provided.dragHandleProps : null}
+                                                        onAddToAssistant={handleAddAsIdea}
+                                                        addingIdeaId={addingIdeaId}
+                                                        addedCommentIds={addedCommentIds}
+                                                        activeSceneId={activeSceneId}
                                                     />
                                                 </div>
                                             )}
@@ -373,7 +452,11 @@ function CommentThread({
     onTypingChange,
     onJumpTo,
     dragHandleProps,
-    isDetached
+    isDetached,
+    onAddToAssistant,
+    addingIdeaId,
+    addedCommentIds,
+    activeSceneId
 }: any) {
     const isOwnerOrEditor = role === 'owner' || role === 'editor'
     const isResolved = comment.status === 'resolved'
@@ -407,6 +490,10 @@ function CommentThread({
                     onActivate={onActivate}
                     isDetached={isDetached}
                     dragHandleProps={dragHandleProps}
+                    onAddToAssistant={onAddToAssistant}
+                    addingIdeaId={addingIdeaId}
+                    addedCommentIds={addedCommentIds}
+                    activeSceneId={activeSceneId}
                 />
                 
                 {replies.length > 0 && (
@@ -425,6 +512,10 @@ function CommentThread({
                                 onCancelEdit={onCancelEdit}
                                 onDelete={() => onDelete(reply.id)}
                                 isReply
+                                onAddToAssistant={onAddToAssistant}
+                                addingIdeaId={addingIdeaId}
+                                addedCommentIds={addedCommentIds}
+                                activeSceneId={activeSceneId}
                             />
                         ))}
                     </div>
@@ -487,7 +578,11 @@ function CommentItem({
     isDetached,
     dragHandleProps,
     isReply,
-    role
+    role,
+    onAddToAssistant,
+    addingIdeaId,
+    addedCommentIds,
+    activeSceneId
 }: any) {
     const supabase = createClient()
     const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -659,6 +754,37 @@ function CommentItem({
                                     </TooltipTrigger>
                                     <TooltipContent side="top">Delete</TooltipContent>
                                 </Tooltip>
+                            )}
+
+                            {activeSceneId && (
+                                <>
+                                    <div className="w-[1px] h-3 bg-slate-200/50 mx-1" />
+                                    {addedCommentIds.has(comment.id) ? (
+                                        <div className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg">
+                                            <Check className="w-3 h-3" />
+                                            AI
+                                        </div>
+                                    ) : (
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="h-7 w-7 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-slate-50 transition-all group/brain" 
+                                                    onClick={(e) => { e.stopPropagation(); onAddToAssistant(comment); }}
+                                                    disabled={addingIdeaId !== null}
+                                                >
+                                                    {addingIdeaId === comment.id ? (
+                                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                    ) : (
+                                                        <BrainCircuit className="w-3.5 h-3.5 group-hover/brain:scale-110 transition-transform" />
+                                                    )}
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">Add to AI Assistant</TooltipContent>
+                                        </Tooltip>
+                                    )}
+                                </>
                             )}
                         </div>
 

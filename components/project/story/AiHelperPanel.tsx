@@ -4,7 +4,8 @@ import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { getProjectTypeLabel } from '@/lib/constants'
 import { useCompletion } from '@ai-sdk/react'
 import Link from 'next/link'
-import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Package, Bookmark, Database, Maximize2, MessageSquarePlus } from 'lucide-react'
+import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Package, Bookmark, Database, Maximize2, MessageSquarePlus, Users, Lightbulb, MapPin, Box, HelpCircle } from 'lucide-react'
+import { useDragScroll } from '@/hooks/useDragScroll'
 import { PremiumEditor } from '@/components/ui/premium-editor'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -16,7 +17,6 @@ import { createClient } from '@/lib/supabase/client'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { analyzeContextSize, ContextSizingResult, SAFEGUARD_THRESHOLDS } from '@/lib/ai/config'
 import { AiSafeguardDialogs } from '@/components/project/ai/AiSafeguardDialogs'
-import { HelpCircle } from 'lucide-react'
 import AiPartnerTour from './AiPartnerTour'
 
 interface AiHelperPanelProps {
@@ -34,6 +34,7 @@ interface AiHelperPanelProps {
     onInsert: (content: any) => void
     activeNodeId?: string | null
     activeSceneId?: string | null
+    onClose?: () => void
     projectType?: 'tv_script' | 'novel'
     projectPremise?: string | null
     projectTone?: string | null
@@ -161,7 +162,8 @@ export default function AiHelperPanel({
     selectedNodes = [], allNodes = [], allScenes = [], onClearSelection, aiSettings, projectType,
     projectPremise, projectTone,
     activeNodeId, activeSceneId,
-    isFullCanvas = false
+    isFullCanvas = false,
+    onClose
 }: AiHelperPanelProps) {
     const label = getProjectTypeLabel(projectType)
     const isNovel = projectType === 'novel'
@@ -204,6 +206,7 @@ export default function AiHelperPanel({
     const [saveModalOpen, setSaveModalOpen] = useState(false)
     const [saveSuccess, setSaveSuccess] = useState(false)
     const [tourOpen, setTourOpen] = useState(false)
+    const { scrollRef, isDragging, onMouseDown, onMouseLeave, onMouseUp, onMouseMove } = useDragScroll()
 
     // Trigger tour on first use
     useEffect(() => {
@@ -823,39 +826,48 @@ export default function AiHelperPanel({
             {/* Header */}
             <div 
                 data-tour="ai-header"
-                className="px-4 md:px-6 py-3 border-b border-slate-200/60 flex items-center gap-2 md:gap-3 bg-white/50 backdrop-blur-sm shrink-0 overflow-hidden"
+                className="flex flex-col md:gap-2 px-4 md:px-6 py-3 border-b border-slate-200/60 bg-white/50 backdrop-blur-sm shrink-0"
             >
-                <div className="p-1.5 bg-indigo-50 rounded-xl">
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-50" />
-                </div>
-                <div className="flex-1 min-w-0">
-                    {!isFullCanvas && (
-                        <h3 className="text-sm font-serif font-bold text-slate-800 tracking-tight leading-none mb-1">AI Partner</h3>
-                    )}
-                    <div className="flex items-center gap-1.5 md:gap-2 overflow-hidden">
-                        <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold uppercase truncate">
-                            {aiSettings.ai_provider === 'ollama' ? `Ollama` : 'Gemini'}
-                        </p>
-                        <div className="flex items-center gap-1 border-r border-slate-200 pr-2 mr-1">
-                            <div className={cn(
-                                "w-1 h-1 rounded-full",
-                                (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'online' ? "bg-green-400" : 
-                                (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'checking' ? "bg-slate-300 animate-pulse" : "bg-red-400"
-                            )} />
-                            <span className={cn(
-                                "text-[8px] font-bold uppercase tracking-tight",
-                                (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'online' ? "text-green-600" : 
-                                (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'checking' ? "text-slate-400" : "text-red-500"
-                            )}>
-                                {(aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus)}
-                            </span>
+                <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="p-1.5 bg-indigo-50 rounded-xl shrink-0 group-hover:scale-110 transition-transform">
+                            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
                         </div>
-                        <div className="flex items-center gap-1 md:gap-1.5 ml-1 min-w-0">
+                        
+                        <div className="flex-1 min-w-0">
+                            {!isFullCanvas && (
+                                <h3 className="text-sm font-serif font-bold text-slate-800 tracking-tight leading-none mb-1 truncate">AI Partner</h3>
+                            )}
+                            <div className="flex items-center gap-2">
+                                <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold truncate">
+                                    {aiSettings.ai_provider === 'ollama' ? `Ollama` : 'Gemini'}
+                                </p>
+                                <div className="flex items-center gap-1">
+                                    <div className={cn(
+                                        "w-1 h-1 rounded-full",
+                                        (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'online' ? "bg-green-400" : 
+                                        (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'checking' ? "bg-slate-300 animate-pulse" : "bg-red-400"
+                                    )} />
+                                    <span className={cn(
+                                        "text-[8px] font-bold uppercase tracking-tight",
+                                        (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'online' ? "text-green-600" : 
+                                        (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'checking' ? "text-slate-400" : "text-red-500"
+                                    )}>
+                                        {(aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus)}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 md:gap-1.5 shrink-0">
+                        {/* Mobile select - stays in top row */}
+                        <div className="md:hidden">
                             <select 
                                 value={promptMode}
                                 onChange={(e) => setPromptMode(e.target.value)}
                                 data-tour="ai-mode-selector"
-                                className="bg-transparent text-indigo-500 text-[9px] font-bold uppercase tracking-[0.05em] md:tracking-[0.1em] outline-none cursor-pointer appearance-none border-b border-transparent hover:border-indigo-200 transition-colors truncate max-w-[80px] md:max-w-none text-center"
+                                className="bg-slate-100/80 hover:bg-slate-100 px-2 py-1.5 rounded-lg text-indigo-600 text-[9px] font-bold uppercase tracking-wider outline-none cursor-pointer appearance-none transition-all text-center min-w-[95px] border border-indigo-100/50"
                                 suppressHydrationWarning
                             >
                                 <option value="Continue Writing">Continue</option>
@@ -866,76 +878,127 @@ export default function AiHelperPanel({
                                 <option value="Review / Chat">Chat</option>
                             </select>
                         </div>
+
+                        <div className="w-px h-4 bg-slate-200 mx-1 md:hidden"></div>
+
+                        <TooltipProvider>
+                            <div className="flex items-center gap-0.5">
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => setTourOpen(true)}
+                                            className="w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                                        >
+                                            <HelpCircle className="w-3.5 h-3.5" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">Tour</TooltipContent>
+                                </Tooltip>
+
+                                {!isFullCanvas && (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Link href={`/project/${projectId}/ai`}>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                                                >
+                                                    <Maximize2 className="w-3.5 h-3.5" />
+                                                </Button>
+                                            </Link>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">Full View</TooltipContent>
+                                    </Tooltip>
+                                )}
+
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            data-tour="ai-memory-btn"
+                                            onClick={() => setIncludeArchiveContext(!includeArchiveContext)}
+                                            className={cn(
+                                                "w-8 h-8 rounded-lg relative transition-all",
+                                                includeArchiveContext ? "text-indigo-600 bg-indigo-50 border border-indigo-100/50" : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                                            )}
+                                        >
+                                            {isLoadingArchive ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Package className="w-3.5 h-3.5" />}
+                                            {selectedArchiveIds.length > 0 && (
+                                                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-indigo-500 text-white text-[8px] flex items-center justify-center rounded-full font-bold border border-white">
+                                                    {selectedArchiveIds.length}
+                                                </span>
+                                            )}
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">Archive Context</TooltipContent>
+                                </Tooltip>
+
+                                {onClose && (
+                                    <>
+                                        <div className="w-px h-4 bg-slate-200 mx-1 hidden md:block"></div>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={onClose}
+                                                    className="hidden md:flex w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">Close</TooltipContent>
+                                        </Tooltip>
+                                    </>
+                                )}
+                            </div>
+                        </TooltipProvider>
+
+                        {(completion || previousCompletion) && !isLoading && (
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger className="shrink-0 ml-1">
+                                        <button
+                                            onClick={handleClear}
+                                            className="p-1 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                                        >
+                                            <X className="w-3 md:w-3.5 h-3 md:h-3.5" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">Clear response</TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        )}
                     </div>
                 </div>
-                <div className="flex items-center gap-0.5 md:gap-1 shrink-0">
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setTourOpen(true)}
-                                className="w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all border border-transparent hover:border-indigo-100"
-                            >
-                                <HelpCircle className="w-3.5 h-3.5" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top">AI Partner Tour</TooltipContent>
-                    </Tooltip>
 
-                    {!isFullCanvas && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Link href={`/project/${projectId}/ai`}>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all border border-transparent hover:border-indigo-100"
-                                    >
-                                        <Maximize2 className="w-3.5 h-3.5" />
-                                    </Button>
-                                </Link>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">Open full AI canvas</TooltipContent>
-                        </Tooltip>
-                    )}
-
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                data-tour="ai-memory-btn"
-                                onClick={() => setIncludeArchiveContext(!includeArchiveContext)}
-                                className={cn(
-                                    "w-8 h-8 rounded-lg relative transition-all",
-                                    includeArchiveContext ? "text-indigo-600 bg-indigo-50" : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                                )}
-                            >
-                                {isLoadingArchive ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Package className="w-3.5 h-3.5" />}
-                                {selectedArchiveIds.length > 0 && (
-                                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-indigo-500 text-white text-[8px] flex items-center justify-center rounded-full font-bold border border-white">
-                                        {selectedArchiveIds.length}
-                                    </span>
-                                )}
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top">AI Memory</TooltipContent>
-                    </Tooltip>
-                </div>
-                {(completion || previousCompletion) && !isLoading && (
-                    <Tooltip>
-                        <TooltipTrigger className="shrink-0">
+                {/* Desktop Mode Buttons Row */}
+                <div className="hidden md:flex items-center gap-2 mt-1 pt-1 border-t border-slate-100/50">
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-50/50 text-indigo-600 text-[9px] font-bold uppercase tracking-widest shrink-0">
+                        <MessageSquarePlus className="w-3 h-3" />
+                        <span>Mode</span>
+                    </div>
+                    <div className="flex-1 flex flex-wrap items-center gap-1.5">
+                        {['Continue Writing', 'Improve Scene', 'Add Conflict', 'Rewrite with Emotion', 'Review / Chat', ...(!isNovel ? ['Write as Script Scene'] : [])].map(mode => (
                             <button
-                                onClick={handleClear}
-                                className="p-1 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-all"
+                                key={mode}
+                                onClick={() => setPromptMode(mode)}
+                                className={cn(
+                                    "px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all border",
+                                    promptMode === mode 
+                                        ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" 
+                                        : "bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-100 hover:text-slate-600"
+                                )}
                             >
-                                <X className="w-3 md:w-3.5 h-3 md:h-3.5" />
+                                {mode.replace('Writing', '').replace('Scene', '').replace('with Emotion', '').replace('Review / ', '').trim()}
                             </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top">Clear response</TooltipContent>
-                    </Tooltip>
-                )}
+                        ))}
+                    </div>
+                </div>
             </div>
 
             {/* Context Indicator */}
@@ -947,43 +1010,58 @@ export default function AiHelperPanel({
                     <Database className="w-3 h-3" />
                     <span>Context</span>
                 </div>
-                
-                <div className="flex-1 flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
-                    {linkedCharacters.length > 0 && (
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-50/50 border border-indigo-100/50 text-[9px] text-indigo-600 font-medium shrink-0 animate-in fade-in slide-in-from-left-2 transition-all">
-                            <div className="w-1 h-1 bg-indigo-400 rounded-full"></div>
-                            {charactersLabel}
-                        </div>
-                    )}
-                    {linkedIdeas.length > 0 && (
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-50/50 border border-amber-100/50 text-[9px] text-amber-600 font-medium shrink-0 animate-in fade-in slide-in-from-left-2 transition-all">
-                            <div className="w-1 h-1 bg-amber-400 rounded-full"></div>
-                            {ideasLabel}
-                        </div>
-                    )}
-                    {linkedLocations.length > 0 && (
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50/50 border border-emerald-100/50 text-[9px] text-emerald-600 font-medium shrink-0 animate-in fade-in slide-in-from-left-2 transition-all">
-                            <div className="w-1 h-1 bg-emerald-400 rounded-full"></div>
-                            {locationsLabel}
-                        </div>
-                    )}
-                    {linkedObjects.length > 0 && (
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-sky-50/50 border border-sky-100/50 text-[9px] text-sky-600 font-medium shrink-0 animate-in fade-in slide-in-from-left-2 transition-all">
-                            <div className="w-1 h-1 bg-sky-400 rounded-full"></div>
-                            {objectsLabel}
-                        </div>
-                    )}
-                    {selectedNodes.length > 0 && (
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-200/50 text-[9px] text-indigo-700 font-bold shrink-0 animate-in fade-in slide-in-from-left-2 transition-all shadow-sm">
-                            <div className="w-1 h-1 bg-indigo-500 rounded-full animate-pulse"></div>
-                            {storySelectionLabel}
-                        </div>
-                    )}
-                    
-                    {/* Fallback if nothing linked */}
-                    {!linkedCharacters.length && !linkedIdeas.length && !linkedLocations.length && !selectedNodes.length && (
-                        <div className="text-[9px] text-slate-300 italic">No specific entities linked</div>
-                    )}
+                <div className="flex-1 relative min-w-0 h-[26px]">
+                    <div 
+                        ref={scrollRef}
+                        onMouseDown={onMouseDown}
+                        onMouseLeave={onMouseLeave}
+                        onMouseUp={onMouseUp}
+                        onMouseMove={onMouseMove}
+                        className={cn(
+                            "flex items-center gap-2 overflow-x-auto no-scrollbar absolute inset-0 pr-12 [mask-image:linear-gradient(to_right,black_calc(100%-40px),transparent_100%)] overscroll-x-contain pointer-events-auto",
+                            isDragging ? "cursor-grabbing" : "cursor-grab"
+                        )}
+                    >
+                        {linkedCharacters.map(char => (
+                            <div key={char.id} className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-50/50 border border-indigo-100/50 text-[9px] text-indigo-600 font-medium shrink-0 snap-start animate-in fade-in slide-in-from-left-2 transition-all">
+                                <Users className="w-3 h-3" />
+                                {char.name || 'Character'}
+                            </div>
+                        ))}
+                        {linkedIdeas.map(idea => {
+                            const isFeedback = idea.title?.toLowerCase().startsWith('feedback:')
+                            const IdeaIcon = isFeedback ? MessageSquare : Lightbulb
+                            return (
+                                <div key={idea.id} className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-50/50 border border-amber-100/50 text-[9px] text-amber-600 font-medium shrink-0 snap-start animate-in fade-in slide-in-from-left-2 transition-all">
+                                    <IdeaIcon className="w-3 h-3" />
+                                    <span className="truncate max-w-[150px]">{idea.title || 'Idea'}</span>
+                                </div>
+                            )
+                        })}
+                        {linkedLocations.map(loc => (
+                            <div key={loc.id} className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50/50 border border-emerald-100/50 text-[9px] text-emerald-600 font-medium shrink-0 snap-start animate-in fade-in slide-in-from-left-2 transition-all">
+                                <MapPin className="w-3 h-3" />
+                                <span className="truncate max-w-[150px]">{loc.name || 'Location'}</span>
+                            </div>
+                        ))}
+                        {linkedObjects.map(obj => (
+                            <div key={obj.id} className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-sky-50/50 border border-sky-100/50 text-[9px] text-sky-600 font-medium shrink-0 snap-start animate-in fade-in slide-in-from-left-2 transition-all">
+                                <Box className="w-3 h-3" />
+                                <span className="truncate max-w-[150px]">{obj.name || 'Object'}</span>
+                            </div>
+                        ))}
+                        {selectedNodes.length > 0 && (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-200/50 text-[9px] text-indigo-700 font-bold shrink-0 snap-start animate-in fade-in slide-in-from-left-2 transition-all shadow-sm">
+                                <div className="w-1 h-1 bg-indigo-500 rounded-full animate-pulse"></div>
+                                {storySelectionLabel}
+                            </div>
+                        )}
+                        
+                        {/* Fallback if nothing linked */}
+                        {!linkedCharacters.length && !linkedIdeas.length && !linkedLocations.length && !selectedNodes.length && (
+                            <div className="text-[9px] text-slate-300 italic shrink-0">No specific entities linked</div>
+                        )}
+                    </div>
                 </div>
             </div>
 

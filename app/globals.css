@@ -525,7 +525,7 @@ body {
 /* Disable snapping on desktop — items fit without scrolling */
 @media (min-width: 768px) {
   .snap-row {
-    overflow-x: visible;
+    overflow-x: auto;
     scroll-snap-type: none;
     padding-right: 0;
   }

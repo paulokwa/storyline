@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getProjectTypeLabel } from '@/lib/constants'
-import { X, Sparkles, FileText, Zap, Timer, MessageSquare, Lightbulb, Bookmark, Check, Loader2 } from 'lucide-react'
+import { X, Sparkles, FileText, Zap, Timer, MessageSquare, Lightbulb, Bookmark, Check, Loader2, BrainCircuit, PlusCircle } from 'lucide-react'
 import {
     Tooltip,
     TooltipContent,
@@ -10,6 +10,8 @@ import {
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 
 interface AnalysisResult {
     summary: string
@@ -35,9 +37,12 @@ const SECTIONS = [
 ] as const
 
 export default function SceneAnalysisPanel({ result, onClose, projectType, projectId, sceneId }: SceneAnalysisPanelProps) {
+    const router = useRouter()
     const label = getProjectTypeLabel(projectType)
     const [isSaving, setIsSaving] = useState(false)
     const [saveSuccess, setSaveSuccess] = useState(false)
+    const [addingIdeaIdx, setAddingIdeaIdx] = useState<string | number | null>(null)
+    const [addedIndices, setAddedIndices] = useState<Set<string | number>>(new Set())
     const supabase = createClient()
     
     // Close on Escape key
@@ -94,11 +99,61 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
                 throw error
             }
             setSaveSuccess(true)
+            toast.success('Analysis saved to project archive')
             setTimeout(() => setSaveSuccess(false), 3000)
         } catch (err: any) {
             console.error('Failed to save analysis:', err.message || err)
+            toast.error('Failed to save analysis')
         } finally {
             setIsSaving(false)
+        }
+    }
+
+    const handleAddAsIdea = async (content: string, id: string | number, typeLabel?: string) => {
+        if (!projectId || !content) return
+        setAddingIdeaIdx(id)
+        
+        try {
+            // 1. Create the idea
+            const titleInitial = content.length > 30 ? content.slice(0, 27) + '...' : content
+            const ideaTitle = typeLabel ? `Feedback (${typeLabel}): ${titleInitial}` : `Feedback Idea: ${titleInitial}`
+            const { data: idea, error: ideaError } = await (supabase as any)
+                .from('ideas')
+                .insert({
+                    project_id: projectId,
+                    title: `Feedback Idea: ${titleInitial}`,
+                    content: content,
+                    order_index: 0 // Will be handled by DB or can be improved
+                })
+                .select()
+                .single()
+
+            if (ideaError) throw ideaError
+
+            // 2. Link to scene if we have a sceneId
+            if (sceneId && idea) {
+                const { error: linkError } = await (supabase as any)
+                    .from('scene_ideas')
+                    .insert({
+                        scene_id: sceneId,
+                        idea_id: idea.id
+                    })
+                
+                if (linkError) {
+                    console.error('Failed to link idea to scene:', linkError)
+                }
+            }
+
+            setAddedIndices(prev => new Set(prev).add(id))
+            toast.success('Added to AI Context', {
+                description: 'This insight will now be available as context for the AI Assistant.'
+            })
+            router.refresh()
+        } catch (err: any) {
+            console.error('Failed to add suggestion as idea:', err)
+            toast.error('Failed to add idea')
+        } finally {
+            setAddingIdeaIdx(null)
         }
     }
 
@@ -157,7 +212,7 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
                                         {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Bookmark className="w-3.5 h-3.5" />}
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent side="bottom">Save to AI Memory</TooltipContent>
+                                <TooltipContent side="bottom">Save to Project Archive</TooltipContent>
                             </Tooltip>
                         )}
 
@@ -201,9 +256,39 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
                                             {label}
                                         </span>
                                     </div>
-                                    <p className="text-sm text-slate-700 font-serif leading-relaxed">
-                                        {result[key]}
-                                    </p>
+                                    <div className="flex-1">
+                                        <p className="text-sm text-slate-700 font-serif leading-relaxed">
+                                            {result[key]}
+                                        </p>
+                                        <div className="mt-3 flex items-center justify-end">
+                                            {addedIndices.has(key) ? (
+                                                <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg">
+                                                    <Check className="w-3 h-3" />
+                                                    Linked to AI
+                                                </div>
+                                            ) : (
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <button 
+                                                            onClick={() => handleAddAsIdea(result[key], key, label)}
+                                                            disabled={addingIdeaIdx !== null}
+                                                            className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-[#546354]/40 hover:text-indigo-600 transition-all group/btn"
+                                                        >
+                                                            {addingIdeaIdx === key ? (
+                                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                            ) : (
+                                                                <BrainCircuit className="w-3 h-3 group-hover/btn:scale-110 transition-transform" />
+                                                            )}
+                                                            Add to Assistant
+                                                        </button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="top">
+                                                        Link this insight to the AI Assistant context
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
 
@@ -216,13 +301,43 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
                                             Suggestions
                                         </span>
                                     </div>
-                                    <ul className="space-y-2.5">
+                                    <ul className="space-y-3">
                                         {result.suggestions.map((s, i) => (
-                                            <li key={i} className="flex items-start gap-2.5">
+                                            <li key={i} className="group flex items-start gap-2.5 bg-white/40 p-3 rounded-xl border border-green-100/50 hover:bg-white transition-all duration-300 shadow-sm hover:shadow-md">
                                                 <span className="shrink-0 w-5 h-5 rounded-full bg-green-100 text-green-600 text-[10px] font-bold flex items-center justify-center mt-0.5">
                                                     {i + 1}
                                                 </span>
-                                                <p className="text-sm text-slate-700 font-serif leading-relaxed">{s}</p>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm text-slate-700 font-serif leading-relaxed">{s}</p>
+                                                    <div className="mt-2 flex items-center justify-end">
+                                                        {addedIndices.has(i) ? (
+                                                            <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg">
+                                                                <Check className="w-3 h-3" />
+                                                                Linked to AI
+                                                            </div>
+                                                        ) : (
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <button 
+                                                                        onClick={() => handleAddAsIdea(s, i)}
+                                                                        disabled={addingIdeaIdx !== null}
+                                                                        className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-[#546354]/40 hover:text-indigo-600 transition-all group/btn"
+                                                                    >
+                                                                        {addingIdeaIdx === i ? (
+                                                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                                                        ) : (
+                                                                            <BrainCircuit className="w-3 h-3 group-hover/btn:scale-110 transition-transform" />
+                                                                        )}
+                                                                        Add to Assistant
+                                                                    </button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent side="top">
+                                                                    Link this feedback to the AI Assistant context
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </li>
                                         ))}
                                     </ul>
@@ -240,4 +355,5 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
         </>
     )
 }
+
 

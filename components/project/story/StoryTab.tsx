@@ -546,6 +546,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                         aiSettings={aiSettings}
                         activeNodeId={activeNodeId}
                         activeSceneId={activeScene?.id}
+                        onClose={() => setAiPanelOpen(false)}
                         onClearSelection={() => setSelectedNodeIds([])}
                         onInsert={(content) => editorRef.current?.insertContent(content)}
                     />
@@ -564,7 +565,9 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                     <CommentsPanel 
                         projectId={project.id}
                         activeNodeId={activeNodeId}
+                        activeSceneId={activeScene?.id}
                         onSelectNode={handleSceneSelect}
+                        onClose={() => setCommentsPanelOpen(false)}
                     />
                 </div>
             </div>
@@ -608,7 +611,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 onClose={() => setAnalysisResult(null)} 
                 projectType={project.type as any}
                 projectId={project.id}
-                sceneId={activeNodeId || undefined}
+                sceneId={activeScene?.id || undefined}
             />
 
             <AiSafeguardDialogs
