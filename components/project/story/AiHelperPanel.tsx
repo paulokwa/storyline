@@ -207,6 +207,7 @@ export default function AiHelperPanel({
     const [saveSuccess, setSaveSuccess] = useState(false)
     const [tourOpen, setTourOpen] = useState(false)
     const { scrollRef, isDragging, onMouseDown, onMouseLeave, onMouseUp, onMouseMove } = useDragScroll()
+    const modeScroll = useDragScroll()
 
     // Trigger tour on first use
     useEffect(() => {
@@ -860,26 +861,8 @@ export default function AiHelperPanel({
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-1 md:gap-1.5 shrink-0">
-                        {/* Mobile select - stays in top row */}
-                        <div className="md:hidden">
-                            <select 
-                                value={promptMode}
-                                onChange={(e) => setPromptMode(e.target.value)}
-                                data-tour="ai-mode-selector"
-                                className="bg-slate-100/80 hover:bg-slate-100 px-2 py-1.5 rounded-lg text-indigo-600 text-[9px] font-bold uppercase tracking-wider outline-none cursor-pointer appearance-none transition-all text-center min-w-[95px] border border-indigo-100/50"
-                                suppressHydrationWarning
-                            >
-                                <option value="Continue Writing">Continue</option>
-                                <option value="Improve Scene">Improve</option>
-                                <option value="Add Conflict">Conflict</option>
-                                <option value="Rewrite with Emotion">Emotion</option>
-                                {!isNovel && <option value="Write as Script Scene">Script</option>}
-                                <option value="Review / Chat">Chat</option>
-                            </select>
-                        </div>
-
-                        <div className="w-px h-4 bg-slate-200 mx-1 md:hidden"></div>
+                    <div className="flex items-center gap-0.5 md:gap-1.5 shrink-0">
+                        {/* Utility Icons */}
 
                         <TooltipProvider>
                             <div className="flex items-center gap-0.5">
@@ -976,13 +959,24 @@ export default function AiHelperPanel({
                     </div>
                 </div>
 
-                {/* Desktop Mode Buttons Row */}
-                <div className="hidden md:flex items-center gap-2 mt-1 pt-1 border-t border-slate-100/50">
+                {/* Mode Buttons Row */}
+                <div className="flex items-center gap-2 mt-2 md:mt-1 pt-1.5 md:pt-1 border-t border-slate-100/50">
                     <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-50/50 text-indigo-600 text-[9px] font-bold uppercase tracking-widest shrink-0">
                         <MessageSquarePlus className="w-3 h-3" />
-                        <span>Mode</span>
+                        <span className="hidden sm:inline">Mode</span>
                     </div>
-                    <div className="flex-1 flex flex-wrap items-center gap-1.5">
+                    <div className="flex-1 relative min-w-0 h-8">
+                        <div 
+                            ref={modeScroll.scrollRef}
+                            onMouseDown={modeScroll.onMouseDown}
+                            onMouseLeave={modeScroll.onMouseLeave}
+                            onMouseUp={modeScroll.onMouseUp}
+                            onMouseMove={modeScroll.onMouseMove}
+                            className={cn(
+                                "flex items-center gap-1.5 overflow-x-auto no-scrollbar absolute inset-0 pb-0.5 pr-8 [mask-image:linear-gradient(to_right,black_calc(100%-40px),transparent_100%)] overscroll-x-contain pointer-events-auto",
+                                modeScroll.isDragging ? "cursor-grabbing" : "cursor-grab"
+                            )}
+                        >
                         {['Continue Writing', 'Improve Scene', 'Add Conflict', 'Rewrite with Emotion', 'Review / Chat', ...(!isNovel ? ['Write as Script Scene'] : [])].map(mode => (
                             <button
                                 key={mode}
@@ -997,6 +991,7 @@ export default function AiHelperPanel({
                                 {mode.replace('Writing', '').replace('Scene', '').replace('with Emotion', '').replace('Review / ', '').trim()}
                             </button>
                         ))}
+                        </div>
                     </div>
                 </div>
             </div>
