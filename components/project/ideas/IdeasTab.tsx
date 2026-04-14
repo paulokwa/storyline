@@ -146,9 +146,11 @@ export default function IdeasTab({
         if (data) {
             setLocalIdeas((prev: Idea[]) => [...prev, data as Idea])
             setSelectedId(data.id)
-            // Auto-open rename for new idea
-            setRenamingId(data.id)
-            setRenameValue(newTitle)
+            // Auto-open rename for new idea on desktop only
+            if (window.innerWidth >= 768) {
+                setRenamingId(data.id)
+                setRenameValue(newTitle)
+            }
         } else if (error) {
             console.error('Error creating idea:', error)
         }
@@ -159,8 +161,11 @@ export default function IdeasTab({
     function startRename(idea: Idea, e: React.MouseEvent) {
         e.stopPropagation()
         setSelectedId(idea.id)
-        setRenamingId(idea.id)
-        setRenameValue(idea.title ?? '')
+        // Only open inline rename on desktop
+        if (window.innerWidth >= 768) {
+            setRenamingId(idea.id)
+            setRenameValue(idea.title ?? '')
+        }
     }
 
     function commitRename(id: string) {

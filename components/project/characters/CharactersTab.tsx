@@ -155,9 +155,11 @@ export default function CharactersTab({
         if (data) {
             setLocalCharacters((prev: Character[]) => [...prev, data as Character])
             setSelectedId(data.id)
-            // Auto-open rename for new character
-            setRenamingId(data.id)
-            setRenameValue(newName)
+            // Auto-open rename for new character on desktop only
+            if (window.innerWidth >= 768) {
+                setRenamingId(data.id)
+                setRenameValue(newName)
+            }
         } else if (error) {
             console.error('Error creating character:', error)
         }
@@ -168,8 +170,11 @@ export default function CharactersTab({
     function startRename(char: Character, e: React.MouseEvent) {
         e.stopPropagation()
         setSelectedId(char.id)
-        setRenamingId(char.id)
-        setRenameValue(char.name ?? '')
+        // Only open inline rename on desktop
+        if (window.innerWidth >= 768) {
+            setRenamingId(char.id)
+            setRenameValue(char.name ?? '')
+        }
     }
 
     function commitRename(id: string) {

@@ -141,8 +141,11 @@ export default function ObjectsTab({
             const obj = data as any
             setLocalObjects((prev: any[]) => [...prev, obj])
             setSelectedId(obj.id)
-            setRenamingId(obj.id)
-            setRenameValue(newName)
+            // Auto-open rename for new object on desktop only
+            if (window.innerWidth >= 768) {
+                setRenamingId(obj.id)
+                setRenameValue(newName)
+            }
         }
         setIsCreating(false)
     }
@@ -150,8 +153,11 @@ export default function ObjectsTab({
     function startRename(obj: any, e: React.MouseEvent) {
         e.stopPropagation()
         setSelectedId(obj.id)
-        setRenamingId(obj.id)
-        setRenameValue(obj.name ?? '')
+        // Only open inline rename on desktop
+        if (window.innerWidth >= 768) {
+            setRenamingId(obj.id)
+            setRenameValue(obj.name ?? '')
+        }
     }
 
     function commitRename(id: string) {

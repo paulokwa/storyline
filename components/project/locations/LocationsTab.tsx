@@ -145,8 +145,11 @@ export default function LocationsTab({
             const loc = data as any
             setLocalLocations((prev: any[]) => [...prev, loc])
             setSelectedId(loc.id)
-            setRenamingId(loc.id)
-            setRenameValue(newName)
+            // Auto-open rename for new location on desktop only
+            if (window.innerWidth >= 768) {
+                setRenamingId(loc.id)
+                setRenameValue(newName)
+            }
         }
         setIsCreating(false)
     }
@@ -154,8 +157,11 @@ export default function LocationsTab({
     function startRename(loc: any, e: React.MouseEvent) {
         e.stopPropagation()
         setSelectedId(loc.id)
-        setRenamingId(loc.id)
-        setRenameValue(loc.name ?? '')
+        // Only open inline rename on desktop
+        if (window.innerWidth >= 768) {
+            setRenamingId(loc.id)
+            setRenameValue(loc.name ?? '')
+        }
     }
 
     function commitRename(id: string) {
