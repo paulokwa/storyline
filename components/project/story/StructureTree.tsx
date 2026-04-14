@@ -190,7 +190,7 @@ export default function StructureTree({
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto py-2">
+                <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y py-2">
                     {rootNodes.length === 0 ? (
                         <div className="text-center py-16 px-6">
                             <p className="text-sm text-slate-400 mb-6 font-serif italic">
@@ -233,20 +233,20 @@ export default function StructureTree({
                             </Droppable>
                         </DragDropContext>
                     )}
-                </div>
 
-                {!isReadOnly && (
-                    <div className="p-4 mt-auto">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={addRootNode}
-                            className="w-full justify-start text-slate-400 hover:text-[#546354] hover:bg-white/50 text-[10px] uppercase tracking-widest gap-2 px-3 h-10 rounded-xl"
-                        >
-                            <Plus className="w-3.5 h-3.5" /> Add {rootLabel}
-                        </Button>
-                    </div>
-                )}
+                    {!isReadOnly && (
+                        <div className="p-4 pb-8">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={addRootNode}
+                                className="w-full justify-start text-slate-400 hover:text-[#546354] hover:bg-white/50 text-[10px] uppercase tracking-widest gap-2 px-3 h-10 rounded-xl"
+                            >
+                                <Plus className="w-3.5 h-3.5" /> Add {rootLabel}
+                            </Button>
+                        </div>
+                    )}
+                </div>
             </div>
         </TooltipProvider>
     )

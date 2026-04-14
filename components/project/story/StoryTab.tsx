@@ -345,7 +345,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                         ? 'w-4 border-r-2 border-primary/20 bg-primary/5 cursor-pointer opacity-100 translate-x-0 hover:bg-primary/10 transition-colors shadow-[4px_0_12px_rgba(0,0,0,0.02)]'
                         : 'w-0 border-none opacity-0 -translate-x-full md:translate-x-0 md:opacity-100'
             )}>
-                <div className="w-[280px] lg:w-[320px] h-full flex flex-col">
+                <div className="w-[280px] lg:w-[320px] h-full min-h-0 flex flex-col overflow-hidden">
                     <StructureTree
                         project={project}
                         nodes={nodes}

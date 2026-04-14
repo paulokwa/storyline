@@ -186,6 +186,17 @@ body {
   width: 100%;
 }
 
+/* Restore touch-pan scrolling for all overflow scrollable containers.
+   Required because position:fixed + overflow:hidden on body blocks touch events
+   on Android Chrome / Samsung Internet in production builds. */
+[class*="overflow-y-auto"],
+[class*="overflow-auto"],
+[data-radix-scroll-area-viewport] {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+}
+
 /* Editor typography */
 .editor-content {
   font-family: var(--editor-font);
