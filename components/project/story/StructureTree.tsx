@@ -235,7 +235,7 @@ export default function StructureTree({
                     )}
 
                     {!isReadOnly && (
-                        <div className="p-4 pb-8">
+                        <div className="px-4 pt-6 pb-24">
                             <Button
                                 variant="ghost"
                                 size="sm"
