@@ -43,6 +43,7 @@ export function PremiumEditor({
       }),
     ],
     content: value,
+    immediatelyRender: false,
     editorProps: {
       attributes: {
         class: cn(
