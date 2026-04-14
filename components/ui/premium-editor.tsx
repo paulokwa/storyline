@@ -34,9 +34,7 @@ export function PremiumEditor({
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        history: true,
-      }),
+      StarterKit.configure({}),
       Placeholder.configure({
         placeholder,
         emptyEditorClass: 'is-editor-empty',
@@ -72,7 +70,7 @@ export function PremiumEditor({
   // Sync value from props if it changes externally
   useEffect(() => {
     if (editor && value !== editor.getText() && !isUpdatingRef.current) {
-      editor.commands.setContent(value, false)
+      editor.commands.setContent(value, { emitUpdate: false })
     }
   }, [value, editor])
 
