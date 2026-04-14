@@ -393,7 +393,7 @@ export default function CommentsPanel({
             </ScrollArea>
 
             {/* Input Footer */}
-            <div className="p-4 pb-12 md:pb-4 border-t border-slate-100 bg-slate-50/50">
+            <div className="p-4 pb-24 md:pb-4 border-t border-slate-100 bg-slate-50/50">
                 <div className="relative" suppressHydrationWarning>
                     <textarea
                         placeholder="Add a thought..."

@@ -1495,7 +1495,7 @@ export default function AiHelperPanel({
                     )}
                 </div>
 
-                <div className="px-4 pb-12 md:pb-6">
+                <div className="px-4 pb-24 md:pb-6">
                     <form onSubmit={handleSubmit} className="space-y-3" suppressHydrationWarning>
                         {isContextTooLarge && (
                             <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 text-[10px] leading-snug animate-in fade-in zoom-in duration-300">
