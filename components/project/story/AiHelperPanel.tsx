@@ -922,14 +922,14 @@ export default function AiHelperPanel({
 
                                 {onClose && (
                                     <>
-                                        <div className="w-px h-4 bg-slate-200 mx-1 hidden md:block"></div>
+                                        <div className="w-px h-4 bg-slate-200 mx-1"></div>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
                                                     onClick={onClose}
-                                                    className="hidden md:flex w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
+                                                    className="flex w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
                                                 >
                                                     <X className="w-4 h-4" />
                                                 </Button>
@@ -1495,7 +1495,7 @@ export default function AiHelperPanel({
                     )}
                 </div>
 
-                <div className="px-4 pb-4">
+                <div className="px-4 pb-12 md:pb-6">
                     <form onSubmit={handleSubmit} className="space-y-3" suppressHydrationWarning>
                         {isContextTooLarge && (
                             <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 text-[10px] leading-snug animate-in fade-in zoom-in duration-300">
