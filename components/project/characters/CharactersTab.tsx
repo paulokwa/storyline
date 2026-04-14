@@ -7,6 +7,8 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { cn, reorder, getNextAvailableName } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { StableInput } from '@/components/ui/stable-input'
+import { PremiumEditor } from '@/components/ui/premium-editor'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
 import { softDeleteEntity } from '@/lib/supabase/recovery'
@@ -414,10 +416,10 @@ export default function CharactersTab({
                                         entityId={selectedCharacter.id}
                                         entityType="character"
                                     />
-                                    <input
+                                    <StableInput
                                         type="text"
                                         value={selectedCharacter.name}
-                                        onChange={(e) => handleFieldChange(selectedCharacter.id, 'name', e.target.value)}
+                                        onValueChange={(val) => handleFieldChange(selectedCharacter.id, 'name', val)}
                                         className="w-full sm:flex-1 bg-transparent text-4xl sm:text-6xl font-serif italic text-slate-800 tracking-tight leading-tight outline-none border-none placeholder:text-slate-200 text-left min-w-0"
                                         placeholder="Character Name"
                                     />
@@ -437,13 +439,15 @@ export default function CharactersTab({
                                     <div className="w-10 h-px bg-stone-100" />
                                 </div>
                                 <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-12 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.02)] ring-1 ring-slate-100/50">
-                                        <textarea
+                                        <PremiumEditor
                                             value={selectedCharacter.description || ''}
-                                            onChange={(e) => handleFieldChange(selectedCharacter.id, 'description', e.target.value)}
-                                            className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-lg sm:text-xl italic outline-none border-none min-h-[150px] resize-none placeholder:text-stone-200"
+                                            onValueChange={(val) => handleFieldChange(selectedCharacter.id, 'description', val)}
+                                            className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-lg sm:text-xl italic placeholder:text-stone-200"
+                                            editorClassName="italic"
                                             placeholder={projectType === 'novel' 
                                                 ? "Describe the life, history, and physical presence of this character..." 
                                                 : "Begin detailing the life and background of this cast member..."}
+                                            minHeight="150px"
                                         />
                                 </div>
                             </div>
@@ -461,11 +465,13 @@ export default function CharactersTab({
                                     <div className="w-10 h-px bg-stone-100" />
                                 </div>
                                 <div className="bg-[#fcfbf9]/60 rounded-[3rem] p-10 ring-1 ring-[#546354]/5 border border-dashed border-[#546354]/10">
-                                    <textarea
+                                    <PremiumEditor
                                         value={selectedCharacter.notes || ''}
-                                        onChange={(e) => handleFieldChange(selectedCharacter.id, 'notes', e.target.value)}
-                                        className="w-full bg-transparent text-slate-500 font-sans text-sm leading-relaxed outline-none border-none min-h-[120px] resize-none italic placeholder:text-stone-200"
+                                        onValueChange={(val) => handleFieldChange(selectedCharacter.id, 'notes', val)}
+                                        className="w-full bg-transparent text-slate-500 font-sans text-sm leading-relaxed italic placeholder:text-stone-200"
+                                        editorClassName="italic"
                                         placeholder="Add internal motivations, personal goals, and narrative arcs..."
+                                        minHeight="120px"
                                     />
                                 </div>
                             </div>

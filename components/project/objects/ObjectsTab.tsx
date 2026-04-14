@@ -5,6 +5,8 @@ import { Package, Plus, Search, ChevronRight, PenTool, Hash, Loader2, Trash2, Pe
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { cn, reorder, getNextAvailableName } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { StableInput } from '@/components/ui/stable-input'
+import { PremiumEditor } from '@/components/ui/premium-editor'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
 import { softDeleteEntity } from '@/lib/supabase/recovery'
@@ -314,10 +316,10 @@ export default function ObjectsTab({
                                         entityId={selectedObject.id}
                                         entityType="object"
                                     />
-                                    <input
+                                    <StableInput
                                         type="text"
                                         value={selectedObject.name}
-                                        onChange={(e) => handleFieldChange(selectedObject.id, 'name', e.target.value)}
+                                        onValueChange={(val) => handleFieldChange(selectedObject.id, 'name', val)}
                                         className="w-full sm:flex-1 bg-transparent text-4xl sm:text-6xl font-serif italic text-slate-800 tracking-tight leading-tight outline-none border-none placeholder:text-slate-200 text-left min-w-0"
                                         placeholder="Object Name"
                                     />
@@ -332,7 +334,14 @@ export default function ObjectsTab({
                                     <div className="w-10 h-px bg-stone-100" />
                                 </div>
                                 <div className="bg-[#fcfbf9]/60 rounded-[3rem] p-10 ring-1 ring-[#546354]/5 border border-dashed border-[#546354]/10">
-                                    <textarea value={selectedObject.significance || ''} onChange={(e) => handleFieldChange(selectedObject.id, 'significance', e.target.value)} className="w-full bg-transparent text-slate-500 font-sans text-sm leading-relaxed outline-none min-h-[100px] resize-none italic placeholder:text-stone-200" placeholder="Why does this item matter? Narrative functions, stakes, or origins..." />
+                                    <PremiumEditor 
+                                        value={selectedObject.significance || ''} 
+                                        onValueChange={(val) => handleFieldChange(selectedObject.id, 'significance', val)} 
+                                        className="w-full bg-transparent text-slate-500 font-sans text-sm leading-relaxed min-h-[100px] italic placeholder:text-stone-200" 
+                                        editorClassName="italic"
+                                        placeholder="Why does this item matter? Narrative functions, stakes, or origins..." 
+                                        minHeight="100px"
+                                    />
                                 </div>
                             </div>
 
@@ -344,7 +353,13 @@ export default function ObjectsTab({
                                     <div className="w-10 h-px bg-stone-100" />
                                 </div>
                                 <div className="bg-white rounded-[3rem] p-8 sm:p-12 shadow-sm ring-1 ring-slate-100/50">
-                                    <textarea value={selectedObject.description || ''} onChange={(e) => handleFieldChange(selectedObject.id, 'description', e.target.value)} className="w-full bg-transparent text-slate-600 font-serif text-lg leading-relaxed outline-none min-h-[150px] resize-none placeholder:text-stone-200" placeholder="Physical properties, weight, textures, or hidden secrets..." />
+                                    <PremiumEditor 
+                                        value={selectedObject.description || ''} 
+                                        onValueChange={(val) => handleFieldChange(selectedObject.id, 'description', val)} 
+                                        className="w-full bg-transparent text-slate-600 font-serif text-lg leading-relaxed min-h-[150px] placeholder:text-stone-200" 
+                                        placeholder="Physical properties, weight, textures, or hidden secrets..." 
+                                        minHeight="150px"
+                                    />
                                 </div>
                             </div>
 

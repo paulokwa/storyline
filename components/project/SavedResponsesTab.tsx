@@ -23,6 +23,7 @@ import {
     Loader2
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { StableInput } from '@/components/ui/stable-input'
 import { Button } from '@/components/ui/button'
 import {
     Tooltip,
@@ -392,9 +393,9 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
                                     <div className="space-y-1 flex-1">
                                         {isEditingTitle ? (
                                             <div className="flex items-center gap-2 max-w-xl animate-in fade-in slide-in-from-left-2 duration-300">
-                                                <Input 
+                                                <StableInput 
                                                     value={titleDraft}
-                                                    onChange={(e) => setTitleDraft(e.target.value)}
+                                                    onValueChange={setTitleDraft}
                                                     onKeyDown={(e) => {
                                                         if (e.key === 'Enter') saveTitle()
                                                         if (e.key === 'Escape') setIsEditingTitle(false)

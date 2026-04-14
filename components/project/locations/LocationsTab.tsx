@@ -5,6 +5,8 @@ import { MapPin, Plus, Search, ChevronRight, PenTool, Hash, Loader2, Trash2, Pen
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { cn, reorder, getNextAvailableName } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { StableInput } from '@/components/ui/stable-input'
+import { PremiumEditor } from '@/components/ui/premium-editor'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
 import { softDeleteEntity } from '@/lib/supabase/recovery'
@@ -317,10 +319,10 @@ export default function LocationsTab({
                                         entityId={selectedLocation.id}
                                         entityType="location"
                                     />
-                                    <input
+                                    <StableInput
                                         type="text"
                                         value={selectedLocation.name}
-                                        onChange={(e) => handleFieldChange(selectedLocation.id, 'name', e.target.value)}
+                                        onValueChange={(val) => handleFieldChange(selectedLocation.id, 'name', val)}
                                         className="w-full sm:flex-1 bg-transparent text-4xl sm:text-6xl font-serif italic text-slate-800 tracking-tight leading-tight outline-none border-none placeholder:text-slate-200 text-left min-w-0"
                                         placeholder="Location Name"
                                     />
@@ -335,7 +337,14 @@ export default function LocationsTab({
                                     <div className="w-10 h-px bg-stone-100" />
                                 </div>
                                 <div className="bg-[#fcfbf9]/60 rounded-[3rem] p-10 ring-1 ring-[#546354]/5 border border-dashed border-[#546354]/10">
-                                    <textarea value={selectedLocation.atmosphere || ''} onChange={(e) => handleFieldChange(selectedLocation.id, 'atmosphere', e.target.value)} className="w-full bg-transparent text-slate-500 font-sans text-sm leading-relaxed outline-none min-h-[100px] resize-none italic placeholder:text-stone-200" placeholder="Describe the vibe, lighting, sounds, and overall mood..." />
+                                    <PremiumEditor 
+                                        value={selectedLocation.atmosphere || ''} 
+                                        onValueChange={(val) => handleFieldChange(selectedLocation.id, 'atmosphere', val)} 
+                                        className="w-full bg-transparent text-slate-500 font-sans text-sm leading-relaxed min-h-[100px] italic placeholder:text-stone-200" 
+                                        editorClassName="italic"
+                                        placeholder="Describe the vibe, lighting, sounds, and overall mood..." 
+                                        minHeight="100px"
+                                    />
                                 </div>
                             </div>
 
@@ -347,7 +356,13 @@ export default function LocationsTab({
                                     <div className="w-10 h-px bg-stone-100" />
                                 </div>
                                 <div className="bg-white rounded-[3rem] p-8 sm:p-12 shadow-sm ring-1 ring-slate-100/50">
-                                    <textarea value={selectedLocation.description || ''} onChange={(e) => handleFieldChange(selectedLocation.id, 'description', e.target.value)} className="w-full bg-transparent text-slate-600 font-serif text-lg leading-relaxed outline-none min-h-[200px] resize-none placeholder:text-stone-200" placeholder="Layout, architectural details, key landmarks..." />
+                                    <PremiumEditor 
+                                        value={selectedLocation.description || ''} 
+                                        onValueChange={(val) => handleFieldChange(selectedLocation.id, 'description', val)} 
+                                        className="w-full bg-transparent text-slate-600 font-serif text-lg leading-relaxed min-h-[200px] placeholder:text-stone-200" 
+                                        placeholder="Layout, architectural details, key landmarks..." 
+                                        minHeight="200px"
+                                    />
                                 </div>
                             </div>
 

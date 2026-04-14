@@ -5,6 +5,7 @@ import { Plus, User, MapPin, Package, Trash2, Loader2, Link as LinkIcon, AlertCi
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { StableInput } from '@/components/ui/stable-input'
 
 type Entity = { id: string; name: string; type: 'character' | 'location' | 'object' }
 
@@ -208,12 +209,11 @@ export default function RelationshipManager({
                         </div>
                         <div className="space-y-2">
                             <label className="text-[9px] uppercase tracking-widest font-bold text-slate-400 ml-2">Nature of Connection</label>
-                            <input 
-                                type="text"
+                            <StableInput 
                                 value={label}
-                                onChange={e => setLabel(e.target.value)}
+                                onValueChange={setLabel}
                                 placeholder="Mentor of, Friend, Nemesis, Owner of..."
-                                className="w-full bg-white rounded-2xl px-4 py-3 text-sm border-none shadow-sm ring-1 ring-slate-100 outline-none focus:ring-[#546354]/20"
+                                className="w-full bg-white rounded-2xl px-4 py-3 text-sm border-none shadow-sm ring-1 ring-slate-100 outline-none focus:ring-[#546354]/20 h-[46px]"
                             />
                         </div>
                     </div>

@@ -4,7 +4,8 @@ import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { getProjectTypeLabel } from '@/lib/constants'
 import { useCompletion } from '@ai-sdk/react'
 import Link from 'next/link'
-import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Package, Bookmark, Database, Maximize2 } from 'lucide-react'
+import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Package, Bookmark, Database, Maximize2, MessageSquarePlus } from 'lucide-react'
+import { PremiumEditor } from '@/components/ui/premium-editor'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -1445,9 +1446,9 @@ export default function AiHelperPanel({
                                 actualLoading && "ring-2 ring-indigo-500/10 rounded-2xl animate-pulse"
                             )}
                         >
-                            <textarea
+                            <PremiumEditor
                                 value={prompt}
-                                onChange={(e) => setPrompt(e.target.value)}
+                                onValueChange={setPrompt}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' && !e.shiftKey) {
                                         e.preventDefault()
@@ -1455,13 +1456,13 @@ export default function AiHelperPanel({
                                     }
                                 }}
                                 placeholder={promptPlaceholder}
-                                rows={3}
                                 className={cn(
-                                    "w-full border border-slate-200 rounded-2xl py-3.5 pl-4 pr-12 text-sm focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all resize-none outline-none placeholder:text-slate-400 font-serif leading-relaxed shadow-sm",
+                                    "w-full border border-slate-200 rounded-2xl py-1 focus-within:ring-2 focus-within:ring-indigo-500/10 focus-within:border-indigo-400 transition-all shadow-sm",
                                     actualLoading ? "bg-white cursor-wait" : "bg-slate-50"
                                 )}
-                                suppressHydrationWarning
-                            ></textarea>
+                                editorClassName="px-4 py-3.5 text-sm font-serif leading-relaxed"
+                                minHeight="80px"
+                            />
                             <button
                                 type="submit"
                                 disabled={actualLoading || (!prompt.trim() && promptMode !== 'Review / Chat') || isContextTooLarge}

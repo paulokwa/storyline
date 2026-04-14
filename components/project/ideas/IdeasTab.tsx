@@ -5,6 +5,8 @@ import { Lightbulb, Plus, Hash, Loader2, Sparkles, PenTool, Trash2, Pencil, Chev
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { cn, reorder, getNextAvailableName } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { StableInput } from '@/components/ui/stable-input'
+import { PremiumEditor } from '@/components/ui/premium-editor'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
 import { softDeleteEntity } from '@/lib/supabase/recovery'
@@ -366,10 +368,10 @@ export default function IdeasTab({
                                     <div className="h-px flex-1 bg-stone-200/50" />
                                 </div>
                                 
-                                <input
+                                <StableInput
                                     type="text"
                                     value={selectedIdea.title ?? ''}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange(selectedIdea.id, 'title', e.target.value)}
+                                    onValueChange={(val) => handleFieldChange(selectedIdea.id, 'title', val)}
                                     className="w-full bg-transparent text-4xl sm:text-6xl font-serif italic text-slate-800 tracking-tight leading-tight outline-none border-none placeholder:text-slate-200 min-w-0"
                                     placeholder="Untitled Idea"
                                 />
@@ -385,11 +387,13 @@ export default function IdeasTab({
                                     <div className="w-10 h-px bg-stone-100" />
                                 </div>
                                 <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-12 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.02)] ring-1 ring-slate-100/50">
-                                    <textarea
+                                    <PremiumEditor
                                         value={selectedIdea.content ?? ''}
-                                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleFieldChange(selectedIdea.id, 'content', e.target.value)}
-                                        className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-lg sm:text-xl italic outline-none border-none min-h-[300px] resize-none placeholder:text-stone-200 text-justify"
+                                        onValueChange={(val) => handleFieldChange(selectedIdea.id, 'content', val)}
+                                        className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-lg sm:text-xl italic placeholder:text-stone-200"
+                                        editorClassName="italic text-justify"
                                         placeholder="Every great story starts with a spark. Details of your inspiration will appear here in the Idea Archive..."
+                                        minHeight="300px"
                                     />
                                 </div>
                             </div>
