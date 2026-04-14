@@ -19,7 +19,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body className="min-h-screen bg-background antialiased">
+      <body className="bg-background antialiased">
         <ThemeProvider>
           {children}
           <Toaster richColors position="top-right" />
