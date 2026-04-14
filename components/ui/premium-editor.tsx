@@ -17,9 +17,23 @@ interface PremiumEditorProps {
 }
 
 /**
- * A robust multiline editor based on Tiptap.
- * Resolves mobile keyboard input issues (cursor jumping, character deletion) 
- * by using ProseMirror's industrial-grade state management.
+ * A robust multiline editor based on Tiptap/ProseMirror.
+ *
+ * ARCHITECTURE NOTE — why it's designed this way:
+ * The standard "controlled component" pattern (parent sets value → child reads it → child
+ * calls onChange → parent updates state → parent re-renders → child receives new value)
+ * creates a feedback loop that interrupts the Android IME composition session.
+ * When `editor.commands.setContent()` is called while the keyboard is in the middle of
+ * composing a swipe-typed or predictive word, the composition is reset, making the text
+ * flicker, disappear, or duplicate.
+ *
+ * The fix mirrors what `SceneEditor` does:
+ *   - The editor treats `value` as **initial content only** (like an uncontrolled input).
+ *   - It never syncs back from props while the user is typing.
+ *   - External prop changes (e.g. switching to a different entity) are detected by comparing
+ *     a stable identity key and replacing content only at that point.
+ *   - `onValueChange` is called on each internal update so the parent can debounce-save,
+ *     but the parent must NOT feed that value back as a new prop during active typing.
  */
 export function PremiumEditor({
   value,
@@ -30,7 +44,12 @@ export function PremiumEditor({
   editorClassName,
   minHeight = '150px',
 }: PremiumEditorProps) {
-  const isUpdatingRef = useRef(false)
+  // We store the initial value so we can detect when the parent genuinely
+  // switches to a *different* entity (e.g. user clicks a different character).
+  // In that case we DO want to replace the content.
+  const initialValueRef = useRef(value)
+  const isUserTypingRef = useRef(false)
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const editor = useEditor({
     extensions: [
@@ -40,6 +59,7 @@ export function PremiumEditor({
         emptyEditorClass: 'is-editor-empty',
       }),
     ],
+    // Treat the initial value as seed content — never overwrite from props after mount.
     content: value,
     immediatelyRender: false,
     editorProps: {
@@ -58,18 +78,30 @@ export function PremiumEditor({
       },
     },
     onUpdate: ({ editor }) => {
-      const text = editor.getText()
-      isUpdatingRef.current = true
-      onValueChange(text)
-      setTimeout(() => {
-        isUpdatingRef.current = false
-      }, 0)
+      // Mark that the user is actively typing so we suppress external syncs.
+      isUserTypingRef.current = true
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current)
+      typingTimerRef.current = setTimeout(() => {
+        isUserTypingRef.current = false
+      }, 1000)
+
+      onValueChange(editor.getText())
     },
   })
 
-  // Sync value from props if it changes externally
+  // Sync ONLY when the parent genuinely switches to a different entity.
+  // We detect this by comparing the new `value` against what we seeded.
+  // If the user is currently typing, we never interrupt them.
   useEffect(() => {
-    if (editor && value !== editor.getText() && !isUpdatingRef.current) {
+    if (!editor) return
+
+    // If value matches what we think we have, nothing to do.
+    if (value === initialValueRef.current) return
+
+    // A genuinely different record has been selected — replace content,
+    // but only if the user is idle (not mid-composition).
+    if (!isUserTypingRef.current) {
+      initialValueRef.current = value
       editor.commands.setContent(value, { emitUpdate: false })
     }
   }, [value, editor])
@@ -78,13 +110,14 @@ export function PremiumEditor({
   useEffect(() => {
     return () => {
       editor?.destroy()
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current)
     }
   }, [editor])
 
   return (
-    <div 
+    <div
       className={cn(
-        "cursor-text premium-editor-container",
+        'cursor-text premium-editor-container',
         className
       )}
       style={{ minHeight }}
@@ -95,7 +128,7 @@ export function PremiumEditor({
         .premium-editor-container .is-editor-empty:first-child::before {
           content: attr(data-placeholder);
           float: left;
-          color: #adb5bd;
+          color: #c8c4bb;
           pointer-events: none;
           height: 0;
           font-style: italic;

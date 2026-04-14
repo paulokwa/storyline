@@ -80,7 +80,7 @@ export default function IdeasTab({
     }, [])
 
     const handleFieldChange = (id: string, field: keyof Idea, value: string) => {
-        // Update local state immediately for responsiveness
+        // Update local state immediately for responsiveness (title shown in sidebar)
         setLocalIdeas((prev: Idea[]) => prev.map(i => i.id === id ? { ...i, [field]: value } : i))
         
         // Debounce the save
@@ -89,6 +89,16 @@ export default function IdeasTab({
         saveTimer.current = setTimeout(() => {
             saveIdea(id, { [field]: value } as Database['public']['Tables']['ideas']['Update'])
         }, 1000)
+    }
+
+    // For PremiumEditor (multiline) fields: skip local state update to prevent
+    // parent re-renders that interrupt Android IME composition mid-keystroke.
+    const handleTextEditorChange = (id: string, field: keyof Idea, value: string) => {
+        if (saveTimer.current) clearTimeout(saveTimer.current)
+        setIsSaving(true)
+        saveTimer.current = setTimeout(() => {
+            saveIdea(id, { [field]: value } as Database['public']['Tables']['ideas']['Update'])
+        }, 1500)
     }
 
     async function handleDeleteIdea(id: string) {
@@ -389,7 +399,7 @@ export default function IdeasTab({
                                 <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-12 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.02)] ring-1 ring-slate-100/50">
                                     <PremiumEditor
                                         value={selectedIdea.content ?? ''}
-                                        onValueChange={(val) => handleFieldChange(selectedIdea.id, 'content', val)}
+                                        onValueChange={(val) => handleTextEditorChange(selectedIdea.id, 'content', val)}
                                         className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-lg sm:text-xl italic placeholder:text-stone-200"
                                         editorClassName="italic text-justify"
                                         placeholder="Every great story starts with a spark. Details of your inspiration will appear here in the Idea Archive..."

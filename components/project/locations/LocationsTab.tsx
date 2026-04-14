@@ -76,12 +76,27 @@ export default function LocationsTab({
     }, [])
 
     const handleFieldChange = (id: string, field: string, value: string) => {
+        // For single-line StableInput fields (name, etc.) we update local state
+        // immediately so the sidebar list reflects the new name in real time.
         setLocalLocations((prev: any[]) => prev.map(l => l.id === id ? { ...l, [field]: value } : l))
         if (saveTimer.current) clearTimeout(saveTimer.current)
         setIsSaving(true)
         saveTimer.current = setTimeout(() => {
             saveLocation(id, { [field]: value })
         }, 1000)
+    }
+
+    // For PremiumEditor (multiline) fields: do NOT update local state on every
+    // keystroke. The editor is self-contained and manages its own content.
+    // Updating local state here would cause a parent re-render → new `value`
+    // prop → editor.commands.setContent() → interrupts Android IME composition
+    // → text flickers/disappears. We only debounce-save to the DB.
+    const handleTextEditorChange = (id: string, field: string, value: string) => {
+        if (saveTimer.current) clearTimeout(saveTimer.current)
+        setIsSaving(true)
+        saveTimer.current = setTimeout(() => {
+            saveLocation(id, { [field]: value })
+        }, 1500)
     }
 
     async function handleDeleteLocation(id: string) {
@@ -339,7 +354,7 @@ export default function LocationsTab({
                                 <div className="bg-[#fcfbf9]/60 rounded-[3rem] p-10 ring-1 ring-[#546354]/5 border border-dashed border-[#546354]/10">
                                     <PremiumEditor 
                                         value={selectedLocation.atmosphere || ''} 
-                                        onValueChange={(val) => handleFieldChange(selectedLocation.id, 'atmosphere', val)} 
+                                        onValueChange={(val) => handleTextEditorChange(selectedLocation.id, 'atmosphere', val)} 
                                         className="w-full bg-transparent text-slate-500 font-sans text-sm leading-relaxed min-h-[100px] italic placeholder:text-stone-200" 
                                         editorClassName="italic"
                                         placeholder="Describe the vibe, lighting, sounds, and overall mood..." 
@@ -358,7 +373,7 @@ export default function LocationsTab({
                                 <div className="bg-white rounded-[3rem] p-8 sm:p-12 shadow-sm ring-1 ring-slate-100/50">
                                     <PremiumEditor 
                                         value={selectedLocation.description || ''} 
-                                        onValueChange={(val) => handleFieldChange(selectedLocation.id, 'description', val)} 
+                                        onValueChange={(val) => handleTextEditorChange(selectedLocation.id, 'description', val)} 
                                         className="w-full bg-transparent text-slate-600 font-serif text-lg leading-relaxed min-h-[200px] placeholder:text-stone-200" 
                                         placeholder="Layout, architectural details, key landmarks..." 
                                         minHeight="200px"

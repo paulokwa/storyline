@@ -88,7 +88,7 @@ export default function CharactersTab({
     }, [])
 
     const handleFieldChange = (id: string, field: keyof Character, value: string) => {
-        // Update local state immediately for responsiveness
+        // Update local state immediately for responsiveness (name shown in sidebar)
         setLocalCharacters((prev: Character[]) => prev.map(c => c.id === id ? { ...c, [field]: value } : c))
         
         // Debounce the save
@@ -97,6 +97,16 @@ export default function CharactersTab({
         saveTimer.current = setTimeout(() => {
             saveCharacter(id, { [field]: value } as Database['public']['Tables']['characters']['Update'])
         }, 1000)
+    }
+
+    // For PremiumEditor (multiline) fields: skip local state update to prevent
+    // parent re-renders that interrupt Android IME composition mid-keystroke.
+    const handleTextEditorChange = (id: string, field: keyof Character, value: string) => {
+        if (saveTimer.current) clearTimeout(saveTimer.current)
+        setIsSaving(true)
+        saveTimer.current = setTimeout(() => {
+            saveCharacter(id, { [field]: value } as Database['public']['Tables']['characters']['Update'])
+        }, 1500)
     }
 
     async function handleDeleteCharacter(id: string) {
@@ -441,7 +451,7 @@ export default function CharactersTab({
                                 <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-12 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.02)] ring-1 ring-slate-100/50">
                                         <PremiumEditor
                                             value={selectedCharacter.description || ''}
-                                            onValueChange={(val) => handleFieldChange(selectedCharacter.id, 'description', val)}
+                                            onValueChange={(val) => handleTextEditorChange(selectedCharacter.id, 'description', val)}
                                             className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-lg sm:text-xl italic placeholder:text-stone-200"
                                             editorClassName="italic"
                                             placeholder={projectType === 'novel' 
@@ -467,7 +477,7 @@ export default function CharactersTab({
                                 <div className="bg-[#fcfbf9]/60 rounded-[3rem] p-10 ring-1 ring-[#546354]/5 border border-dashed border-[#546354]/10">
                                     <PremiumEditor
                                         value={selectedCharacter.notes || ''}
-                                        onValueChange={(val) => handleFieldChange(selectedCharacter.id, 'notes', val)}
+                                        onValueChange={(val) => handleTextEditorChange(selectedCharacter.id, 'notes', val)}
                                         className="w-full bg-transparent text-slate-500 font-sans text-sm leading-relaxed italic placeholder:text-stone-200"
                                         editorClassName="italic"
                                         placeholder="Add internal motivations, personal goals, and narrative arcs..."

@@ -76,12 +76,23 @@ export default function ObjectsTab({
     }, [])
 
     const handleFieldChange = (id: string, field: string, value: string) => {
+        // Update local state immediately for name shown in sidebar
         setLocalObjects((prev: any[]) => prev.map(o => o.id === id ? { ...o, [field]: value } : o))
         if (saveTimer.current) clearTimeout(saveTimer.current)
         setIsSaving(true)
         saveTimer.current = setTimeout(() => {
             saveObject(id, { [field]: value })
         }, 1000)
+    }
+
+    // For PremiumEditor (multiline) fields: skip local state update to prevent
+    // parent re-renders that interrupt Android IME composition mid-keystroke.
+    const handleTextEditorChange = (id: string, field: string, value: string) => {
+        if (saveTimer.current) clearTimeout(saveTimer.current)
+        setIsSaving(true)
+        saveTimer.current = setTimeout(() => {
+            saveObject(id, { [field]: value })
+        }, 1500)
     }
 
     async function handleDeleteObject(id: string) {
@@ -336,7 +347,7 @@ export default function ObjectsTab({
                                 <div className="bg-[#fcfbf9]/60 rounded-[3rem] p-10 ring-1 ring-[#546354]/5 border border-dashed border-[#546354]/10">
                                     <PremiumEditor 
                                         value={selectedObject.significance || ''} 
-                                        onValueChange={(val) => handleFieldChange(selectedObject.id, 'significance', val)} 
+                                        onValueChange={(val) => handleTextEditorChange(selectedObject.id, 'significance', val)} 
                                         className="w-full bg-transparent text-slate-500 font-sans text-sm leading-relaxed min-h-[100px] italic placeholder:text-stone-200" 
                                         editorClassName="italic"
                                         placeholder="Why does this item matter? Narrative functions, stakes, or origins..." 
@@ -355,7 +366,7 @@ export default function ObjectsTab({
                                 <div className="bg-white rounded-[3rem] p-8 sm:p-12 shadow-sm ring-1 ring-slate-100/50">
                                     <PremiumEditor 
                                         value={selectedObject.description || ''} 
-                                        onValueChange={(val) => handleFieldChange(selectedObject.id, 'description', val)} 
+                                        onValueChange={(val) => handleTextEditorChange(selectedObject.id, 'description', val)} 
                                         className="w-full bg-transparent text-slate-600 font-serif text-lg leading-relaxed min-h-[150px] placeholder:text-stone-200" 
                                         placeholder="Physical properties, weight, textures, or hidden secrets..." 
                                         minHeight="150px"
