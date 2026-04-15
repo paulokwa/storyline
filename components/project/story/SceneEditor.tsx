@@ -77,6 +77,13 @@ import { useComments } from '@/components/project/CommentsContext'
 import { CommentMark } from '@/lib/tiptap/comment-mark'
 import { usePresence } from '@/components/project/PresenceContext'
 
+const VIEW_FONT_STACKS: Record<string, string> = {
+    Newsreader: "var(--font-newsreader), var(--font-lora), Georgia, serif",
+    Lora: "var(--font-lora), Georgia, serif",
+    Inter: "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    'Atkinson Hyperlegible': "var(--font-atkinson), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+}
+
 interface SceneEditorProps {
     scene: any
     title: string
@@ -299,6 +306,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         textAlign: 'left',
         fontFamily: 'Newsreader'
     })
+
+    const resolvedEditorFont = VIEW_FONT_STACKS[viewSettings.fontFamily] ?? VIEW_FONT_STACKS.Newsreader
 
 
     useEffect(() => {
@@ -1089,7 +1098,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                                                         ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200" 
                                                                         : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/50"
                                                                 )}
-                                                                style={{ fontFamily: font.id }}
+                                                                style={{ fontFamily: VIEW_FONT_STACKS[font.id] ?? font.id }}
                                                             >
                                                                 {font.label}
                                                             </button>
@@ -1219,7 +1228,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
             <div 
                 style={isMounted && writingMode === 'simple' ? {
-                    '--editor-font': `'${viewSettings.fontFamily}', serif`,
+                    '--editor-font': resolvedEditorFont,
                     '--editor-font-size': viewSettings.fontSize,
                     '--editor-line-height': viewSettings.lineHeight,
                     '--editor-max-width': viewSettings.maxWidth,

@@ -1,7 +1,41 @@
 import type { Metadata } from 'next'
+import { Atkinson_Hyperlegible, Inter, Lora, Manrope, Newsreader } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/providers/ThemeProvider'
 import { Toaster } from 'sonner'
+
+const manrope = Manrope({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-manrope',
+})
+
+const newsreader = Newsreader({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  style: ['normal', 'italic'],
+  variable: '--font-newsreader',
+})
+
+const lora = Lora({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  style: ['normal', 'italic'],
+  variable: '--font-lora',
+})
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-inter',
+})
+
+const atkinson = Atkinson_Hyperlegible({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  style: ['normal', 'italic'],
+  variable: '--font-atkinson',
+})
 
 export const metadata: Metadata = {
   title: 'Storyline — Write Your Story',
@@ -14,11 +48,11 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      </head>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${manrope.variable} ${newsreader.variable} ${lora.variable} ${inter.variable} ${atkinson.variable}`}
+    >
       <body className="bg-background antialiased">
         <ThemeProvider>
           {children}

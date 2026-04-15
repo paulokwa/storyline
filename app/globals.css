@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,700;1,6..72,400;1,6..72,700&family=Lora:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@400;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 @import "tailwindcss";
 
 :root, [data-theme='sanctuary'] {
@@ -33,8 +32,8 @@
   --primary-dim: #485748;
 
   /* Custom editor font */
-  --editor-font: 'Newsreader', 'Lora', serif;
-  --ui-font: 'Manrope', 'Inter', sans-serif;
+  --editor-font: var(--font-newsreader), var(--font-lora), serif;
+  --ui-font: var(--font-manrope), var(--font-inter), sans-serif;
 }
 
 [data-theme='midnight'] {
