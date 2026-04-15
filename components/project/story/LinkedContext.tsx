@@ -56,7 +56,17 @@ export default function LinkedContext({
     const [isPending, startTransition] = useTransition()
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'
-    const { scrollRef, isDragging, onMouseDown, onMouseLeave, onMouseUp, onMouseMove } = useDragScroll()
+    const { 
+        scrollRef, isDragging, onMouseDown, onMouseLeave, onMouseUp, onMouseMove 
+    } = useDragScroll()
+    const { 
+        scrollRef: actionScrollRef, 
+        isDragging: isActionDragging, 
+        onMouseDown: onActionMouseDown, 
+        onMouseLeave: onActionMouseLeave, 
+        onMouseUp: onActionMouseUp, 
+        onMouseMove: onActionMouseMove 
+    } = useDragScroll()
 
 
     const linkedChars = sceneCharacters?.map(sc => sc.characters).filter(c => c && !c.deleted_at) || []
@@ -135,67 +145,79 @@ export default function LinkedContext({
     return (
         <div className="flex min-w-0 flex-1 flex-col gap-2">
             {hasLinkActions && (
-                <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
-                    <div className="flex shrink-0 items-center gap-1 text-[9px] uppercase tracking-widest text-[#546354] font-bold h-6">
-                        <Plus className="w-3 h-3" />
-                        <span>Link</span>
+                <div className="relative min-w-0 h-8">
+                    <div 
+                        ref={actionScrollRef}
+                        onMouseDown={onActionMouseDown}
+                        onMouseLeave={onActionMouseLeave}
+                        onMouseUp={onActionMouseUp}
+                        onMouseMove={onActionMouseMove}
+                        className={cn(
+                            "flex items-center gap-4 overflow-x-auto no-scrollbar absolute inset-0 pr-12 [mask-image:linear-gradient(to_right,black_calc(100%-40px),transparent_100%)] overscroll-x-contain pointer-events-auto",
+                            isActionDragging ? "cursor-grabbing" : "cursor-grab"
+                        )}
+                    >
+                        <div className="flex shrink-0 items-center gap-1 text-[9px] uppercase tracking-widest text-[#546354] font-bold h-6">
+                            <Plus className="w-3 h-3" />
+                            <span>Link</span>
+                        </div>
+
+                        {unlinkedCharacters.length > 0 && (
+                            <select 
+                                className="bg-transparent shrink-0 text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-[#546354] transition-colors"
+                                value=""
+                                onChange={(e) => e.target.value && addCharacter(e.target.value)}
+                                disabled={isPending}
+                            >
+                                <option value="" disabled>+ Character</option>
+                                {unlinkedCharacters.map(char => (
+                                    <option key={char.id} value={char.id}>{char.name}</option>
+                                ))}
+                            </select>
+                        )}
+
+                        {unlinkedIdeas.length > 0 && (
+                            <select 
+                                className="bg-transparent shrink-0 text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-indigo-600 transition-colors"
+                                value=""
+                                onChange={(e) => e.target.value && addIdea(e.target.value)}
+                                disabled={isPending}
+                            >
+                                <option value="" disabled>+ Idea</option>
+                                {unlinkedIdeas.map(idea => (
+                                    <option key={idea.id} value={idea.id}>{idea.title}</option>
+                                ))}
+                            </select>
+                        )}
+
+                        {unlinkedLocations.length > 0 && (
+                            <select 
+                                className="bg-transparent shrink-0 text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-emerald-600 transition-colors"
+                                value=""
+                                onChange={(e) => e.target.value && addLocation(e.target.value)}
+                                disabled={isPending}
+                            >
+                                <option value="" disabled>+ Location</option>
+                                {unlinkedLocations.map(loc => (
+                                    <option key={loc.id} value={loc.id}>{loc.name}</option>
+                                ))}
+                            </select>
+                        )}
+
+                        {unlinkedObjects.length > 0 && (
+                            <select 
+                                className="bg-transparent shrink-0 text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-blue-600 transition-colors"
+                                value=""
+                                onChange={(e) => e.target.value && addObject(e.target.value)}
+                                disabled={isPending}
+                            >
+                                <option value="" disabled>+ Object</option>
+                                {unlinkedObjects.map(obj => (
+                                    <option key={obj.id} value={obj.id}>{obj.name}</option>
+                                ))}
+                            </select>
+                        )}
                     </div>
-
-                    {unlinkedCharacters.length > 0 && (
-                        <select 
-                            className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-[#546354] transition-colors"
-                            value=""
-                            onChange={(e) => e.target.value && addCharacter(e.target.value)}
-                            disabled={isPending}
-                        >
-                            <option value="" disabled>+ Character</option>
-                            {unlinkedCharacters.map(char => (
-                                <option key={char.id} value={char.id}>{char.name}</option>
-                            ))}
-                        </select>
-                    )}
-
-                    {unlinkedIdeas.length > 0 && (
-                        <select 
-                            className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-indigo-600 transition-colors"
-                            value=""
-                            onChange={(e) => e.target.value && addIdea(e.target.value)}
-                            disabled={isPending}
-                        >
-                            <option value="" disabled>+ Idea</option>
-                            {unlinkedIdeas.map(idea => (
-                                <option key={idea.id} value={idea.id}>{idea.title}</option>
-                            ))}
-                        </select>
-                    )}
-
-                    {unlinkedLocations.length > 0 && (
-                        <select 
-                            className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-emerald-600 transition-colors"
-                            value=""
-                            onChange={(e) => e.target.value && addLocation(e.target.value)}
-                            disabled={isPending}
-                        >
-                            <option value="" disabled>+ Location</option>
-                            {unlinkedLocations.map(loc => (
-                                <option key={loc.id} value={loc.id}>{loc.name}</option>
-                            ))}
-                        </select>
-                    )}
-
-                    {unlinkedObjects.length > 0 && (
-                        <select 
-                            className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-blue-600 transition-colors"
-                            value=""
-                            onChange={(e) => e.target.value && addObject(e.target.value)}
-                            disabled={isPending}
-                        >
-                            <option value="" disabled>+ Object</option>
-                            {unlinkedObjects.map(obj => (
-                                <option key={obj.id} value={obj.id}>{obj.name}</option>
-                            ))}
-                        </select>
-                    )}
                 </div>
             )}
 
