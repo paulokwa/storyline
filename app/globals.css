@@ -559,6 +559,60 @@ body {
   font-family: inherit !important;
 }
 
+.editor-novel-overrides.ProseMirror h1,
+.editor-novel-overrides .ProseMirror h1 {
+  font-size: calc(var(--editor-font-size, 1.125rem) * 1.9) !important;
+  line-height: 1.15 !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em;
+  margin: 1.4em 0 0.65em !important;
+  color: #1f2937;
+}
+
+.editor-novel-overrides.ProseMirror h2,
+.editor-novel-overrides .ProseMirror h2 {
+  font-size: calc(var(--editor-font-size, 1.125rem) * 1.45) !important;
+  line-height: 1.25 !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em;
+  margin: 1.2em 0 0.55em !important;
+  color: #334155;
+}
+
+.editor-novel-overrides.ProseMirror ul,
+.editor-novel-overrides.ProseMirror ol,
+.editor-novel-overrides .ProseMirror ul,
+.editor-novel-overrides .ProseMirror ol {
+  margin: 1em 0 !important;
+  padding-left: 1.6em !important;
+}
+
+.editor-novel-overrides.ProseMirror ul,
+.editor-novel-overrides .ProseMirror ul {
+  list-style: disc !important;
+}
+
+.editor-novel-overrides.ProseMirror ol,
+.editor-novel-overrides .ProseMirror ol {
+  list-style: decimal !important;
+}
+
+.editor-novel-overrides.ProseMirror li,
+.editor-novel-overrides .ProseMirror li {
+  display: list-item;
+  margin: 0.35em 0 !important;
+}
+
+.editor-novel-overrides.ProseMirror blockquote,
+.editor-novel-overrides .ProseMirror blockquote {
+  margin: 1.25em 0 !important;
+  padding: 0.3em 0 0.3em 1.1em !important;
+  border-left: 3px solid rgba(99, 102, 241, 0.35);
+  color: #475569;
+  font-style: italic;
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.07), transparent 72%);
+}
+
 /* Special case for highlight to ensure background color doesn't wrap oddly at larger sizes */
 .editor-novel-overrides mark {
   padding: 0.1em 0;

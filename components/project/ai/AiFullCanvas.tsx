@@ -74,12 +74,6 @@ export default function AiFullCanvas({
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div className="px-3 py-1.5 rounded-full bg-indigo-50/50 border border-indigo-100/50 flex items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-500 hidden sm:flex">
-                        <Sparkles className="w-3 h-3 text-indigo-400" />
-                        <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-indigo-600/70">Workspace Mode</span>
-                    </div>
-                </div>
             </div>
 
             <div className="flex-1 flex justify-center overflow-hidden">
