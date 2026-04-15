@@ -132,7 +132,7 @@ const ToolbarButton = ({
                 <Icon className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
             </button>
         </TooltipTrigger>
-        <TooltipContent side="top">{tooltip}</TooltipContent>
+        <TooltipContent side="top" sideOffset={8}>{tooltip}</TooltipContent>
     </Tooltip>
 )
 
