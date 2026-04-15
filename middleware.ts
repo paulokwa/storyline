@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl
     
     // Skip middleware for API routes as they handle their own auth
@@ -37,7 +37,7 @@ export async function proxy(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     // Public routes - allowing the root for the new showcase
-    const publicRoutes = ['/', '/login', '/signup', '/forgot-password', '/reset-password']
+    const publicRoutes = ['/', '/login', '/signup', '/forgot-password', '/reset-password', '/terms', '/privacy', '/ai-disclaimer']
     const isPublicRoute = publicRoutes.some((r) => pathname === r || pathname.startsWith(r + '/'))
 
     if (!user && !isPublicRoute) {
@@ -58,4 +58,4 @@ export async function proxy(request: NextRequest) {
 export const config = {
     matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }
-export default proxy
+export default middleware

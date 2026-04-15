@@ -341,15 +341,19 @@ export default function Showcase() {
                             <div className="space-y-4">
                                 <p className="text-[10px] uppercase tracking-widest font-bold text-slate-300">Support</p>
                                 <ul className="space-y-3 text-sm font-medium text-slate-500">
-                                    <li><a href="mailto:mwake.dev@gmail.com" className="hover:text-[#546354]">Contact Email</a></li>
-                                    <li><Link href="/login" className="hover:text-[#546354]">Sign In</Link></li>
+                                    <li><a href="mailto:mwake.dev@gmail.com" className="hover:text-[#546354]">mwake.dev@gmail.com</a></li>
+                                    <li><Link href="/terms" className="hover:text-[#546354]">Terms of Service</Link></li>
+                                    <li><Link href="/privacy" className="hover:text-[#546354]">Privacy Policy</Link></li>
+                                    <li><Link href="/ai-disclaimer" className="hover:text-[#546354]">AI Disclaimer</Link></li>
                                 </ul>
                             </div>
                         </div>
                     </div>
                     <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-10 border-t border-slate-50">
                         <p className="text-[11px] font-bold tracking-widest uppercase text-slate-300">© 2026 Storyline — Built for Authors</p>
-                        <div className="text-[11px] font-bold tracking-widest uppercase text-[#546354]">Storyline is Free During Beta</div>
+                        <div className="text-[11px] font-bold tracking-widest uppercase text-[#546354] flex gap-4">
+                            <span>Storyline is Free During Beta</span>
+                        </div>
                     </div>
                 </div>
             </footer>
