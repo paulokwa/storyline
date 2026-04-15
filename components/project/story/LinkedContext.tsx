@@ -5,12 +5,6 @@ import { useProjectActions } from '@/components/project/ProjectContext'
 import { Users, Lightbulb, MapPin, Package, X, FileText, Folder, MessageSquare, Plus } from 'lucide-react'
 import { useDragScroll } from '@/hooks/useDragScroll'
 
-interface Entity {
-    id: string
-    name?: string
-    title?: string
-}
-
 interface LinkedContextProps {
     sceneId: string
     sceneCharacters: { characters: any }[]
@@ -74,11 +68,18 @@ export default function LinkedContext({
     const unlinkedIdeas = projectIdeas.filter(pi => !linkedIdeas.some(li => li.id === pi.id))
     const unlinkedLocations = projectLocations.filter(pl => !linkedLocs.some(ll => ll.id === pl.id))
     const unlinkedObjects = projectObjects.filter(po => !linkedObjs.some(lo => lo.id === po.id))
+    const hasLinkedContext = linkedChars.length > 0 || linkedIdeas.length > 0 || linkedLocs.length > 0 || linkedObjs.length > 0 || selectedNodeIds.length > 0
+    const hasLinkActions = !isReadOnly && (
+        unlinkedCharacters.length > 0 ||
+        unlinkedIdeas.length > 0 ||
+        unlinkedLocations.length > 0 ||
+        unlinkedObjects.length > 0
+    )
 
     async function addCharacter(characterId: string) {
         startTransition(async () => {
-            // @ts-ignore
-            const { error } = await supabase.from('scene_characters').upsert({ scene_id: sceneId, character_id: characterId }, { onConflict: 'scene_id,character_id' })
+            // @ts-expect-error Supabase generated types do not model composite onConflict strings here.
+            await supabase.from('scene_characters').upsert({ scene_id: sceneId, character_id: characterId }, { onConflict: 'scene_id,character_id' })
             onUpdate()
         })
     }
@@ -92,8 +93,8 @@ export default function LinkedContext({
 
     async function addIdea(ideaId: string) {
         startTransition(async () => {
-            // @ts-ignore
-            const { error } = await supabase.from('scene_ideas').upsert({ scene_id: sceneId, idea_id: ideaId }, { onConflict: 'scene_id,idea_id' })
+            // @ts-expect-error Supabase generated types do not model composite onConflict strings here.
+            await supabase.from('scene_ideas').upsert({ scene_id: sceneId, idea_id: ideaId }, { onConflict: 'scene_id,idea_id' })
             onUpdate()
         })
     }
@@ -107,8 +108,8 @@ export default function LinkedContext({
 
     async function addLocation(locationId: string) {
         startTransition(async () => {
-            // @ts-ignore
-            const { error } = await supabase.from('scene_locations').upsert({ scene_id: sceneId, location_id: locationId }, { onConflict: 'scene_id,location_id' })
+            // @ts-expect-error Supabase generated types do not model composite onConflict strings here.
+            await supabase.from('scene_locations').upsert({ scene_id: sceneId, location_id: locationId }, { onConflict: 'scene_id,location_id' })
             onUpdate()
         })
     }
@@ -122,8 +123,8 @@ export default function LinkedContext({
 
     async function addObject(objectId: string) {
         startTransition(async () => {
-            // @ts-ignore
-            const { error } = await supabase.from('scene_objects').upsert({ scene_id: sceneId, object_id: objectId }, { onConflict: 'scene_id,object_id' })
+            // @ts-expect-error Supabase generated types do not model composite onConflict strings here.
+            await supabase.from('scene_objects').upsert({ scene_id: sceneId, object_id: objectId }, { onConflict: 'scene_id,object_id' })
             onUpdate()
         })
     }
@@ -136,84 +137,89 @@ export default function LinkedContext({
     }
 
     return (
-        <div className="flex-1 relative min-w-0 h-[34px]">
-            <div 
-                ref={scrollRef}
-                onMouseDown={onMouseDown}
-                onMouseLeave={onMouseLeave}
-                onMouseUp={onMouseUp}
-                onMouseMove={onMouseMove}
-                className={cn(
-                    "flex items-center gap-2 overflow-x-auto no-scrollbar absolute inset-0 pr-12 [mask-image:linear-gradient(to_right,black_calc(100%-40px),transparent_100%)] overscroll-x-contain pointer-events-auto",
-                    isDragging ? "cursor-grabbing" : "cursor-grab"
-                )}
-            >
-                {/* Add Context Actions */}
-                {!isReadOnly && (
-                    <div className="flex shrink-0 items-center gap-2 mr-2 border-r border-slate-200 pr-3">
-                        <div className="flex items-center gap-1 text-[9px] uppercase tracking-widest text-[#546354] font-bold h-6">
-                            <Plus className="w-3 h-3" />
-                            <span>Link</span>
-                        </div>
-                        
-                        {unlinkedCharacters.length > 0 && (
-                            <select 
-                                className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-[#546354] transition-colors"
-                                value=""
-                                onChange={(e) => e.target.value && addCharacter(e.target.value)}
-                                disabled={isPending}
-                            >
-                                <option value="" disabled>+ Character</option>
-                                {unlinkedCharacters.map(char => (
-                                    <option key={char.id} value={char.id}>{char.name}</option>
-                                ))}
-                            </select>
-                        )}
-
-                        {unlinkedIdeas.length > 0 && (
-                            <select 
-                                className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-indigo-600 transition-colors"
-                                value=""
-                                onChange={(e) => e.target.value && addIdea(e.target.value)}
-                                disabled={isPending}
-                            >
-                                <option value="" disabled>+ Idea</option>
-                                {unlinkedIdeas.map(idea => (
-                                    <option key={idea.id} value={idea.id}>{idea.title}</option>
-                                ))}
-                            </select>
-                        )}
-
-                        {unlinkedLocations.length > 0 && (
-                            <select 
-                                className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-emerald-600 transition-colors"
-                                value=""
-                                onChange={(e) => e.target.value && addLocation(e.target.value)}
-                                disabled={isPending}
-                            >
-                                <option value="" disabled>+ Location</option>
-                                {unlinkedLocations.map(loc => (
-                                    <option key={loc.id} value={loc.id}>{loc.name}</option>
-                                ))}
-                            </select>
-                        )}
-
-                        {unlinkedObjects.length > 0 && (
-                            <select 
-                                className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-blue-600 transition-colors"
-                                value=""
-                                onChange={(e) => e.target.value && addObject(e.target.value)}
-                                disabled={isPending}
-                            >
-                                <option value="" disabled>+ Object</option>
-                                {unlinkedObjects.map(obj => (
-                                    <option key={obj.id} value={obj.id}>{obj.name}</option>
-                                ))}
-                            </select>
-                        )}
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+            {hasLinkActions && (
+                <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
+                    <div className="flex shrink-0 items-center gap-1 text-[9px] uppercase tracking-widest text-[#546354] font-bold h-6">
+                        <Plus className="w-3 h-3" />
+                        <span>Link</span>
                     </div>
-                )}
 
+                    {unlinkedCharacters.length > 0 && (
+                        <select 
+                            className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-[#546354] transition-colors"
+                            value=""
+                            onChange={(e) => e.target.value && addCharacter(e.target.value)}
+                            disabled={isPending}
+                        >
+                            <option value="" disabled>+ Character</option>
+                            {unlinkedCharacters.map(char => (
+                                <option key={char.id} value={char.id}>{char.name}</option>
+                            ))}
+                        </select>
+                    )}
+
+                    {unlinkedIdeas.length > 0 && (
+                        <select 
+                            className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-indigo-600 transition-colors"
+                            value=""
+                            onChange={(e) => e.target.value && addIdea(e.target.value)}
+                            disabled={isPending}
+                        >
+                            <option value="" disabled>+ Idea</option>
+                            {unlinkedIdeas.map(idea => (
+                                <option key={idea.id} value={idea.id}>{idea.title}</option>
+                            ))}
+                        </select>
+                    )}
+
+                    {unlinkedLocations.length > 0 && (
+                        <select 
+                            className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-emerald-600 transition-colors"
+                            value=""
+                            onChange={(e) => e.target.value && addLocation(e.target.value)}
+                            disabled={isPending}
+                        >
+                            <option value="" disabled>+ Location</option>
+                            {unlinkedLocations.map(loc => (
+                                <option key={loc.id} value={loc.id}>{loc.name}</option>
+                            ))}
+                        </select>
+                    )}
+
+                    {unlinkedObjects.length > 0 && (
+                        <select 
+                            className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-blue-600 transition-colors"
+                            value=""
+                            onChange={(e) => e.target.value && addObject(e.target.value)}
+                            disabled={isPending}
+                        >
+                            <option value="" disabled>+ Object</option>
+                            {unlinkedObjects.map(obj => (
+                                <option key={obj.id} value={obj.id}>{obj.name}</option>
+                            ))}
+                        </select>
+                    )}
+                </div>
+            )}
+
+            <div className="flex min-w-0 items-start gap-3">
+                <div className="flex shrink-0 items-center gap-2 pt-1 text-[9px] uppercase tracking-widest text-slate-400 font-bold">
+                    <span>AI Ready</span>
+                </div>
+
+                <div className="relative min-w-0 flex-1 h-[34px]">
+                    <div 
+                        ref={scrollRef}
+                        onMouseDown={onMouseDown}
+                        onMouseLeave={onMouseLeave}
+                        onMouseUp={onMouseUp}
+                        onMouseMove={onMouseMove}
+                        className={cn(
+                            "flex items-center gap-2 overflow-x-auto no-scrollbar absolute inset-0 pr-12 [mask-image:linear-gradient(to_right,black_calc(100%-40px),transparent_100%)] overscroll-x-contain pointer-events-auto",
+                            isDragging ? "cursor-grabbing" : "cursor-grab"
+                        )}
+                    >
                 {/* Linked Characters */}
                 {linkedChars.map(char => {
                     const isActive = activeCharacters?.[char.id] !== false
@@ -349,6 +355,12 @@ export default function LinkedContext({
                         </div>
                     )
                 })}
+
+                        {!hasLinkedContext && (
+                            <div className="text-[11px] text-slate-300 italic shrink-0">No linked items ready for AI analysis</div>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     )
