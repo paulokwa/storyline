@@ -63,7 +63,7 @@ export default function Showcase() {
                         </p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-300">
                             <Link href="/signup">
-                                <Button className="h-14 px-10 bg-[#546354] hover:bg-[#3d4a3d] text-white rounded-full font-serif italic text-xl shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all duration-300">
+                                <Button className="h-14 px-6 md:px-10 bg-[#546354] hover:bg-[#3d4a3d] text-white rounded-full font-serif italic text-lg md:text-xl shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all duration-300 w-full sm:w-auto">
                                     Start Writing Free
                                 </Button>
                             </Link>
@@ -275,7 +275,7 @@ export default function Showcase() {
                             </p>
                             <div className="pt-4">
                                 <Link href="/signup">
-                                    <Button className="h-14 px-12 bg-[#546354] hover:bg-[#3d4a3d] text-white rounded-full font-serif italic text-xl shadow-lg transition-all">
+                                    <Button className="h-14 px-6 md:px-12 bg-[#546354] hover:bg-[#3d4a3d] text-white rounded-full font-serif italic text-lg md:text-xl shadow-lg transition-all w-full sm:w-auto">
                                         Join the Beta — It's Free
                                     </Button>
                                 </Link>
@@ -292,7 +292,7 @@ export default function Showcase() {
                     <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
                         <h2 className="text-4xl font-serif text-white mb-8">Ready to start your next masterpiece?</h2>
                         <Link href="/signup">
-                            <Button className="h-16 px-12 bg-white text-[#546354] hover:bg-slate-50 rounded-full font-serif italic text-2xl shadow-2xl transition-all">
+                            <Button className="h-16 px-6 md:px-12 bg-white text-[#546354] hover:bg-slate-50 rounded-full font-serif italic text-xl md:text-2xl shadow-2xl transition-all w-full sm:w-auto whitespace-normal sm:whitespace-nowrap">
                                 Step into the Sanctuary
                             </Button>
                         </Link>
