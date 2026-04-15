@@ -424,7 +424,7 @@ const NodeItem = React.memo(({
                         ) : (
                             <span
                                 className={cn(
-                                    "flex-1 truncate",
+                                    "flex-1 truncate md:overflow-visible md:text-clip md:whitespace-normal md:break-words md:group-hover:hidden",
                                     isRoot && "tracking-tight text-[#485748]",
                                     isScene && "text-slate-600 font-medium",
                                     mobileOptionsActive && "hidden md:block"
@@ -441,6 +441,7 @@ const NodeItem = React.memo(({
                         {confirmingDeleteId === node.id && !editing && (
                             <div className="flex items-center gap-1 shrink-0 animate-in fade-in duration-150" onClick={e => e.stopPropagation()}>
                                 <button
+                                    onClick={e => { e.stopPropagation(); onRequestDelete(null) }}
                                     className="px-2 py-1 text-[9px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider rounded"
                                 >Cancel</button>
                                 <button
@@ -453,7 +454,7 @@ const NodeItem = React.memo(({
                         {/* Hover/Long Press actions — only when not confirming */}
                         {(!editing && !isReadOnly && confirmingDeleteId !== node.id) && (
                             <div className={cn(
-                                "flex items-center gap-1 shrink-0 transition-all duration-300",
+                                "flex items-center gap-1 shrink-0 transition-all duration-300 md:hidden md:group-hover:flex",
                                 // On desktop: hide unless hover or active (active only if it's a scene)
                                 "opacity-0 md:group-hover:opacity-100",
                                 isActive && "md:opacity-100",
