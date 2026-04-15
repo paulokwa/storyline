@@ -103,7 +103,12 @@ function attemptJsonRepair(str: string): any {
     }
 }
 
-function getDescendantScenes(nodeId: string, allNodes: any[], allScenes: any[]): any[] {
+function getDescendantScenes(nodeId: string, allNodes: any[], allScenes: any[], projectContextMode: 'default' | 'expanded' | 'full' = 'default'): any[] {
+    if (nodeId === 'virtual-root') {
+        if (projectContextMode === 'default') return allScenes.slice(0, 10)
+        if (projectContextMode === 'expanded') return allScenes.slice(0, 50)
+        return allScenes
+    }
     const node = allNodes.find(n => n.id === nodeId)
     if (!node) return []
     if (node.type === 'scene') {
@@ -190,6 +195,8 @@ export default function AiHelperPanel({
     const [preflight, setPreflight] = useState<ContextSizingResult | null>(null)
     const [isConfirmingCost, setIsConfirmingCost] = useState(false)
     const [isExtremeContext, setIsExtremeContext] = useState(false)
+    const [isOverridingProjectContext, setIsOverridingProjectContext] = useState(false)
+    const [projectContextMode, setProjectContextMode] = useState<'default' | 'expanded' | 'full'>('default')
     const [pendingRequest, setPendingRequest] = useState<{
         finalPrompt: string,
         contextText: string,
@@ -281,7 +288,7 @@ export default function AiHelperPanel({
         const results: { title: string, content: string, node_id: string }[] = []
         
         for (const node of selectedNodes) {
-             const scenesInside = getDescendantScenes(node.id, allNodes, allScenes)
+             const scenesInside = getDescendantScenes(node.id, allNodes, allScenes, projectContextMode)
              for (const s of scenesInside) {
                   if (!sceneIds.has(s.id)) {
                        sceneIds.add(s.id)
@@ -295,13 +302,17 @@ export default function AiHelperPanel({
              }
         }
         return results
-    }, [selectedNodes, allNodes, allScenes])
+    }, [selectedNodes, allNodes, allScenes, projectContextMode])
 
     const contextSizeChars = useMemo(() => {
         return storySelectionContext.reduce((acc, s) => acc + s.title.length + s.content.length, 0)
     }, [storySelectionContext])
 
-    const isContextTooLarge = contextSizeChars > 30000 // Blocking over 30k chars
+    const isContextTooLarge = contextSizeChars > 150000 // High baseline for safety
+
+    const isVirtualRootSelected = useMemo(() => {
+        return selectedNodes.some(n => n.id === 'virtual-root')
+    }, [selectedNodes])
 
     const linkedEntitiesSnapshot = useMemo(() => {
         return {
@@ -661,7 +672,7 @@ export default function AiHelperPanel({
         e.preventDefault()
         if (!aiSettings.ai_enabled) return
         const currentPrompt = prompt.trim()
-        if (actualLoading || isContextTooLarge) return
+        if (actualLoading) return
 
         const modeRules = projectType === 'tv_script'
             ? `\n\nWrite in professional script format (scene headings, character names in caps, dialogue, etc.).\nDo not give advice, suggestions, or explanations.\nOutput only the script.`
@@ -1508,10 +1519,35 @@ export default function AiHelperPanel({
 
                 <div className="px-4 pt-4 pb-24 md:pb-6">
                     <form onSubmit={handleSubmit} className="space-y-3" suppressHydrationWarning>
+                        {isVirtualRootSelected && (
+                            <div className="flex flex-col gap-2 p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-indigo-700 animate-in fade-in zoom-in duration-300 mb-2">
+                                <div className="flex items-start gap-2 text-[10px] leading-snug">
+                                    <Sparkles className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                    <p>
+                                        You've selected the <strong>Entire Project</strong>. 
+                                        {projectContextMode === 'default' && " To keep responses fast, I've loaded the first 10 scenes."}
+                                        {projectContextMode === 'expanded' && " AI is using an expanded context (up to 50 scenes)."}
+                                        {projectContextMode === 'full' && " AI is using the entire project context."}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsOverridingProjectContext(true)}
+                                    className="text-[10px] font-bold uppercase tracking-wider text-indigo-500 hover:text-indigo-600 self-end px-2 py-1 rounded-lg hover:bg-indigo-100/50 transition-colors"
+                                >
+                                    {projectContextMode === 'default' ? 'Use more context' : 'Change context limit'}
+                                </button>
+                            </div>
+                        )}
                         {isContextTooLarge && (
-                            <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 text-[10px] leading-snug animate-in fade-in zoom-in duration-300">
+                            <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 text-[10px] leading-snug animate-in fade-in zoom-in duration-300 mb-2">
                                 <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                                <p>This selection is too large to send directly. Reduce the selection or use summarized context.</p>
+                                <p>
+                                    {projectContextMode === 'full' 
+                                        ? "This project is exceptionally large. Sending full context will increase cost and may exceed model limits."
+                                        : "This selection is too large for standard analysis. Please reduce the selection or use the default project context."
+                                    }
+                                </p>
                             </div>
                         )}
                         {actualLoading && (
@@ -1549,10 +1585,10 @@ export default function AiHelperPanel({
                             />
                             <button
                                 type="submit"
-                                disabled={actualLoading || (!prompt.trim() && promptMode !== 'Review / Chat') || isContextTooLarge}
+                                disabled={actualLoading || (!prompt.trim() && promptMode !== 'Review / Chat')}
                                 className={cn(
                                     "absolute bottom-3.5 right-3.5 p-2 rounded-xl transition-all active:scale-95 flex items-center justify-center min-w-[34px] min-h-[34px]",
-                                    !actualLoading && !isContextTooLarge && (prompt.trim() || promptMode === 'Review / Chat')
+                                    !actualLoading && (prompt.trim() || promptMode === 'Review / Chat')
                                         ? "bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-100"
                                         : "bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200"
                                 )}
@@ -1575,10 +1611,16 @@ export default function AiHelperPanel({
                 setIsConfirmingCost={setIsConfirmingCost}
                 isExtremeContext={isExtremeContext}
                 setIsExtremeContext={setIsExtremeContext}
+                isOverridingProjectContext={isOverridingProjectContext}
+                setIsOverridingProjectContext={setIsOverridingProjectContext}
+                projectContextMode={projectContextMode}
+                setProjectContextMode={setProjectContextMode}
+                allScenes={allScenes}
                 provider={aiSettings.ai_provider}
                 onConfirm={() => {
                     setIsConfirmingCost(false);
                     setIsExtremeContext(false);
+                    setIsOverridingProjectContext(false);
                     if (pendingRequest) {
                         executeAiRequest(pendingRequest.finalPrompt, pendingRequest.contextText, pendingRequest.strategy);
                     }
@@ -1586,6 +1628,7 @@ export default function AiHelperPanel({
                 onCancel={() => {
                     setIsConfirmingCost(false);
                     setIsExtremeContext(false);
+                    setIsOverridingProjectContext(false);
                     setPendingRequest(null);
                     setPreflight(null);
                 }}

@@ -6,7 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
     ChevronRight, ChevronDown, Plus, Trash2,
-    Film, Layers, FileText, BookOpen, Check, Pencil
+    Film, Layers, FileText, BookOpen, Check, Pencil,
+    Book, Clapperboard, Shield
 } from 'lucide-react'
 import {
     TooltipProvider,
@@ -33,11 +34,13 @@ interface StructureTreeProps {
     onSceneCreated: (scene: Scene) => void
 }
 
-const NODE_ICONS: Record<NodeType, React.ElementType> = {
+const NODE_ICONS: Record<string, React.ElementType> = {
     episode: Film,
     act: Layers,
     scene: FileText,
     chapter: BookOpen,
+    root_novel: Book,
+    root_tv: Clapperboard,
 }
 
 const CHILD_TYPE: Partial<Record<NodeType, NodeType>> = {
@@ -190,6 +193,39 @@ export default function StructureTree({
                 <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y py-2">
                     <div className="min-h-full flex flex-col">
                         <div className="flex-grow">
+                            {/* Virtual Root Node */}
+                            <div
+                                className={cn(
+                                    'group flex items-center gap-2 py-4 px-3 sm:px-4 mx-2 sm:mx-3 rounded-2xl cursor-pointer transition-all duration-300 text-sm mb-4 relative border shadow-sm',
+                                    selectedNodeIds.includes('virtual-root')
+                                        ? 'bg-indigo-50 border-indigo-200 text-indigo-900 font-bold'
+                                        : 'bg-white/50 backdrop-blur-sm border-slate-200/60 text-slate-700 hover:bg-white hover:border-slate-300'
+                                )}
+                                onClick={() => onNodeSelect('virtual-root')}
+                            >
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <div 
+                                        className={cn(
+                                            "w-4 h-4 border-2 rounded-md flex items-center justify-center transition-all duration-200 shrink-0",
+                                            selectedNodeIds.includes('virtual-root') 
+                                                ? "bg-indigo-500 border-indigo-500" 
+                                                : "border-slate-300 group-hover:border-slate-400"
+                                        )}
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            onNodeToggleSelection?.('virtual-root')
+                                        }}
+                                    >
+                                        {selectedNodeIds.includes('virtual-root') && <Check className="w-3 h-3 text-white" />}
+                                    </div>
+                                    {project.type === 'tv_script' ? <Clapperboard className="w-5 h-5 text-indigo-500/80" /> : <Book className="w-5 h-5 text-indigo-500/80" />}
+                                    <span className="truncate uppercase tracking-wider text-[11px] font-black">
+                                        {project.title}
+                                    </span>
+                                </div>
+                                <Shield className="w-3.5 h-3.5 text-slate-300" />
+                            </div>
+
                             {rootNodes.length === 0 ? (
                                 <div className="text-center py-16 px-6">
                                     <p className="text-sm text-slate-400 mb-6 font-serif italic">

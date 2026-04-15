@@ -11,12 +11,14 @@ import SceneAssetsPanel from './SceneAssetsPanel'
 import LinkedContext from './LinkedContext'
 import SceneAnalysisPanel from './SceneAnalysisPanel'
 
-import { PanelLeftClose, PanelLeftOpen, BookOpen, Sparkles, X, Wand2 } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, BookOpen, Sparkles, X, Wand2, BarChart3, Clapperboard, Book, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import type { Database, WritingMode } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { useComments } from '@/components/project/CommentsContext'
+import { useProjectActionsStore } from '@/lib/store/projectActionsStore'
 import CommentsPanel from '@/components/project/sidebar/CommentsPanel'
 import {
     Tooltip,
@@ -68,6 +70,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         selectedNodeIds, setSelectedNodeIds,
         showStructureHint, setShowStructureHint
     } = useProjectActions()
+    const { exportAction, statsAction } = useProjectActionsStore()
     const [isPeeking, setIsPeeking] = useState(false)
     const { commentsPanelOpen, setCommentsPanelOpen, fetchComments } = useComments()
     
@@ -227,6 +230,11 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     const handleNodeToggleSelection = useCallback((nodeId: string) => {
         setSelectedNodeIds(prev => {
             const isSelected = prev.includes(nodeId)
+            
+            if (nodeId === 'virtual-root') {
+                return isSelected ? prev.filter(id => id !== 'virtual-root') : [...prev, 'virtual-root']
+            }
+
             const getDescendantIds = (parentId: string): string[] => {
                 const children = nodes.filter(n => n.parent_id === parentId)
                 return children.flatMap(c => [c.id, ...getDescendantIds(c.id)])
@@ -276,7 +284,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 return selectParents(nodeId, newSelected)
             }
         })
-    }, [nodes])
+    }, [nodes, setSelectedNodeIds])
 
     const handleSceneUpdate = useCallback((updated: Scene) => {
         setScenes((prev: any[]) => prev.map((s: any) => s.id === updated.id ? updated : s))
@@ -452,7 +460,50 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 {/* Editor content (Scrolls internally) */}
                 <div className="flex-1 overflow-y-auto w-full scroll-smooth custom-scrollbar">
                     <div className="max-w-full mx-auto">
-                        {activeNodeId && activeScene ? (
+                        {activeNodeId === 'virtual-root' ? (
+                            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                                <div className="w-24 h-24 bg-indigo-50 rounded-[2.5rem] flex items-center justify-center text-indigo-400 relative">
+                                    {project.type === 'tv_script' ? <Clapperboard className="w-10 h-10" /> : <Book className="w-10 h-10" />}
+                                    <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-indigo-400 border-2 border-white" />
+                                </div>
+                                <div className="space-y-4">
+                                    <h3 className="text-3xl font-serif font-bold text-slate-800">{project.title}</h3>
+                                    <div className="flex items-center justify-center gap-2">
+                                        <Badge variant="outline" className="bg-white px-3 py-1 text-slate-400 font-bold uppercase tracking-widest text-[10px] rounded-lg border-slate-100">
+                                            Entire Project Selected
+                                        </Badge>
+                                    </div>
+                                    <p className="text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">
+                                        You've selected the entire {project.type === 'tv_script' ? 'screenplay' : 'book'}. Use the AI Partner to brainstorm across the project, or view project-wide statistics and structure analysis.
+                                    </p>
+                                    <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
+                                        <Button 
+                                            onClick={() => statsAction ? statsAction() : router.push(`/project/${project.id}/stats`)}
+                                            className="bg-[#546354] hover:bg-[#3d4a3d] text-white rounded-xl gap-2 h-11 px-6 shadow-lg shadow-slate-900/10 transition-all active:scale-95"
+                                        >
+                                            <BarChart3 className="w-4 h-4" />
+                                            Open Full Statistics
+                                        </Button>
+                                        <Button 
+                                            variant="outline"
+                                            onClick={() => exportAction?.()}
+                                            className="rounded-xl border-slate-200 text-slate-600 h-11 px-6 bg-white hover:bg-slate-50 transition-all active:scale-95"
+                                        >
+                                            <Download className="w-4 h-4 mr-2" />
+                                            Export Project
+                                        </Button>
+                                        <Button 
+                                            variant="outline"
+                                            onClick={() => setAiPanelOpen(true)}
+                                            className="rounded-xl border-slate-200 text-slate-600 h-11 px-6 bg-white hover:bg-slate-50 transition-all active:scale-95"
+                                        >
+                                            <Sparkles className="w-4 h-4 mr-2" />
+                                            Ask AI Partner
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : activeNodeId && activeScene ? (
                             <SceneEditor
                                 ref={editorRef}
                                 scene={activeScene}
@@ -542,7 +593,10 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                         linkedIdeas={projectIdeas.filter(i => activeIdeas[i.id] !== false && activeScene?.scene_ideas?.some((si: any) => si.ideas?.id === i.id))}
                         linkedLocations={projectLocations.filter(l => activeLocations[l.id] !== false && activeScene?.scene_locations?.some((sl: any) => sl.locations?.id === l.id))}
                         linkedObjects={projectObjects.filter(o => activeObjects[o.id] !== false && activeScene?.scene_objects?.some((so: any) => so.objects?.id === o.id))}
-                        selectedNodes={nodes.filter(n => selectedNodeIds.includes(n.id))}
+                        selectedNodes={[
+                            ...(selectedNodeIds.includes('virtual-root') ? [{ id: 'virtual-root', title: project.title, type: 'root' }] : []),
+                            ...nodes.filter(n => selectedNodeIds.includes(n.id))
+                        ]}
                         allNodes={nodes}
                         allScenes={scenes}
                         projectRelationships={projectRelationships}

@@ -2,7 +2,7 @@ import { useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { useProjectActions } from '@/components/project/ProjectContext'
-import { Users, Lightbulb, MapPin, Package, X, FileText, Folder, MessageSquare, Plus } from 'lucide-react'
+import { Users, Lightbulb, MapPin, Package, X, FileText, Folder, MessageSquare, Plus, Shield } from 'lucide-react'
 import { useDragScroll } from '@/hooks/useDragScroll'
 
 interface LinkedContextProps {
@@ -332,6 +332,22 @@ export default function LinkedContext({
 
                 {/* Selected Story Context */}
                 {selectedNodeIds.map(nodeId => {
+                    if (nodeId === 'virtual-root') {
+                        return (
+                            <div key="virtual-root" className="flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border bg-indigo-50 text-indigo-700 border-indigo-200 select-none animate-in fade-in slide-in-from-left-2">
+                                <Shield className="w-3 h-3 opacity-60" />
+                                Entire Project
+                                {!isReadOnly && (
+                                    <button 
+                                        onClick={() => onToggleNodeSelection?.('virtual-root')} 
+                                        className="ml-1 opacity-40 hover:opacity-100 transition-opacity"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                )}
+                            </div>
+                        )
+                    }
                     const node = allNodes.find(n => n.id === nodeId)
                     if (!node) return null
                     const Icon = node.type === 'scene' ? FileText : Folder
