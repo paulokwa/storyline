@@ -166,8 +166,7 @@
 }
 
 html, body {
-  overscroll-behavior: none;
-  height: 100%;
+  min-height: 100%;
 }
 
 body {
@@ -175,13 +174,7 @@ body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
   -webkit-font-smoothing: antialiased;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  overflow: hidden;
-  height: 100dvh;
+  min-height: 100vh;
   width: 100%;
 }
 
@@ -437,12 +430,32 @@ body {
   animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animation-delay-100 { animation-delay: 100ms; }
+.animation-delay-200 { animation-delay: 200ms; }
+.animation-delay-300 { animation-delay: 300ms; }
+.animation-delay-500 { animation-delay: 500ms; }
+
 @keyframes fadeIn {
   from {
     opacity: 0;
     transform: translateY(8px);
   }
 
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
   to {
     opacity: 1;
     transform: translateY(0);

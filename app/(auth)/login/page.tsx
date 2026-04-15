@@ -34,7 +34,11 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-indigo-50">
+        <div className="min-h-screen flex items-center justify-center bg-[#fbf9f5] relative overflow-hidden">
+            <div className="absolute inset-0 opacity-20 -z-10">
+                <div className="absolute top-0 left-0 w-80 h-80 bg-[#546354]/10 rounded-full blur-[100px]" />
+                <div className="absolute bottom-0 right-0 w-80 h-80 bg-[#546354]/10 rounded-full blur-[100px]" />
+            </div>
             <div className="w-full max-w-md px-6 fade-in">
                 {/* Logo */}
                 <div className="flex items-center gap-2 justify-center mb-10">

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { 
     PenLine, LogOut, Settings as SettingsIcon, 
     User as UserIcon, Download, Users, 
-    Settings2, BarChart3 
+    Settings2, BarChart3, HelpCircle, Mail 
 } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import {
@@ -37,11 +37,14 @@ export default function AppNav({ user }: { user: User }) {
     return (
         <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-sm border-b border-slate-200 px-4 sm:px-6 lg:px-8">
             <div className="max-w-[1440px] mx-auto h-14 flex items-center justify-between">
-                <Link href="/library" className="flex items-center gap-2 text-slate-800 hover:text-indigo-600 transition-colors">
-                    <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center">
+                <Link href="/library" className="flex items-center gap-2 group">
+                    <div className="w-8 h-8 rounded-lg bg-[#546354] flex items-center justify-center shadow-lg shadow-[#546354]/10 transition-transform group-hover:scale-110">
                         <PenLine className="w-4 h-4 text-white" />
                     </div>
-                    <span className="font-semibold text-lg">Storyline</span>
+                    <div className="flex flex-col -gap-1">
+                        <span className="font-serif italic text-lg text-slate-800 leading-none">Storyline</span>
+                        <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#546354]/40">Beta Sanctuary</span>
+                    </div>
                 </Link>
 
                 <div className="flex items-center gap-2 sm:gap-4">
@@ -58,7 +61,7 @@ export default function AppNav({ user }: { user: User }) {
                                             className="h-full w-full object-cover rounded-full"
                                         />
                                     )}
-                                    <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white text-xs font-bold uppercase overflow-hidden">
+                                    <AvatarFallback className="bg-[#546354] text-white text-xs font-bold uppercase overflow-hidden">
                                         {displayName.includes(' ') 
                                             ? displayName.split(' ').map(n => n[0]).join('').slice(0, 2) 
                                             : displayName.slice(0, 2)}
@@ -121,10 +124,20 @@ export default function AppNav({ user }: { user: User }) {
 
                             <DropdownMenuItem 
                                 onClick={() => router.push('/settings')}
-                                className="rounded-xl px-3 py-2.5 text-slate-600 focus:text-indigo-600 focus:bg-indigo-50 cursor-pointer gap-3 transition-all"
+                                className="rounded-xl px-3 py-2.5 text-slate-600 focus:text-[#546354] focus:bg-[#546354]/5 cursor-pointer gap-3 transition-all"
                             >
                                 <SettingsIcon className="w-4 h-4" />
                                 <span className="font-semibold text-sm">Account Settings</span>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem 
+                                asChild
+                                className="rounded-xl px-3 py-2.5 text-slate-600 focus:text-[#546354] focus:bg-[#546354]/5 cursor-pointer gap-3 transition-all"
+                            >
+                                <a href="mailto:mwake.dev@gmail.com">
+                                    <Mail className="w-4 h-4" />
+                                    <span className="font-semibold text-sm">Support & Feedback</span>
+                                </a>
                             </DropdownMenuItem>
                             
                             <DropdownMenuSeparator className="my-1.5 bg-slate-100" />

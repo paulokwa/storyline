@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export default async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl
     
     // Skip middleware for API routes as they handle their own auth
@@ -36,9 +36,9 @@ export default async function proxy(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
-    // Public routes
-    const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password']
-    const isPublicRoute = publicRoutes.some((r) => pathname.startsWith(r))
+    // Public routes - allowing the root for the new showcase
+    const publicRoutes = ['/', '/login', '/signup', '/forgot-password', '/reset-password']
+    const isPublicRoute = publicRoutes.some((r) => pathname === r || pathname.startsWith(r + '/'))
 
     if (!user && !isPublicRoute) {
         const url = request.nextUrl.clone()
@@ -46,7 +46,7 @@ export default async function proxy(request: NextRequest) {
         return NextResponse.redirect(url)
     }
 
-    if (user && isPublicRoute) {
+    if (user && (pathname === '/login' || pathname === '/signup')) {
         const url = request.nextUrl.clone()
         url.pathname = '/library'
         return NextResponse.redirect(url)
