@@ -131,13 +131,11 @@ export default function AppNav({ user }: { user: User }) {
                             </DropdownMenuItem>
 
                             <DropdownMenuItem 
-                                asChild
+                                onClick={() => window.open('mailto:mwake.dev@gmail.com', '_blank')}
                                 className="rounded-xl px-3 py-2.5 text-slate-600 focus:text-[#546354] focus:bg-[#546354]/5 cursor-pointer gap-3 transition-all"
                             >
-                                <a href="mailto:mwake.dev@gmail.com">
-                                    <Mail className="w-4 h-4" />
-                                    <span className="font-semibold text-sm">Support & Feedback</span>
-                                </a>
+                                <Mail className="w-4 h-4" />
+                                <span className="font-semibold text-sm">Support & Feedback</span>
                             </DropdownMenuItem>
                             
                             <DropdownMenuSeparator className="my-1.5 bg-slate-100" />

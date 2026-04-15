@@ -254,7 +254,7 @@ body {
   font-size: 0.8rem;
   font-weight: 600;
   text-transform: uppercase;
-  tracking: 0.1em;
+  letter-spacing: 0.1em;
   color: hsl(var(--muted-foreground));
   line-height: 1.5;
   min-height: 1em;

@@ -41,10 +41,11 @@ export default function Showcase() {
                     <div className="absolute top-0 left-0 w-full h-[120%] -z-10 opacity-40">
                         <Image 
                             src="/showcase/hero.png" 
-                            alt="Atmospheric creative sanctuary" 
+                            alt="Creative Sanctuary" 
                             fill 
-                            className="object-cover object-center"
                             priority
+                            className="object-cover opacity-60"
+                            quality={100}
                         />
                         <div className="absolute inset-0 bg-gradient-to-b from-[#fbf9f5] via-transparent to-[#fbf9f5]" />
                     </div>
@@ -78,10 +79,11 @@ export default function Showcase() {
                     <div className="max-w-6xl mx-auto mt-20 relative p-4 bg-white/50 backdrop-blur-sm rounded-[32px] border border-white/50 shadow-2xl animate-fade-in-up animation-delay-500">
                         <div className="rounded-[24px] overflow-hidden border border-slate-100 shadow-inner bg-slate-50 aspect-[16/10] relative">
                             <Image 
-                                src="/showcase/editor.png" 
-                                alt="Storyline Scene Editor" 
-                                fill 
-                                className="object-cover"
+                                src="/showcase/editor.png"
+                                alt="Storyline Editor Interface"
+                                fill
+                                priority
+                                className="object-contain"
                             />
                         </div>
                     </div>
