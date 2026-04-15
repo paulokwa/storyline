@@ -135,7 +135,6 @@ export function PremiumEditor({
         }
         .premium-editor-container .ProseMirror {
           min-height: ${minHeight};
-          padding: 0;
         }
       `}</style>
     </div>
