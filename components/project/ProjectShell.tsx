@@ -660,25 +660,21 @@ function ProjectShellInner({
                     <div className="mt-1">
                         <div className="snap-row flex gap-1 pl-1">
                             {TABS.map(({ slug, label, icon: Icon }) => (
-                                <Tooltip key={slug}>
-                                    <TooltipTrigger>
-                                        <Link
-                                            href={`/project/${project.id}/${slug}${slug === 'story' && activeNodeId ? `?nodeId=${activeNodeId}` : ''}`}
-                                            onClick={slug === 'ai' ? handleAiTabClick : undefined}
-                                            data-tour={slug === 'ai' ? 'ai-helper' : undefined}
-                                            className={cn(
-                                                'flex items-center gap-1.5 px-4 sm:px-6 py-3 text-sm font-medium transition-all duration-300 rounded-t-xl shrink-0',
-                                                activeTab === slug
-                                                    ? 'bg-background text-primary shadow-[0_-4px_12px_rgba(0,0,0,0.03)]'
-                                                    : 'text-slate-500 hover:text-slate-800 hover:bg-black/5'
-                                            )}
-                                        >
-                                            <Icon className="w-3.5 h-3.5" />
-                                            <span className="font-sans tracking-wide uppercase text-[10px]">{label}</span>
-                                        </Link>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top">Go to {label}</TooltipContent>
-                                </Tooltip>
+                                <Link
+                                    key={slug}
+                                    href={`/project/${project.id}/${slug}${slug === 'story' && activeNodeId ? `?nodeId=${activeNodeId}` : ''}`}
+                                    onClick={slug === 'ai' ? handleAiTabClick : undefined}
+                                    data-tour={slug === 'ai' ? 'ai-helper' : undefined}
+                                    className={cn(
+                                        'flex items-center gap-1.5 px-4 sm:px-6 py-3 text-sm font-medium transition-all duration-300 rounded-t-xl shrink-0',
+                                        activeTab === slug
+                                            ? 'bg-background text-primary shadow-[0_-4px_12px_rgba(0,0,0,0.03)]'
+                                            : 'text-slate-500 hover:text-slate-800 hover:bg-black/5'
+                                    )}
+                                >
+                                    <Icon className="w-3.5 h-3.5" />
+                                    <span className="font-sans tracking-wide uppercase text-[10px]">{label}</span>
+                                </Link>
                             ))}
                         </div>
                     </div>
