@@ -271,10 +271,15 @@ function ProjectShellInner({
     const handleToggleAi = () => {
         const nextState = !aiPanelOpen
         if (nextState) {
+            sessionStorage.setItem('storyline-ai-tour-pending', 'true')
             setAnalysisResult(null) // Close analysis panel if opening AI Partner
             if (isMobile) setCommentsPanelOpen(false)
         }
         setAiPanelOpen(nextState)
+    }
+
+    const handleAiTabClick = () => {
+        sessionStorage.setItem('storyline-ai-tour-pending', 'true')
     }
 
     const isStoryTab = pathname.includes('/story')
@@ -659,6 +664,7 @@ function ProjectShellInner({
                                     <TooltipTrigger>
                                         <Link
                                             href={`/project/${project.id}/${slug}${slug === 'story' && activeNodeId ? `?nodeId=${activeNodeId}` : ''}`}
+                                            onClick={slug === 'ai' ? handleAiTabClick : undefined}
                                             data-tour={slug === 'ai' ? 'ai-helper' : undefined}
                                             className={cn(
                                                 'flex items-center gap-1.5 px-4 sm:px-6 py-3 text-sm font-medium transition-all duration-300 rounded-t-xl shrink-0',

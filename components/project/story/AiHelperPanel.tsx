@@ -209,13 +209,21 @@ export default function AiHelperPanel({
     const { scrollRef, isDragging, onMouseDown, onMouseLeave, onMouseUp, onMouseMove } = useDragScroll()
     const modeScroll = useDragScroll()
 
-    // Trigger tour on first use
     useEffect(() => {
+        if (typeof window === 'undefined') return
+
         const hasSeenTour = localStorage.getItem('storyline-ai-tour-complete') === 'true'
-        if (!hasSeenTour) {
-            const timer = setTimeout(() => setTourOpen(true), 800)
-            return () => clearTimeout(timer)
+        if (hasSeenTour) {
+            sessionStorage.removeItem('storyline-ai-tour-pending')
+            return
         }
+
+        const shouldStartTour = sessionStorage.getItem('storyline-ai-tour-pending') === 'true'
+        if (!shouldStartTour) return
+
+        sessionStorage.removeItem('storyline-ai-tour-pending')
+        const timer = setTimeout(() => setTourOpen(true), 300)
+        return () => clearTimeout(timer)
     }, [])
 
     // Snapshot scene text at submit time so the hook body stays stable during streaming
@@ -965,7 +973,10 @@ export default function AiHelperPanel({
                         <MessageSquarePlus className="w-3 h-3" />
                         <span className="hidden sm:inline">Mode</span>
                     </div>
-                    <div className="flex-1 relative min-w-0 h-8">
+                    <div
+                        data-tour="ai-mode-selector"
+                        className="flex-1 relative min-w-0 h-8"
+                    >
                         <div 
                             ref={modeScroll.scrollRef}
                             onMouseDown={modeScroll.onMouseDown}

@@ -309,6 +309,15 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         analyzeScene()
     }
 
+    const handleToggleAiPanel = () => {
+        const nextState = !aiPanelOpen
+        if (nextState) {
+            sessionStorage.setItem('storyline-ai-tour-pending', 'true')
+            setAnalysisResult(null)
+        }
+        setAiPanelOpen(nextState)
+    }
+
     return (
         <div className="flex flex-1 min-h-0 overflow-hidden relative">
             {/* Backdrop for mobile */}
@@ -419,10 +428,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    onClick={() => {
-                                                        setAnalysisResult(null)
-                                                        setAiPanelOpen(!aiPanelOpen)
-                                                    }}
+                                                    onClick={handleToggleAiPanel}
                                                     className={cn(
                                                         "rounded-xl transition-all h-9 w-9 p-0",
                                                         aiPanelOpen ? "bg-white text-indigo-600 shadow-sm font-bold" : "text-slate-500 hover:bg-white hover:text-indigo-600"
