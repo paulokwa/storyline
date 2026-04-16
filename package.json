@@ -33,6 +33,7 @@
     "docx": "^9.6.1",
     "epub": "^2.1.1",
     "epub-parser": "^0.2.5",
+    "framer-motion": "^12.38.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "jszip": "^3.10.1",
