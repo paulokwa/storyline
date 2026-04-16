@@ -286,7 +286,7 @@ export default function LinkedContext({
                                 className="w-3.5 h-3.5 rounded-md cursor-pointer accent-indigo-600"
                             />
                             <IdeaIcon className="w-3 h-3 opacity-60" />
-                            {idea.title}
+                            {isFeedback ? idea.title.replace(/^feedback:\s*/i, '') : idea.title}
                             {!isReadOnly && (
                                 <button onClick={() => removeIdea(idea.id)} className="ml-1 opacity-40 hover:opacity-100 transition-opacity" disabled={isPending}>
                                     <X className="w-3 h-3" />

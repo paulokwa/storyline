@@ -99,12 +99,20 @@ export default function CommentsPanel({
         try {
             // 1. Create the idea
             const content = comment.content
-            const titleInitial = content.length > 30 ? content.slice(0, 27) + '...' : content
+            const referenceText = comment.anchor_data?.text
+            
+            // If it's inline feedback and content is just the placeholder, use the reference text for the title
+            let titleSource = content
+            if (referenceText && (content === 'Add your feedback...' || !content)) {
+                titleSource = referenceText
+            }
+
+            const truncated = titleSource.length > 10 ? titleSource.slice(0, 10) + '...' : titleSource
             const { data: idea, error: ideaError } = await (supabase as any)
                 .from('ideas')
                 .insert({
                     project_id: projectId,
-                    title: `Feedback: ${titleInitial}`,
+                    title: `Feedback: ${truncated}`,
                     content: content,
                     order_index: 0
                 })

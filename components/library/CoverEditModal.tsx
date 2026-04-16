@@ -88,13 +88,13 @@ export default function CoverEditModal({ project, isOpen, onOpenChange }: CoverE
                             >
                                 Cancel
                             </Button>
-                            {project.cover_url && (
+                            {coverUrl && (
                                  <Button 
                                     variant="ghost" 
                                     onClick={() => setCoverUrl('')}
-                                    className="rounded-full text-red-400 hover:text-red-500 hover:bg-red-50 font-bold uppercase tracking-widest text-[10px]"
+                                    className="rounded-full text-red-500/80 hover:text-red-600 hover:bg-red-50 font-bold uppercase tracking-widest text-[10px] h-8 px-4"
                                 >
-                                    Remove Current
+                                    Clear Selection
                                 </Button>
                             )}
                         </div>

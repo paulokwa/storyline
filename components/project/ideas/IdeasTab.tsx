@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { Lightbulb, Plus, Hash, Loader2, Sparkles, PenTool, Trash2, Pencil, ChevronRight, GripVertical } from 'lucide-react'
+import { Lightbulb, Plus, Hash, Loader2, Sparkles, PenTool, Trash2, Pencil, ChevronRight, GripVertical, MessageSquare } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { cn, reorder, getNextAvailableName } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -259,7 +259,11 @@ export default function IdeasTab({
                                                     "w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center transition-all duration-500",
                                                     selectedId === idea.id ? "bg-amber-50 scale-105" : "bg-white border border-slate-100"
                                                 )}>
-                                                    <Sparkles className={cn("w-4 h-4 transition-colors duration-500", selectedId === idea.id ? "text-amber-500" : "text-stone-300")} />
+                                                    {idea.title?.toLowerCase().startsWith('feedback:') ? (
+                                                        <MessageSquare className={cn("w-4 h-4 transition-colors duration-500", selectedId === idea.id ? "text-amber-500" : "text-stone-300")} />
+                                                    ) : (
+                                                        <Sparkles className={cn("w-4 h-4 transition-colors duration-500", selectedId === idea.id ? "text-amber-500" : "text-stone-300")} />
+                                                    )}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     {renamingId === idea.id ? (
@@ -279,7 +283,7 @@ export default function IdeasTab({
                                                                 "text-sm font-medium tracking-tight truncate",
                                                                 selectedId === idea.id ? "text-slate-800" : "text-slate-500"
                                                             )}>
-                                                                {idea.title}
+                                                                {idea.title?.replace(/^feedback:\s*/i, '')}
                                                             </p>
                                                             <p className="text-[10px] text-slate-300 uppercase tracking-widest mt-0.5 font-medium opacity-60">Thought Spark</p>
                                                         </>
@@ -385,7 +389,7 @@ export default function IdeasTab({
                                 
                                 <StableInput
                                     type="text"
-                                    value={selectedIdea.title ?? ''}
+                                    value={(selectedIdea.title ?? '').replace(/^feedback:\s*/i, '')}
                                     onValueChange={(val) => handleFieldChange(selectedIdea.id, 'title', val)}
                                     className="w-full bg-transparent text-4xl sm:text-6xl font-serif italic text-slate-800 tracking-tight leading-tight outline-none border-none placeholder:text-slate-200 min-w-0"
                                     placeholder="Untitled Idea"

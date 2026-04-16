@@ -376,7 +376,13 @@ export default function AiHelperPanel({
     }, [selectedNodes, allNodes])
 
     const charactersLabel = useMemo(() => linkedCharacters.length === 1 ? (linkedCharacters[0].name || 'Character') : `${linkedCharacters.length} Characters`, [linkedCharacters])
-    const ideasLabel = useMemo(() => linkedIdeas.length === 1 ? (linkedIdeas[0].title || 'Idea') : `${linkedIdeas.length} Ideas`, [linkedIdeas])
+    const ideasLabel = useMemo(() => {
+        if (linkedIdeas.length === 1) {
+            const title = linkedIdeas[0].title || 'Idea'
+            return title.replace(/^feedback:\s*/i, '')
+        }
+        return `${linkedIdeas.length} Ideas`
+    }, [linkedIdeas])
     const locationsLabel = useMemo(() => linkedLocations.length === 1 ? (linkedLocations[0].name || 'Location') : `${linkedLocations.length} Locations`, [linkedLocations])
     const objectsLabel = useMemo(() => linkedObjects.length === 1 ? (linkedObjects[0].name || 'Object') : `${linkedObjects.length} Objects`, [linkedObjects])
 
