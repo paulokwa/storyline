@@ -100,8 +100,10 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     }, [])
 
     useEffect(() => {
-        fetchComments(project.id)
-    }, [project.id, fetchComments])
+        if (project?.id) {
+            fetchComments(project.id)
+        }
+    }, [project?.id, fetchComments])
     const writingMode = (project.writing_mode ?? 'simple') as WritingMode
     
     const editorRef = useRef<SceneEditorRef>(null)

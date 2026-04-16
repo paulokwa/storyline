@@ -68,6 +68,7 @@ export default function NewProjectPage() {
         characters?: string[]; locations?: string[];
         writingMode?: WritingMode;
         chunks?: { title: string; content: string }[];
+        coverUrl?: string;
     }) {
         if (creating) return
         setCreating(true)
@@ -91,7 +92,8 @@ export default function NewProjectPage() {
 
         if (extras?.premise) payload.premise = extras.premise
         if (extras?.tone) payload.tone = extras.tone
-        
+        if (extras?.coverUrl) payload.cover_url = extras.coverUrl
+
         if (extras?.locations && extras.locations.length > 0) {
             payload.setting = extras.locations.join(', ')
         } else if (extras?.setting) {

@@ -194,6 +194,13 @@ function ProjectCard({ project, mode = 'active' }: { project: Project, mode?: 'a
     const isTV = project.type === 'tv_script'
     const [confirmDelete, setConfirmDelete] = useState(false)
     const [isActionInProgress, setIsActionInProgress] = useState(false)
+    const [isMounted, setIsMounted] = useState(false)
+
+    useEffect(() => {
+        setIsMounted(true)
+    }, [])
+
+    const hasCover = !!project.cover_url
 
     async function handleDelete(e: React.MouseEvent) {
         e.preventDefault()
@@ -202,10 +209,8 @@ function ProjectCard({ project, mode = 'active' }: { project: Project, mode?: 'a
         const supabase = createClient()
         
         if (mode === 'active') {
-            // Soft delete
             await supabase.from('projects').update({ deleted_at: new Date().toISOString() }).eq('id', project.id)
         } else {
-            // Permanent delete
             await supabase.from('projects').delete().eq('id', project.id)
         }
         
@@ -224,145 +229,170 @@ function ProjectCard({ project, mode = 'active' }: { project: Project, mode?: 'a
     return (
         <div
             className={cn(
-                "group block sanctuary-card rounded-[2rem] p-8 transition-all duration-500 relative overflow-hidden",
-                mode === 'active' ? "hover:-translate-y-2 hover:shadow-2xl active:scale-[0.98]" : "opacity-80 hover:opacity-100 bg-slate-50/50 grayscale hover:grayscale-0"
+                "group block sanctuary-card rounded-[2rem] transition-all duration-700 relative overflow-hidden min-h-[420px] flex flex-col",
+                mode === 'active' ? "hover:-translate-y-2 hover:shadow-2xl active:scale-[0.98]" : "opacity-80 hover:opacity-100 bg-slate-50/50 grayscale hover:grayscale-0",
+                !hasCover && "p-8 border border-slate-100 bg-white"
             )}
         >
             <Link href={mode === 'active' ? `/project/${project.id}/story` : '#'} className={cn(
-                "absolute inset-0 z-10",
+                "absolute inset-0 z-10 cursor-pointer",
                 mode === 'trash' && "cursor-default"
             )} />
-            <div className="relative z-20">
-                <div className="flex items-start justify-between mb-8">
+
+            {hasCover && (
+                <div className="absolute inset-0 z-0">
+                    <img 
+                        src={project.cover_url} 
+                        alt={project.title} 
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-[3000ms] group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/40 to-black/90 transition-opacity duration-700 group-hover:opacity-80" />
+                </div>
+            )}
+
+            <div className={cn(
+                "relative z-20 flex flex-col h-full flex-1 pointer-events-none",
+                hasCover ? "p-8 justify-end" : ""
+            )}>
+                <div className={cn(
+                    "flex items-start justify-between mb-8",
+                    hasCover ? "absolute top-8 left-8 right-8" : ""
+                )}>
                     <div className={cn(
-                        "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500",
-                        isTV ? "bg-stone-50 text-stone-600 group-hover:bg-primary/10 group-hover:text-primary" : "bg-stone-50 text-stone-500 group-hover:bg-primary/10 group-hover:text-primary"
+                        "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm",
+                        hasCover 
+                            ? "bg-white/10 backdrop-blur-md text-white border border-white/20 group-hover:bg-white/20"
+                            : (isTV ? "bg-stone-50 text-stone-600 group-hover:bg-primary/10 group-hover:text-primary" : "bg-stone-50 text-stone-500 group-hover:bg-primary/10 group-hover:text-primary")
                     )}>
                         {isTV ? <Film className="w-7 h-7" /> : <BookOpen className="w-7 h-7" />}
                     </div>
 
                     {project.role === 'owner' && (
-                        confirmDelete ? (
-                            <div
-                                onClick={e => e.preventDefault()}
-                                className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200"
-                            >
-                                <span className="text-[10px] text-red-400 font-medium">{mode === 'active' ? 'Delete?' : 'Destroy?'}</span>
-                                <button
-                                    onClick={e => { e.preventDefault(); e.stopPropagation(); setConfirmDelete(false) }}
-                                    className="px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider"
-                                >Cancel</button>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <button
-                                                onClick={handleDelete}
-                                                disabled={isActionInProgress}
-                                                className="px-3 py-1 text-[10px] font-bold bg-red-500 hover:bg-red-600 text-white rounded-full uppercase tracking-wider transition-colors disabled:opacity-50"
-                                            >{isActionInProgress ? '...' : (mode === 'active' ? 'Delete' : 'Destroy')}</button>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="top">
-                                            {mode === 'active' ? 'Move to trash' : 'Permanently destroy this project'}
-                                        </TooltipContent>
-                                    </Tooltip>
-                            </div>
-                        ) : (
+                        <div className="relative z-30 pointer-events-auto">
+                            {confirmDelete ? (
+                                <div
+                                    onClick={e => e.preventDefault()}
+                                    className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200"
+                                >
+                                    <span className={cn("text-[10px] font-bold uppercase tracking-wider", hasCover ? "text-white/60" : "text-red-400")}>
+                                        {mode === 'active' ? 'Delete?' : 'Destroy?'}
+                                    </span>
+                                    <button
+                                        onClick={e => { e.preventDefault(); e.stopPropagation(); setConfirmDelete(false) }}
+                                        className={cn("px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors", hasCover ? "text-white/40 hover:text-white" : "text-slate-400 hover:text-slate-600")}
+                                    >Cancel</button>
+                                    <button
+                                        onClick={handleDelete}
+                                        disabled={isActionInProgress}
+                                        className="px-3 py-1 text-[10px] font-bold bg-red-500 hover:bg-red-600 text-white rounded-full uppercase tracking-wider transition-colors shadow-lg disabled:opacity-50"
+                                    >{isActionInProgress ? '...' : (mode === 'active' ? 'Delete' : 'Destroy')}</button>
+                                </div>
+                            ) : (
                                 <div className="flex items-center gap-2">
                                     {mode === 'trash' && (
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <button
-                                                    onClick={handleRestore}
-                                                    disabled={isActionInProgress}
-                                                    className="p-2.5 rounded-xl text-slate-400 hover:text-primary hover:bg-primary/10 transition-all"
-                                                >
-                                                    <Sparkles className="w-5 h-5" />
-                                                </button>
-                                            </TooltipTrigger>
-                                            <TooltipContent side="top">Restore Project</TooltipContent>
-                                        </Tooltip>
+                                        <button
+                                            onClick={handleRestore}
+                                            disabled={isActionInProgress}
+                                            className={cn(
+                                                "p-2.5 rounded-xl transition-all shadow-sm",
+                                                hasCover ? "bg-white/10 backdrop-blur-md text-white/60 hover:text-white hover:bg-white/20 border border-white/10" : "text-slate-400 hover:text-primary hover:bg-primary/10"
+                                            )}
+                                        >
+                                            <Sparkles className="w-5 h-5" />
+                                        </button>
                                     )}
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <button
-                                                onClick={e => { e.preventDefault(); e.stopPropagation(); setConfirmDelete(true) }}
-                                                className={cn(
-                                                    "transition-all duration-300 p-2.5 rounded-xl",
-                                                    mode === 'active' ? "opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 hover:bg-red-50" : "text-slate-300 hover:text-red-600 hover:bg-red-50"
-                                                )}
-                                            >
-                                                <Trash2 className="w-5 h-5" />
-                                            </button>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="top">{mode === 'active' ? 'Delete Project' : 'Destroy Permanently'}</TooltipContent>
-                                    </Tooltip>
+                                    <button
+                                        onClick={e => { e.preventDefault(); e.stopPropagation(); setConfirmDelete(true) }}
+                                        className={cn(
+                                            "transition-all duration-300 p-2.5 rounded-xl shadow-sm",
+                                            hasCover 
+                                                ? "bg-white/10 backdrop-blur-md text-white/40 hover:text-red-400 hover:bg-red-500/20 border border-white/10" 
+                                                : cn("transition-all duration-300 p-2.5 rounded-xl", mode === 'active' ? "opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 hover:bg-red-50" : "text-slate-300 hover:text-red-600 hover:bg-red-50")
+                                        )}
+                                    >
+                                        <Trash2 className="w-5 h-5" />
+                                    </button>
                                 </div>
-                        )
+                            )}
+                        </div>
                     )}
                 </div>
 
-                <div className="space-y-3">
-                    <h3 className="text-2xl font-serif text-slate-800 group-hover:text-primary transition-colors duration-300 leading-snug">
+                <div className={cn("space-y-3", hasCover && "mt-auto")}>
+                    <h3 className={cn(
+                        "text-2xl font-serif leading-snug transition-colors duration-500",
+                        hasCover ? "text-white" : "text-slate-800 group-hover:text-primary"
+                    )}>
                         {project.title}
                     </h3>
 
                     <div className="flex flex-wrap items-center gap-3">
-                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 bg-slate-50 px-2.5 py-1 rounded-md group-hover:bg-primary/5 group-hover:text-primary/60 transition-colors">
+                        <span className={cn(
+                            "text-[10px] font-bold uppercase tracking-[0.2em] px-2.5 py-1 rounded-md transition-colors border",
+                            hasCover 
+                                ? "bg-white/5 backdrop-blur-md text-white/70 border-white/10 group-hover:bg-white/10" 
+                                : "bg-slate-50 text-slate-400 border-transparent group-hover:bg-primary/5 group-hover:text-primary/60"
+                        )}>
                             {getProjectTypeLabel(project.type)}
                         </span>
                         
-                        {project.role && project.role !== 'owner' && (
-                            <Badge variant="outline" className="text-[9px] uppercase tracking-wider py-0 px-2 border-slate-200 text-slate-500 font-bold bg-white/50">
-                                {project.role === 'editor' ? 'Shared · Can edit' : 'Shared · View only'}
-                            </Badge>
-                        )}
                         {project.role === 'owner' && (
-                             <Badge variant="outline" className="text-[9px] uppercase tracking-wider py-0 px-2 border-amber-100 text-amber-600 font-bold bg-amber-50/30">
+                             <Badge variant="outline" className={cn(
+                                 "text-[9px] uppercase tracking-wider py-0 px-2 font-bold",
+                                 hasCover ? "border-white/20 text-white/60 bg-white/5 backdrop-blur-md" : "border-amber-100 text-amber-600 bg-amber-50/30"
+                             )}>
                                 Owner
                             </Badge>
                         )}
 
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <span className="text-xs text-slate-400 font-medium flex items-center gap-1.5 cursor-help">
-                                    <Clock className="w-3.5 h-3.5" />
-                                    {formatDistanceToNow(project.last_accessed_at || new Date().toISOString())}
-                                </span>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                                {`Last updated: ${formatDistanceToNow(project.updated_at || new Date().toISOString())}`}
-                            </TooltipContent>
-                        </Tooltip>
+                        <span className={cn(
+                            "text-xs font-medium flex items-center gap-1.5",
+                            hasCover ? "text-white/40" : "text-slate-400"
+                        )}>
+                            <Clock className="w-3.5 h-3.5" />
+                            {isMounted ? formatDistanceToNow(project.last_accessed_at || new Date().toISOString()) + ' ago' : '...'}
+                        </span>
                     </div>
+
+                    {project.premise && (
+                        <p className={cn(
+                            "mt-6 text-sm leading-relaxed line-clamp-2 italic font-serif transition-colors duration-500",
+                            hasCover ? "text-white/60 group-hover:text-white/80" : "text-slate-500"
+                        )}>
+                            &ldquo;{project.premise}&rdquo;
+                        </p>
+                    )}
                 </div>
 
-                {project.premise && (
-                    <p className="mt-6 text-sm text-slate-500 leading-relaxed line-clamp-2 italic font-serif">
-                        &ldquo;{project.premise}&rdquo;
-                    </p>
-                )}
-
-                <div className="mt-10 pt-6 border-t border-slate-50 flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                <div className={cn(
+                    "mt-10 pt-6 flex items-center justify-between",
+                    hasCover ? "border-t border-white/10" : "border-t border-slate-50"
+                )}>
+                    <span className={cn("text-[10px] font-bold uppercase tracking-widest", hasCover ? "text-white/30" : "text-slate-400")}>
                         {mode === 'trash' && project.deleted_at && (
                             <span className="text-red-400 flex items-center gap-1.5">
                                 <Clock className="w-3 h-3" />
-                                Deleted {formatDistanceToNow(project.deleted_at)} ago
+                                Deleted {isMounted ? formatDistanceToNow(project.deleted_at) + ' ago' : '...'}
                             </span>
                         )}
+                        {mode === 'active' && "Private Draft"}
                     </span>
                     {mode === 'active' && (
-                        <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-primary text-slate-300 group-hover:text-white transition-all duration-500 transform group-hover:rotate-[-45deg]">
+                        <div className={cn(
+                            "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-700 transform group-hover:rotate-[-45deg] shadow-lg",
+                            hasCover 
+                                ? "bg-white/10 backdrop-blur-md text-white/50 group-hover:bg-white group-hover:text-primary" 
+                                : "bg-slate-50 text-slate-300 group-hover:bg-primary group-hover:text-white"
+                        )}>
                             <ChevronRight className="w-5 h-5" />
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Subtle background flair */}
-            <div className={cn(
-                "absolute top-0 right-0 w-32 h-32 rounded-full -mr-16 -mt-16 transition-all duration-700",
-                mode === 'active' ? "bg-stone-50/50 group-hover:bg-primary/5" : "bg-red-50/20"
-            )} />
+            {!hasCover && (
+                <div className="absolute top-0 right-0 w-32 h-32 rounded-full -mr-16 -mt-16 transition-all duration-700 bg-stone-50/50 group-hover:bg-primary/5" />
+            )}
         </div>
     )
 }

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Sparkles, Image as ImageIcon } from 'lucide-react'
 import type { ProjectType } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
 
@@ -16,6 +16,7 @@ interface GuidedData {
     characters: string[]
     locations: string[]
     firstIdea: string
+    coverUrl: string
 }
 
 interface GuidedFlowProps {
@@ -27,9 +28,9 @@ interface GuidedFlowProps {
     onDataChange?: (data: GuidedData) => void
 }
 
-type GuidedStep = 'title' | 'premise' | 'tone' | 'character' | 'setting' | 'first_idea'
+type GuidedStep = 'title' | 'premise' | 'tone' | 'character' | 'setting' | 'first_idea' | 'identity'
 
-const STEPS: GuidedStep[] = ['premise', 'tone', 'character', 'setting', 'first_idea']
+const STEPS: GuidedStep[] = ['premise', 'tone', 'character', 'setting', 'first_idea', 'identity']
 
 // Map internal steps to Stitch visual labels
 const STAGE_LABELS: Record<GuidedStep, string> = {
@@ -38,12 +39,33 @@ const STAGE_LABELS: Record<GuidedStep, string> = {
     tone: 'Story Tone',
     character: 'Protagonists',
     setting: 'World & Locations',
-    first_idea: 'Vision'
+    first_idea: 'Vision',
+    identity: 'Identity'
+}
+
+const STEP_IMAGES: Record<GuidedStep, string> = {
+    title: '/assets/onboarding/step-spark.png',
+    premise: '/assets/onboarding/step-concept.png',
+    tone: '/assets/onboarding/step-tone.png',
+    character: '/assets/onboarding/step-hero.png',
+    setting: '/assets/onboarding/step-world.png',
+    first_idea: '/assets/onboarding/step-vision.png',
+    identity: '/assets/onboarding/step-identity.png'
 }
 
 const TONES = [
     'Dark & Dramatic', 'Light & Funny', 'Mysterious', 'Romantic',
     'Adventurous', 'Heartwarming', 'Suspenseful', 'Quirky',
+]
+
+const THEME_COVERS = [
+    { id: 'comedy', label: 'Comedy', url: '/assets/covers/cover-comedy.png' },
+    { id: 'thriller', label: 'Thriller', url: '/assets/covers/cover-thriller.png' },
+    { id: 'drama', label: 'Drama', url: '/assets/covers/cover-drama.png' },
+    { id: 'fantasy', label: 'Fantasy', url: '/assets/covers/cover-fantasy.png' },
+    { id: 'scifi', label: 'Sci-Fi', url: '/assets/covers/cover-scifi.png' },
+    { id: 'romance', label: 'Romance', url: '/assets/covers/cover-romance.png' },
+    { id: 'mystery', label: 'Mystery', url: '/assets/covers/cover-mystery.png' },
 ]
 
 export default function GuidedFlow({ projectType, initialTitle, onComplete, onBack, creating, onDataChange }: GuidedFlowProps) {
@@ -66,6 +88,7 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
             characters: [''],
             locations: [''],
             firstIdea: '',
+            coverUrl: '',
         }
     })
 
@@ -119,167 +142,216 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
     return (
         <div className="fade-in space-y-12">
             <div className="flex items-center justify-between">
-                <div className="flex flex-col gap-2">
-                    <span className="text-[10px] font-extrabold uppercase tracking-[0.3em] text-[#546354]/60">
-                        Guided Flow · {stepIndex + 1} of {STEPS.length}
-                    </span>
-                    <div className="w-24 h-1 bg-stone-200/40 rounded-full overflow-hidden shadow-inner">
+                <div className="flex flex-col gap-2 w-full">
+                    <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-extrabold uppercase tracking-[0.3em] text-[#546354]/60">
+                            Guided Flow · {stepIndex + 1} of {STEPS.length}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Phase: {STAGE_LABELS[step]}</span>
+                    </div>
+                    <div className="w-full h-1 bg-stone-200/40 rounded-full overflow-hidden shadow-inner">
                         <div
                             className="h-full bg-[#546354] rounded-full transition-all duration-1000 ease-in-out"
                             style={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }}
                         />
                     </div>
-                    <h2 className="text-sm font-medium text-slate-400 mt-1">Phase: {STAGE_LABELS[step]}</h2>
                 </div>
             </div>
 
-            {step === 'title' && (
-                <StepBlock
-                    title="What is your manuscript called?"
-                    hint="Give your creative journey a temporary name. You can refine this at any point."
-                >
-                    <Input
-                        id="title"
-                        value={data.title}
-                        onChange={(e) => setData(d => ({ ...d, title: e.target.value }))}
-                        placeholder={isScriptProject ? 'e.g. Breaking Point' : 'e.g. The Last Summer'}
-                        className="h-16 text-xl bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all font-serif italic"
-                        autoFocus
-                    />
-                </StepBlock>
-            )}
-
-            {step === 'premise' && (
-                <StepBlock
-                    title="What is the central story?"
-                    hint="Describe the core conflict or the question your story seeks to answer."
-                >
-                    <Textarea
-                        value={data.premise}
-                        onChange={(e) => setData(d => ({ ...d, premise: e.target.value }))}
-                        placeholder={isScriptProject
-                            ? 'e.g. A chemistry teacher turned criminal tries to hold his family together while building an empire.'
-                            : 'e.g. A young woman returns to her hometown after 10 years away and uncovers a family secret.'}
-                        rows={6}
-                        className="resize-none text-lg leading-relaxed bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-3xl p-8 transition-all font-serif italic"
-                    />
-                </StepBlock>
-            )}
-
-            {step === 'tone' && (
-                <StepBlock
-                    title="What is the story's tone?"
-                    hint="This guides future AI suggestions for your manuscript's atmosphere. It is entirely optional and can be adjusted anytime in settings."
-                    optional
-                >
-                    <div className="grid grid-cols-2 gap-3 mb-6">
-                        {TONES.map((t) => (
-                            <button
-                                key={t}
-                                onClick={() => setData(d => ({ ...d, tone: d.tone === t ? '' : t }))}
-                                className={cn(
-                                    'text-sm py-4 px-5 rounded-2xl transition-all text-left font-medium border-2 active:scale-[0.98]',
-                                    data.tone === t
-                                        ? 'border-primary bg-primary/5 text-primary shadow-inner'
-                                        : 'border-transparent bg-stone-50/50 text-slate-500 hover:bg-stone-100 hover:text-slate-800'
-                                )}
-                            >
-                                {t}
-                            </button>
-                        ))}
-                    </div>
-                    <Input
-                        value={data.tone && !TONES.includes(data.tone) ? data.tone : ''}
-                        onChange={(e) => setData(d => ({ ...d, tone: e.target.value }))}
-                        placeholder="Or define a custom vibe…"
-                        className="h-14 text-base bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all"
-                    />
-                    {!data.tone && (
-                        <p className="mt-8 text-[10px] uppercase tracking-widest text-slate-300 font-bold text-center">
-                            Feel free to skip — you can define this later
-                        </p>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                <div className="lg:col-span-12">
+                    {step === 'title' && (
+                        <StepBlock
+                            title="What is your manuscript called?"
+                            hint="Give your creative journey a temporary name. You can refine this at any point."
+                            image={STEP_IMAGES[step]}
+                        >
+                            <Input
+                                id="title"
+                                value={data.title}
+                                onChange={(e) => setData(d => ({ ...d, title: e.target.value }))}
+                                placeholder={isScriptProject ? 'e.g. Breaking Point' : 'e.g. The Last Summer'}
+                                className="h-16 text-xl bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all font-serif italic"
+                                autoFocus
+                            />
+                        </StepBlock>
                     )}
-                </StepBlock>
-            )}
 
-            {step === 'character' && (
-                <StepBlock
-                    title="Who are your protagonists?"
-                    hint="Add the main characters driving this story. You can add more detailed history later in the characters tab."
-                >
-                    <div className="space-y-4">
-                        {data.characters.map((name, i) => (
-                            <div key={i} className="flex gap-2">
-                                <Input
-                                    value={name}
-                                    onChange={(e) => updateItem('characters', i, e.target.value)}
-                                    placeholder={i === 0 ? "e.g. Maya Chen" : "Add another character..."}
-                                    className="h-16 text-xl bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all font-medium"
-                                    autoFocus={i === data.characters.length - 1 && i > 0}
-                                />
-                                {data.characters.length > 1 && (
-                                    <Button variant="ghost" className="h-16 rounded-2xl px-4 text-slate-300 hover:text-red-400" onClick={() => removeItem('characters', i)}>×</Button>
-                                )}
-                            </div>
-                        ))}
-                        <button 
-                            onClick={() => addItem('characters')}
-                            className="text-xs font-bold uppercase tracking-widest text-primary/60 hover:text-primary transition-colors flex items-center gap-2 pl-2"
+                    {step === 'premise' && (
+                        <StepBlock
+                            title="What is the central story?"
+                            hint="Describe the core conflict or the question your story seeks to answer."
+                            image={STEP_IMAGES[step]}
                         >
-                            + Add Character
-                        </button>
-                    </div>
-                </StepBlock>
-            )}
+                            <Textarea
+                                value={data.premise}
+                                onChange={(e) => setData(d => ({ ...d, premise: e.target.value }))}
+                                placeholder={isScriptProject
+                                    ? 'e.g. A chemistry teacher turned criminal tries to hold his family together while building an empire.'
+                                    : 'e.g. A young woman returns to her hometown after 10 years away and uncovers a family secret.'}
+                                rows={6}
+                                className="resize-none text-lg leading-relaxed bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-3xl p-8 transition-all font-serif italic"
+                            />
+                        </StepBlock>
+                    )}
 
-            {step === 'setting' && (
-                <StepBlock
-                    title="Where does the story live?"
-                    hint="Major locations, eras, or worlds. You can refine and add specific settings later."
-                    optional
-                >
-                      <div className="space-y-4">
-                        {data.locations.map((loc, i) => (
-                            <div key={i} className="flex gap-2">
-                                <Input
-                                    value={loc}
-                                    onChange={(e) => updateItem('locations', i, e.target.value)}
-                                    placeholder={isScriptProject ? 'e.g. Modern-day New Mexico' : 'e.g. 1940s rural France'}
-                                    className="h-16 text-xl bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all font-medium"
-                                    autoFocus={i === data.locations.length - 1 && i > 0}
-                                />
-                                {data.locations.length > 1 && (
-                                    <Button variant="ghost" className="h-16 rounded-2xl px-4 text-slate-300 hover:text-red-400" onClick={() => removeItem('locations', i)}>×</Button>
-                                )}
-                            </div>
-                        ))}
-                        <button 
-                            onClick={() => addItem('locations')}
-                            className="text-xs font-bold uppercase tracking-widest text-primary/60 hover:text-primary transition-colors flex items-center gap-2 pl-2"
+                    {step === 'tone' && (
+                        <StepBlock
+                            title="What is the story's tone?"
+                            hint="This guides future AI suggestions for atmosphere. It's optional and can be adjusted anytime."
+                            optional
+                            image={STEP_IMAGES[step]}
                         >
-                            + Add Location
-                        </button>
-                    </div>
-                </StepBlock>
-            )}
+                            <div className="grid grid-cols-2 gap-3 mb-6">
+                                {TONES.map((t) => (
+                                    <button
+                                        key={t}
+                                        onClick={() => setData(d => ({ ...d, tone: d.tone === t ? '' : t }))}
+                                        className={cn(
+                                            'text-sm py-4 px-5 rounded-2xl transition-all text-left font-medium border-2 active:scale-[0.98]',
+                                            data.tone === t
+                                                ? 'border-primary bg-primary/5 text-primary shadow-inner'
+                                                : 'border-transparent bg-stone-50/50 text-slate-500 hover:bg-stone-100 hover:text-slate-800'
+                                        )}
+                                    >
+                                        {t}
+                                    </button>
+                                ))}
+                            </div>
+                            <Input
+                                value={data.tone && !TONES.includes(data.tone) ? data.tone : ''}
+                                onChange={(e) => setData(d => ({ ...d, tone: e.target.value }))}
+                                placeholder="Or define a custom vibe…"
+                                className="h-14 text-base bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all"
+                            />
+                        </StepBlock>
+                    )}
 
-            {step === 'first_idea' && (
-                <StepBlock
-                    title={isScriptProject ? 'The screenplay opening...' : 'The book opening...'}
-                    hint="An evocative image or moment to bridge the gap to your first page."
-                    optional
-                >
-                    <Textarea
-                        value={data.firstIdea}
-                        onChange={(e) => setData(d => ({ ...d, firstIdea: e.target.value }))}
-                        placeholder={isScriptProject
-                            ? 'e.g. We meet our protagonist at work, seconds before a life-altering phone call...'
-                            : 'e.g. The smell of cedar and old paper fills the air as she enters the library for the last time...'}
-                        rows={6}
-                        className="resize-none text-lg leading-relaxed bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-3xl p-8 transition-all font-serif italic"
-                    />
-                </StepBlock>
-            )}
+                    {step === 'character' && (
+                        <StepBlock
+                            title="Who are your protagonists?"
+                            hint="Add the main characters driving this story. You can add more detailed history later."
+                            image={STEP_IMAGES[step]}
+                        >
+                            <div className="space-y-4">
+                                {data.characters.map((name, i) => (
+                                    <div key={i} className="flex gap-2">
+                                        <Input
+                                            value={name}
+                                            onChange={(e) => updateItem('characters', i, e.target.value)}
+                                            placeholder={i === 0 ? "e.g. Maya Chen" : "Add another character..."}
+                                            className="h-16 text-xl bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all font-medium"
+                                            autoFocus={i === data.characters.length - 1 && i > 0}
+                                        />
+                                        {data.characters.length > 1 && (
+                                            <Button variant="ghost" className="h-16 rounded-2xl px-4 text-slate-300 hover:text-red-400" onClick={() => removeItem('characters', i)}>×</Button>
+                                        )}
+                                    </div>
+                                ))}
+                                <button 
+                                    onClick={() => addItem('characters')}
+                                    className="text-xs font-bold uppercase tracking-widest text-primary/60 hover:text-primary transition-colors flex items-center gap-2 pl-2"
+                                >
+                                    + Add Character
+                                </button>
+                            </div>
+                        </StepBlock>
+                    )}
+
+                    {step === 'setting' && (
+                        <StepBlock
+                            title="Where does the story live?"
+                            hint="Major locations, eras, or worlds. You can refine and add specific settings later."
+                            optional
+                            image={STEP_IMAGES[step]}
+                        >
+                              <div className="space-y-4">
+                                {data.locations.map((loc, i) => (
+                                    <div key={i} className="flex gap-2">
+                                        <Input
+                                            value={loc}
+                                            onChange={(e) => updateItem('locations', i, e.target.value)}
+                                            placeholder={isScriptProject ? 'e.g. Modern-day New Mexico' : 'e.g. 1940s rural France'}
+                                            className="h-16 text-xl bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all font-medium"
+                                            autoFocus={i === data.locations.length - 1 && i > 0}
+                                        />
+                                        {data.locations.length > 1 && (
+                                            <Button variant="ghost" className="h-16 rounded-2xl px-4 text-slate-300 hover:text-red-400" onClick={() => removeItem('locations', i)}>×</Button>
+                                        )}
+                                    </div>
+                                ))}
+                                <button 
+                                    onClick={() => addItem('locations')}
+                                    className="text-xs font-bold uppercase tracking-widest text-primary/60 hover:text-primary transition-colors flex items-center gap-2 pl-2"
+                                >
+                                    + Add Location
+                                </button>
+                            </div>
+                        </StepBlock>
+                    )}
+
+                    {step === 'first_idea' && (
+                        <StepBlock
+                            title={isScriptProject ? 'The screenplay opening...' : 'The book opening...'}
+                            hint="An evocative image or moment to bridge the gap to your first page."
+                            optional
+                            image={STEP_IMAGES[step]}
+                        >
+                            <Textarea
+                                value={data.firstIdea}
+                                onChange={(e) => setData(d => ({ ...d, firstIdea: e.target.value }))}
+                                placeholder={isScriptProject
+                                    ? 'e.g. We meet our protagonist at work, seconds before a life-altering phone call...'
+                                    : 'e.g. The smell of cedar and old paper fills the air as she enters the library for the last time...'}
+                                rows={6}
+                                className="resize-none text-lg leading-relaxed bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-3xl p-8 transition-all font-serif italic"
+                            />
+                        </StepBlock>
+                    )}
+
+                    {step === 'identity' && (
+                        <StepBlock
+                            title="Choose a library cover"
+                            hint="Select a thematic image for your library card or skip to keep it minimalist."
+                            optional
+                            image={STEP_IMAGES[step]}
+                        >
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+                                {THEME_COVERS.map((cover) => (
+                                    <button
+                                        key={cover.id}
+                                        onClick={() => setData(d => ({ ...d, coverUrl: cover.url }))}
+                                        className={cn(
+                                            "group relative aspect-[3/4] rounded-2xl overflow-hidden border-4 transition-all duration-300",
+                                            data.coverUrl === cover.url 
+                                                ? "border-primary scale-[1.02] shadow-xl shadow-primary/20" 
+                                                : "border-transparent hover:border-slate-200 grayscale-[0.5] hover:grayscale-0"
+                                        )}
+                                    >
+                                        <img src={cover.url} alt={cover.label} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                        <div className="absolute inset-x-0 bottom-0 p-1.5 sm:p-2 bg-gradient-to-t from-black via-black/60 to-transparent flex items-center justify-center text-center">
+                                            <span className="text-[8px] sm:text-[9px] font-bold text-white uppercase tracking-wider">{cover.label}</span>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="flex flex-col gap-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="flex-1 h-px bg-slate-100" />
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Or use a custom URL</span>
+                                    <div className="flex-1 h-px bg-slate-100" />
+                                </div>
+                                <Input
+                                    value={data.coverUrl && !THEME_COVERS.some(c => c.url === data.coverUrl) ? data.coverUrl : ''}
+                                    onChange={(e) => setData(d => ({ ...d, coverUrl: e.target.value }))}
+                                    placeholder="Paste image URL here..."
+                                    className="h-14 text-base bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all"
+                                />
+                            </div>
+                        </StepBlock>
+                    )}
+                </div>
+            </div>
 
             <div className="flex items-center justify-between pt-10 border-t border-stone-100">
                 <button
@@ -301,7 +373,8 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
                         <>Initialize Archive <ChevronRight className="w-5 h-5" /></>
                     ) : (
                         <>
-                            {step === 'tone' && !data.tone ? 'Skip for now' : 'Continue'} 
+                            {step === 'tone' && !data.tone ? 'Skip for now' : 
+                             step === 'identity' && !data.coverUrl ? 'Skip for now' : 'Continue'} 
                             <ChevronRight className="w-5 h-5" />
                         </>
                     )}
@@ -311,24 +384,40 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
     )
 }
 
-function StepBlock({ title, hint, optional, children }: {
+function StepBlock({ title, hint, optional, image, children }: {
     title: string
     hint: string
     optional?: boolean
+    image?: string
     children: React.ReactNode
 }) {
     return (
-        <div className="space-y-8">
-            <div className="space-y-3">
-                <div className="flex items-baseline gap-4">
-                    <h1 className="text-2xl md:text-4xl font-serif text-slate-800 leading-tight tracking-tight">{title}</h1>
-                    {optional && <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300 translate-y-[-2px]">Optional</span>}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="md:col-span-7 space-y-8">
+                <div className="space-y-3">
+                    <div className="flex items-baseline gap-4">
+                        <h1 className="text-2xl md:text-3xl font-serif text-slate-800 leading-tight tracking-tight">{title}</h1>
+                        {optional && <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300 translate-y-[-2px]">Optional</span>}
+                    </div>
+                    <p className="text-slate-500 font-medium text-lg leading-relaxed italic opacity-80">{hint}</p>
                 </div>
-                <p className="text-slate-500 font-medium text-lg leading-relaxed max-w-xl italic opacity-80">{hint}</p>
+                <div className="space-y-6">
+                    {children}
+                </div>
             </div>
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                {children}
-            </div>
+            {image && (
+                <div className="md:col-span-5 hidden md:block">
+                    <div className="relative aspect-[4/3] rounded-[2rem] overflow-hidden shadow-2xl shadow-stone-200/50 group">
+                        <img 
+                            src={image} 
+                            alt={title} 
+                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-[2000ms] group-hover:scale-110" 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-tr from-stone-900/20 to-transparent pointer-events-none" />
+                        <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-[2rem] pointer-events-none" />
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
