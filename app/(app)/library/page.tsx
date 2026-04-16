@@ -18,12 +18,14 @@ export default async function LibraryPage() {
         .from('projects')
         .select('*, project_members!inner(role)')
         .is('deleted_at', null)
+        .order('order_index', { ascending: true })
         .order('last_accessed_at', { ascending: false })
 
     const { data: deletedData } = await supabase
         .from('projects')
         .select('*, project_members!inner(role)')
         .not('deleted_at', 'is', null)
+        .order('order_index', { ascending: true })
         .order('deleted_at', { ascending: false })
 
     if (error) {

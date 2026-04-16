@@ -25,3 +25,15 @@ export const DEFAULT_WRITING_MODE_BY_TYPE: Record<ProjectType, WritingMode> = {
     novel: 'simple',
     tv_script: 'screenplay',
 }
+
+export const THEME_COVERS = [
+    { id: 'comedy', label: 'Comedy', url: '/assets/covers/cover-comedy.png' },
+    { id: 'thriller', label: 'Thriller', url: '/assets/covers/cover-thriller.png' },
+    { id: 'drama', label: 'Drama', url: '/assets/covers/cover-drama.png' },
+    { id: 'fantasy', label: 'Fantasy', url: '/assets/covers/cover-fantasy.png' },
+    { id: 'scifi', label: 'Sci-Fi', url: '/assets/covers/cover-scifi.png' },
+    { id: 'romance', label: 'Romance', url: '/assets/covers/cover-romance.png' },
+    { id: 'mystery', label: 'Mystery', url: '/assets/covers/cover-mystery.png' },
+    { id: 'war', label: 'War', url: '/assets/covers/cover-war.png' },
+    { id: 'childrens', label: "Children's", url: '/assets/covers/cover-childrens.png' },
+]

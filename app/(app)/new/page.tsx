@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import type { ProjectType, WritingMode } from '@/lib/supabase/types'
 import GuidedFlow from '@/components/new-project/GuidedFlow'
 import ImportWizard from '@/components/new-project/ImportWizard'
+import CoverPicker from '@/components/project/CoverPicker'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import {
@@ -20,12 +21,13 @@ import {
 import { PROJECT_TYPE_LABELS, DEFAULT_WRITING_MODE_BY_TYPE, getProjectTypeLabel } from '@/lib/constants'
 
 type StartMode = 'quick' | 'guided' | 'import'
-type Step = 'title' | 'type' | 'start_mode' | 'guided' | 'import'
+type Step = 'title' | 'type' | 'start_mode' | 'identity' | 'guided' | 'import'
 
 interface NewProjectState {
     title: string
     type: ProjectType | null
     startMode: StartMode | null
+    coverUrl: string
 }
 
 export default function NewProjectPage() {
@@ -35,6 +37,7 @@ export default function NewProjectPage() {
         title: '',
         type: null,
         startMode: null,
+        coverUrl: '',
     })
     const [creating, setCreating] = useState(false)
 
@@ -92,7 +95,7 @@ export default function NewProjectPage() {
 
         if (extras?.premise) payload.premise = extras.premise
         if (extras?.tone) payload.tone = extras.tone
-        if (extras?.coverUrl) payload.cover_url = extras.coverUrl
+        if (extras?.coverUrl || state.coverUrl) payload.cover_url = extras?.coverUrl || state.coverUrl
 
         if (extras?.locations && extras.locations.length > 0) {
             payload.setting = extras.locations.join(', ')
@@ -198,6 +201,7 @@ export default function NewProjectPage() {
         const base: Step[] = ['title', 'type', 'start_mode']
         if (state.startMode === 'guided') base.push('guided')
         else if (state.startMode === 'import') base.push('import')
+        else if (state.startMode === 'quick') base.push('identity')
         return base
     })()
     const currentStepIndex = steps.indexOf(step)
@@ -219,6 +223,7 @@ export default function NewProjectPage() {
                                 step === 'title' ? 'Project' :
                                 step === 'type' ? 'Format' :
                                 step === 'start_mode' ? 'Setup' :
+                                step === 'identity' ? 'Identity' :
                                 step === 'guided' ? 'Details' :
                                 step === 'import' ? 'Import' : ''
                             }
@@ -264,7 +269,7 @@ export default function NewProjectPage() {
                                     } else if (startMode === 'import') {
                                         setStep('import')
                                     } else {
-                                        createProject()
+                                        setStep('identity')
                                     }
                                 }}
                                 onBack={() => setStep('type')}
@@ -286,6 +291,16 @@ export default function NewProjectPage() {
                             <ImportWizard 
                                 projectType={state.type}
                                 onComplete={(chunks) => createProject({ chunks })}
+                                onBack={() => setStep('start_mode')}
+                                creating={creating}
+                            />
+                        )}
+
+                        {step === 'identity' && (
+                            <StepIdentity 
+                                value={state.coverUrl}
+                                onChange={(url) => setState(s => ({ ...s, coverUrl: url }))}
+                                onComplete={() => createProject()}
                                 onBack={() => setStep('start_mode')}
                                 creating={creating}
                             />
@@ -468,5 +483,52 @@ function TypeCard({ icon, title, description, selected, onClick, disabled }: {
                 )
             }
         </button >
+    )
+}
+
+function StepIdentity({ value, onChange, onComplete, onBack, creating }: {
+    value: string
+    onChange: (v: string) => void
+    onComplete: () => void
+    onBack: () => void
+    creating: boolean
+}) {
+    return (
+        <div className="fade-in space-y-10">
+            <div className="space-y-4">
+                <h1 className="text-4xl md:text-5xl font-serif text-slate-800 leading-tight">
+                    Add a<br /><span className="text-slate-400 italic">visual soul</span>
+                </h1>
+                <p className="text-slate-500 font-medium text-lg leading-relaxed max-w-xl italic opacity-80">Choose a cover for your library card or skip to keep it minimal.</p>
+            </div>
+
+            <CoverPicker value={value} onChange={onChange} />
+
+            <div className="flex items-center justify-between pt-6 border-t border-slate-100">
+                <button
+                    onClick={onBack}
+                    className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-primary transition-colors disabled:opacity-30"
+                    disabled={creating}
+                >
+                    <ChevronLeft className="w-4 h-4" /> Go Back
+                </button>
+                <Button
+                    onClick={onComplete}
+                    disabled={creating}
+                    className="sanctuary-btn-primary h-14 px-10 rounded-full text-base font-semibold gap-3"
+                >
+                    {creating ? (
+                        <>
+                            <Sparkles className="w-5 h-5 animate-spin" />
+                            Creating...
+                        </>
+                    ) : (
+                        <>
+                            Start Writing <ChevronRight className="w-5 h-5" />
+                        </>
+                    )}
+                </Button>
+            </div>
+        </div>
     )
 }

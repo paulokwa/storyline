@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { ChevronLeft, ChevronRight, Sparkles, Image as ImageIcon } from 'lucide-react'
 import type { ProjectType } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
+import CoverPicker from '@/components/project/CoverPicker'
 
 interface GuidedData {
     title: string
@@ -58,15 +59,6 @@ const TONES = [
     'Adventurous', 'Heartwarming', 'Suspenseful', 'Quirky',
 ]
 
-const THEME_COVERS = [
-    { id: 'comedy', label: 'Comedy', url: '/assets/covers/cover-comedy.png' },
-    { id: 'thriller', label: 'Thriller', url: '/assets/covers/cover-thriller.png' },
-    { id: 'drama', label: 'Drama', url: '/assets/covers/cover-drama.png' },
-    { id: 'fantasy', label: 'Fantasy', url: '/assets/covers/cover-fantasy.png' },
-    { id: 'scifi', label: 'Sci-Fi', url: '/assets/covers/cover-scifi.png' },
-    { id: 'romance', label: 'Romance', url: '/assets/covers/cover-romance.png' },
-    { id: 'mystery', label: 'Mystery', url: '/assets/covers/cover-mystery.png' },
-]
 
 export default function GuidedFlow({ projectType, initialTitle, onComplete, onBack, creating, onDataChange }: GuidedFlowProps) {
     const [stepIndex, setStepIndex] = useState(0)
@@ -316,38 +308,10 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
                             optional
                             image={STEP_IMAGES[step]}
                         >
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-                                {THEME_COVERS.map((cover) => (
-                                    <button
-                                        key={cover.id}
-                                        onClick={() => setData(d => ({ ...d, coverUrl: cover.url }))}
-                                        className={cn(
-                                            "group relative aspect-[3/4] rounded-2xl overflow-hidden border-4 transition-all duration-300",
-                                            data.coverUrl === cover.url 
-                                                ? "border-primary scale-[1.02] shadow-xl shadow-primary/20" 
-                                                : "border-transparent hover:border-slate-200 grayscale-[0.5] hover:grayscale-0"
-                                        )}
-                                    >
-                                        <img src={cover.url} alt={cover.label} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                        <div className="absolute inset-x-0 bottom-0 p-1.5 sm:p-2 bg-gradient-to-t from-black via-black/60 to-transparent flex items-center justify-center text-center">
-                                            <span className="text-[8px] sm:text-[9px] font-bold text-white uppercase tracking-wider">{cover.label}</span>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                            <div className="flex flex-col gap-4">
-                                <div className="flex items-center gap-4">
-                                    <div className="flex-1 h-px bg-slate-100" />
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Or use a custom URL</span>
-                                    <div className="flex-1 h-px bg-slate-100" />
-                                </div>
-                                <Input
-                                    value={data.coverUrl && !THEME_COVERS.some(c => c.url === data.coverUrl) ? data.coverUrl : ''}
-                                    onChange={(e) => setData(d => ({ ...d, coverUrl: e.target.value }))}
-                                    placeholder="Paste image URL here..."
-                                    className="h-14 text-base bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all"
-                                />
-                            </div>
+                            <CoverPicker 
+                                value={data.coverUrl}
+                                onChange={(url) => setData(d => ({ ...d, coverUrl: url }))}
+                            />
                         </StepBlock>
                     )}
                 </div>
