@@ -573,6 +573,7 @@ export type Database = {
           user_id: string
           writing_mode: WritingMode | null
           export_metadata: Json | null
+          deleted_at: string | null
         }
         Insert: {
           created_at?: string | null
@@ -588,6 +589,7 @@ export type Database = {
           user_id: string
           writing_mode?: WritingMode | null
           export_metadata?: Json | null
+          deleted_at?: string | null
         }
         Update: {
           created_at?: string | null
@@ -603,6 +605,7 @@ export type Database = {
           user_id?: string
           writing_mode?: WritingMode | null
           export_metadata?: Json | null
+          deleted_at?: string | null
         }
         Relationships: []
       }

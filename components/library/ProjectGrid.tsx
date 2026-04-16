@@ -22,8 +22,9 @@ type Project = Database['public']['Tables']['projects']['Row'] & {
     role?: 'owner' | 'editor' | 'viewer'
 }
 
-export default function ProjectGrid({ projects }: { projects: Project[] }) {
+export default function ProjectGrid({ projects, deletedProjects }: { projects: Project[], deletedProjects: Project[] }) {
     const [draft, setDraft] = useState<{ state: any; step: any } | null>(null)
+    const [view, setView] = useState<'active' | 'trash'>('active')
 
     useEffect(() => {
         const saved = localStorage.getItem('storyline-new-project-draft')
@@ -69,60 +70,112 @@ export default function ProjectGrid({ projects }: { projects: Project[] }) {
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-20 border-b border-slate-100 pb-12">
                     <div className="space-y-4">
                         <h1 className="text-5xl md:text-7xl font-serif text-slate-800 tracking-tight leading-tight">
-                            The Manuscript<br /><span className="text-slate-400">Archive</span>
+                            {view === 'active' ? (
+                                <>The Manuscript<br /><span className="text-slate-400">Archive</span></>
+                            ) : (
+                                <>The Recovery<br /><span className="text-red-400">Vault</span></>
+                            )}
                         </h1>
                         <p className="text-lg text-slate-500 max-w-sm font-medium">
-                            Your creative sanctuary. Select a project below or start a new journey.
+                            {view === 'active' 
+                                ? "Your creative sanctuary. Select a project below or start a new journey."
+                                : "Recover deleted projects here. Items are kept for 60 days before permanent deletion."
+                            }
                         </p>
                     </div>
-                    <Link href="/new">
-                        <Button className="sanctuary-btn-primary h-14 px-8 rounded-full text-base font-semibold gap-3">
-                            <Plus className="w-5 h-5" /> Start New Project
-                        </Button>
-                    </Link>
+                    <div className="flex items-center gap-4">
+                        <div className="bg-slate-100 p-1.5 rounded-full flex gap-1">
+                            <button 
+                                onClick={() => setView('active')}
+                                className={cn(
+                                    "px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all",
+                                    view === 'active' ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                                )}
+                            >
+                                Active
+                            </button>
+                            <button 
+                                onClick={() => setView('trash')}
+                                className={cn(
+                                    "px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2",
+                                    view === 'trash' ? "bg-white text-red-500 shadow-sm" : "text-slate-400 hover:text-red-400"
+                                )}
+                            >
+                                Trash
+                                {deletedProjects.length > 0 && (
+                                    <span className="w-5 h-5 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-[10px]">
+                                        {deletedProjects.length}
+                                    </span>
+                                )}
+                            </button>
+                        </div>
+                        <Link href="/new">
+                            <Button className="sanctuary-btn-primary h-14 px-8 rounded-full text-base font-semibold gap-3">
+                                <Plus className="w-5 h-5" /> Start New Project
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {draft && (
-                        <Link
-                            href="/new"
-                            className="group block sanctuary-card border-2 border-dashed border-primary/20 bg-primary/5 rounded-[2rem] p-8 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl relative overflow-hidden active:scale-[0.98]"
-                        >
-                            <div className="relative z-10 flex flex-col h-full gap-6">
-                                <div className="flex items-start justify-between">
-                                    <div className="w-14 h-14 rounded-2xl bg-primary shadow-lg shadow-primary/20 text-white flex items-center justify-center">
-                                        <Sparkles className="w-7 h-7" />
-                                    </div>
-                                    <Badge variant="default" className="bg-primary/10 text-primary border-none text-[9px] uppercase tracking-widest px-3 py-1 font-bold">
-                                        Incomplete Setup
-                                    </Badge>
-                                </div>
-                                <div className="space-y-2 flex-1">
-                                    <h3 className="text-2xl font-serif text-slate-800">
-                                        Resume your setup
-                                    </h3>
-                                    <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                                        You have an unfinished {getProjectTypeLabel(draft.state.type).toLowerCase()}. Pick up where you left off.
-                                    </p>
-                                </div>
-                                <div className="mt-4 flex items-center justify-between gap-4 pt-6 border-t border-primary/10">
-                                    <button 
-                                        onClick={clearDraft}
-                                        className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-red-500 transition-colors py-2"
+                {view === 'trash' && deletedProjects.length === 0 ? (
+                    <div className="py-32 text-center animate-in fade-in zoom-in-95 duration-500">
+                        <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-slate-100">
+                            <Trash2 className="w-10 h-10 text-slate-300" />
+                        </div>
+                        <h2 className="text-2xl font-serif text-slate-800 mb-2">Trash is empty</h2>
+                        <p className="text-slate-400 font-medium">No projects are currently marked for deletion.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {view === 'active' ? (
+                            <>
+                                {draft && (
+                                    <Link
+                                        href="/new"
+                                        className="group block sanctuary-card border-2 border-dashed border-primary/20 bg-primary/5 rounded-[2rem] p-8 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl relative overflow-hidden active:scale-[0.98]"
                                     >
-                                        Start over
-                                    </button>
-                                    <div className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest group-hover:bg-[#3d4a3d] transition-all shadow-md">
-                                        Resume <ChevronRight className="w-4 h-4" />
-                                    </div>
-                                </div>
-                            </div>
-                        </Link>
-                    )}
-                    {projects.map((project) => (
-                        <ProjectCard key={project.id} project={project} />
-                    ))}
-                </div>
+                                        <div className="relative z-10 flex flex-col h-full gap-6">
+                                            <div className="flex items-start justify-between">
+                                                <div className="w-14 h-14 rounded-2xl bg-primary shadow-lg shadow-primary/20 text-white flex items-center justify-center">
+                                                    <Sparkles className="w-7 h-7" />
+                                                </div>
+                                                <Badge variant="default" className="bg-primary/10 text-primary border-none text-[9px] uppercase tracking-widest px-3 py-1 font-bold">
+                                                    Incomplete Setup
+                                                </Badge>
+                                            </div>
+                                            <div className="space-y-2 flex-1">
+                                                <h3 className="text-2xl font-serif text-slate-800">
+                                                    Resume your setup
+                                                </h3>
+                                                <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                                                    You have an unfinished {getProjectTypeLabel(draft.state.type).toLowerCase()}. Pick up where you left off.
+                                                </p>
+                                            </div>
+                                            <div className="mt-4 flex items-center justify-between gap-4 pt-6 border-t border-primary/10">
+                                                <button 
+                                                    onClick={clearDraft}
+                                                    className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-red-500 transition-colors py-2"
+                                                >
+                                                    Start over
+                                                </button>
+                                                <div className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest group-hover:bg-[#3d4a3d] transition-all shadow-md">
+                                                    Resume <ChevronRight className="w-4 h-4" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </Link>
+                                )}
+                                {projects.map((project) => (
+                                    <ProjectCard key={project.id} project={project} mode="active" />
+                                ))}
+                            </>
+                        ) : (
+                            deletedProjects.map((project) => (
+                                <ProjectCard key={project.id} project={project} mode="trash" />
+                            ))
+                        )}
+                    </div>
+                )}
                 <div className="mt-24 pt-8 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6 opacity-40 hover:opacity-100 transition-opacity">
                     <p className="text-[10px] font-bold tracking-widest uppercase text-slate-400">© 2026 Storyline — Built for Authors</p>
                     <div className="flex gap-8">
@@ -136,27 +189,50 @@ export default function ProjectGrid({ projects }: { projects: Project[] }) {
     )
 }
 
-function ProjectCard({ project }: { project: Project }) {
+function ProjectCard({ project, mode = 'active' }: { project: Project, mode?: 'active' | 'trash' }) {
     const router = useRouter()
     const isTV = project.type === 'tv_script'
     const [confirmDelete, setConfirmDelete] = useState(false)
-    const [isDeleting, setIsDeleting] = useState(false)
+    const [isActionInProgress, setIsActionInProgress] = useState(false)
 
     async function handleDelete(e: React.MouseEvent) {
         e.preventDefault()
         e.stopPropagation()
-        setIsDeleting(true)
+        setIsActionInProgress(true)
         const supabase = createClient()
-        await supabase.from('projects').delete().eq('id', project.id)
+        
+        if (mode === 'active') {
+            // Soft delete
+            await supabase.from('projects').update({ deleted_at: new Date().toISOString() }).eq('id', project.id)
+        } else {
+            // Permanent delete
+            await supabase.from('projects').delete().eq('id', project.id)
+        }
+        
+        router.refresh()
+    }
+
+    async function handleRestore(e: React.MouseEvent) {
+        e.preventDefault()
+        e.stopPropagation()
+        setIsActionInProgress(true)
+        const supabase = createClient()
+        await supabase.from('projects').update({ deleted_at: null }).eq('id', project.id)
         router.refresh()
     }
 
     return (
-        <Link
-            href={`/project/${project.id}/story`}
-            className="group block sanctuary-card rounded-[2rem] p-8 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl relative overflow-hidden active:scale-[0.98]"
+        <div
+            className={cn(
+                "group block sanctuary-card rounded-[2rem] p-8 transition-all duration-500 relative overflow-hidden",
+                mode === 'active' ? "hover:-translate-y-2 hover:shadow-2xl active:scale-[0.98]" : "opacity-80 hover:opacity-100 bg-slate-50/50 grayscale hover:grayscale-0"
+            )}
         >
-            <div className="relative z-10">
+            <Link href={mode === 'active' ? `/project/${project.id}/story` : '#'} className={cn(
+                "absolute inset-0 z-10",
+                mode === 'trash' && "cursor-default"
+            )} />
+            <div className="relative z-20">
                 <div className="flex items-start justify-between mb-8">
                     <div className={cn(
                         "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500",
@@ -171,7 +247,7 @@ function ProjectCard({ project }: { project: Project }) {
                                 onClick={e => e.preventDefault()}
                                 className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200"
                             >
-                                <span className="text-[10px] text-red-400 font-medium">Delete?</span>
+                                <span className="text-[10px] text-red-400 font-medium">{mode === 'active' ? 'Delete?' : 'Destroy?'}</span>
                                 <button
                                     onClick={e => { e.preventDefault(); e.stopPropagation(); setConfirmDelete(false) }}
                                     className="px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider"
@@ -180,25 +256,46 @@ function ProjectCard({ project }: { project: Project }) {
                                         <TooltipTrigger asChild>
                                             <button
                                                 onClick={handleDelete}
-                                                disabled={isDeleting}
+                                                disabled={isActionInProgress}
                                                 className="px-3 py-1 text-[10px] font-bold bg-red-500 hover:bg-red-600 text-white rounded-full uppercase tracking-wider transition-colors disabled:opacity-50"
-                                            >{isDeleting ? '...' : 'Delete'}</button>
+                                            >{isActionInProgress ? '...' : (mode === 'active' ? 'Delete' : 'Destroy')}</button>
                                         </TooltipTrigger>
-                                        <TooltipContent side="top">Permanently delete this project</TooltipContent>
+                                        <TooltipContent side="top">
+                                            {mode === 'active' ? 'Move to trash' : 'Permanently destroy this project'}
+                                        </TooltipContent>
                                     </Tooltip>
                             </div>
                         ) : (
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <button
-                                            onClick={e => { e.preventDefault(); e.stopPropagation(); setConfirmDelete(true) }}
-                                            className="opacity-0 group-hover:opacity-100 transition-all duration-300 p-2.5 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50"
-                                        >
-                                            <Trash2 className="w-5 h-5" />
-                                        </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top">Delete Project</TooltipContent>
-                                </Tooltip>
+                                <div className="flex items-center gap-2">
+                                    {mode === 'trash' && (
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <button
+                                                    onClick={handleRestore}
+                                                    disabled={isActionInProgress}
+                                                    className="p-2.5 rounded-xl text-slate-400 hover:text-primary hover:bg-primary/10 transition-all"
+                                                >
+                                                    <Sparkles className="w-5 h-5" />
+                                                </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">Restore Project</TooltipContent>
+                                        </Tooltip>
+                                    )}
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                onClick={e => { e.preventDefault(); e.stopPropagation(); setConfirmDelete(true) }}
+                                                className={cn(
+                                                    "transition-all duration-300 p-2.5 rounded-xl",
+                                                    mode === 'active' ? "opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 hover:bg-red-50" : "text-slate-300 hover:text-red-600 hover:bg-red-50"
+                                                )}
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">{mode === 'active' ? 'Delete Project' : 'Destroy Permanently'}</TooltipContent>
+                                    </Tooltip>
+                                </div>
                         )
                     )}
                 </div>
@@ -245,16 +342,27 @@ function ProjectCard({ project }: { project: Project }) {
                 )}
 
                 <div className="mt-10 pt-6 border-t border-slate-50 flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest group-hover:text-primary transition-colors">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        {mode === 'trash' && project.deleted_at && (
+                            <span className="text-red-400 flex items-center gap-1.5">
+                                <Clock className="w-3 h-3" />
+                                Deleted {formatDistanceToNow(project.deleted_at)} ago
+                            </span>
+                        )}
                     </span>
-                    <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-primary text-slate-300 group-hover:text-white transition-all duration-500 transform group-hover:rotate-[-45deg]">
-                        <ChevronRight className="w-5 h-5" />
-                    </div>
+                    {mode === 'active' && (
+                        <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-primary text-slate-300 group-hover:text-white transition-all duration-500 transform group-hover:rotate-[-45deg]">
+                            <ChevronRight className="w-5 h-5" />
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* Subtle background flair */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-stone-50/50 rounded-full -mr-16 -mt-16 group-hover:bg-primary/5 transition-all duration-700" />
-        </Link>
+            <div className={cn(
+                "absolute top-0 right-0 w-32 h-32 rounded-full -mr-16 -mt-16 transition-all duration-700",
+                mode === 'active' ? "bg-stone-50/50 group-hover:bg-primary/5" : "bg-red-50/20"
+            )} />
+        </div>
     )
 }
