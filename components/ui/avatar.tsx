@@ -37,4 +37,17 @@ function AvatarFallback({
   )
 }
 
-export { Avatar, AvatarFallback }
+function AvatarImage({
+  className,
+  ...props
+}: AvatarPrimitive.Image.Props) {
+  return (
+    <AvatarPrimitive.Image
+      data-slot="avatar-image"
+      className={cn("aspect-square h-full w-full", className)}
+      {...props}
+    />
+  )
+}
+
+export { Avatar, AvatarFallback, AvatarImage }

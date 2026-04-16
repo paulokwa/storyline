@@ -102,6 +102,28 @@ export default function CoverPicker({ value, onChange, onClose }: CoverPickerPro
                     )}
                 </button>
 
+                {/* No Cover Option */}
+                <button
+                    onClick={() => {
+                        onChange('')
+                        setCustomUrl('')
+                    }}
+                    className={cn(
+                        "group relative aspect-[3/4] rounded-2xl border-2 transition-all duration-300 flex flex-col items-center justify-center gap-2",
+                        !value 
+                            ? "border-primary bg-primary/5 text-primary shadow-lg shadow-primary/10" 
+                            : "border-stone-100 bg-stone-50/30 text-slate-400 hover:border-stone-200 hover:bg-stone-50"
+                    )}
+                >
+                    <div className={cn(
+                        "w-10 h-10 rounded-full flex items-center justify-center transition-transform group-hover:scale-110",
+                        !value ? "bg-primary text-white" : "bg-white shadow-sm"
+                    )}>
+                        <X className="w-5 h-5" />
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-widest">No Cover</span>
+                </button>
+
                 {/* Theme Presets */}
                 {THEME_COVERS.map((cover) => (
                     <button

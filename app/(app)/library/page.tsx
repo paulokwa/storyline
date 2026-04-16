@@ -16,14 +16,34 @@ export default async function LibraryPage() {
 
     const { data: projectsData, error } = await supabase
         .from('projects')
-        .select('*, project_members!inner(role)')
+        .select(`
+            *,
+            project_members(
+                role,
+                user_id,
+                profiles(
+                    display_name,
+                    avatar_url
+                )
+            )
+        `)
         .is('deleted_at', null)
         .order('order_index', { ascending: true })
         .order('last_accessed_at', { ascending: false })
 
     const { data: deletedData } = await supabase
         .from('projects')
-        .select('*, project_members!inner(role)')
+        .select(`
+            *,
+            project_members(
+                role,
+                user_id,
+                profiles(
+                    display_name,
+                    avatar_url
+                )
+            )
+        `)
         .not('deleted_at', 'is', null)
         .order('order_index', { ascending: true })
         .order('deleted_at', { ascending: false })
@@ -32,15 +52,19 @@ export default async function LibraryPage() {
         console.error('Error fetching projects:', error)
     }
 
-    const projects = projectsData?.map(p => ({
+    const mapProject = (p: any) => ({
         ...p,
-        role: (p.project_members as any)?.[0]?.role as 'owner' | 'editor' | 'viewer'
-    })) || []
+        role: p.project_members?.find((m: any) => m.user_id === user.id)?.role || 'viewer',
+        members: p.project_members?.map((m: any) => ({
+            role: m.role,
+            user_id: m.user_id,
+            display_name: m.profiles?.display_name,
+            avatar_url: m.profiles?.avatar_url
+        })) || []
+    })
 
-    const deletedProjects = deletedData?.map(p => ({
-        ...p,
-        role: (p.project_members as any)?.[0]?.role as 'owner' | 'editor' | 'viewer'
-    })) || []
+    const projects = projectsData?.map(mapProject) || []
+    const deletedProjects = deletedData?.map(mapProject) || []
 
     return (
         <div className="flex-1 overflow-y-auto min-h-0 bg-slate-50/50">
