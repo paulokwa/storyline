@@ -1,12 +1,23 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { cn } from '@/lib/utils'
+import { motion, AnimatePresence } from 'framer-motion'
 import { PenLine, Sparkles, BookOpen, Layers, Zap, MessageSquare, ChevronRight, Layout, Database, BarChart3, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default function Showcase() {
+    const [activeUniverseTab, setActiveUniverseTab] = useState('characters')
+
+    const universeTabs = [
+        { id: 'characters', label: 'Characters', sub: 'Track arcs and relationships', img: '/showcase/characters.png' },
+        { id: 'locations', label: 'Locations', sub: 'Map out your world', img: '/showcase/locations.png' },
+        { id: 'objects', label: 'Objects', sub: 'Manage important relics', img: '/showcase/objects.png' },
+        { id: 'ideas', label: 'Ideas', sub: 'Save sparks for later', img: '/showcase/structure.png' },
+    ]
+
     return (
         <div className="min-h-screen bg-[#fbf9f5] text-slate-800 font-sans selection:bg-[#546354]/10">
             {/* Navigation */}
@@ -195,28 +206,47 @@ export default function Showcase() {
                                     Keep notes, characters, locations, and objects in one central sanctuary. Link them directly to scenes so the information you need is always one click away.
                                 </p>
                                 <div className="grid grid-cols-2 gap-4 pt-4">
-                                    <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                                        <p className="font-serif italic text-lg text-slate-800 mb-1">Characters</p>
-                                        <p className="text-sm text-slate-400">Track arcs and relationships</p>
-                                    </div>
-                                    <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                                        <p className="font-serif italic text-lg text-slate-800 mb-1">Locations</p>
-                                        <p className="text-sm text-slate-400">Map out your world</p>
-                                    </div>
-                                    <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                                        <p className="font-serif italic text-lg text-slate-800 mb-1">Objects</p>
-                                        <p className="text-sm text-slate-400">Manage important relics</p>
-                                    </div>
-                                    <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                                        <p className="font-serif italic text-lg text-slate-800 mb-1">Ideas</p>
-                                        <p className="text-sm text-slate-400">Save sparks for later</p>
-                                    </div>
+                                    {universeTabs.map((tab) => (
+                                        <button 
+                                            key={tab.id}
+                                            onClick={() => setActiveUniverseTab(tab.id)}
+                                            className={cn(
+                                                "p-4 rounded-2xl border transition-all duration-300 text-left cursor-pointer",
+                                                activeUniverseTab === tab.id 
+                                                    ? "bg-white border-[#546354]/20 shadow-lg ring-1 ring-[#546354]/10" 
+                                                    : "bg-white/40 border-slate-100 shadow-sm hover:bg-white hover:shadow-md"
+                                            )}
+                                        >
+                                            <p className={cn(
+                                                "font-serif italic text-lg mb-1 transition-colors",
+                                                activeUniverseTab === tab.id ? "text-[#546354]" : "text-slate-800"
+                                            )}>{tab.label}</p>
+                                            <p className="text-sm text-slate-400">{tab.sub}</p>
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
-                            <div className="flex-1 relative">
-                                <div className="relative z-10 p-2 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
-                                    <Image src="/showcase/characters.png" alt="Worldbuilding Database" width={1200} height={800} className="rounded-2xl" />
-                                </div>
+                            <div className="flex-1 relative aspect-[4/3] lg:aspect-[16/10]">
+                                <AnimatePresence mode="wait">
+                                    <motion.div 
+                                        key={activeUniverseTab}
+                                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 1.05, y: -10 }}
+                                        transition={{ duration: 0.4, ease: "easeOut" }}
+                                        className="relative z-10 p-2 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden h-full"
+                                    >
+                                        <Image 
+                                            src={universeTabs.find(t => t.id === activeUniverseTab)?.img || '/showcase/characters.png'} 
+                                            alt="Worldbuilding Database" 
+                                            fill 
+                                            sizes="(max-width: 1024px) 100vw, 50vw"
+                                            className="rounded-2xl object-cover p-2" 
+                                            priority
+                                        />
+                                    </motion.div>
+                                </AnimatePresence>
+                                <div className="absolute -bottom-10 -right-10 w-60 h-60 bg-[#546354]/5 rounded-full blur-3xl -z-10" />
                             </div>
                         </div>
                     </div>
