@@ -36,7 +36,7 @@ export default function CoverEditModal({ project, isOpen, onOpenChange }: CoverE
             setSaving(true)
             const { error } = await supabase
                 .from('projects')
-                .update({ cover_url: coverUrl || null })
+                .update({ cover_url: coverUrl || null } as any)
                 .eq('id', project.id)
 
             if (error) throw error
