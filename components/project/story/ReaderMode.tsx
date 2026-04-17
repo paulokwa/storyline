@@ -31,8 +31,14 @@ export function ReaderControls({
     const { supported, speechState, pause, resume, stop, voices, selectedVoice, setVoice, rate, changeRate, speak } = useSpeech()
     const [open, setOpen] = useState(false)
     const [hasSelection, setHasSelection] = useState(false)
+    const [hasChapter, setHasChapter] = useState(false)
     const menuRef = useRef<HTMLDivElement>(null)
     const dropdownAlign = align === 'left' ? 'start' : 'end'
+
+    const refreshAvailableContent = React.useCallback(() => {
+        setHasSelection(getSelection().trim().length > 0)
+        setHasChapter(getChapter().trim().length > 0)
+    }, [getSelection, getChapter])
 
     // Close on outside click
     useEffect(() => {
@@ -44,6 +50,21 @@ export function ReaderControls({
         if (open) document.addEventListener('mousedown', handleClickOutside)
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [open])
+
+    useEffect(() => {
+        refreshAvailableContent()
+
+        const syncAvailability = () => refreshAvailableContent()
+        document.addEventListener('selectionchange', syncAvailability)
+        window.addEventListener('mouseup', syncAvailability)
+        window.addEventListener('keyup', syncAvailability)
+
+        return () => {
+            document.removeEventListener('selectionchange', syncAvailability)
+            window.removeEventListener('mouseup', syncAvailability)
+            window.removeEventListener('keyup', syncAvailability)
+        }
+    }, [refreshAvailableContent])
 
     if (!supported) {
         if (mode === 'settings-only') return null
@@ -97,7 +118,7 @@ export function ReaderControls({
                         <DropdownMenu open={open} onOpenChange={setOpen}>
                             <DropdownMenuTrigger
                                 onClick={() => {
-                                    setHasSelection(getSelection().trim().length > 0)
+                                    refreshAvailableContent()
                                 }}
                                 className={cn(
                                     "inline-flex h-7 w-7 items-center justify-center rounded-full p-0 transition-all outline-none",
@@ -121,7 +142,7 @@ export function ReaderControls({
                 <DropdownMenu open={open} onOpenChange={setOpen}>
                     <DropdownMenuTrigger
                         onClick={() => {
-                            setHasSelection(getSelection().trim().length > 0)
+                            refreshAvailableContent()
                         }}
                         className={cn(
                             mode === 'settings-only' ? "h-8 w-8 rounded-xl" : "h-9 w-9 rounded-xl",
@@ -171,8 +192,9 @@ export function ReaderControls({
                         {!hasSelection && <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Default</span>}
                     </button>
                     <button 
+                        disabled={!hasChapter}
                         onClick={() => { speak(getChapter(), 'Chapter'); setOpen(false) }}
-                        className="w-full text-left px-3 py-2 text-sm font-medium rounded-xl text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2"
+                        className="w-full text-left px-3 py-2 text-sm font-medium rounded-xl text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-transparent transition-colors flex items-center gap-2"
                     >
                         <Book className="w-3.5 h-3.5 opacity-50" /> Read Chapter
                     </button>

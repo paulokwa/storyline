@@ -33,6 +33,18 @@ type Project = Database['public']['Tables']['projects']['Row']
 type StructureNode = Database['public']['Tables']['structure_nodes']['Row']
 type Scene = Database['public']['Tables']['scenes']['Row']
 
+function extractNodeText(value: any): string {
+    if (!value) return ''
+    if (typeof value === 'string') return value
+    if (Array.isArray(value)) return value.map(extractNodeText).filter(Boolean).join(' ')
+    if (typeof value === 'object') {
+        const ownText = typeof value.text === 'string' ? value.text : ''
+        const childText = Array.isArray(value.content) ? value.content.map(extractNodeText).filter(Boolean).join(' ') : ''
+        return [ownText, childText].filter(Boolean).join(' ').trim()
+    }
+    return ''
+}
+
 interface StoryTabProps {
     project: Project
     initialNodes: StructureNode[]
@@ -60,6 +72,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         aiPanelOpen, setAiPanelOpen, 
         sceneAssetsOpen, setSceneAssetsOpen,
         currentSceneText, setCurrentSceneText,
+        setCurrentChapterText,
         analyzeScene, isAnalyzing,
         analysisResult, setAnalysisResult,
         activeNodeId, setActiveNodeId,
@@ -109,6 +122,43 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     const editorRef = useRef<SceneEditorRef>(null)
 
     const activeScene = scenes.find((s: Scene) => s.node_id === activeNodeId)
+
+    useEffect(() => {
+        if (!activeNodeId) {
+            setCurrentChapterText('')
+            return
+        }
+
+        const activeSceneNode = nodes.find(n => n.id === activeNodeId)
+        if (!activeSceneNode) {
+            setCurrentChapterText('')
+            return
+        }
+
+        const containerNode = activeSceneNode.parent_id
+            ? nodes.find(n => n.id === activeSceneNode.parent_id) ?? null
+            : null
+
+        if (!containerNode) {
+            const sceneText = extractNodeText(activeScene?.content).trim()
+            setCurrentChapterText(sceneText)
+            return
+        }
+
+        const chapterText = nodes
+            .filter(node => node.type === 'scene' && node.parent_id === containerNode.id)
+            .sort((a, b) => a.order_index - b.order_index)
+            .map(node => {
+                const scene = scenes.find((candidate: Scene) => candidate.node_id === node.id)
+                const sceneText = extractNodeText(scene?.content).trim()
+                if (!sceneText) return null
+                return `${node.title}\n\n${sceneText}`
+            })
+            .filter((text): text is string => !!text)
+            .join('\n\n')
+
+        setCurrentChapterText(chapterText)
+    }, [activeNodeId, activeScene, nodes, scenes, setCurrentChapterText])
 
     useEffect(() => {
         setScenes(initialScenes)

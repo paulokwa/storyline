@@ -215,6 +215,8 @@ function ProjectShellInner({
         sidebarOpen, setSidebarOpen, 
         aiPanelOpen, setAiPanelOpen, 
         currentSceneText, 
+        currentSelectionText,
+        currentChapterText,
         analyzeScene, isAnalyzing,
         setAnalysisResult,
         sceneAssetsOpen, setSceneAssetsOpen,
@@ -570,9 +572,9 @@ function ProjectShellInner({
 
                                     {/* Reading/Interaction */}
                                     <ReaderControls 
-                                        getSelection={() => ''}
+                                        getSelection={() => currentSelectionText}
                                         getScene={() => currentSceneText}
-                                        getChapter={() => ''}
+                                        getChapter={() => currentChapterText}
                                         mode="icon-only"
                                     />
 

@@ -193,12 +193,12 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
                             }
                         </p>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <div className="bg-slate-100 p-1.5 rounded-full flex gap-1">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full md:w-auto">
+                        <div className="bg-slate-100 p-1.5 rounded-full flex gap-1 min-w-0">
                             <button 
                                 onClick={() => setView('active')}
                                 className={cn(
-                                    "px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all",
+                                    "px-5 sm:px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all",
                                     view === 'active' ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
                                 )}
                             >
@@ -207,7 +207,7 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
                             <button 
                                 onClick={() => setView('trash')}
                                 className={cn(
-                                    "px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2",
+                                    "px-5 sm:px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2",
                                     view === 'trash' ? "bg-white text-red-500 shadow-sm" : "text-slate-400 hover:text-red-400"
                                 )}
                             >
@@ -223,10 +223,11 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
                         <DropdownMenu>
                             <DropdownMenuTrigger className={cn(
                                 buttonVariants({ variant: "ghost" }),
-                                "h-14 px-6 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 hover:text-slate-800 hover:bg-slate-100 gap-3 border border-slate-100"
+                                "h-14 min-w-0 px-4 sm:px-6 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 hover:text-slate-800 hover:bg-slate-100 gap-2 sm:gap-3 border border-slate-100"
                             )}>
                                 <ArrowUpDown className="w-4 h-4" />
-                                Sort: {sortFilter === 'custom' ? 'Custom' : sortFilter === 'recent' ? 'Recent' : 'A-Z'}
+                                <span className="sm:hidden">Sort</span>
+                                <span className="hidden sm:inline">Sort: {sortFilter === 'custom' ? 'Custom' : sortFilter === 'recent' ? 'Recent' : 'A-Z'}</span>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-56 rounded-3xl border-stone-100 shadow-2xl p-2 bg-white/80 backdrop-blur-xl">
                                 <DropdownMenuItem onClick={() => setSortFilter('custom')} className="gap-3 text-xs font-bold uppercase tracking-widest py-4 rounded-2xl cursor-pointer hover:bg-slate-50 text-slate-600 transition-colors">
@@ -242,8 +243,10 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
                         </DropdownMenu>
 
                         <Link href="/new">
-                            <Button className="sanctuary-btn-primary h-14 px-8 rounded-full text-base font-semibold gap-3">
-                                <Plus className="w-5 h-5" /> Start New Project
+                            <Button className="sanctuary-btn-primary h-14 px-5 sm:px-8 rounded-full text-sm sm:text-base font-semibold gap-2 sm:gap-3">
+                                <Plus className="w-5 h-5" />
+                                <span className="sm:hidden">New Project</span>
+                                <span className="hidden sm:inline">Start New Project</span>
                             </Button>
                         </Link>
                     </div>

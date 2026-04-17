@@ -10,6 +10,10 @@ interface ProjectContextType {
     setAiPanelOpen: (val: boolean | ((prev: boolean) => boolean)) => void
     currentSceneText: string
     setCurrentSceneText: (val: string) => void
+    currentSelectionText: string
+    setCurrentSelectionText: (val: string) => void
+    currentChapterText: string
+    setCurrentChapterText: (val: string) => void
     // Analysis state (Scene context)
     isAnalyzing: boolean
     setIsAnalyzing: (val: boolean) => void
@@ -53,6 +57,8 @@ export function ProjectProvider({
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [aiPanelOpen, setAiPanelOpen] = useState(false)
     const [currentSceneText, setCurrentSceneText] = useState('')
+    const [currentSelectionText, setCurrentSelectionText] = useState('')
+    const [currentChapterText, setCurrentChapterText] = useState('')
     const [sceneAssetsOpen, setSceneAssetsOpen] = useState(false)
     
     // Analysis
@@ -102,6 +108,10 @@ export function ProjectProvider({
             setAiPanelOpen,
             currentSceneText,
             setCurrentSceneText,
+            currentSelectionText,
+            setCurrentSelectionText,
+            currentChapterText,
+            setCurrentChapterText,
             isAnalyzing,
             setIsAnalyzing,
             analysisResult,

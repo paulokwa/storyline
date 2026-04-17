@@ -202,6 +202,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         aiPanelOpen, setAiPanelOpen, 
         sceneAssetsOpen, setSceneAssetsOpen, 
         currentSceneText, setCurrentSceneText, 
+        currentChapterText,
+        setCurrentSelectionText,
         role,
         isDictating, setIsDictating,
         dictationRequest
@@ -216,8 +218,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     useEffect(() => {
         return () => {
             if (atHintTimerRef.current) clearTimeout(atHintTimerRef.current)
+            setCurrentSelectionText('')
         }
-    }, [])
+    }, [setCurrentSelectionText])
 
     useEffect(() => {
         const dismissed = localStorage.getItem('hide-tab-hint')
@@ -446,6 +449,13 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         onSelectionUpdate: ({ editor }) => {
             const type = editor.state.selection.$from.parent.type.name
             setActiveBlockType(type)
+            setCurrentSelectionText(
+                editor.state.doc.textBetween(
+                    editor.state.selection.from,
+                    editor.state.selection.to,
+                    ' '
+                )
+            )
         },
         editorProps: {
             attributes: {
@@ -1060,7 +1070,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             <ReaderControls 
                                 getSelection={() => editor?.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to) || ''}
                                 getScene={() => editor?.getText() || ''}
-                                getChapter={() => ''}
+                                getChapter={() => currentChapterText}
                             />
                         </div>
                         
