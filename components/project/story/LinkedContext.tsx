@@ -1,8 +1,9 @@
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { useProjectActions } from '@/components/project/ProjectContext'
-import { Users, Lightbulb, MapPin, Package, X, FileText, Folder, MessageSquare, Plus, Shield } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Users, Lightbulb, MapPin, Package, X, FileText, Folder, MessageSquare, Plus, Shield, ChevronDown } from 'lucide-react'
 import { useDragScroll } from '@/hooks/useDragScroll'
 
 interface LinkedContextProps {
@@ -29,8 +30,70 @@ interface LinkedContextProps {
     allNodes?: any[]
 }
 
+interface LinkOption {
+    id: string
+    label: string
+}
+
 function isFeedbackIdea(idea: any) {
     return idea?.title?.toLowerCase().startsWith('feedback:')
+}
+
+function LinkActionDropdown({
+    label,
+    items,
+    isOpen,
+    isDisabled,
+    hoverClassName,
+    onOpenChange,
+    onSelect,
+}: {
+    label: string
+    items: LinkOption[]
+    isOpen: boolean
+    isDisabled: boolean
+    hoverClassName: string
+    onOpenChange: (open: boolean) => void
+    onSelect: (id: string) => void
+}) {
+    if (items.length === 0) return null
+
+    return (
+        <DropdownMenu open={isOpen} onOpenChange={onOpenChange}>
+            <DropdownMenuTrigger
+                disabled={isDisabled}
+                className={cn(
+                    "inline-flex shrink-0 items-center gap-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none transition-colors disabled:pointer-events-none disabled:opacity-50",
+                    hoverClassName
+                )}
+            >
+                <span>{label}</span>
+                <ChevronDown className={cn("h-3.5 w-3.5 transition-opacity", isOpen && "opacity-0")} />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+                align="start"
+                side="bottom"
+                sideOffset={8}
+                className="w-56 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-[0_12px_32px_rgba(15,23,42,0.12)]"
+            >
+                <div className="max-h-64 overflow-y-auto">
+                    {items.map((item) => (
+                        <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => {
+                                onSelect(item.id)
+                                onOpenChange(false)
+                            }}
+                            className="flex w-full items-center rounded-xl px-3 py-2 text-left text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+                        >
+                            <span className="truncate">{item.label}</span>
+                        </button>
+                    ))}
+                </div>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    )
 }
 
 export default function LinkedContext({ 
@@ -58,6 +121,7 @@ export default function LinkedContext({
 }: LinkedContextProps) {
     const supabase = createClient()
     const [isPending, startTransition] = useTransition()
+    const [openMenu, setOpenMenu] = useState<string | null>(null)
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'
     const { 
@@ -167,61 +231,45 @@ export default function LinkedContext({
                             <span>Link</span>
                         </div>
 
-                        {unlinkedCharacters.length > 0 && (
-                            <select 
-                                className="bg-transparent shrink-0 text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-[#546354] transition-colors"
-                                value=""
-                                onChange={(e) => e.target.value && addCharacter(e.target.value)}
-                                disabled={isPending}
-                            >
-                                <option value="" disabled>+ Character</option>
-                                {unlinkedCharacters.map(char => (
-                                    <option key={char.id} value={char.id}>{char.name}</option>
-                                ))}
-                            </select>
-                        )}
+                        <LinkActionDropdown
+                            label="+ Character"
+                            items={unlinkedCharacters.map(char => ({ id: char.id, label: char.name }))}
+                            isOpen={openMenu === 'character'}
+                            isDisabled={isPending}
+                            hoverClassName="hover:text-[#546354]"
+                            onOpenChange={(open) => setOpenMenu(open ? 'character' : null)}
+                            onSelect={addCharacter}
+                        />
 
-                        {unlinkedIdeas.length > 0 && (
-                            <select 
-                                className="bg-transparent shrink-0 text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-indigo-600 transition-colors"
-                                value=""
-                                onChange={(e) => e.target.value && addIdea(e.target.value)}
-                                disabled={isPending}
-                            >
-                                <option value="" disabled>+ Idea</option>
-                                {unlinkedIdeas.map(idea => (
-                                    <option key={idea.id} value={idea.id}>{idea.title}</option>
-                                ))}
-                            </select>
-                        )}
+                        <LinkActionDropdown
+                            label="+ Idea"
+                            items={unlinkedIdeas.map(idea => ({ id: idea.id, label: idea.title }))}
+                            isOpen={openMenu === 'idea'}
+                            isDisabled={isPending}
+                            hoverClassName="hover:text-indigo-600"
+                            onOpenChange={(open) => setOpenMenu(open ? 'idea' : null)}
+                            onSelect={addIdea}
+                        />
 
-                        {unlinkedLocations.length > 0 && (
-                            <select 
-                                className="bg-transparent shrink-0 text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-emerald-600 transition-colors"
-                                value=""
-                                onChange={(e) => e.target.value && addLocation(e.target.value)}
-                                disabled={isPending}
-                            >
-                                <option value="" disabled>+ Location</option>
-                                {unlinkedLocations.map(loc => (
-                                    <option key={loc.id} value={loc.id}>{loc.name}</option>
-                                ))}
-                            </select>
-                        )}
+                        <LinkActionDropdown
+                            label="+ Location"
+                            items={unlinkedLocations.map(loc => ({ id: loc.id, label: loc.name }))}
+                            isOpen={openMenu === 'location'}
+                            isDisabled={isPending}
+                            hoverClassName="hover:text-emerald-600"
+                            onOpenChange={(open) => setOpenMenu(open ? 'location' : null)}
+                            onSelect={addLocation}
+                        />
 
-                        {unlinkedObjects.length > 0 && (
-                            <select 
-                                className="bg-transparent shrink-0 text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none cursor-pointer hover:text-blue-600 transition-colors"
-                                value=""
-                                onChange={(e) => e.target.value && addObject(e.target.value)}
-                                disabled={isPending}
-                            >
-                                <option value="" disabled>+ Object</option>
-                                {unlinkedObjects.map(obj => (
-                                    <option key={obj.id} value={obj.id}>{obj.name}</option>
-                                ))}
-                            </select>
-                        )}
+                        <LinkActionDropdown
+                            label="+ Object"
+                            items={unlinkedObjects.map(obj => ({ id: obj.id, label: obj.name }))}
+                            isOpen={openMenu === 'object'}
+                            isDisabled={isPending}
+                            hoverClassName="hover:text-blue-600"
+                            onOpenChange={(open) => setOpenMenu(open ? 'object' : null)}
+                            onSelect={addObject}
+                        />
                     </div>
                 </div>
             )}

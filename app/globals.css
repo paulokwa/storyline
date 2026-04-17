@@ -386,6 +386,7 @@ body {
 }
 
 .screenplay-action {
+  text-transform: none;
   margin-top: 12pt !important;
   margin-bottom: 12pt !important;
   text-align: left !important;

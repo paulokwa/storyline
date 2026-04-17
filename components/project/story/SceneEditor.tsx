@@ -1249,12 +1249,6 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                 <div className="w-px h-4 bg-slate-200 mx-1" />
 
                                 <ToolbarButton
-                                    onClick={handleAddInlineComment}
-                                    active={false}
-                                    icon={MessageSquarePlus}
-                                    tooltip="Add Feedback"
-                                />
-                                <ToolbarButton
                                     onClick={() => editor.chain().focus().setNode('screenplayDialogue').run()}
                                     active={editor.isActive('screenplayDialogue')}
                                     icon={MessageCircle}
@@ -1265,6 +1259,15 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     active={editor.isActive('screenplayTransition')}
                                     icon={ArrowRight}
                                     tooltip="Transition"
+                                />
+
+                                <div className="w-px h-4 bg-slate-200 mx-1" />
+
+                                <ToolbarButton
+                                    onClick={handleAddInlineComment}
+                                    active={false}
+                                    icon={MessageSquarePlus}
+                                    tooltip="Add Feedback"
                                 />
                             </>
                         ) : (

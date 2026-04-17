@@ -1,4 +1,6 @@
 import { Node, mergeAttributes, InputRule } from '@tiptap/core'
+import { Fragment } from '@tiptap/pm/model'
+import { Plugin } from '@tiptap/pm/state'
 
 /**
  * Screenplay Scene Heading (Slugline)
@@ -26,6 +28,41 @@ export const ScreenplaySceneHeading = Node.create({
           chain()
             .setNode(this.name)
             .run()
+        },
+      }),
+    ]
+  },
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        appendTransaction: (transactions, oldState, newState) => {
+          if (!transactions.some(transaction => transaction.docChanged)) {
+            return null
+          }
+
+          let tr = newState.tr
+          let hasChanges = false
+
+          newState.doc.descendants((node, pos) => {
+            if (node.type.name !== this.name || node.textContent === node.textContent.toUpperCase()) {
+              return
+            }
+
+            const uppercasedContent = Fragment.fromArray(
+              node.content.content.map(child => {
+                if (!child.isText || !child.text) {
+                  return child
+                }
+
+                return newState.schema.text(child.text.toUpperCase(), child.marks)
+              })
+            )
+
+            tr = tr.replaceWith(pos + 1, pos + node.nodeSize - 1, uppercasedContent)
+            hasChanges = true
+          })
+
+          return hasChanges ? tr : null
         },
       }),
     ]
