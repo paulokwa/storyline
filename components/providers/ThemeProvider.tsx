@@ -2,7 +2,9 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 
-type Theme = 'sanctuary' | 'midnight' | 'nord' | 'forest' | 'sunset' | 'lavender'
+export const DEFAULT_THEME = 'sanctuary' as const
+
+type Theme = typeof DEFAULT_THEME
 
 interface ThemeContextType {
     theme: Theme
@@ -12,27 +14,22 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-    const [theme, setThemeState] = useState<Theme>('sanctuary')
-    const [mounted, setMounted] = useState(false)
+    const [theme, setThemeState] = useState<Theme>(DEFAULT_THEME)
 
     useEffect(() => {
-        const savedTheme = localStorage.getItem('theme') as Theme
-        if (savedTheme) {
-            setThemeState(savedTheme)
-            document.documentElement.setAttribute('data-theme', savedTheme)
+        const savedTheme = localStorage.getItem('theme')
+
+        if (savedTheme !== DEFAULT_THEME) {
+            localStorage.setItem('theme', DEFAULT_THEME)
         }
-        setMounted(true)
+
+        document.documentElement.setAttribute('data-theme', DEFAULT_THEME)
     }, [])
 
     const setTheme = (newTheme: Theme) => {
         setThemeState(newTheme)
         localStorage.setItem('theme', newTheme)
         document.documentElement.setAttribute('data-theme', newTheme)
-    }
-
-    // Prevent hydration mismatch
-    if (!mounted) {
-        return <>{children}</>
     }
 
     return (

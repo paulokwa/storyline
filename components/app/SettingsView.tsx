@@ -7,10 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
-import { ChevronLeft, Moon, Sun, Palette, Check, HelpCircle } from 'lucide-react'
+import { ChevronLeft, Palette, HelpCircle } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
-import { useTheme } from '@/components/providers/ThemeProvider'
-import { cn } from '@/lib/utils'
 import AiSetupGuide from '@/components/app/AiSetupGuide'
 
 export default function SettingsView({ user, maskedApiKey, aiSettings }: { 
@@ -24,7 +22,6 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
         ollama_url: string
     }
 }) {
-    const { theme, setTheme } = useTheme()
     const supabase = createClient()
     const router = useRouter()
     const [loading, setLoading] = useState(false)
@@ -552,54 +549,19 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
                         <Palette className="w-5 h-5 text-primary" />
                         <h2 className="text-xl font-semibold text-slate-800">Appearance</h2>
                     </div>
-                    <p className="text-sm text-slate-500 mb-6">Choose a theme that fits your writing mood.</p>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {[
-                            { id: 'sanctuary', name: 'Sanctuary', color: '#546354', bg: '#fbf9f5' },
-                            { id: 'midnight', name: 'Midnight', color: '#f8fafc', bg: '#0f172a' },
-                            { id: 'nord', name: 'Nord', color: '#88c0d0', bg: '#2e3440' },
-                            { id: 'forest', name: 'Forest', color: '#7db394', bg: '#13211a' },
-                            { id: 'sunset', name: 'Sunset', color: '#e67e5c', bg: '#251a2e' },
-                            { id: 'lavender', name: 'Lavender', color: '#7c3aed', bg: '#f3eff8' },
-                        ].map((t) => (
-                            <button
-                                key={t.id}
-                                onClick={() => setTheme(t.id as any)}
-                                className={cn(
-                                    "relative flex flex-col items-start gap-3 p-4 rounded-[1.5rem] border-2 transition-all duration-300 group overflow-hidden",
-                                    theme === t.id 
-                                        ? "border-primary bg-primary/5 shadow-lg active:scale-95" 
-                                        : "border-slate-100 hover:border-slate-200 bg-white active:scale-95"
-                                )}
-                            >
-                                <div 
-                                    className="w-full aspect-[2/1] rounded-xl shadow-inner mb-1 flex items-center justify-center relative overflow-hidden" 
-                                    style={{ backgroundColor: t.bg }}
-                                >
-                                    <div className="w-8 h-8 rounded-full shadow-lg" style={{ backgroundColor: t.color }} />
-                                    {theme === t.id && (
-                                        <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center shadow-md animate-in zoom-in duration-300">
-                                            <Check className="w-3 h-3 text-white" />
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="flex flex-col items-start translate-x-1">
-                                    <span className={cn(
-                                        "text-xs font-bold uppercase tracking-widest",
-                                        theme === t.id ? "text-primary" : "text-slate-400"
-                                    )}>
-                                        Theme
-                                    </span>
-                                    <span className={cn(
-                                        "text-sm font-semibold",
-                                        theme === t.id ? "text-slate-900" : "text-slate-600"
-                                    )}>
-                                        {t.name}
-                                    </span>
-                                </div>
-                            </button>
-                        ))}
+                    <p className="text-sm text-slate-500 mb-6">Storyline now uses a single visual theme to keep the writing experience consistent.</p>
+
+                    <div className="rounded-[1.5rem] border-2 border-primary/20 bg-primary/5 p-4">
+                        <div
+                            className="mb-4 flex aspect-[2/1] w-full items-center justify-center rounded-xl shadow-inner"
+                            style={{ backgroundColor: '#fbf9f5' }}
+                        >
+                            <div className="h-8 w-8 rounded-full shadow-lg" style={{ backgroundColor: '#546354' }} />
+                        </div>
+                        <div className="flex flex-col items-start">
+                            <span className="text-xs font-bold uppercase tracking-widest text-primary">Theme</span>
+                            <span className="text-sm font-semibold text-slate-900">Sanctuary</span>
+                        </div>
                     </div>
                 </Card>
 
