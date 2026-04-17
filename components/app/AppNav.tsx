@@ -1,13 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
+import { isAdminEmail } from '@/lib/admin'
 import { 
     PenLine, LogOut, Settings as SettingsIcon, 
-    User as UserIcon, Download, Users, 
-    Settings2, BarChart3, HelpCircle, Mail 
+    Download, Users, Settings2, BarChart3, Mail, Shield
 } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import {
@@ -22,7 +21,7 @@ import { useProjectActionsStore } from '@/lib/store/projectActionsStore'
 
 export default function AppNav({ user }: { user: User }) {
     const router = useRouter()
-    const pathname = usePathname()
+    const canAccessAdmin = isAdminEmail(user.email)
 
     async function handleSignOut() {
         const supabase = createClient()
@@ -129,6 +128,16 @@ export default function AppNav({ user }: { user: User }) {
                                 <SettingsIcon className="w-4 h-4" />
                                 <span className="font-semibold text-sm">Account Settings</span>
                             </DropdownMenuItem>
+
+                            {canAccessAdmin && (
+                                <DropdownMenuItem 
+                                    onClick={() => router.push('/admin')}
+                                    className="rounded-xl px-3 py-2.5 text-slate-600 focus:text-[#546354] focus:bg-[#546354]/5 cursor-pointer gap-3 transition-all"
+                                >
+                                    <Shield className="w-4 h-4" />
+                                    <span className="font-semibold text-sm">Admin</span>
+                                </DropdownMenuItem>
+                            )}
 
                             <DropdownMenuItem 
                                 onClick={() => window.open('mailto:mwake.dev@gmail.com', '_blank')}
