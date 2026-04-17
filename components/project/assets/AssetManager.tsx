@@ -73,13 +73,35 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
             return
         }
 
-        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        if (file.size > 5 * 1024 * 1024) { // 5MB individual file limit
             toast.error('File size must be less than 5MB')
             setUploading(false)
             return
         }
 
         try {
+            // 0. Quota Check (Phase 5.5)
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) throw new Error('Not authenticated')
+
+            const { data: quota, error: quotaError } = await supabase.rpc('check_storage_quota', {
+                p_user_id: user.id,
+                p_incoming_file_size: file.size
+            })
+
+            if (quotaError) throw quotaError
+
+            if (!quota.within_quota) {
+                const usedMb = (quota.current_usage_bytes / (1024 * 1024)).toFixed(1)
+                const quotaMb = (quota.effective_quota_bytes / (1024 * 1024)).toFixed(1)
+                
+                toast.error('Storage quota exceeded', {
+                    description: `You are using ${usedMb}MB of your ${quotaMb}MB limit. This file requires more space than you have left.`
+                })
+                setUploading(false)
+                return
+            }
+
             // 1. Get image dimensions
             const dimensions = await getImageDimensions(file)
 

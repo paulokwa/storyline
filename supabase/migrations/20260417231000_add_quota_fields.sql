@@ -1,0 +1,4 @@
+ALTER TABLE profiles
+ADD COLUMN IF NOT EXISTS storage_quota_bytes BIGINT,
+ADD COLUMN IF NOT EXISTS storage_used_bytes BIGINT NOT NULL DEFAULT 0,
+ADD COLUMN IF NOT EXISTS quota_override_bytes BIGINT;
