@@ -477,10 +477,10 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             </div>
 
             {/* Main editor area */}
-            <div data-tour="main-editor" className="flex-1 flex flex-col overflow-hidden bg-[#fbf9f5] w-full">
+            <div data-tour="main-editor" className="story-workspace flex-1 flex flex-col overflow-hidden bg-[#fbf9f5] w-full">
                 {/* Linked Context (Sticky) */}
                 {activeNodeId && activeScene && (
-                    <div className="bg-[#fbf9f5] border-b border-slate-100 z-10">
+                    <div className="story-workspace-topbar bg-[#fbf9f5] border-b border-slate-100 z-10">
                         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-start sm:items-center justify-between gap-4">
                             <div className="flex-1 snap-row">
                                 <LinkedContext
@@ -508,7 +508,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                 />
                             </div>
                             <div className="flex items-center gap-4 shrink-0">
-                                <div className="hidden lg:flex items-center gap-1.5 p-1 bg-violet-50/50 rounded-2xl border border-violet-100/50">
+                                <div className="story-action-cluster hidden lg:flex items-center gap-1.5 p-1 bg-violet-50/50 rounded-2xl border border-violet-100/50">
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
@@ -676,7 +676,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
 
             {/* AI Helper Sidebar */}
             <div className={cn(
-                'bg-white flex flex-col border-l border-slate-200 transition-all duration-300 ease-in-out overflow-hidden z-40 md:z-20',
+                'story-ai-sidebar bg-white flex flex-col border-l border-slate-200 transition-all duration-300 ease-in-out overflow-hidden z-40 md:z-20',
                 'absolute top-0 bottom-0 right-0 md:relative md:inset-auto md:h-full',
                 aiPanelOpen 
                     ? 'w-[320px] lg:w-[380px] opacity-100 translate-x-0' 

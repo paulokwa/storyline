@@ -21,6 +21,7 @@ import type { Database } from '@/lib/supabase/types'
 import type { ExportMetadata } from '@/lib/export/buildExportPayload'
 import { cn } from '@/lib/utils'
 import { PROJECT_TYPE_LABELS, getProjectTypeLabel } from '@/lib/constants'
+import { useTheme } from '@/components/providers/ThemeProvider'
 
 type Project = Database['public']['Tables']['projects']['Row']
 
@@ -35,6 +36,8 @@ export default function ProjectSettingsModal({
     onOpenChange,
     project,
 }: ProjectSettingsModalProps) {
+    const { theme } = useTheme()
+    const isMidnight = theme === 'midnight'
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -90,10 +93,18 @@ export default function ProjectSettingsModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden rounded-3xl border border-slate-200/50 shadow-2xl bg-[#fbf9f5] !opacity-100 backdrop-blur-none">
+            <DialogContent className={cn(
+                "project-settings-modal sm:max-w-[500px] p-0 overflow-hidden rounded-3xl shadow-2xl !opacity-100 backdrop-blur-none",
+                isMidnight
+                    ? "border border-slate-600/30 bg-[#10192b]"
+                    : "border border-slate-200/50 bg-[#fbf9f5]"
+            )}>
                 {!showDeleteConfirm ? (
                     <>
-                        <DialogHeader className="bg-white/50 p-6 pt-12 sm:p-8 border-b border-[#f0eee9]">
+                        <DialogHeader className={cn(
+                            "p-6 pt-12 sm:p-8 border-b",
+                            isMidnight ? "bg-[#182239]/88 border-slate-700/60" : "bg-white/50 border-[#f0eee9]"
+                        )}>
                             <DialogTitle className="text-2xl sm:text-3xl font-serif text-foreground">Project Settings</DialogTitle>
                             <DialogDescription className="text-xs sm:text-sm text-muted-foreground font-medium">
                                 Configure the foundations of your story.
@@ -341,7 +352,10 @@ export default function ProjectSettingsModal({
                             )}
                         </div>
 
-                        <DialogFooter className="p-6 bg-white border-t border-[#f0eee9] flex flex-col sm:flex-row gap-3">
+                        <DialogFooter className={cn(
+                            "p-6 flex flex-col sm:flex-row gap-3",
+                            isMidnight ? "bg-[#182239]/88 border-slate-700/60" : "bg-white border-[#f0eee9]"
+                        )}>
                             <Button
                                 variant="ghost"
                                 onClick={() => setShowDeleteConfirm(true)}

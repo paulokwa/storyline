@@ -302,7 +302,7 @@ export default function CommentsPanel({
     }
 
     return (
-        <div className="flex flex-col h-full min-h-0 bg-white">
+        <div className="comments-panel flex flex-col h-full min-h-0 bg-white">
             {/* Header */}
             <div className="p-4 border-b border-slate-100 flex items-center justify-between">
                 <div className="flex items-center gap-2">

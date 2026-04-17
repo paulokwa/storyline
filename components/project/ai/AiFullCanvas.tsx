@@ -85,9 +85,9 @@ export default function AiFullCanvas({
     }
 
     return (
-        <div className="flex-1 flex flex-col bg-[#fbf9f5] overflow-hidden">
+        <div className="ai-full-canvas flex-1 flex flex-col bg-[#fbf9f5] overflow-hidden">
             {/* Minimalist Top Nav for AI Tab */}
-            <div className="hidden h-16 items-center justify-between border-b border-slate-200/50 bg-white/50 px-8 backdrop-blur-md md:flex">
+            <div className="ai-full-canvas-topnav hidden h-16 items-center justify-between border-b border-slate-200/50 bg-white/50 px-8 backdrop-blur-md md:flex">
                 <div className="flex items-center gap-4">
                     <button
                         type="button"
@@ -108,8 +108,8 @@ export default function AiFullCanvas({
 
             </div>
 
-            <div className="flex-1 flex justify-center overflow-hidden">
-                <div className="w-full max-w-5xl flex flex-col h-full bg-white shadow-2xl shadow-slate-200/50 border-x border-slate-100 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="ai-full-canvas-body flex-1 flex justify-center overflow-hidden">
+                <div className="ai-full-canvas-frame w-full max-w-5xl flex flex-col h-full bg-white shadow-2xl shadow-slate-200/50 border-x border-slate-100 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <AiHelperPanel 
                         projectId={projectId}
                         sceneText={currentSceneText || fallbackSceneText}
@@ -148,7 +148,7 @@ export default function AiFullCanvas({
             </div>
 
             {/* Bottom Status Bar */}
-            <div className="hidden h-10 items-center justify-between border-t border-slate-100 bg-white px-8 text-[9px] font-bold uppercase tracking-widest text-slate-400 md:flex">
+            <div className="ai-full-canvas-status hidden h-10 items-center justify-between border-t border-slate-100 bg-white px-8 text-[9px] font-bold uppercase tracking-widest text-slate-400 md:flex">
                 <div className="flex items-center gap-6">
                     <span className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
@@ -161,7 +161,7 @@ export default function AiFullCanvas({
                 </div>
             </div>
 
-            <div className="border-t border-slate-100 bg-white px-4 py-2 text-[9px] font-bold uppercase tracking-[0.22em] text-slate-400 md:hidden">
+            <div className="ai-full-canvas-status border-t border-slate-100 bg-white px-4 py-2 text-[9px] font-bold uppercase tracking-[0.22em] text-slate-400 md:hidden">
                 <div className="flex items-center justify-between gap-3">
                     <span className="flex items-center gap-2 min-w-0">
                         <div className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />

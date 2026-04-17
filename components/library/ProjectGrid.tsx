@@ -41,6 +41,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTheme } from '@/components/providers/ThemeProvider'
 
 // Explicitly extend the Project type with fields added via recent migrations
 type Project = Database['public']['Tables']['projects']['Row'] & {
@@ -57,6 +58,8 @@ type Project = Database['public']['Tables']['projects']['Row'] & {
 
 export default function ProjectGrid({ projects, deletedProjects }: { projects: Project[], deletedProjects: Project[] }) {
     const router = useRouter()
+    const { theme } = useTheme()
+    const isMidnight = theme === 'midnight'
     const [draft, setDraft] = useState<{ state: any; step: any } | null>(null)
     const [view, setView] = useState<'active' | 'trash'>('active')
     const [sortFilter, setSortFilter] = useState<'custom' | 'recent' | 'az'>('custom')
@@ -150,12 +153,12 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
 
     if (projects.length === 0 && !draft) {
         return (
-            <div className="max-w-[1440px] mx-auto px-6 py-24 text-center fade-in">
-                <div className="w-20 h-20 bg-stone-100 rounded-3xl flex items-center justify-center mx-auto mb-8">
+            <div className="library-grid-shell max-w-[1440px] mx-auto px-6 py-24 text-center fade-in">
+                <div className={cn("w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8", isMidnight ? "bg-slate-800/80 border border-slate-700/60" : "bg-stone-100")}>
                     <BookOpen className="w-10 h-10 text-stone-400" />
                 </div>
-                <h2 className="text-3xl font-serif text-slate-800 mb-4">Start your first project</h2>
-                <p className="text-slate-500 text-lg mb-10 max-w-md mx-auto font-medium leading-relaxed">
+                <h2 className={cn("text-3xl font-serif mb-4", isMidnight ? "text-slate-100" : "text-slate-800")}>Start your first project</h2>
+                <p className={cn("text-lg mb-10 max-w-md mx-auto font-medium leading-relaxed", isMidnight ? "text-slate-400" : "text-slate-500")}>
                     Create a Book or Screenplay and begin writing your next masterpiece.
                 </p>
                 <Link href="/new">
@@ -171,22 +174,22 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
 
     return (
         <TooltipProvider>
-            <div className="max-w-[1440px] mx-auto px-6 py-16 md:py-24">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-20 border-b border-slate-100 pb-12">
+            <div className="library-grid-shell max-w-[1440px] mx-auto px-6 py-16 md:py-24">
+                <div className={cn("flex flex-col md:flex-row md:items-end justify-between gap-8 mb-20 pb-12", isMidnight ? "border-b border-slate-700/50" : "border-b border-slate-100")}>
                     <div className="space-y-4">
                         <motion.h1 
                             key={view}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="text-5xl md:text-7xl font-serif text-slate-800 tracking-tight leading-tight"
+                            className={cn("text-5xl md:text-7xl font-serif tracking-tight leading-tight", isMidnight ? "text-slate-100" : "text-slate-800")}
                         >
                             {view === 'active' ? (
-                                <>The Manuscript<br /><span className="text-slate-400">Archive</span></>
+                                <>The Manuscript<br /><span className={isMidnight ? "text-slate-500" : "text-slate-400"}>Archive</span></>
                             ) : (
-                                <>The Recovery<br /><span className="text-red-400">Vault</span></>
+                                <>The Recovery<br /><span className={isMidnight ? "text-red-300/80" : "text-red-400"}>Vault</span></>
                             )}
                         </motion.h1>
-                        <p className="text-lg text-slate-500 max-w-sm font-medium">
+                        <p className={cn("text-lg max-w-sm font-medium", isMidnight ? "text-slate-400" : "text-slate-500")}>
                             {view === 'active' 
                                 ? "Your creative sanctuary. Select a project below or start a new journey."
                                 : "Recover deleted projects here. Items are kept for 60 days before permanent deletion."
@@ -194,12 +197,14 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full md:w-auto">
-                        <div className="bg-slate-100 p-1.5 rounded-full flex gap-1 min-w-0">
+                        <div className={cn("p-1.5 rounded-full flex gap-1 min-w-0", isMidnight ? "bg-slate-800/80 border border-slate-700/60" : "bg-slate-100")}>
                             <button 
                                 onClick={() => setView('active')}
                                 className={cn(
                                     "px-5 sm:px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all",
-                                    view === 'active' ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                                    view === 'active'
+                                        ? (isMidnight ? "bg-slate-700/90 text-slate-100 shadow-sm" : "bg-white text-slate-800 shadow-sm")
+                                        : (isMidnight ? "text-slate-400 hover:text-slate-200" : "text-slate-400 hover:text-slate-600")
                                 )}
                             >
                                 Active
@@ -208,7 +213,9 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
                                 onClick={() => setView('trash')}
                                 className={cn(
                                     "px-5 sm:px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2",
-                                    view === 'trash' ? "bg-white text-red-500 shadow-sm" : "text-slate-400 hover:text-red-400"
+                                    view === 'trash'
+                                        ? (isMidnight ? "bg-slate-700/90 text-red-300 shadow-sm" : "bg-white text-red-500 shadow-sm")
+                                        : (isMidnight ? "text-slate-400 hover:text-red-300" : "text-slate-400 hover:text-red-400")
                                 )}
                             >
                                 Trash
@@ -223,20 +230,24 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
                         <DropdownMenu>
                             <DropdownMenuTrigger className={cn(
                                 buttonVariants({ variant: "ghost" }),
-                                "h-14 min-w-0 px-4 sm:px-6 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 hover:text-slate-800 hover:bg-slate-100 gap-2 sm:gap-3 border border-slate-100"
+                                `h-14 min-w-0 px-4 sm:px-6 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] gap-2 sm:gap-3 ${
+                                    isMidnight
+                                        ? 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/70 border border-slate-700/60'
+                                        : 'text-slate-400 hover:text-slate-800 hover:bg-slate-100 border border-slate-100'
+                                }`
                             )}>
                                 <ArrowUpDown className="w-4 h-4" />
                                 <span className="sm:hidden">Sort</span>
                                 <span className="hidden sm:inline">Sort: {sortFilter === 'custom' ? 'Custom' : sortFilter === 'recent' ? 'Recent' : 'A-Z'}</span>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56 rounded-3xl border-stone-100 shadow-2xl p-2 bg-white/80 backdrop-blur-xl">
-                                <DropdownMenuItem onClick={() => setSortFilter('custom')} className="gap-3 text-xs font-bold uppercase tracking-widest py-4 rounded-2xl cursor-pointer hover:bg-slate-50 text-slate-600 transition-colors">
+                            <DropdownMenuContent align="end" className={cn("w-56 rounded-3xl shadow-2xl p-2 backdrop-blur-xl", isMidnight ? "border-slate-700/60 bg-[#182239]/96" : "border-stone-100 bg-white/80")}>
+                                <DropdownMenuItem onClick={() => setSortFilter('custom')} className={cn("gap-3 text-xs font-bold uppercase tracking-widest py-4 rounded-2xl cursor-pointer transition-colors", isMidnight ? "hover:bg-white/6 text-slate-300" : "hover:bg-slate-50 text-slate-600")}>
                                     <LayoutGrid className="w-4 h-4" /> Custom Order
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setSortFilter('recent')} className="gap-3 text-xs font-bold uppercase tracking-widest py-4 rounded-2xl cursor-pointer hover:bg-slate-50 text-slate-600 transition-colors">
+                                <DropdownMenuItem onClick={() => setSortFilter('recent')} className={cn("gap-3 text-xs font-bold uppercase tracking-widest py-4 rounded-2xl cursor-pointer transition-colors", isMidnight ? "hover:bg-white/6 text-slate-300" : "hover:bg-slate-50 text-slate-600")}>
                                     <Calendar className="w-4 h-4" /> Recently Used
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setSortFilter('az')} className="gap-3 text-xs font-bold uppercase tracking-widest py-4 rounded-2xl cursor-pointer hover:bg-slate-50 text-slate-600 transition-colors">
+                                <DropdownMenuItem onClick={() => setSortFilter('az')} className={cn("gap-3 text-xs font-bold uppercase tracking-widest py-4 rounded-2xl cursor-pointer transition-colors", isMidnight ? "hover:bg-white/6 text-slate-300" : "hover:bg-slate-50 text-slate-600")}>
                                     <ArrowUpDown className="w-4 h-4" /> Alphabetical
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -261,10 +272,10 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
                             exit={{ opacity: 0, scale: 0.95 }}
                             className="py-32 text-center"
                         >
-                            <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-slate-100">
+                            <div className={cn("w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8 border", isMidnight ? "bg-slate-800/80 border-slate-700/60" : "bg-slate-50 border-slate-100")}>
                                 <Trash2 className="w-10 h-10 text-slate-300" />
                             </div>
-                            <h2 className="text-2xl font-serif text-slate-800 mb-2">Trash is empty</h2>
+                            <h2 className={cn("text-2xl font-serif mb-2", isMidnight ? "text-slate-100" : "text-slate-800")}>Trash is empty</h2>
                             <p className="text-slate-400 font-medium">No projects are currently marked for deletion.</p>
                         </motion.div>
                     ) : (
@@ -365,7 +376,7 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
                     )}
                 </AnimatePresence>
                 
-                <div className="mt-24 pt-8 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6 opacity-40 hover:opacity-100 transition-opacity">
+                <div className={cn("mt-24 pt-8 flex flex-col md:flex-row justify-between items-center gap-6 opacity-40 hover:opacity-100 transition-opacity", isMidnight ? "border-t border-slate-700/50" : "border-t border-slate-100")}>
                     <p className="text-[10px] font-bold tracking-widest uppercase text-slate-400">© 2026 Storyline — Built for Authors</p>
                     <div className="flex gap-8">
                         <Link href="/terms" className="text-[10px] font-bold tracking-widest uppercase text-slate-400 hover:text-[#546354] transition-colors">Terms</Link>

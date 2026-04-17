@@ -138,7 +138,7 @@ const ToolbarButton = ({
                     onClick(e)
                 }}
                 className={cn(
-                    "p-1.5 sm:p-2 rounded-lg transition-all duration-200 shrink-0",
+                    "scene-editor-toolbar-button p-1.5 sm:p-2 rounded-lg transition-all duration-200 shrink-0",
                     active 
                         ? "bg-slate-800 text-white shadow-md scale-105" 
                         : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
@@ -945,13 +945,13 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
     return (
         <div className={cn(
-            'min-h-full pb-32 md:pb-80 transition-all duration-700 ease-in-out relative',
+            'scene-editor-shell min-h-full pb-32 md:pb-80 transition-all duration-700 ease-in-out relative',
             writingMode === 'screenplay' ? 'bg-[#f0f0ed] py-10 px-4 sm:px-8' : 'px-4 sm:px-12 md:px-24 max-w-6xl mx-auto pt-4'
         )}>
             {/* Realtime Conflict / Update Banners */}
             {showUpdateBanner && !showConflictModal && (
                 <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] animate-in slide-in-from-top-4 duration-500">
-                    <div className="bg-white border-2 border-primary/20 shadow-2xl rounded-2xl px-6 py-3 flex items-center gap-4">
+                    <div className="scene-editor-alert bg-white border-2 border-primary/20 shadow-2xl rounded-2xl px-6 py-3 flex items-center gap-4">
                         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                             <RotateCcw className="w-4 h-4" />
                         </div>
@@ -985,7 +985,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
             {showConflictModal && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-6 animate-in fade-in duration-500">
-                    <div className="bg-white rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl border border-white/50 text-center space-y-8">
+                    <div className="scene-editor-conflict bg-white rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl border border-white/50 text-center space-y-8">
                         <div className="w-24 h-24 bg-amber-50 rounded-[2.2rem] flex items-center justify-center text-amber-500 mx-auto shadow-inner">
                             <RotateCcw className="w-12 h-12" />
                         </div>
@@ -1149,7 +1149,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                             className="fixed inset-0 z-[60]" 
                                             onClick={() => setShowViewSettings(false)} 
                                         />
-                                        <div className="absolute right-0 top-8 w-64 bg-white/95 backdrop-blur-xl border border-slate-200 shadow-2xl rounded-2xl p-4 z-[70] animate-in fade-in slide-in-from-top-2 duration-200">
+                                        <div className="scene-editor-floating-panel absolute right-0 top-8 w-64 bg-white/95 backdrop-blur-xl border border-slate-200 shadow-2xl rounded-2xl p-4 z-[70] animate-in fade-in slide-in-from-top-2 duration-200">
                                             <div className="space-y-4">
                                                 {/* Font Choice */}
                                                 <div>
@@ -1284,7 +1284,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                     disabled={isReadOnly}
                     placeholder={`Untitled ${label}`}
                     className={cn(
-                        "w-full bg-transparent border-none focus:outline-none focus:ring-0 p-0 transition-all placeholder:text-slate-300",
+                        "scene-editor-title w-full bg-transparent border-none focus:outline-none focus:ring-0 p-0 transition-all placeholder:text-slate-300",
                         writingMode === 'screenplay' 
                             ? "font-mono uppercase text-xl font-bold tracking-widest text-slate-700" 
                             : "font-serif text-3xl sm:text-4xl text-[#31332f]"
@@ -1309,9 +1309,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                     textAlign: viewSettings.textAlign as any,
                 } as React.CSSProperties : {}}
                 className={cn(
-                    "transition-all duration-700 relative",
+                    "scene-editor-page transition-all duration-700 relative",
                     writingMode === 'screenplay' 
-                        ? "max-w-[80ch] mx-auto bg-white shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] p-12 sm:p-20 min-h-[11in] border border-slate-200/50" 
+                        ? "scene-editor-screenplay-page max-w-[80ch] mx-auto bg-white shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] p-12 sm:p-20 min-h-[11in] border border-slate-200/50" 
                         : "mx-auto w-full transition-[max-width] duration-500 ease-in-out"
                 )}
             >
@@ -1328,7 +1328,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             hide: true,
                             inline: true,
                         }}
-                        className="flex items-center gap-0.5 bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl p-1 animate-in fade-in zoom-in duration-200 z-[100] max-w-[calc(100vw-2rem)] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [scroll-snap-type:x_proximity] [scroll-padding-left:0.25rem] pr-6 cursor-default"
+                        className="scene-editor-bubble flex items-center gap-0.5 bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl p-1 animate-in fade-in zoom-in duration-200 z-[100] max-w-[calc(100vw-2rem)] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [scroll-snap-type:x_proximity] [scroll-padding-left:0.25rem] pr-6 cursor-default"
                     >
                         {writingMode === 'screenplay' ? (
                             <>
@@ -1517,9 +1517,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             </div>
 
             {isProjectEmpty && (
-                <div className="mt-12 p-8 rounded-3xl bg-amber-50/50 border border-amber-100 border-dashed text-center">
-                    <p className="text-amber-700 font-serif italic text-lg mb-2">Your journey begins with a single word.</p>
-                    <p className="text-amber-600/60 text-sm">Ask your AI Partner on the right if you need a spark of inspiration.</p>
+                <div className="scene-editor-empty-state mt-12 p-8 rounded-3xl bg-amber-50/50 border border-amber-100 border-dashed text-center">
+                    <p className="scene-editor-empty-title text-amber-700 font-serif italic text-lg mb-2">Your journey begins with a single word.</p>
+                    <p className="scene-editor-empty-copy text-amber-600/60 text-sm">Ask your AI Partner on the right if you need a spark of inspiration.</p>
                 </div>
             )}
 

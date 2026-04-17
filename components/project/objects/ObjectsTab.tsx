@@ -188,7 +188,7 @@ export default function ObjectsTab({
 
     return (
         <TooltipProvider>
-        <div className="flex-1 flex overflow-hidden bg-[#fbf9f5] relative">
+        <div className="objects-tab flex-1 flex overflow-hidden bg-[#fbf9f5] relative">
             <div className={cn("w-full md:w-80 md:min-w-80 bg-[#f5f4ef] flex flex-col border-r border-slate-200/50 transition-all duration-300", selectedId && "hidden md:flex")}>
                 <div className="p-6 flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -411,7 +411,7 @@ export default function ObjectsTab({
 
 function EmptyState({ onCreate, isCreating }: { onCreate: () => void, isCreating: boolean }) {
     return (
-        <div className="min-h-full bg-[#fbf9f5] flex flex-col items-center sm:justify-center py-12 p-6 text-center animate-in fade-in duration-700 overflow-y-auto">
+        <div className="objects-tab-empty flex-1 w-full min-h-full bg-[#fbf9f5] flex flex-col items-center sm:justify-center py-12 p-6 text-center animate-in fade-in duration-700 overflow-y-auto">
             <div className="max-w-2xl w-full py-12 sm:py-20 px-6 sm:px-10 rounded-[3rem] bg-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.04)] ring-1 ring-slate-100 flex flex-col items-center">
                 <div className="w-24 h-24 bg-stone-50 rounded-[30%] flex items-center justify-center mb-8 rotate-3 shadow-inner"><Package className="w-12 h-12 text-stone-200" /></div>
                 <h2 className="text-4xl font-serif italic text-slate-800 mb-4 tracking-tight">The Armoury is Silent</h2>

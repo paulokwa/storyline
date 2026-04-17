@@ -331,9 +331,9 @@ export default function RecoveryTab({
     }, [historyEntries])
 
     return (
-        <div className="flex-1 flex flex-col overflow-hidden bg-[#fbf9f5]">
+        <div className="recovery-tab recovery-tab-shell flex-1 flex flex-col overflow-hidden bg-[#fbf9f5]">
             {/* Header / Sub-nav */}
-            <div className="px-8 pt-8 pb-4 border-b border-slate-200/50 bg-[#f5f4ef]">
+            <div className="recovery-tab-header px-8 pt-8 pb-4 border-b border-slate-200/50 bg-[#f5f4ef]">
                 <div className="max-w-5xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2 text-[10px] font-sans tracking-[0.2em] uppercase text-stone-400 font-bold">
@@ -368,7 +368,7 @@ export default function RecoveryTab({
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 overflow-y-auto w-full custom-scrollbar">
+            <div className="recovery-tab-body flex-1 overflow-y-auto w-full custom-scrollbar">
                 <div className="max-w-5xl mx-auto px-8 py-10">
                     {activeSection === 'trash' ? (
                         <div className="space-y-8 animate-in fade-in duration-500">

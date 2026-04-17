@@ -7,8 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
-import { ChevronLeft, Palette, HelpCircle } from 'lucide-react'
+import { ChevronLeft, Palette, Moon, Trees, Check, HelpCircle } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
+import { THEMES, useTheme } from '@/components/providers/ThemeProvider'
+import { cn } from '@/lib/utils'
 import AiSetupGuide from '@/components/app/AiSetupGuide'
 
 export default function SettingsView({ user, maskedApiKey, aiSettings }: { 
@@ -22,6 +24,8 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
         ollama_url: string
     }
 }) {
+    const { theme, setTheme } = useTheme()
+    const isMidnight = theme === 'midnight'
     const supabase = createClient()
     const router = useRouter()
     const [loading, setLoading] = useState(false)
@@ -319,7 +323,10 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
     }
 
     return (
-        <div className="fade-in max-w-2xl mx-auto space-y-8 py-8 md:py-12 px-4 w-full">
+        <div className={cn(
+            "settings-view fade-in max-w-2xl mx-auto space-y-8 py-8 md:py-12 px-4 w-full",
+            isMidnight && "settings-view--midnight"
+        )}>
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-800">Settings</h1>
@@ -549,19 +556,62 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
                         <Palette className="w-5 h-5 text-primary" />
                         <h2 className="text-xl font-semibold text-slate-800">Appearance</h2>
                     </div>
-                    <p className="text-sm text-slate-500 mb-6">Storyline now uses a single visual theme to keep the writing experience consistent.</p>
+                    <p className="text-sm text-slate-500 mb-6">Choose between the warm default workspace and a darker midnight writing environment.</p>
 
-                    <div className="rounded-[1.5rem] border-2 border-primary/20 bg-primary/5 p-4">
-                        <div
-                            className="mb-4 flex aspect-[2/1] w-full items-center justify-center rounded-xl shadow-inner"
-                            style={{ backgroundColor: '#fbf9f5' }}
-                        >
-                            <div className="h-8 w-8 rounded-full shadow-lg" style={{ backgroundColor: '#546354' }} />
-                        </div>
-                        <div className="flex flex-col items-start">
-                            <span className="text-xs font-bold uppercase tracking-widest text-primary">Theme</span>
-                            <span className="text-sm font-semibold text-slate-900">Sanctuary</span>
-                        </div>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        {THEMES.map((id) => {
+                            const isActive = theme === id
+                            const isMidnight = id === 'midnight'
+
+                            return (
+                                <button
+                                    key={id}
+                                    type="button"
+                                    onClick={() => setTheme(id)}
+                                    className={cn(
+                                        "relative rounded-[1.5rem] border-2 p-4 text-left transition-all duration-300 active:scale-[0.98]",
+                                        isActive
+                                            ? "border-primary bg-primary/5 shadow-lg"
+                                            : "border-slate-100 bg-white hover:border-slate-200"
+                                    )}
+                                >
+                                    <div
+                                        className="mb-4 flex aspect-[2/1] w-full items-center justify-center rounded-xl shadow-inner"
+                                        style={{
+                                            background: isMidnight
+                                                ? 'linear-gradient(135deg, #0b1120 0%, #172033 100%)'
+                                                : 'linear-gradient(135deg, #fbf9f5 0%, #f2eee6 100%)',
+                                        }}
+                                    >
+                                        <div
+                                            className="h-8 w-8 rounded-full shadow-lg"
+                                            style={{ backgroundColor: isMidnight ? '#dbe5ff' : '#546354' }}
+                                        />
+                                        <div className="absolute inset-x-0 bottom-8 flex justify-center">
+                                            {isMidnight ? (
+                                                <Moon className="h-4 w-4 text-white/70" />
+                                            ) : (
+                                                <Trees className="h-4 w-4 text-[#546354]/60" />
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex flex-col items-start">
+                                            <span className={cn("text-xs font-bold uppercase tracking-widest", isActive ? "text-primary" : "text-slate-400")}>Theme</span>
+                                            <span className="text-sm font-semibold text-slate-900">{isMidnight ? 'Midnight' : 'Sanctuary'}</span>
+                                            <span className="mt-1 text-xs text-slate-500">
+                                                {isMidnight ? 'Dark editor surfaces with softer contrast around the workspace.' : 'The original warm paper-inspired workspace.'}
+                                            </span>
+                                        </div>
+                                        {isActive && (
+                                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white shadow-md">
+                                                <Check className="h-3.5 w-3.5" />
+                                            </div>
+                                        )}
+                                    </div>
+                                </button>
+                            )
+                        })}
                     </div>
                 </Card>
 

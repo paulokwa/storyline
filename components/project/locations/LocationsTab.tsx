@@ -192,8 +192,8 @@ export default function LocationsTab({
 
     return (
         <TooltipProvider>
-        <div className="flex-1 flex overflow-hidden bg-[#fbf9f5] relative">
-            <div className={cn("w-full md:w-80 md:min-w-80 bg-[#f5f4ef] flex flex-col border-r border-slate-200/50 transition-all duration-300", selectedId && "hidden md:flex")}>
+        <div className="locations-tab locations-tab-shell flex-1 flex overflow-hidden bg-[#fbf9f5] relative">
+            <div className={cn("locations-tab-sidebar w-full md:w-80 md:min-w-80 bg-[#f5f4ef] flex flex-col border-r border-slate-200/50 transition-all duration-300", selectedId && "hidden md:flex")}>
                 <div className="p-6 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <MapPin className="w-4 h-4 text-[#546354]/60" />
@@ -316,9 +316,9 @@ export default function LocationsTab({
                 </DragDropContext>
             </div>
 
-            <div className={cn("flex-1 flex flex-col overflow-hidden bg-[#fbf9f5] w-full max-w-full", !selectedId && "hidden md:flex")}>
+            <div className={cn("locations-tab-detail flex-1 flex flex-col overflow-hidden bg-[#fbf9f5] w-full max-w-full", !selectedId && "hidden md:flex")}>
                 {selectedId && (
-                    <div className="md:hidden sticky top-0 z-20 px-6 py-4 bg-[#fbf9f5] border-b border-stone-200/50">
+                    <div className="locations-tab-mobilebar md:hidden sticky top-0 z-20 px-6 py-4 bg-[#fbf9f5] border-b border-stone-200/50">
                         <Button variant="ghost" size="sm" onClick={() => setSelectedId(null)} className="text-[#546354] gap-2 px-0 hover:bg-transparent"><ChevronRight className="w-4 h-4 rotate-180" />Back</Button>
                     </div>
                 )}
@@ -357,7 +357,7 @@ export default function LocationsTab({
                                     </div>
                                     <div className="w-10 h-px bg-stone-100" />
                                 </div>
-                                <div className="bg-[#fcfbf9]/60 rounded-[3rem] p-10 ring-1 ring-[#546354]/5 border border-dashed border-[#546354]/10">
+                                <div className="locations-tab-secondary-panel rounded-[3rem] p-10 ring-1 ring-[#546354]/5 border border-dashed border-[#546354]/10 bg-[#fcfbf9]/60">
                                     <PremiumEditor 
                                         value={selectedLocation.atmosphere || ''} 
                                         onValueChange={(val) => handleTextEditorChange(selectedLocation.id, 'atmosphere', val)} 
@@ -418,7 +418,7 @@ export default function LocationsTab({
 
 function EmptyState({ onCreate, isCreating }: { onCreate: () => void, isCreating: boolean }) {
     return (
-        <div className="min-h-full bg-[#fbf9f5] flex flex-col items-center sm:justify-center py-12 p-6 text-center animate-in fade-in duration-700 overflow-y-auto">
+        <div className="locations-tab-empty locations-tab-shell flex-1 w-full min-h-full bg-[#fbf9f5] flex flex-col items-center sm:justify-center py-12 p-6 text-center animate-in fade-in duration-700 overflow-y-auto">
             <div className="max-w-2xl w-full py-12 sm:py-20 px-6 sm:px-10 rounded-[3rem] bg-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.04)] ring-1 ring-slate-100 flex flex-col items-center">
                 <div className="w-24 h-24 bg-stone-50 rounded-[30%] flex items-center justify-center mb-8 rotate-3 shadow-inner"><MapPin className="w-12 h-12 text-stone-200" /></div>
                 <h2 className="text-4xl font-serif italic text-slate-800 mb-4 tracking-tight">An Unmapped World</h2>

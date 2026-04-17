@@ -97,7 +97,7 @@ export default async function AdminPage() {
   const dashboard = await getAdminDashboardData()
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col overflow-auto bg-slate-50/50 px-4 py-6 sm:px-6 lg:px-8">
+    <div className="admin-page-shell flex h-full min-h-0 flex-1 flex-col overflow-auto bg-slate-50/50 px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
         <Card className="border-slate-200/80 bg-white/95 shadow-sm">
           <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">

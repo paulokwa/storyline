@@ -1221,11 +1221,11 @@ export default function AiHelperPanel({
     }, [promptMode, hint])
 
     return (
-        <div className="flex flex-col h-full min-h-0 bg-[#fcfbf9] border-l border-slate-200/60 shadow-[-20px_0_50px_rgba(0,0,0,0.02)] overflow-hidden">
+        <div className="ai-helper-panel flex flex-col h-full min-h-0 bg-[#fcfbf9] border-l border-slate-200/60 shadow-[-20px_0_50px_rgba(0,0,0,0.02)] overflow-hidden">
             {/* Header */}
             <div 
                 data-tour="ai-header"
-                className="flex flex-col gap-2 px-4 py-2.5 border-b border-slate-200/60 bg-white/50 backdrop-blur-sm shrink-0 md:gap-2 md:px-6 md:py-3"
+                className="ai-helper-header flex flex-col gap-2 px-4 py-2.5 border-b border-slate-200/60 bg-white/50 backdrop-blur-sm shrink-0 md:gap-2 md:px-6 md:py-3"
             >
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -1345,7 +1345,7 @@ export default function AiHelperPanel({
             </div>
 
             {/* Context Indicator */}
-            <div className="hidden border-b border-slate-200/60 bg-white/40 md:block">
+                <div className="ai-helper-context hidden border-b border-slate-200/60 bg-white/40 md:block">
                 <div
                     data-tour="ai-context-strip"
                     className="flex items-center gap-3 overflow-hidden px-6 py-2"
@@ -1406,7 +1406,7 @@ export default function AiHelperPanel({
 
             <div 
                 data-tour="ai-context-strip"
-                className="bg-white/40 border-b border-slate-200/60 shrink-0 overflow-hidden md:hidden"
+                className="ai-helper-context bg-white/40 border-b border-slate-200/60 shrink-0 overflow-hidden md:hidden"
             >
                 <div className="px-4 py-1.5 space-y-2">
                     <div className="flex items-center gap-3">
@@ -1463,7 +1463,7 @@ export default function AiHelperPanel({
             </div>
 
             {/* Response Area */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 md:p-6 md:space-y-6">
+            <div className="ai-helper-body flex-1 overflow-y-auto px-4 py-4 space-y-4 md:p-6 md:space-y-6">
                 {contextWarning && (
                     <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-100 rounded-xl animate-in fade-in slide-in-from-top-2 duration-300">
                         <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
@@ -1683,7 +1683,7 @@ export default function AiHelperPanel({
             </div>
             
             {includeArchiveContext && (
-                <div className="px-6 py-3 border-b border-slate-200/60 bg-white/50 animate-in slide-in-from-top-2 duration-300">
+                <div className="ai-helper-memory px-6 py-3 border-b border-slate-200/60 bg-white/50 animate-in slide-in-from-top-2 duration-300">
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">AI Memory</span>

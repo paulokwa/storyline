@@ -29,6 +29,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { cn } from '@/lib/utils'
+import { useTheme } from '@/components/providers/ThemeProvider'
 
 interface Member {
     id: string
@@ -47,6 +48,8 @@ export default function ShareModal({
     onOpenChange: (open: boolean) => void
     projectId: string
 }) {
+    const { theme } = useTheme()
+    const isMidnight = theme === 'midnight'
     const [members, setMembers] = useState<Member[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [inviteEmail, setInviteEmail] = useState('')
@@ -131,8 +134,16 @@ export default function ShareModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden rounded-3xl border border-slate-200/50 shadow-2xl bg-[#fbf9f5] !opacity-100 backdrop-blur-none">
-                <DialogHeader className="bg-white/50 p-8 border-b border-[#f0eee9]">
+            <DialogContent className={cn(
+                "share-project-modal sm:max-w-[500px] p-0 overflow-hidden rounded-3xl shadow-2xl !opacity-100 backdrop-blur-none",
+                isMidnight
+                    ? "border border-slate-600/30 bg-[#10192b]"
+                    : "border border-slate-200/50 bg-[#fbf9f5]"
+            )}>
+                <DialogHeader className={cn(
+                    "p-8 border-b",
+                    isMidnight ? "bg-[#182239]/88 border-slate-700/60" : "bg-white/50 border-[#f0eee9]"
+                )}>
                     <DialogTitle className="text-3xl font-serif text-foreground flex items-center gap-3">
                         <UserPlus className="w-8 h-8 text-primary" strokeWidth={1.5} />
                         Share Project
@@ -262,7 +273,10 @@ export default function ShareModal({
                     </div>
                 </div>
 
-                <DialogFooter className="p-6 bg-white border-t border-[#f0eee9] flex justify-end">
+                <DialogFooter className={cn(
+                    "p-6 flex justify-end",
+                    isMidnight ? "bg-[#182239]/88 border-slate-700/60" : "bg-white border-[#f0eee9]"
+                )}>
                     <Button 
                         variant="ghost" 
                         onClick={() => onOpenChange(false)} 

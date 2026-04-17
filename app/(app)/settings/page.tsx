@@ -21,7 +21,7 @@ export default async function SettingsPage() {
     }
 
     return (
-        <div className="flex-1 overflow-y-auto min-h-0 bg-slate-50/50">
+        <div className="settings-page-shell flex-1 overflow-y-auto min-h-0 bg-slate-50/50">
             <SettingsView 
                 user={user} 
                 maskedApiKey={maskedApiKey} 

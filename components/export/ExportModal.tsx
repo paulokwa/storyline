@@ -38,6 +38,7 @@ import { toEpub } from '@/lib/export/toEpub'
 import { toPdf } from '@/lib/export/toPdf'
 import { ExportMetadata } from '@/lib/export/buildExportPayload'
 import { createClient } from '@/lib/supabase/client'
+import { useTheme } from '@/components/providers/ThemeProvider'
 
 interface ExportModalProps {
     open: boolean
@@ -49,6 +50,8 @@ interface ExportModalProps {
 }
 
 export default function ExportModal({ open, onOpenChange, projectId, projectTitle, projectType, onOpenSettings }: ExportModalProps) {
+    const { theme } = useTheme()
+    const isMidnight = theme === 'midnight'
     const [loading, setLoading] = useState(false)
     const [metadata, setMetadata] = useState<ExportMetadata | null>(null)
     const [options, setOptions] = useState<ExportOptions>({
@@ -156,8 +159,16 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[95vw] sm:max-w-[640px] p-0 overflow-hidden rounded-3xl border-none shadow-2xl bg-[#fbf9f5] max-h-[90vh] flex flex-col">
-                <DialogHeader className="p-6 pt-12 sm:p-8 sm:pb-4 bg-white border-b border-[#f0eee9] shrink-0">
+            <DialogContent className={cn(
+                "export-modal w-[95vw] sm:max-w-[640px] p-0 overflow-hidden rounded-3xl shadow-2xl max-h-[90vh] flex flex-col",
+                isMidnight
+                    ? "border border-slate-600/30 bg-[#10192b]"
+                    : "border-none bg-[#fbf9f5]"
+            )}>
+                <DialogHeader className={cn(
+                    "p-6 pt-12 sm:p-8 sm:pb-4 border-b shrink-0",
+                    isMidnight ? "bg-[#182239]/88 border-slate-700/60" : "bg-white border-[#f0eee9]"
+                )}>
                     <DialogTitle className="text-xl sm:text-2xl font-serif text-[#31332f] flex items-center gap-3">
                         <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
                             <Download className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
@@ -386,7 +397,10 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
                     </div>
                 </div>
 
-                <DialogFooter className="p-8 bg-white border-t border-[#f0eee9] flex flex-col sm:flex-row gap-4 sm:justify-between items-center">
+                <DialogFooter className={cn(
+                    "p-8 flex flex-col sm:flex-row gap-4 sm:justify-between items-center",
+                    isMidnight ? "bg-[#182239]/88 border-slate-700/60" : "bg-white border-[#f0eee9]"
+                )}>
                     <div className="flex items-center gap-2 text-slate-400 text-xs">
                         <AlertCircle className="w-4 h-4" />
                         Selected structure order preserved

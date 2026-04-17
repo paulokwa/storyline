@@ -3,8 +3,13 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 
 export const DEFAULT_THEME = 'sanctuary' as const
+export const THEMES = [DEFAULT_THEME, 'midnight'] as const
 
-type Theme = typeof DEFAULT_THEME
+export type Theme = typeof THEMES[number]
+
+function isTheme(value: string | null): value is Theme {
+    return Boolean(value && THEMES.includes(value as Theme))
+}
 
 interface ThemeContextType {
     theme: Theme
@@ -14,17 +19,19 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-    const [theme, setThemeState] = useState<Theme>(DEFAULT_THEME)
-
-    useEffect(() => {
-        const savedTheme = localStorage.getItem('theme')
-
-        if (savedTheme !== DEFAULT_THEME) {
-            localStorage.setItem('theme', DEFAULT_THEME)
+    const [theme, setThemeState] = useState<Theme>(() => {
+        if (typeof window === 'undefined') {
+            return DEFAULT_THEME
         }
 
-        document.documentElement.setAttribute('data-theme', DEFAULT_THEME)
-    }, [])
+        const savedTheme = localStorage.getItem('theme')
+        return isTheme(savedTheme) ? savedTheme : DEFAULT_THEME
+    })
+
+    useEffect(() => {
+        localStorage.setItem('theme', theme)
+        document.documentElement.setAttribute('data-theme', theme)
+    }, [theme])
 
     const setTheme = (newTheme: Theme) => {
         setThemeState(newTheme)

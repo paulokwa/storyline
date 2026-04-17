@@ -132,7 +132,7 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
     }
 
     return (
-        <div className="fade-in space-y-12">
+        <div className="guided-flow-shell fade-in space-y-12">
             <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-2 w-full">
                     <div className="flex items-center justify-between mb-1">
@@ -163,7 +163,7 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
                                 value={data.title}
                                 onChange={(e) => setData(d => ({ ...d, title: e.target.value }))}
                                 placeholder={isScriptProject ? 'e.g. Breaking Point' : 'e.g. The Last Summer'}
-                                className="h-16 text-xl bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all font-serif italic"
+                                className="guided-flow-input h-16 text-xl bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all font-serif italic"
                                 autoFocus
                             />
                         </StepBlock>
@@ -182,7 +182,7 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
                                     ? 'e.g. A chemistry teacher turned criminal tries to hold his family together while building an empire.'
                                     : 'e.g. A young woman returns to her hometown after 10 years away and uncovers a family secret.'}
                                 rows={6}
-                                className="resize-none text-lg leading-relaxed bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-3xl p-8 transition-all font-serif italic"
+                                className="guided-flow-textarea resize-none text-lg leading-relaxed bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-3xl p-8 transition-all font-serif italic"
                             />
                         </StepBlock>
                     )}
@@ -200,7 +200,7 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
                                         key={t}
                                         onClick={() => setData(d => ({ ...d, tone: d.tone === t ? '' : t }))}
                                         className={cn(
-                                            'text-sm py-4 px-5 rounded-2xl transition-all text-left font-medium border-2 active:scale-[0.98]',
+                                            'guided-flow-chip text-sm py-4 px-5 rounded-2xl transition-all text-left font-medium border-2 active:scale-[0.98]',
                                             data.tone === t
                                                 ? 'border-primary bg-primary/5 text-primary shadow-inner'
                                                 : 'border-transparent bg-stone-50/50 text-slate-500 hover:bg-stone-100 hover:text-slate-800'
@@ -214,7 +214,7 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
                                 value={data.tone && !TONES.includes(data.tone) ? data.tone : ''}
                                 onChange={(e) => setData(d => ({ ...d, tone: e.target.value }))}
                                 placeholder="Or define a custom vibe…"
-                                className="h-14 text-base bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all"
+                                className="guided-flow-input h-14 text-base bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all"
                             />
                         </StepBlock>
                     )}
@@ -232,11 +232,11 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
                                             value={name}
                                             onChange={(e) => updateItem('characters', i, e.target.value)}
                                             placeholder={i === 0 ? "e.g. Maya Chen" : "Add another character..."}
-                                            className="h-16 text-xl bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all font-medium"
+                                            className="guided-flow-input h-16 text-xl bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all font-medium"
                                             autoFocus={i === data.characters.length - 1 && i > 0}
                                         />
                                         {data.characters.length > 1 && (
-                                            <Button variant="ghost" className="h-16 rounded-2xl px-4 text-slate-300 hover:text-red-400" onClick={() => removeItem('characters', i)}>×</Button>
+                                            <Button variant="ghost" className="guided-flow-remove h-16 rounded-2xl px-4 text-slate-300 hover:text-red-400" onClick={() => removeItem('characters', i)}>×</Button>
                                         )}
                                     </div>
                                 ))}
@@ -264,11 +264,11 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
                                             value={loc}
                                             onChange={(e) => updateItem('locations', i, e.target.value)}
                                             placeholder={isScriptProject ? 'e.g. Modern-day New Mexico' : 'e.g. 1940s rural France'}
-                                            className="h-16 text-xl bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all font-medium"
+                                            className="guided-flow-input h-16 text-xl bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all font-medium"
                                             autoFocus={i === data.locations.length - 1 && i > 0}
                                         />
                                         {data.locations.length > 1 && (
-                                            <Button variant="ghost" className="h-16 rounded-2xl px-4 text-slate-300 hover:text-red-400" onClick={() => removeItem('locations', i)}>×</Button>
+                                            <Button variant="ghost" className="guided-flow-remove h-16 rounded-2xl px-4 text-slate-300 hover:text-red-400" onClick={() => removeItem('locations', i)}>×</Button>
                                         )}
                                     </div>
                                 ))}
@@ -296,7 +296,7 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
                                     ? 'e.g. We meet our protagonist at work, seconds before a life-altering phone call...'
                                     : 'e.g. The smell of cedar and old paper fills the air as she enters the library for the last time...'}
                                 rows={6}
-                                className="resize-none text-lg leading-relaxed bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-3xl p-8 transition-all font-serif italic"
+                                className="guided-flow-textarea resize-none text-lg leading-relaxed bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-3xl p-8 transition-all font-serif italic"
                             />
                         </StepBlock>
                     )}
@@ -317,7 +317,7 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
                 </div>
             </div>
 
-            <div className="flex items-center justify-between pt-10 border-t border-stone-100">
+            <div className="guided-flow-footer flex items-center justify-between pt-10 border-t border-stone-100">
                 <button
                     onClick={back}
                     className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-300 hover:text-primary transition-all disabled:opacity-30"
@@ -356,9 +356,9 @@ function StepBlock({ title, hint, optional, image, children }: {
     children: React.ReactNode
 }) {
     return (
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="guided-flow-step grid grid-cols-1 md:grid-cols-12 gap-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="md:col-span-7 space-y-8">
-                <div className="space-y-3">
+                <div className="guided-flow-copy space-y-3">
                     <div className="flex items-baseline gap-4">
                         <h1 className="text-2xl md:text-3xl font-serif text-slate-800 leading-tight tracking-tight">{title}</h1>
                         {optional && <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300 translate-y-[-2px]">Optional</span>}
@@ -371,7 +371,7 @@ function StepBlock({ title, hint, optional, image, children }: {
             </div>
             {image && (
                 <div className="md:col-span-5 hidden md:block">
-                    <div className="relative aspect-[4/3] rounded-[2rem] overflow-hidden shadow-2xl shadow-stone-200/50 group">
+                    <div className="guided-flow-visual relative aspect-[4/3] rounded-[2rem] overflow-hidden shadow-2xl shadow-stone-200/50 group">
                         <img 
                             src={image} 
                             alt={title} 

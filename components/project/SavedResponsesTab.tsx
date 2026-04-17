@@ -253,7 +253,7 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
 
     if (isLoading) {
         return (
-            <div className="flex-1 flex items-center justify-center bg-[#fbf9f5]">
+            <div className="ai-memory-tab ai-memory-tab-loading flex-1 w-full flex items-center justify-center bg-[#fbf9f5]">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-10 h-10 border-4 border-[#546354]/10 border-t-[#546354] rounded-full animate-spin" />
                     <p className="text-sm font-serif italic text-slate-400">Opening AI Memory...</p>
@@ -264,7 +264,7 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
 
     if (responses.length === 0) {
         return (
-            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-[#fbf9f5]">
+            <div className="ai-memory-tab ai-memory-tab-empty flex-1 w-full flex flex-col items-center justify-center p-12 text-center bg-[#fbf9f5]">
                 <div className="w-20 h-20 bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 flex items-center justify-center mb-6 border border-slate-50">
                     <Archive className="w-8 h-8 text-slate-200" />
                 </div>
@@ -277,7 +277,7 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
     }
 
     return (
-        <div className="flex-1 flex overflow-hidden bg-[#fbf9f5]">
+        <div className="ai-memory-tab flex-1 flex overflow-hidden bg-[#fbf9f5]">
             {/* List Sidebar */}
             <div className={cn(
                 "w-full md:w-[350px] lg:w-[400px] border-r border-[#e0ded9] flex flex-col bg-white transition-all duration-300",

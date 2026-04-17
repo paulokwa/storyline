@@ -18,10 +18,13 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useProjectActionsStore } from '@/lib/store/projectActionsStore'
+import { useTheme } from '@/components/providers/ThemeProvider'
 
 export default function AppNav({ user }: { user: User }) {
     const router = useRouter()
     const canAccessAdmin = isAdminEmail(user.email)
+    const { theme } = useTheme()
+    const isMidnight = theme === 'midnight'
 
     async function handleSignOut() {
         const supabase = createClient()
@@ -34,15 +37,29 @@ export default function AppNav({ user }: { user: User }) {
     const { exportAction, shareAction, settingsAction, statsAction, canShare } = useProjectActionsStore()
 
     return (
-        <nav className="sticky top-0 z-40 shrink-0 bg-white/80 backdrop-blur-sm border-b border-slate-200 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-[1440px] mx-auto h-14 flex items-center justify-between">
-                <Link href="/library" className="flex items-center gap-2 group">
-                    <div className="w-8 h-8 rounded-lg bg-[#546354] flex items-center justify-center shadow-lg shadow-[#546354]/10 transition-transform group-hover:scale-110">
+        <nav className={`app-nav-shell sticky top-0 z-40 shrink-0 px-4 sm:px-6 lg:px-8 ${
+            isMidnight
+                ? 'bg-[#182237]/88 backdrop-blur-xl border-b border-slate-500/20 shadow-[0_10px_30px_rgba(2,6,23,0.18)]'
+                : 'bg-white/80 backdrop-blur-sm border-b border-slate-200'
+        }`}>
+            <div className={`app-nav-inner max-w-[1440px] mx-auto h-14 flex items-center justify-between ${
+                isMidnight ? 'border-b border-white/0' : ''
+            }`}>
+                <Link href="/library" className="app-nav-brand flex items-center gap-2 group">
+                    <div className={`app-nav-mark w-8 h-8 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110 ${
+                        isMidnight
+                            ? 'bg-gradient-to-br from-[#65745f] to-[#556452] shadow-[0_14px_28px_rgba(3,8,20,0.26)]'
+                            : 'bg-[#546354] shadow-lg shadow-[#546354]/10'
+                    }`}>
                         <PenLine className="w-4 h-4 text-white" />
                     </div>
                     <div className="flex flex-col -gap-1">
-                        <span className="font-serif italic text-lg text-slate-800 leading-none">Storyline</span>
-                        <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#546354]/40">Beta Sanctuary</span>
+                        <span className={`app-nav-title font-serif italic text-lg leading-none ${
+                            isMidnight ? 'text-[#edf3ff]' : 'text-slate-800'
+                        }`}>Storyline</span>
+                        <span className={`app-nav-subtitle text-[9px] font-bold tracking-[0.2em] uppercase ${
+                            isMidnight ? 'text-[#abc0ad]/70' : 'text-[#546354]/40'
+                        }`}>Beta Sanctuary</span>
                     </div>
                 </Link>
 
@@ -51,8 +68,12 @@ export default function AppNav({ user }: { user: User }) {
                     
                     <DropdownMenu>
                         <DropdownMenuTrigger>
-                            <div className="relative h-10 w-10 flex items-center justify-center rounded-full hover:bg-black/5 cursor-pointer">
-                                <Avatar className="h-9 w-9 border-2 border-white shadow-sm transition-transform active:scale-90">
+                            <div className={`app-nav-avatar-trigger relative h-10 w-10 flex items-center justify-center rounded-full cursor-pointer ${
+                                isMidnight ? 'hover:bg-white/6' : 'hover:bg-black/5'
+                            }`}>
+                                <Avatar className={`app-nav-avatar h-9 w-9 border-2 shadow-sm transition-transform active:scale-90 ${
+                                    isMidnight ? 'border-white/12 shadow-[0_10px_22px_rgba(2,6,23,0.24)]' : 'border-white'
+                                }`}>
                                     {user.user_metadata?.avatar_url && (
                                         <img 
                                             src={user.user_metadata.avatar_url} 
@@ -68,10 +89,14 @@ export default function AppNav({ user }: { user: User }) {
                                 </Avatar>
                             </div>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-64 mt-2 rounded-2xl p-2 shadow-xl border-slate-200 bg-white" align="end">
-                            <div className="px-3 py-3 mb-1 border-b border-slate-100">
+                        <DropdownMenuContent className={`w-64 mt-2 rounded-2xl p-2 shadow-xl ${
+                            isMidnight
+                                ? 'border-slate-600/30 bg-[#182239]/96 text-slate-100 shadow-[0_24px_60px_rgba(2,6,23,0.45)] backdrop-blur-xl'
+                                : 'border-slate-200 bg-white'
+                        }`} align="end">
+                            <div className={`px-3 py-3 mb-1 border-b ${isMidnight ? 'border-slate-700/60' : 'border-slate-100'}`}>
                                 <div className="flex flex-col space-y-1">
-                                    <p className="text-sm font-bold leading-none text-slate-900">{displayName}</p>
+                                    <p className={`text-sm font-bold leading-none ${isMidnight ? 'text-slate-100' : 'text-slate-900'}`}>{displayName}</p>
                                     <p className="text-[11px] leading-none text-slate-400 truncate tracking-wide">{user.email}</p>
                                 </div>
                             </div>
@@ -81,7 +106,9 @@ export default function AppNav({ user }: { user: User }) {
                                 <>
                                     <DropdownMenuItem 
                                         onClick={exportAction}
-                                        className="rounded-xl px-3 py-2.5 text-slate-600 focus:text-indigo-600 focus:bg-indigo-50 cursor-pointer gap-3 transition-all"
+                                        className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
+                                            isMidnight ? 'text-slate-300 focus:text-indigo-200 focus:bg-white/8' : 'text-slate-600 focus:text-indigo-600 focus:bg-indigo-50'
+                                        }`}
                                     >
                                         <Download className="w-4 h-4" />
                                         <span className="font-semibold text-sm">Export Project</span>
@@ -90,7 +117,9 @@ export default function AppNav({ user }: { user: User }) {
                                     {canShare && shareAction && (
                                         <DropdownMenuItem 
                                             onClick={shareAction}
-                                            className="rounded-xl px-3 py-2.5 text-slate-600 focus:text-indigo-600 focus:bg-indigo-50 cursor-pointer gap-3 transition-all"
+                                            className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
+                                                isMidnight ? 'text-slate-300 focus:text-indigo-200 focus:bg-white/8' : 'text-slate-600 focus:text-indigo-600 focus:bg-indigo-50'
+                                            }`}
                                         >
                                             <Users className="w-4 h-4" />
                                             <span className="font-semibold text-sm">Share Project</span>
@@ -100,7 +129,9 @@ export default function AppNav({ user }: { user: User }) {
                                     {settingsAction && (
                                         <DropdownMenuItem 
                                             onClick={settingsAction}
-                                            className="rounded-xl px-3 py-2.5 text-slate-600 focus:text-indigo-600 focus:bg-indigo-50 cursor-pointer gap-3 transition-all"
+                                            className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
+                                                isMidnight ? 'text-slate-300 focus:text-indigo-200 focus:bg-white/8' : 'text-slate-600 focus:text-indigo-600 focus:bg-indigo-50'
+                                            }`}
                                         >
                                             <Settings2 className="w-4 h-4" />
                                             <span className="font-semibold text-sm">Project Settings</span>
@@ -110,20 +141,24 @@ export default function AppNav({ user }: { user: User }) {
                                     {statsAction && (
                                         <DropdownMenuItem 
                                             onClick={statsAction}
-                                            className="rounded-xl px-3 py-2.5 text-slate-600 focus:text-indigo-600 focus:bg-indigo-50 cursor-pointer gap-3 transition-all"
+                                            className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
+                                                isMidnight ? 'text-slate-300 focus:text-indigo-200 focus:bg-white/8' : 'text-slate-600 focus:text-indigo-600 focus:bg-indigo-50'
+                                            }`}
                                         >
                                             <BarChart3 className="w-4 h-4" />
                                             <span className="font-semibold text-sm">Project Stats</span>
                                         </DropdownMenuItem>
                                     )}
                                     
-                                    <DropdownMenuSeparator className="my-1.5 bg-slate-100" />
+                                    <DropdownMenuSeparator className={`my-1.5 ${isMidnight ? 'bg-slate-700/60' : 'bg-slate-100'}`} />
                                 </>
                             )}
 
                             <DropdownMenuItem 
                                 onClick={() => router.push('/settings')}
-                                className="rounded-xl px-3 py-2.5 text-slate-600 focus:text-[#546354] focus:bg-[#546354]/5 cursor-pointer gap-3 transition-all"
+                                className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
+                                    isMidnight ? 'text-slate-300 focus:text-[#dbe5ff] focus:bg-white/8' : 'text-slate-600 focus:text-[#546354] focus:bg-[#546354]/5'
+                                }`}
                             >
                                 <SettingsIcon className="w-4 h-4" />
                                 <span className="font-semibold text-sm">Account Settings</span>
@@ -132,7 +167,9 @@ export default function AppNav({ user }: { user: User }) {
                             {canAccessAdmin && (
                                 <DropdownMenuItem 
                                     onClick={() => router.push('/admin')}
-                                    className="rounded-xl px-3 py-2.5 text-slate-600 focus:text-[#546354] focus:bg-[#546354]/5 cursor-pointer gap-3 transition-all"
+                                    className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
+                                        isMidnight ? 'text-slate-300 focus:text-[#dbe5ff] focus:bg-white/8' : 'text-slate-600 focus:text-[#546354] focus:bg-[#546354]/5'
+                                    }`}
                                 >
                                     <Shield className="w-4 h-4" />
                                     <span className="font-semibold text-sm">Admin</span>
@@ -141,44 +178,54 @@ export default function AppNav({ user }: { user: User }) {
 
                             <DropdownMenuItem 
                                 onClick={() => window.open('mailto:mwake.dev@gmail.com', '_blank')}
-                                className="rounded-xl px-3 py-2.5 text-slate-600 focus:text-[#546354] focus:bg-[#546354]/5 cursor-pointer gap-3 transition-all"
+                                className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
+                                    isMidnight ? 'text-slate-300 focus:text-[#dbe5ff] focus:bg-white/8' : 'text-slate-600 focus:text-[#546354] focus:bg-[#546354]/5'
+                                }`}
                             >
                                 <Mail className="w-4 h-4" />
                                 <span className="font-semibold text-sm">Support & Feedback</span>
                             </DropdownMenuItem>
                             
-                            <DropdownMenuSeparator className="my-1.5 bg-slate-100" />
+                            <DropdownMenuSeparator className={`my-1.5 ${isMidnight ? 'bg-slate-700/60' : 'bg-slate-100'}`} />
 
                             <div className="px-3 py-1 mb-1">
-                                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-300">Legal</p>
+                                <p className={`text-[10px] uppercase tracking-widest font-bold ${isMidnight ? 'text-slate-500' : 'text-slate-300'}`}>Legal</p>
                             </div>
 
                             <DropdownMenuItem 
                                 onClick={() => router.push('/terms')}
-                                className="rounded-xl px-3 py-2.5 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer gap-3"
+                                className={`rounded-xl px-3 py-2.5 transition-colors cursor-pointer gap-3 ${
+                                    isMidnight ? 'text-slate-400 hover:text-slate-100 hover:bg-white/6' : 'text-slate-500 hover:text-slate-800'
+                                }`}
                             >
                                 <span className="text-sm">Terms of Service</span>
                             </DropdownMenuItem>
 
                             <DropdownMenuItem 
                                 onClick={() => router.push('/privacy')}
-                                className="rounded-xl px-3 py-2.5 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer gap-3"
+                                className={`rounded-xl px-3 py-2.5 transition-colors cursor-pointer gap-3 ${
+                                    isMidnight ? 'text-slate-400 hover:text-slate-100 hover:bg-white/6' : 'text-slate-500 hover:text-slate-800'
+                                }`}
                             >
                                 <span className="text-sm">Privacy Policy</span>
                             </DropdownMenuItem>
 
                             <DropdownMenuItem 
                                 onClick={() => router.push('/ai-disclaimer')}
-                                className="rounded-xl px-3 py-2.5 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer gap-3"
+                                className={`rounded-xl px-3 py-2.5 transition-colors cursor-pointer gap-3 ${
+                                    isMidnight ? 'text-slate-400 hover:text-slate-100 hover:bg-white/6' : 'text-slate-500 hover:text-slate-800'
+                                }`}
                             >
                                 <span className="text-sm">AI Disclaimer</span>
                             </DropdownMenuItem>
                             
-                            <DropdownMenuSeparator className="my-1.5 bg-slate-100" />
+                            <DropdownMenuSeparator className={`my-1.5 ${isMidnight ? 'bg-slate-700/60' : 'bg-slate-100'}`} />
                             
                             <DropdownMenuItem 
                                 onClick={handleSignOut}
-                                className="rounded-xl px-3 py-2.5 text-red-500 focus:text-red-600 focus:bg-red-50 cursor-pointer gap-3 transition-all"
+                                className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
+                                    isMidnight ? 'text-red-400 focus:text-red-300 focus:bg-red-500/10' : 'text-red-500 focus:text-red-600 focus:bg-red-50'
+                                }`}
                             >
                                 <LogOut className="w-4 h-4" />
                                 <span className="font-semibold text-sm">Sign out</span>

@@ -330,9 +330,9 @@ function ProjectShellInner({
 
     return (
         <TooltipProvider>
-            <div className="h-full min-h-0 flex-1 flex flex-col overflow-hidden">
+            <div className="project-shell-root h-full min-h-0 flex-1 flex flex-col overflow-hidden">
                 {/* Project header */}
-                <div className="bg-secondary/50 backdrop-blur-sm px-4 sm:px-6 lg:px-8 border-b border-border">
+                <div className="project-shell-header bg-secondary/50 backdrop-blur-sm px-4 sm:px-6 lg:px-8 border-b border-border">
                 <div className="max-w-[1440px] mx-auto">
                     {/* Top row */}
 
@@ -505,7 +505,7 @@ function ProjectShellInner({
 
                     
                     {/* Action Buttons Row - Mobile Only */}
-                    <div className="lg:hidden border-b border-black/5">
+                    <div className="project-shell-mobilebar lg:hidden border-b border-black/5">
                         <div className="snap-row flex items-center gap-2 py-2 pl-1">
                             {isStoryTab && (
                                 <div className="flex items-center gap-2 shrink-0">
@@ -622,7 +622,7 @@ function ProjectShellInner({
                         </div>
                     </div>
 
-                    <div className="mt-1">
+                    <div className="project-shell-tabs mt-1">
                         <div className="snap-row flex gap-1 pl-1">
                             {TABS.map(({ slug, label, icon: Icon }) => (
                                 <Link

@@ -67,7 +67,7 @@ export default async function LibraryPage() {
     const deletedProjects = deletedData?.map(mapProject) || []
 
     return (
-        <div className="flex h-full min-h-0 flex-1 flex-col overflow-auto bg-slate-50/50 custom-scrollbar">
+        <div className="library-page-shell flex h-full min-h-0 flex-1 flex-col overflow-auto bg-slate-50/50 custom-scrollbar">
             <ProjectGrid projects={projects} deletedProjects={deletedProjects} />
         </div>
     )

@@ -187,7 +187,7 @@ export default function RelationshipManager({
             </div>
 
             {/* Add Relationship UI */}
-            <div className="bg-[#fcfbf9]/60 rounded-[3rem] p-8 ring-1 ring-[#546354]/5 border border-dashed border-[#546354]/10">
+            <div className="character-ties-panel bg-[#fcfbf9]/60 rounded-[3rem] p-8 ring-1 ring-[#546354]/5 border border-dashed border-[#546354]/10">
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -195,7 +195,7 @@ export default function RelationshipManager({
                             <select 
                                 value={targetId} 
                                 onChange={e => setTargetId(e.target.value)}
-                                className="w-full bg-white rounded-2xl px-4 py-3 text-sm border-none shadow-sm ring-1 ring-slate-100 outline-none focus:ring-[#546354]/20"
+                                className="character-ties-input w-full bg-white rounded-2xl px-4 py-3 text-sm border-none shadow-sm ring-1 ring-slate-100 outline-none focus:ring-[#546354]/20"
                             >
                                 <option value="">Select someone or something...</option>
                                 {availableEntities
@@ -213,7 +213,7 @@ export default function RelationshipManager({
                                 value={label}
                                 onValueChange={setLabel}
                                 placeholder="Mentor of, Friend, Nemesis, Owner of..."
-                                className="w-full bg-white rounded-2xl px-4 py-3 text-sm border-none shadow-sm ring-1 ring-slate-100 outline-none focus:ring-[#546354]/20 h-[46px]"
+                                className="character-ties-input w-full bg-white rounded-2xl px-4 py-3 text-sm border-none shadow-sm ring-1 ring-slate-100 outline-none focus:ring-[#546354]/20 h-[46px]"
                             />
                         </div>
                     </div>

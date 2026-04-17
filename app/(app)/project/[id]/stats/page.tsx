@@ -28,8 +28,11 @@ import { Input } from '@/components/ui/input'
 import { calculateProjectStats, ProjectStatsData, SceneStats } from '@/lib/project-stats'
 import { getProjectTypeLabel } from '@/lib/constants'
 import { cn } from '@/lib/utils'
+import { useTheme } from '@/components/providers/ThemeProvider'
 
 export default function ProjectStatsPage() {
+    const { theme } = useTheme()
+    const isMidnight = theme === 'midnight'
     const { id } = useParams()
     const router = useRouter()
     const [loading, setLoading] = useState(true)
@@ -126,7 +129,10 @@ export default function ProjectStatsPage() {
 
     if (loading) {
         return (
-            <div className="flex-1 flex items-center justify-center bg-[#fbf9f5]">
+            <div className={cn(
+                "project-stats-page flex-1 flex items-center justify-center",
+                isMidnight ? "bg-[#0b1120]" : "bg-[#fbf9f5]"
+            )}>
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
                     <p className="text-slate-400 font-serif italic">Gathering project insights...</p>
@@ -140,7 +146,10 @@ export default function ProjectStatsPage() {
     const typeLabel = getProjectTypeLabel(project.type)
 
     return (
-        <div className="flex-1 overflow-y-auto bg-[#fbf9f5] scroll-smooth no-scrollbar">
+        <div className={cn(
+            "project-stats-page flex-1 overflow-y-auto scroll-smooth no-scrollbar",
+            isMidnight ? "bg-[#0b1120]" : "bg-[#fbf9f5]"
+        )}>
             <div className="max-w-6xl mx-auto px-6 py-10 space-y-10">
                 
                 {/* Header */}

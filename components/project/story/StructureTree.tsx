@@ -183,7 +183,7 @@ export default function StructureTree({
 
     return (
         <TooltipProvider>
-            <div className="flex h-full min-h-0 flex-col overflow-hidden bg-transparent">
+            <div className="structure-tree-panel flex h-full min-h-0 flex-col overflow-hidden bg-transparent">
                 <div className="px-4 sm:px-6 pt-2 pb-4 sm:py-6 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <h3 className="text-sm font-serif italic text-slate-500 tracking-wide">The Structure</h3>
