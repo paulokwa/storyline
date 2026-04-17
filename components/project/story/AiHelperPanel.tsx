@@ -4,7 +4,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { getProjectTypeLabel } from '@/lib/constants'
 import { useCompletion } from '@ai-sdk/react'
 import Link from 'next/link'
-import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Package, Bookmark, Database, Maximize2, MessageSquarePlus, Users, Lightbulb, MapPin, Box, HelpCircle } from 'lucide-react'
+import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Package, Bookmark, Database, Maximize2, MessageSquarePlus, Users, Lightbulb, MapPin, Box, HelpCircle, Layout } from 'lucide-react'
 import { useDragScroll } from '@/hooks/useDragScroll'
 import { PremiumEditor } from '@/components/ui/premium-editor'
 import { Button } from '@/components/ui/button'
@@ -39,6 +39,7 @@ interface AiHelperPanelProps {
     projectPremise?: string | null
     projectTone?: string | null
     isFullCanvas?: boolean
+    onReturnToSidebar?: () => void
     aiSettings: {
         ai_enabled: boolean
         ai_provider: string
@@ -168,6 +169,7 @@ export default function AiHelperPanel({
     projectPremise, projectTone,
     activeNodeId, activeSceneId,
     isFullCanvas = false,
+    onReturnToSidebar,
     onClose
 }: AiHelperPanelProps) {
     const label = getProjectTypeLabel(projectType)
@@ -852,19 +854,40 @@ export default function AiHelperPanel({
             {/* Header */}
             <div 
                 data-tour="ai-header"
-                className="flex flex-col md:gap-2 px-4 md:px-6 py-3 border-b border-slate-200/60 bg-white/50 backdrop-blur-sm shrink-0"
+                className="flex flex-col gap-2 px-4 py-2.5 border-b border-slate-200/60 bg-white/50 backdrop-blur-sm shrink-0 md:gap-2 md:px-6 md:py-3"
             >
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="p-1.5 bg-indigo-50 rounded-xl shrink-0 group-hover:scale-110 transition-transform">
+                        {isFullCanvas && onReturnToSidebar && (
+                            <div className="flex items-center gap-3 flex-1 min-w-0 md:hidden">
+                                <button
+                                    type="button"
+                                    onClick={onReturnToSidebar}
+                                    className="inline-flex items-center gap-2 rounded-xl px-2.5 py-2 text-[11px] font-medium text-slate-500 transition-all hover:bg-indigo-50 hover:text-indigo-600"
+                                >
+                                    <Layout className="w-4 h-4 shrink-0" />
+                                    <span>Sidebar</span>
+                                </button>
+                                <div className="h-5 w-px bg-slate-200 shrink-0" />
+                                <h3 className="min-w-0 truncate text-sm font-serif font-bold italic text-slate-800">AI Partner</h3>
+                            </div>
+                        )}
+
+                        <div className={cn(
+                            "p-1.5 bg-indigo-50 rounded-xl shrink-0 transition-transform",
+                            isFullCanvas ? "hidden md:flex" : "flex"
+                        )}>
                             <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
                         </div>
                         
-                        <div className="flex-1 min-w-0">
+                        <div className={cn(
+                            "flex-1 min-w-0",
+                            isFullCanvas && onReturnToSidebar ? "hidden md:block" : "block"
+                        )}>
                             {!isFullCanvas && (
                                 <h3 className="text-sm font-serif font-bold text-slate-800 tracking-tight leading-none mb-1 truncate">AI Partner</h3>
                             )}
-                            <div className="flex items-center gap-2">
+                            <div className={cn("flex items-center gap-2", isFullCanvas ? "hidden md:flex" : "flex")}>
                                 <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold truncate">
                                     {aiSettings.ai_provider === 'ollama' ? `Ollama` : 'Gemini'}
                                 </p>
@@ -985,7 +1008,7 @@ export default function AiHelperPanel({
                 </div>
 
                 {/* Mode Buttons Row */}
-                <div className="flex items-center gap-2 mt-2 md:mt-1 pt-1.5 md:pt-1 border-t border-slate-100/50">
+                <div className="flex items-center gap-2 mt-1.5 md:mt-1 pt-1 md:pt-1 border-t border-slate-100/50">
                     <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-50/50 text-indigo-600 text-[9px] font-bold uppercase tracking-widest shrink-0">
                         <MessageSquarePlus className="w-3 h-3" />
                         <span className="hidden sm:inline">Mode</span>
@@ -1027,7 +1050,7 @@ export default function AiHelperPanel({
             {/* Context Indicator */}
             <div 
                 data-tour="ai-context-strip"
-                className="bg-white/40 px-6 py-2 border-b border-slate-200/60 flex items-center gap-3 shrink-0 overflow-hidden"
+                className="bg-white/40 px-4 py-1.5 border-b border-slate-200/60 flex items-center gap-3 shrink-0 overflow-hidden md:px-6 md:py-2"
             >
                 <div className="flex items-center gap-2 text-[9px] uppercase tracking-widest text-slate-400 font-bold shrink-0 border-r border-slate-200 pr-3 mr-1">
                     <Database className="w-3 h-3" />
@@ -1089,7 +1112,7 @@ export default function AiHelperPanel({
             </div>
 
             {/* Response Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 md:p-6 md:space-y-6">
                 {contextWarning && (
                     <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-100 rounded-xl animate-in fade-in slide-in-from-top-2 duration-300">
                         <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
@@ -1368,7 +1391,7 @@ export default function AiHelperPanel({
                     <button
                         type="button"
                         onClick={() => setPreviewOpen(!previewOpen)}
-                        className="w-full px-4 py-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
+                        className="w-full px-4 py-1.5 md:py-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
                     >
                         <span>What the AI is noticing</span>
                         {previewOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
@@ -1501,7 +1524,7 @@ export default function AiHelperPanel({
                     <button
                         type="button"
                         onClick={() => setPromptsOpen(!promptsOpen)}
-                        className="w-full px-4 py-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
+                        className="w-full px-4 py-1.5 md:py-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
                     >
                         <span>Quick Writing Ideas</span>
                         {promptsOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
@@ -1523,7 +1546,7 @@ export default function AiHelperPanel({
                     )}
                 </div>
 
-                <div className="px-4 pt-4 pb-24 md:pb-6">
+                <div className="px-4 pt-3 pb-4 md:pt-4 md:pb-6">
                     <form onSubmit={handleSubmit} className="space-y-3" suppressHydrationWarning>
                         {isVirtualRootSelected && (
                             <div className="flex flex-col gap-2 p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-indigo-700 animate-in fade-in zoom-in duration-300 mb-2">
