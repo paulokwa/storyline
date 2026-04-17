@@ -138,6 +138,41 @@ export default async function AdminPage() {
               <StatCard title="Saved AI Responses Today" value={dashboard.stats.savedAiResponsesToday} />
             </section>
 
+            <Card className="border-[#2b332b]/10 bg-[#e7eee7]/40 shadow-sm">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-slate-900">User Segmentation</CardTitle>
+                    <CardDescription>Grandfathering strategy tracking</CardDescription>
+                  </div>
+                  <Badge variant="outline" className="border-slate-200 bg-white px-3 py-1 text-xs font-normal text-slate-500">
+                    {dashboard.segmentation.cutoffDate 
+                      ? `Cutoff: ${formatDateTime(dashboard.segmentation.cutoffDate)}` 
+                      : 'Beta Ongoing (No Cutoff)'}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="rounded-2xl border border-slate-200/60 bg-white/50 px-5 py-4 shadow-sm">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Total Users</p>
+                    <p className="mt-1 text-2xl font-semibold text-slate-900">{dashboard.stats.totalUsers}</p>
+                  </div>
+                  <div className="rounded-2xl border border-[#546354]/20 bg-[#546354]/5 px-5 py-4 shadow-sm">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-[#546354]/60">Early Users</p>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <p className="text-2xl font-semibold text-[#2d362d]">{dashboard.segmentation.earlyUsers}</p>
+                      <Badge className="bg-[#546354] text-[10px] hover:bg-[#546354]">Grandfathered</Badge>
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200/60 bg-white/50 px-5 py-4 shadow-sm">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Post-Beta Users</p>
+                    <p className="mt-1 text-2xl font-semibold text-slate-900">{dashboard.segmentation.standardUsers}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="border-slate-200/80 bg-white/95 shadow-sm">
               <CardHeader>
                 <CardTitle className="text-slate-900">Recent Users</CardTitle>
@@ -145,11 +180,16 @@ export default async function AdminPage() {
               </CardHeader>
               <CardContent>
                 <SectionTable
-                  headers={['Email', 'Created', 'Last Sign-In']}
+                  headers={['Email', 'Created', 'Last Sign-In', 'Status']}
                   rows={dashboard.recentUsers.map((entry) => [
                     <span key="email" className="font-medium text-slate-900">{entry.email ?? entry.id}</span>,
                     <span key="created">{formatDateTime(entry.created_at)}</span>,
                     <span key="signin">{formatDateTime(entry.last_sign_in_at)}</span>,
+                    <div key="status" className="flex flex-wrap gap-1">
+                      {entry.profile?.is_early_user && <Badge className="bg-amber-100 text-[10px] text-amber-700 hover:bg-amber-100 border-amber-200">Manual Early</Badge>}
+                      {entry.profile?.plan_type && entry.profile.plan_type !== 'standard' && <Badge variant="secondary" className="text-[10px]">{entry.profile.plan_type}</Badge>}
+                      {!entry.profile?.is_early_user && entry.profile?.plan_type === 'standard' && <span className="text-slate-300">-</span>}
+                    </div>
                   ])}
                 />
               </CardContent>
@@ -184,11 +224,16 @@ export default async function AdminPage() {
               </CardHeader>
               <CardContent>
                 <SectionTable
-                  headers={['Email', 'Created', 'Last Sign-In']}
+                  headers={['Email', 'Created', 'Last Sign-In', 'Status']}
                   rows={dashboard.earlyUsers.map((entry) => [
                     <span key="email" className="font-medium text-slate-900">{entry.email ?? entry.id}</span>,
                     <span key="created">{formatDateTime(entry.created_at)}</span>,
                     <span key="signin">{formatDateTime(entry.last_sign_in_at)}</span>,
+                    <div key="status" className="flex flex-wrap gap-1">
+                      {entry.profile?.is_early_user && <Badge className="bg-amber-100 text-[10px] text-amber-700 hover:bg-amber-100 border-amber-200">Manual Early</Badge>}
+                      {entry.profile?.plan_type && entry.profile.plan_type !== 'standard' && <Badge variant="secondary" className="text-[10px]">{entry.profile.plan_type}</Badge>}
+                      {!entry.profile?.is_early_user && entry.profile?.plan_type === 'standard' && <span className="text-slate-300">-</span>}
+                    </div>
                   ])}
                 />
               </CardContent>

@@ -2,12 +2,18 @@ import 'server-only'
 
 import type { Database } from '@/lib/supabase/types'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { BETA_CUTOFF_DATE } from './admin'
 
 type AdminUser = {
   id: string
   email: string | null
   created_at: string
   last_sign_in_at: string | null
+  isEarlyUser? : boolean
+  profile?: {
+    plan_type: string | null
+    is_early_user: boolean | null
+  }
 }
 type ProjectRow = Pick<Database['public']['Tables']['projects']['Row'], 'id' | 'user_id'>
 type AiResponseRow = Pick<Database['public']['Tables']['ai_responses']['Row'], 'created_at' | 'project_id'>
@@ -52,6 +58,11 @@ export type AdminDashboardData =
         assetBytes: number
         textEstimateBytes: number
         breakdown: StorageBreakdownItem[]
+      }
+      segmentation: {
+        cutoffDate: string | null
+        earlyUsers: number
+        standardUsers: number
       }
     }
 
@@ -176,6 +187,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     supabase.from('projects').select('id,user_id').is('deleted_at', null),
     supabase.from('ai_responses').select('created_at,project_id').is('deleted_at', null),
     supabase.from('project_assets').select('file_size'),
+    supabase.from('profiles').select('id,plan_type,is_early_user'),
     ...STORAGE_ESTIMATE_TABLES.map(estimateTableBytes),
   ])
 
@@ -186,6 +198,20 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   if (projectsResult.error) throw projectsResult.error
   if (aiResponsesResult.error) throw aiResponsesResult.error
   if (assetsResult.error) throw assetsResult.error
+
+  const profiles = (storageBreakdown.shift() as unknown as { data: Array<{ id: string, plan_type: string | null, is_early_user: boolean | null }> }).data ?? []
+  const profilesById = new Map(profiles.map(p => [p.id, p]))
+
+  // Merge profiles into users
+  for (const u of users) {
+    const p = profilesById.get(u.id)
+    if (p) {
+      u.profile = {
+        plan_type: p.plan_type,
+        is_early_user: p.is_early_user
+      }
+    }
+  }
 
   const projects = (projectsResult.data ?? []) as ProjectRow[]
   const aiResponses = (aiResponsesResult.data ?? []) as AiResponseRow[]
@@ -256,6 +282,17 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
         { label: 'Uploaded assets', bytes: assetBytes },
         ...textBreakdown,
       ].filter((item) => item.bytes > 0),
+    },
+    segmentation: {
+      cutoffDate: BETA_CUTOFF_DATE,
+      earlyUsers: users.filter((u) => {
+        if (!BETA_CUTOFF_DATE) return true
+        return new Date(u.created_at) < new Date(BETA_CUTOFF_DATE)
+      }).length,
+      standardUsers: users.filter((u) => {
+        if (!BETA_CUTOFF_DATE) return false
+        return new Date(u.created_at) >= new Date(BETA_CUTOFF_DATE)
+      }).length,
     },
   }
 }

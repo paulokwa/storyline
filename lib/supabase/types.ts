@@ -6,10 +6,6 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type ProjectType = 'tv_script' | 'novel'
-export type WritingMode = 'simple' | 'screenplay'
-export type NodeType = 'episode' | 'act' | 'scene' | 'chapter'
-
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
@@ -359,6 +355,36 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string
+          is_early_user: boolean | null
+          plan_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id: string
+          is_early_user?: boolean | null
+          plan_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          is_early_user?: boolean | null
+          plan_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       project_assets: {
         Row: {
           alt_text: string | null
@@ -518,6 +544,13 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "project_members_user_id_fkey_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       project_snapshots: {
@@ -560,52 +593,58 @@ export type Database = {
       }
       projects: {
         Row: {
+          cover_url: string | null
           created_at: string | null
+          deleted_at: string | null
+          export_metadata: Json | null
           id: string
           last_accessed_at: string | null
+          order_index: number | null
           premise: string | null
           project_type: string | null
           setting: string | null
           title: string | null
           tone: string | null
-          type: ProjectType
+          type: string
           updated_at: string | null
           user_id: string
-          writing_mode: WritingMode | null
-          export_metadata: Json | null
-          deleted_at: string | null
+          writing_mode: string | null
         }
         Insert: {
+          cover_url?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          export_metadata?: Json | null
           id?: string
           last_accessed_at?: string | null
+          order_index?: number | null
           premise?: string | null
           project_type?: string | null
           setting?: string | null
           title?: string | null
           tone?: string | null
-          type: ProjectType
+          type: string
           updated_at?: string | null
           user_id: string
-          writing_mode?: WritingMode | null
-          export_metadata?: Json | null
-          deleted_at?: string | null
+          writing_mode?: string | null
         }
         Update: {
+          cover_url?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          export_metadata?: Json | null
           id?: string
           last_accessed_at?: string | null
+          order_index?: number | null
           premise?: string | null
           project_type?: string | null
           setting?: string | null
           title?: string | null
           tone?: string | null
-          type?: ProjectType
+          type?: string
           updated_at?: string | null
           user_id?: string
-          writing_mode?: WritingMode | null
-          export_metadata?: Json | null
-          deleted_at?: string | null
+          writing_mode?: string | null
         }
         Relationships: []
       }
@@ -848,7 +887,7 @@ export type Database = {
           project_id: string
           updated_at: string | null
           version: number
-          writing_mode: WritingMode
+          writing_mode: string
         }
         Insert: {
           content?: Json | null
@@ -859,18 +898,18 @@ export type Database = {
           project_id: string
           updated_at?: string | null
           version?: number
-          writing_mode?: WritingMode
+          writing_mode?: string
         }
         Update: {
           content?: Json | null
           deleted_at?: string | null
           id?: string
           last_editor_id?: string | null
-          node_id?: string | null
+          node_id?: string
           project_id?: string
           updated_at?: string | null
           version?: number
-          writing_mode?: WritingMode
+          writing_mode?: string
         }
         Relationships: [
           {
@@ -928,7 +967,7 @@ export type Database = {
           parent_id: string | null
           project_id: string
           title: string
-          type: NodeType
+          type: string
         }
         Insert: {
           created_at?: string | null
@@ -938,7 +977,7 @@ export type Database = {
           parent_id?: string | null
           project_id: string
           title?: string
-          type: NodeType
+          type: string
         }
         Update: {
           created_at?: string | null
@@ -948,7 +987,7 @@ export type Database = {
           parent_id?: string | null
           project_id?: string
           title?: string
-          type?: NodeType
+          type?: string
         }
         Relationships: [
           {
@@ -1011,13 +1050,88 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      delete_user: { Args: never; Returns: undefined }
-      get_project_member_email: {
+      add_project_member_by_email: {
         Args: {
-          p_project_id: string
+          p_email: string
+          p_id: string
+          p_role: Database["public"]["Enums"]["project_role"]
+        }
+        Returns: undefined
+      }
+      can_edit_project: { Args: { p_id: string }; Returns: boolean }
+      delete_user: { Args: never; Returns: undefined }
+      get_comment_details: {
+        Args: { comment_id_arg: string }
+        Returns: {
+          anchor_data: Json
+          author_email: string
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          node_id: string
+          order_index: number
+          parent_id: string
+          project_id: string
+          resolved_at: string
+          resolved_by: string
+          status: string
+          updated_at: string
+        }[]
+      }
+      get_my_project_role: {
+        Args: { p_id: string }
+        Returns: Database["public"]["Enums"]["project_role"]
+      }
+      get_project_comments_extended: {
+        Args: { project_id_arg: string }
+        Returns: {
+          anchor_data: Json
+          author_email: string
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          node_id: string
+          order_index: number
+          parent_id: string
+          project_id: string
+          resolved_at: string
+          resolved_by: string
+          status: string
+          updated_at: string
+        }[]
+      }
+      get_project_member_email: {
+        Args: { p_project_id: string; p_user_id: string }
+        Returns: string
+      }
+      get_project_members_extended: {
+        Args: { project_id_arg: string }
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          role: string
+          user_id: string
+        }[]
+      }
+      is_thread_author: {
+        Args: { parent_id_arg: string; user_id_arg: string }
+        Returns: boolean
+      }
+      remove_project_member: {
+        Args: { p_id: string; p_user_id: string }
+        Returns: undefined
+      }
+      touch_project: { Args: { p_id: string }; Returns: undefined }
+      update_project_member_role: {
+        Args: {
+          p_id: string
+          p_role: Database["public"]["Enums"]["project_role"]
           p_user_id: string
         }
-        Returns: string | null
+        Returns: undefined
       }
     }
     Enums: {
