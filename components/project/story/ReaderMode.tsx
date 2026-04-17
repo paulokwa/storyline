@@ -32,6 +32,7 @@ export function ReaderControls({
     const [open, setOpen] = useState(false)
     const [hasSelection, setHasSelection] = useState(false)
     const menuRef = useRef<HTMLDivElement>(null)
+    const dropdownAlign = align === 'left' ? 'start' : 'end'
 
     // Close on outside click
     useEffect(() => {
@@ -94,23 +95,19 @@ export function ReaderControls({
                         <div className="w-px h-4 bg-slate-200 mx-0.5" />
 
                         <DropdownMenu open={open} onOpenChange={setOpen}>
-                            <DropdownMenuTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={(e) => {
-                                        setHasSelection(getSelection().trim().length > 0)
-                                    }}
-                                    className={cn(
-                                        "h-7 w-7 p-0 rounded-full transition-all",
-                                        open ? "bg-slate-100 text-slate-700" : "text-slate-400 hover:text-slate-600"
-                                    )}
-                                >
-                                    <MoreHorizontal className="w-3.5 h-3.5" />
-                                </Button>
+                            <DropdownMenuTrigger
+                                onClick={() => {
+                                    setHasSelection(getSelection().trim().length > 0)
+                                }}
+                                className={cn(
+                                    "inline-flex h-7 w-7 items-center justify-center rounded-full p-0 transition-all outline-none",
+                                    open ? "bg-slate-100 text-slate-700" : "text-slate-400 hover:text-slate-600"
+                                )}
+                            >
+                                <MoreHorizontal className="w-3.5 h-3.5" />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent 
-                                align={align} 
+                                align={dropdownAlign} 
                                 side={side} 
                                 sideOffset={8}
                                 className="w-64 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-slate-100 p-0 overflow-hidden z-[110]"
@@ -122,31 +119,27 @@ export function ReaderControls({
                 </>
             ) : (
                 <DropdownMenu open={open} onOpenChange={setOpen}>
-                    <DropdownMenuTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                                setHasSelection(getSelection().trim().length > 0)
-                            }}
-                            className={cn(
-                                mode === 'settings-only' ? "h-8 w-8 rounded-xl" : "h-9 w-9 rounded-xl",
-                                "p-0 transition-all",
-                                open 
-                                    ? (mode === 'settings-only' ? "bg-indigo-50 text-indigo-600 shadow-sm" : "bg-indigo-50 text-slate-700 shadow-sm")
-                                    : (mode === 'settings-only' ? "text-slate-400 hover:text-slate-600 hover:bg-slate-50" : "bg-black/5 text-slate-500 hover:bg-black/10")
-                            )}
-                        >
-                            {mode === 'settings-only' ? (
-                                <Settings2 className="w-4 h-4" />
-                            ) : (
-                                <Volume2 className={cn("w-4 h-4", speechState === 'speaking' && "animate-bounce")} />
-                            )}
-                        </Button>
+                    <DropdownMenuTrigger
+                        onClick={() => {
+                            setHasSelection(getSelection().trim().length > 0)
+                        }}
+                        className={cn(
+                            mode === 'settings-only' ? "h-8 w-8 rounded-xl" : "h-9 w-9 rounded-xl",
+                            "inline-flex items-center justify-center p-0 transition-all outline-none",
+                            open 
+                                ? (mode === 'settings-only' ? "bg-indigo-50 text-indigo-600 shadow-sm" : "bg-indigo-50 text-slate-700 shadow-sm")
+                                : (mode === 'settings-only' ? "text-slate-400 hover:text-slate-600 hover:bg-slate-50" : "bg-black/5 text-slate-500 hover:bg-black/10")
+                        )}
+                    >
+                        {mode === 'settings-only' ? (
+                            <Settings2 className="w-4 h-4" />
+                        ) : (
+                            <Volume2 className={cn("w-4 h-4", speechState === 'speaking' && "animate-bounce")} />
+                        )}
                     </DropdownMenuTrigger>
                     
                     <DropdownMenuContent 
-                        align={align} 
+                        align={dropdownAlign} 
                         side={side} 
                         sideOffset={8}
                         className="w-64 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-slate-100 p-0 overflow-hidden z-[110]"

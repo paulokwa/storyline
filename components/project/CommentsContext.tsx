@@ -79,6 +79,120 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
         return data as Comment
     }
 
+    const getAiLinkedIdeas = (anchorData: any): { ideaId: string; sceneId: string | null }[] => {
+        const links = anchorData?.aiLinkedIdeas
+        if (!Array.isArray(links)) return []
+
+        return links
+            .filter((link): link is { ideaId: string; sceneId: string | null } =>
+                !!link &&
+                typeof link === 'object' &&
+                typeof link.ideaId === 'string'
+            )
+            .map(link => ({
+                ideaId: link.ideaId,
+                sceneId: typeof link.sceneId === 'string' ? link.sceneId : null
+            }))
+    }
+
+    const buildFeedbackIdeaTitle = (comment: Comment) => {
+        const referenceText = comment.anchor_data?.text
+        let titleSource = comment.content
+
+        if (referenceText && (comment.content === 'Add your feedback...' || !comment.content)) {
+            titleSource = referenceText
+        }
+
+        const truncated = titleSource.length > 10 ? `${titleSource.slice(0, 10)}...` : titleSource
+        return `Feedback: ${truncated}`
+    }
+
+    const resolveSceneIdForComment = async (comment: Comment) => {
+        const storedSceneId = getAiLinkedIdeas(comment.anchor_data)[0]?.sceneId
+        if (storedSceneId) return storedSceneId
+        if (!comment.node_id) return null
+
+        const { data, error } = await supabase
+            .from('scenes')
+            .select('id')
+            .eq('node_id', comment.node_id)
+            .maybeSingle()
+
+        if (error) {
+            console.error('Error resolving scene for comment delete:', error)
+            return null
+        }
+
+        return data?.id ?? null
+    }
+
+    const unlinkAiFeedbackForComment = async (comment: Comment) => {
+        const linkedIdeas = getAiLinkedIdeas(comment.anchor_data)
+
+        if (linkedIdeas.length > 0) {
+            const linksByScene = new Map<string, string[]>()
+
+            linkedIdeas.forEach(({ ideaId, sceneId }) => {
+                if (!sceneId) return
+
+                const ids = linksByScene.get(sceneId) ?? []
+                ids.push(ideaId)
+                linksByScene.set(sceneId, ids)
+            })
+
+            await Promise.all(
+                Array.from(linksByScene.entries()).map(async ([sceneId, ideaIds]) => {
+                    const uniqueIdeaIds = [...new Set(ideaIds)]
+                    const { error } = await supabase
+                        .from('scene_ideas')
+                        .delete()
+                        .eq('scene_id', sceneId)
+                        .in('idea_id', uniqueIdeaIds)
+
+                    if (error) {
+                        throw error
+                    }
+                })
+            )
+
+            return
+        }
+
+        const sceneId = await resolveSceneIdForComment(comment)
+        if (!sceneId) return
+
+        const expectedTitle = buildFeedbackIdeaTitle(comment)
+        const { data, error } = await supabase
+            .from('scene_ideas')
+            .select('idea_id, ideas!inner(id, title, content)')
+            .eq('scene_id', sceneId)
+
+        if (error) {
+            throw error
+        }
+
+        const fallbackIdeaIds = (data ?? [])
+            .filter((row: any) => {
+                const idea = Array.isArray(row.ideas) ? row.ideas[0] : row.ideas
+                if (!idea) return false
+
+                return idea.title === expectedTitle && idea.content === comment.content
+            })
+            .map((row: any) => row.idea_id)
+
+        if (fallbackIdeaIds.length === 0) return
+
+        const { error: unlinkError } = await supabase
+            .from('scene_ideas')
+            .delete()
+            .eq('scene_id', sceneId)
+            .in('idea_id', [...new Set(fallbackIdeaIds)])
+
+        if (unlinkError) {
+            throw unlinkError
+        }
+    }
+
     const fetchComments = useCallback(async (p_id: string) => {
         setIsLoading(true)
         const { data, error } = await supabase
@@ -217,23 +331,30 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
 
     const deleteComment = async (id: string) => {
         console.log('Attempting to delete comment:', id)
+
+        const commentsToDelete = comments.filter(c => c.id === id || c.parent_id === id)
         
         // Optimistic update
         setComments(prev => prev.filter(c => c.id !== id && c.parent_id !== id))
         if (activeCommentId === id) setActiveCommentId(null)
 
-        const { error } = await supabase
-            .from('project_comments')
-            .delete()
-            .eq('id', id)
-        
-        if (error) {
+        try {
+            await Promise.all(commentsToDelete.map(unlinkAiFeedbackForComment))
+
+            const { error } = await supabase
+                .from('project_comments')
+                .delete()
+                .eq('id', id)
+            
+            if (error) {
+                throw error
+            }
+        } catch (error) {
             console.error('Error deleting comment:', error)
-            // Revert or refresh on error?
-            const { data } = await supabase.rpc('get_project_comments_extended', { p_project_id: projectId })
-            if (data) setComments(data as Comment[])
+            await fetchComments(projectId)
             throw error
         }
+
         console.log('Successfully deleted comment:', id)
     }
 

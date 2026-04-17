@@ -178,6 +178,27 @@ body {
   width: 100%;
 }
 
+.app-shell-viewport {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+@supports (height: 100dvh) {
+  .app-shell-viewport {
+    height: 100dvh;
+  }
+}
+
+.app-shell-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
 /* Restore touch-pan scrolling for all overflow scrollable containers.
    Required because position:fixed + overflow:hidden on body blocks touch events
    on Android Chrome / Samsung Internet in production builds. */

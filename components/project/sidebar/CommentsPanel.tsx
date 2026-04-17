@@ -49,6 +49,7 @@ export default function CommentsPanel({
     const router = useRouter()
     const { 
         comments, 
+        setComments,
         isLoading, 
         addComment, 
         updateComment, 
@@ -81,6 +82,16 @@ export default function CommentsPanel({
     const [addedCommentIds, setAddedCommentIds] = useState<Set<string>>(new Set())
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
+    useEffect(() => {
+        setAddedCommentIds(
+            new Set(
+                comments
+                    .filter(comment => Array.isArray(comment.anchor_data?.aiLinkedIdeas) && comment.anchor_data.aiLinkedIdeas.length > 0)
+                    .map(comment => comment.id)
+            )
+        )
+    }, [comments])
+
     const handleTyping = (threadId: string | null) => {
         sendTypingIndicator(threadId)
         
@@ -94,6 +105,7 @@ export default function CommentsPanel({
 
     const handleAddAsIdea = async (comment: any) => {
         if (!projectId || !comment.content) return
+        if (addedCommentIds.has(comment.id)) return
         setAddingIdeaId(comment.id)
         
         try {
@@ -135,6 +147,32 @@ export default function CommentsPanel({
                 }
             }
 
+            const existingLinks = Array.isArray(comment.anchor_data?.aiLinkedIdeas)
+                ? comment.anchor_data.aiLinkedIdeas
+                : []
+            const nextAnchorData = {
+                ...(comment.anchor_data && typeof comment.anchor_data === 'object' ? comment.anchor_data : {}),
+                aiLinkedIdeas: [
+                    ...existingLinks,
+                    { ideaId: idea.id, sceneId: activeSceneId ?? null }
+                ]
+            }
+
+            const { error: commentLinkError } = await supabase
+                .from('project_comments')
+                .update({ anchor_data: nextAnchorData })
+                .eq('id', comment.id)
+
+            if (commentLinkError) {
+                throw commentLinkError
+            }
+
+            setComments(prev => prev.map(currentComment =>
+                currentComment.id === comment.id
+                    ? { ...currentComment, anchor_data: nextAnchorData }
+                    : currentComment
+            ))
+
             setAddedCommentIds(prev => new Set(prev).add(comment.id))
             toast.success('Added as Project Idea', {
                 description: activeSceneId 
@@ -147,6 +185,16 @@ export default function CommentsPanel({
             toast.error('Failed to link to extension')
         } finally {
             setAddingIdeaId(null)
+        }
+    }
+
+    async function handleDeleteComment(commentId: string) {
+        try {
+            await deleteComment(commentId)
+            router.refresh()
+        } catch (error) {
+            console.error('Failed to delete comment:', error)
+            toast.error('Failed to delete feedback')
         }
     }
 
@@ -370,7 +418,7 @@ export default function CommentsPanel({
                                                         setEditText={setEditText}
                                                         onUpdate={handleUpdate}
                                                         onCancelEdit={() => setEditingId(null)}
-                                                        onDelete={deleteComment}
+                                                        onDelete={handleDeleteComment}
                                                         onResolve={resolveComment}
                                                         onSelectNode={onSelectNode}
                                                         onJumpTo={() => {
