@@ -625,6 +625,64 @@ export default function AiHelperPanel({
         </TooltipProvider>
     )
 
+    const contextManagerList = (
+        <div className="max-h-72 space-y-4 overflow-y-auto pr-1 custom-scrollbar">
+            {contextEntityGroups.map((group) => {
+                const Icon = group.icon
+                return (
+                    <div key={group.key} className="space-y-2">
+                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                            <Icon className={cn("h-3.5 w-3.5", group.iconClassName)} />
+                            <span>{group.title}</span>
+                        </div>
+
+                        {group.items.length > 0 ? (
+                            <div className="space-y-1">
+                                {group.items.map((item) => {
+                                    const isSelected = contextDraft[group.key].includes(item.id)
+                                    return (
+                                        <button
+                                            key={item.id}
+                                            type="button"
+                                            onClick={() => toggleContextDraftItem(group.key, item.id)}
+                                            className={cn(
+                                                "flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left transition-all",
+                                                isSelected
+                                                    ? "border-slate-200 bg-white text-slate-800 shadow-sm"
+                                                    : "border-transparent bg-white/50 text-slate-500 hover:border-slate-200 hover:bg-white"
+                                            )}
+                                        >
+                                            <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-50", group.iconClassName)}>
+                                                <Icon className="h-4 w-4" />
+                                            </div>
+                                            <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                                                {item.label}
+                                            </span>
+                                            <div
+                                                className={cn(
+                                                    "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-all",
+                                                    isSelected
+                                                        ? "border-indigo-500 bg-indigo-500 text-white"
+                                                        : "border-slate-200 bg-white text-transparent"
+                                                )}
+                                            >
+                                                <Check className="h-3.5 w-3.5" />
+                                            </div>
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        ) : (
+                            <div className="rounded-2xl border border-dashed border-slate-200 bg-white/70 px-3 py-2 text-[11px] italic text-slate-300">
+                                {group.emptyLabel}
+                            </div>
+                        )}
+                    </div>
+                )
+            })}
+        </div>
+    )
+
     const toggleContextDraftItem = (type: ContextEntityType, id: string) => {
         setContextDraft((prev) => ({
             ...prev,
@@ -1341,126 +1399,67 @@ export default function AiHelperPanel({
 
                 {contextManagerOpen && (
                     <div className="border-t border-slate-100 bg-[#fcfbf9] px-6 py-3">
-                        <div className="max-h-72 space-y-4 overflow-y-auto pr-1 custom-scrollbar">
-                            {contextEntityGroups.map((group) => {
-                                const Icon = group.icon
-                                return (
-                                    <div key={group.key} className="space-y-2">
-                                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
-                                            <Icon className={cn("h-3.5 w-3.5", group.iconClassName)} />
-                                            <span>{group.title}</span>
-                                        </div>
-
-                                        {group.items.length > 0 ? (
-                                            <div className="space-y-1">
-                                                {group.items.map((item) => {
-                                                    const isSelected = contextDraft[group.key].includes(item.id)
-                                                    return (
-                                                        <button
-                                                            key={item.id}
-                                                            type="button"
-                                                            onClick={() => toggleContextDraftItem(group.key, item.id)}
-                                                            className={cn(
-                                                                "flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left transition-all",
-                                                                isSelected
-                                                                    ? "border-slate-200 bg-white text-slate-800 shadow-sm"
-                                                                    : "border-transparent bg-white/50 text-slate-500 hover:border-slate-200 hover:bg-white"
-                                                            )}
-                                                        >
-                                                            <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-50", group.iconClassName)}>
-                                                                <Icon className="h-4 w-4" />
-                                                            </div>
-                                                            <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                                                                {item.label}
-                                                            </span>
-                                                            <div
-                                                                className={cn(
-                                                                    "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-all",
-                                                                    isSelected
-                                                                        ? "border-indigo-500 bg-indigo-500 text-white"
-                                                                        : "border-slate-200 bg-white text-transparent"
-                                                                )}
-                                                            >
-                                                                <Check className="h-3.5 w-3.5" />
-                                                            </div>
-                                                        </button>
-                                                    )
-                                                })}
-                                            </div>
-                                        ) : (
-                                            <div className="rounded-2xl border border-dashed border-slate-200 bg-white/70 px-3 py-2 text-[11px] italic text-slate-300">
-                                                {group.emptyLabel}
-                                            </div>
-                                        )}
-                                    </div>
-                                )
-                            })}
-                        </div>
+                        {contextManagerList}
                     </div>
                 )}
             </div>
 
             <div 
                 data-tour="ai-context-strip"
-                className="bg-white/40 px-4 py-1.5 border-b border-slate-200/60 flex items-center gap-3 shrink-0 overflow-hidden md:hidden"
+                className="bg-white/40 border-b border-slate-200/60 shrink-0 overflow-hidden md:hidden"
             >
-                <div className="flex items-center gap-2 text-[9px] uppercase tracking-widest text-slate-400 font-bold shrink-0 border-r border-slate-200 pr-3 mr-1">
-                    <Database className="w-3 h-3" />
-                    <span>Context</span>
-                </div>
-                <div className="flex-1 relative min-w-0 h-[26px]">
-                    <div 
-                        ref={scrollRef}
-                        onMouseDown={onMouseDown}
-                        onMouseLeave={onMouseLeave}
-                        onMouseUp={onMouseUp}
-                        onMouseMove={onMouseMove}
-                        className={cn(
-                            "flex items-center gap-2 overflow-x-auto no-scrollbar absolute inset-0 pr-12 [mask-image:linear-gradient(to_right,black_calc(100%-40px),transparent_100%)] overscroll-x-contain pointer-events-auto",
-                            isDragging ? "cursor-grabbing" : "cursor-grab"
-                        )}
-                    >
-                        {linkedCharacters.map(char => (
-                            <div key={char.id} className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-50/50 border border-indigo-100/50 text-[9px] text-indigo-600 font-medium shrink-0 snap-start animate-in fade-in slide-in-from-left-2 transition-all">
-                                <Users className="w-3 h-3" />
-                                {char.name || 'Character'}
+                <div className="px-4 py-1.5 space-y-2">
+                    <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={handleContextManagerToggle}
+                            disabled={isReadOnly || !activeSceneId || isApplyingContext}
+                            className={cn(
+                                "inline-flex shrink-0 items-center gap-2 rounded-xl border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] transition-all",
+                                contextManagerOpen
+                                    ? "border-indigo-200 bg-indigo-50 text-indigo-600"
+                                    : "border-slate-200 bg-white text-slate-500",
+                                (isReadOnly || !activeSceneId || isApplyingContext) && "cursor-not-allowed opacity-60"
+                            )}
+                        >
+                            <Database className="h-3 w-3" />
+                            <span>{isApplyingContext ? 'Saving' : 'Context'}</span>
+                            {contextManagerOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                        </button>
+
+                        {selectedNodes.length > 0 && (
+                            <div className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-indigo-200/60 bg-indigo-50 px-2.5 py-1 text-[10px] font-medium text-indigo-700">
+                                <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
+                                <span className="truncate">{storySelectionLabel}</span>
                             </div>
-                        ))}
-                        {linkedIdeas.map(idea => {
-                            const isFeedback = idea.title?.toLowerCase().startsWith('feedback:')
-                            const IdeaIcon = isFeedback ? MessageSquare : Lightbulb
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                        {contextSummaryItems.map((item) => {
+                            const Icon = item.icon
                             return (
-                                <div key={idea.id} className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-50/50 border border-amber-100/50 text-[9px] text-amber-600 font-medium shrink-0 snap-start animate-in fade-in slide-in-from-left-2 transition-all">
-                                    <IdeaIcon className="w-3 h-3" />
-                                    <span className="truncate max-w-[150px]">{idea.title || 'Idea'}</span>
+                                <div
+                                    key={item.key}
+                                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-medium text-slate-600"
+                                >
+                                    <Icon className={cn("h-3 w-3", item.iconClassName)} />
+                                    <span>{item.title}</span>
+                                    <span className="text-slate-400">{item.count}</span>
                                 </div>
                             )
                         })}
-                        {linkedLocations.map(loc => (
-                            <div key={loc.id} className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50/50 border border-emerald-100/50 text-[9px] text-emerald-600 font-medium shrink-0 snap-start animate-in fade-in slide-in-from-left-2 transition-all">
-                                <MapPin className="w-3 h-3" />
-                                <span className="truncate max-w-[150px]">{loc.name || 'Location'}</span>
-                            </div>
-                        ))}
-                        {linkedObjects.map(obj => (
-                            <div key={obj.id} className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-sky-50/50 border border-sky-100/50 text-[9px] text-sky-600 font-medium shrink-0 snap-start animate-in fade-in slide-in-from-left-2 transition-all">
-                                <Box className="w-3 h-3" />
-                                <span className="truncate max-w-[150px]">{obj.name || 'Object'}</span>
-                            </div>
-                        ))}
-                        {selectedNodes.length > 0 && (
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-200/50 text-[9px] text-indigo-700 font-bold shrink-0 snap-start animate-in fade-in slide-in-from-left-2 transition-all shadow-sm">
-                                <div className="w-1 h-1 bg-indigo-500 rounded-full animate-pulse"></div>
-                                {storySelectionLabel}
-                            </div>
-                        )}
-                        
-                        {/* Fallback if nothing linked */}
-                        {!linkedCharacters.length && !linkedIdeas.length && !linkedLocations.length && !linkedObjects.length && !selectedNodes.length && (
-                            <div className="text-[9px] text-slate-300 italic shrink-0">No specific entities linked</div>
+
+                        {contextSummaryItems.length === 0 && selectedNodes.length === 0 && (
+                            <div className="text-[10px] italic text-slate-300 shrink-0">No specific items linked</div>
                         )}
                     </div>
                 </div>
+                {contextManagerOpen && (
+                    <div className="border-t border-slate-100 bg-[#fcfbf9] px-4 py-3">
+                        {contextManagerList}
+                    </div>
+                )}
             </div>
 
             {/* Response Area */}
