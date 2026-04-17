@@ -4,6 +4,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { getProjectTypeLabel } from '@/lib/constants'
 import { useCompletion } from '@ai-sdk/react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Package, Bookmark, Database, Maximize2, MessageSquarePlus, Users, Lightbulb, MapPin, Box, HelpCircle, Layout } from 'lucide-react'
 import { useDragScroll } from '@/hooks/useDragScroll'
 import { PremiumEditor } from '@/components/ui/premium-editor'
@@ -22,10 +23,18 @@ import AiPartnerTour from './AiPartnerTour'
 interface AiHelperPanelProps {
     projectId: string
     sceneText: string
+    sceneCharacters?: { characters: any }[]
+    sceneIdeas?: { ideas: any }[]
+    sceneLocations?: { locations: any }[]
+    sceneObjects?: { objects: any }[]
     linkedCharacters?: any[]
     linkedIdeas?: any[]
     linkedLocations?: any[]
     linkedObjects?: any[]
+    projectCharacters?: any[]
+    projectIdeas?: any[]
+    projectLocations?: any[]
+    projectObjects?: any[]
     projectRelationships?: any[]
     selectedNodes?: any[]
     allNodes?: any[]
@@ -48,6 +57,51 @@ interface AiHelperPanelProps {
         ollama_url: string
         api_key: string | null
     }
+}
+
+type ContextEntityType = 'characters' | 'ideas' | 'locations' | 'objects'
+
+type ContextDraft = Record<ContextEntityType, string[]>
+
+function buildContextDraft({
+    sceneCharacters = [],
+    sceneIdeas = [],
+    sceneLocations = [],
+    sceneObjects = [],
+}: {
+    sceneCharacters?: { characters: any }[]
+    sceneIdeas?: { ideas: any }[]
+    sceneLocations?: { locations: any }[]
+    sceneObjects?: { objects: any }[]
+}): ContextDraft {
+    return {
+        characters: sceneCharacters.map((entry) => entry.characters?.id).filter(Boolean),
+        ideas: sceneIdeas.map((entry) => entry.ideas?.id).filter(Boolean),
+        locations: sceneLocations.map((entry) => entry.locations?.id).filter(Boolean),
+        objects: sceneObjects.map((entry) => entry.objects?.id).filter(Boolean),
+    }
+}
+
+function arraysEqual(a: string[], b: string[]) {
+    if (a.length !== b.length) return false
+    return a.every((value, index) => value === b[index])
+}
+
+function draftsEqual(a: ContextDraft, b: ContextDraft) {
+    return (
+        arraysEqual(a.characters, b.characters) &&
+        arraysEqual(a.ideas, b.ideas) &&
+        arraysEqual(a.locations, b.locations) &&
+        arraysEqual(a.objects, b.objects)
+    )
+}
+
+function stripFeedbackPrefix(title: string | null | undefined) {
+    return (title || 'Idea').replace(/^feedback:\s*/i, '')
+}
+
+function isFeedbackIdea(idea: any) {
+    return idea?.title?.toLowerCase().startsWith('feedback:')
 }
 
 function extractTextFromJson(content: any): string {
@@ -163,7 +217,10 @@ const PROMPT_TEMPLATES = [
 ]
 
 export default function AiHelperPanel({
-    projectId, sceneText, onInsert, linkedCharacters = [], linkedIdeas = [], linkedLocations = [], linkedObjects = [],
+    projectId, sceneText, onInsert,
+    sceneCharacters = [], sceneIdeas = [], sceneLocations = [], sceneObjects = [],
+    linkedCharacters = [], linkedIdeas = [], linkedLocations = [], linkedObjects = [],
+    projectCharacters = [], projectIdeas = [], projectLocations = [], projectObjects = [],
     projectRelationships = [],
     selectedNodes = [], allNodes = [], allScenes = [], onClearSelection, aiSettings, projectType,
     projectPremise, projectTone,
@@ -174,6 +231,7 @@ export default function AiHelperPanel({
 }: AiHelperPanelProps) {
     const label = getProjectTypeLabel(projectType)
     const isNovel = projectType === 'novel'
+    const router = useRouter()
 
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'
@@ -215,8 +273,22 @@ export default function AiHelperPanel({
     const [saveModalOpen, setSaveModalOpen] = useState(false)
     const [saveSuccess, setSaveSuccess] = useState(false)
     const [tourOpen, setTourOpen] = useState(false)
+    const [contextManagerOpen, setContextManagerOpen] = useState(false)
+    const [isApplyingContext, setIsApplyingContext] = useState(false)
     const { scrollRef, isDragging, onMouseDown, onMouseLeave, onMouseUp, onMouseMove } = useDragScroll()
     const modeScroll = useDragScroll()
+
+    const currentContextDraft = useMemo(
+        () => buildContextDraft({ sceneCharacters, sceneIdeas, sceneLocations, sceneObjects }),
+        [sceneCharacters, sceneIdeas, sceneLocations, sceneObjects]
+    )
+    const [contextDraft, setContextDraft] = useState<ContextDraft>(currentContextDraft)
+
+    useEffect(() => {
+        if (!contextManagerOpen) {
+            setContextDraft(currentContextDraft)
+        }
+    }, [currentContextDraft, contextManagerOpen])
 
     useEffect(() => {
         if (typeof window === 'undefined') return
@@ -388,6 +460,65 @@ export default function AiHelperPanel({
     const locationsLabel = useMemo(() => linkedLocations.length === 1 ? (linkedLocations[0].name || 'Location') : `${linkedLocations.length} Locations`, [linkedLocations])
     const objectsLabel = useMemo(() => linkedObjects.length === 1 ? (linkedObjects[0].name || 'Object') : `${linkedObjects.length} Objects`, [linkedObjects])
 
+    const contextEntityGroups = useMemo(() => {
+        const mergedIdeas = [...projectIdeas]
+        sceneIdeas.forEach((entry) => {
+            const linkedIdea = entry.ideas
+            if (linkedIdea && !mergedIdeas.some((idea) => idea.id === linkedIdea.id)) {
+                mergedIdeas.push(linkedIdea)
+            }
+        })
+
+        return [
+            {
+                key: 'characters' as const,
+                title: 'Characters',
+                icon: Users,
+                iconClassName: 'text-[#546354]',
+                emptyLabel: 'No characters yet',
+                items: projectCharacters.map((item) => ({ id: item.id, label: item.name || 'Character' })),
+            },
+            {
+                key: 'ideas' as const,
+                title: 'Ideas',
+                icon: Lightbulb,
+                iconClassName: 'text-indigo-600',
+                emptyLabel: 'No ideas yet',
+                items: mergedIdeas
+                    .filter((item) => !isFeedbackIdea(item) || contextDraft.ideas.includes(item.id))
+                    .map((item) => ({ id: item.id, label: stripFeedbackPrefix(item.title) })),
+            },
+            {
+                key: 'locations' as const,
+                title: 'Locations',
+                icon: MapPin,
+                iconClassName: 'text-emerald-600',
+                emptyLabel: 'No locations yet',
+                items: projectLocations.map((item) => ({ id: item.id, label: item.name || 'Location' })),
+            },
+            {
+                key: 'objects' as const,
+                title: 'Objects',
+                icon: Box,
+                iconClassName: 'text-sky-600',
+                emptyLabel: 'No objects yet',
+                items: projectObjects.map((item) => ({ id: item.id, label: item.name || 'Object' })),
+            },
+        ]
+    }, [projectCharacters, projectIdeas, projectLocations, projectObjects, sceneIdeas, contextDraft.ideas])
+
+    const contextSummaryItems = useMemo(() => {
+        return contextEntityGroups
+            .map((group) => ({
+                key: group.key,
+                title: group.title,
+                icon: group.icon,
+                iconClassName: group.iconClassName,
+                count: contextDraft[group.key].length,
+            }))
+            .filter((group) => group.count > 0)
+    }, [contextDraft, contextEntityGroups])
+
     const contextSnapshotString = useMemo(() => {
         const parts = []
         if (projectId) parts.push(`Project: ${projectId}`)
@@ -414,6 +545,188 @@ export default function AiHelperPanel({
         }
         return 'Project Chat'
     }, [activeNodeId, allNodes, isNovel])
+
+    const utilityIcons = (
+        <TooltipProvider>
+            <div className="flex items-center gap-0.5">
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setTourOpen(true)}
+                            className="w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                        >
+                            <HelpCircle className="w-3.5 h-3.5" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Tour</TooltipContent>
+                </Tooltip>
+
+                {!isFullCanvas && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Link href={`/project/${projectId}/ai`}>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                                >
+                                    <Maximize2 className="w-3.5 h-3.5" />
+                                </Button>
+                            </Link>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">Full View</TooltipContent>
+                    </Tooltip>
+                )}
+
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            data-tour="ai-memory-btn"
+                            onClick={() => setIncludeArchiveContext(!includeArchiveContext)}
+                            className={cn(
+                                "w-8 h-8 rounded-lg relative transition-all",
+                                includeArchiveContext ? "text-indigo-600 bg-indigo-50 border border-indigo-100/50" : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                            )}
+                        >
+                            {isLoadingArchive ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Package className="w-3.5 h-3.5" />}
+                            {selectedArchiveIds.length > 0 && (
+                                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-indigo-500 text-white text-[8px] flex items-center justify-center rounded-full font-bold border border-white">
+                                    {selectedArchiveIds.length}
+                                </span>
+                            )}
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Archive Context</TooltipContent>
+                </Tooltip>
+
+                {onClose && (
+                    <>
+                        <div className="w-px h-4 bg-slate-200 mx-1"></div>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={onClose}
+                                    className="flex w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
+                                >
+                                    <X className="w-4 h-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">Close</TooltipContent>
+                        </Tooltip>
+                    </>
+                )}
+            </div>
+        </TooltipProvider>
+    )
+
+    const toggleContextDraftItem = (type: ContextEntityType, id: string) => {
+        setContextDraft((prev) => ({
+            ...prev,
+            [type]: prev[type].includes(id)
+                ? prev[type].filter((value) => value !== id)
+                : [...prev[type], id],
+        }))
+    }
+
+    const syncSceneContext = async () => {
+        if (!activeSceneId || draftsEqual(contextDraft, currentContextDraft)) return
+
+        const characterAdds = contextDraft.characters.filter((id) => !currentContextDraft.characters.includes(id))
+        const characterRemovals = currentContextDraft.characters.filter((id) => !contextDraft.characters.includes(id))
+        const ideaAdds = contextDraft.ideas.filter((id) => !currentContextDraft.ideas.includes(id))
+        const ideaRemovals = currentContextDraft.ideas.filter((id) => !contextDraft.ideas.includes(id))
+        const locationAdds = contextDraft.locations.filter((id) => !currentContextDraft.locations.includes(id))
+        const locationRemovals = currentContextDraft.locations.filter((id) => !contextDraft.locations.includes(id))
+        const objectAdds = contextDraft.objects.filter((id) => !currentContextDraft.objects.includes(id))
+        const objectRemovals = currentContextDraft.objects.filter((id) => !contextDraft.objects.includes(id))
+
+        try {
+            setIsApplyingContext(true)
+
+            const operations: any[] = []
+
+            if (characterAdds.length > 0) {
+                operations.push(
+                    supabase.from('scene_characters').upsert(
+                        characterAdds.map((characterId) => ({ scene_id: activeSceneId, character_id: characterId })),
+                        { onConflict: 'scene_id,character_id' }
+                    )
+                )
+            }
+            if (characterRemovals.length > 0) {
+                operations.push(
+                    supabase.from('scene_characters').delete().eq('scene_id', activeSceneId).in('character_id', characterRemovals)
+                )
+            }
+            if (ideaAdds.length > 0) {
+                operations.push(
+                    supabase.from('scene_ideas').upsert(
+                        ideaAdds.map((ideaId) => ({ scene_id: activeSceneId, idea_id: ideaId })),
+                        { onConflict: 'scene_id,idea_id' }
+                    )
+                )
+            }
+            if (ideaRemovals.length > 0) {
+                operations.push(
+                    supabase.from('scene_ideas').delete().eq('scene_id', activeSceneId).in('idea_id', ideaRemovals)
+                )
+            }
+            if (locationAdds.length > 0) {
+                operations.push(
+                    supabase.from('scene_locations').upsert(
+                        locationAdds.map((locationId) => ({ scene_id: activeSceneId, location_id: locationId })),
+                        { onConflict: 'scene_id,location_id' }
+                    )
+                )
+            }
+            if (locationRemovals.length > 0) {
+                operations.push(
+                    supabase.from('scene_locations').delete().eq('scene_id', activeSceneId).in('location_id', locationRemovals)
+                )
+            }
+            if (objectAdds.length > 0) {
+                operations.push(
+                    supabase.from('scene_objects').upsert(
+                        objectAdds.map((objectId) => ({ scene_id: activeSceneId, object_id: objectId })),
+                        { onConflict: 'scene_id,object_id' }
+                    )
+                )
+            }
+            if (objectRemovals.length > 0) {
+                operations.push(
+                    supabase.from('scene_objects').delete().eq('scene_id', activeSceneId).in('object_id', objectRemovals)
+                )
+            }
+
+            const results = await Promise.all(operations)
+            const failed = results.find((result: any) => result?.error)
+            if (failed?.error) throw failed.error
+
+            router.refresh()
+        } catch (err) {
+            console.error('Error syncing AI context items:', err)
+            setContextDraft(currentContextDraft)
+        } finally {
+            setIsApplyingContext(false)
+        }
+    }
+
+    const handleContextManagerToggle = async () => {
+        if (contextManagerOpen) {
+            await syncSceneContext()
+            setContextManagerOpen(false)
+            return
+        }
+
+        setContextDraft(currentContextDraft)
+        setContextManagerOpen(true)
+    }
 
     const { completion, complete, isLoading, error, setCompletion } = useCompletion({
         api: '/api/ai',
@@ -874,20 +1187,13 @@ export default function AiHelperPanel({
                         )}
 
                         <div className={cn(
-                            "p-1.5 bg-indigo-50 rounded-xl shrink-0 transition-transform",
-                            isFullCanvas ? "hidden md:flex" : "flex"
-                        )}>
-                            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                        </div>
-                        
-                        <div className={cn(
                             "flex-1 min-w-0",
                             isFullCanvas && onReturnToSidebar ? "hidden md:block" : "block"
                         )}>
                             {!isFullCanvas && (
                                 <h3 className="text-sm font-serif font-bold text-slate-800 tracking-tight leading-none mb-1 truncate">AI Partner</h3>
                             )}
-                            <div className={cn("flex items-center gap-2", isFullCanvas ? "hidden md:flex" : "flex")}>
+                            <div className={cn("flex items-center gap-2", isFullCanvas ? "hidden" : "flex")}>
                                 <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold truncate">
                                     {aiSettings.ai_provider === 'ollama' ? `Ollama` : 'Gemini'}
                                 </p>
@@ -910,84 +1216,7 @@ export default function AiHelperPanel({
                     </div>
 
                     <div className="flex items-center gap-0.5 md:gap-1.5 shrink-0">
-                        {/* Utility Icons */}
-
-                        <TooltipProvider>
-                            <div className="flex items-center gap-0.5">
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => setTourOpen(true)}
-                                            className="w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
-                                        >
-                                            <HelpCircle className="w-3.5 h-3.5" />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top">Tour</TooltipContent>
-                                </Tooltip>
-
-                                {!isFullCanvas && (
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Link href={`/project/${projectId}/ai`}>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
-                                                >
-                                                    <Maximize2 className="w-3.5 h-3.5" />
-                                                </Button>
-                                            </Link>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="top">Full View</TooltipContent>
-                                    </Tooltip>
-                                )}
-
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            data-tour="ai-memory-btn"
-                                            onClick={() => setIncludeArchiveContext(!includeArchiveContext)}
-                                            className={cn(
-                                                "w-8 h-8 rounded-lg relative transition-all",
-                                                includeArchiveContext ? "text-indigo-600 bg-indigo-50 border border-indigo-100/50" : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                                            )}
-                                        >
-                                            {isLoadingArchive ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Package className="w-3.5 h-3.5" />}
-                                            {selectedArchiveIds.length > 0 && (
-                                                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-indigo-500 text-white text-[8px] flex items-center justify-center rounded-full font-bold border border-white">
-                                                    {selectedArchiveIds.length}
-                                                </span>
-                                            )}
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top">Archive Context</TooltipContent>
-                                </Tooltip>
-
-                                {onClose && (
-                                    <>
-                                        <div className="w-px h-4 bg-slate-200 mx-1"></div>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={onClose}
-                                                    className="flex w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent side="top">Close</TooltipContent>
-                                        </Tooltip>
-                                    </>
-                                )}
-                            </div>
-                        </TooltipProvider>
+                        {!isFullCanvas && utilityIcons}
 
                         {(completion || previousCompletion) && !isLoading && (
                             <TooltipProvider>
@@ -1008,49 +1237,172 @@ export default function AiHelperPanel({
                 </div>
 
                 {/* Mode Buttons Row */}
-                <div className="flex items-center gap-2 mt-1.5 md:mt-1 pt-1 md:pt-1 border-t border-slate-100/50">
-                    <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-50/50 text-indigo-600 text-[9px] font-bold uppercase tracking-widest shrink-0">
-                        <MessageSquarePlus className="w-3 h-3" />
-                        <span className="hidden sm:inline">Mode</span>
-                    </div>
-                    <div
-                        data-tour="ai-mode-selector"
-                        className="flex-1 relative min-w-0 h-8"
-                    >
-                        <div 
-                            ref={modeScroll.scrollRef}
-                            onMouseDown={modeScroll.onMouseDown}
-                            onMouseLeave={modeScroll.onMouseLeave}
-                            onMouseUp={modeScroll.onMouseUp}
-                            onMouseMove={modeScroll.onMouseMove}
-                            className={cn(
-                                "flex items-center gap-1.5 overflow-x-auto no-scrollbar absolute inset-0 pb-0.5 pr-8 [mask-image:linear-gradient(to_right,black_calc(100%-40px),transparent_100%)] overscroll-x-contain pointer-events-auto",
-                                modeScroll.isDragging ? "cursor-grabbing" : "cursor-grab"
-                            )}
+                <div className={cn(
+                    "flex items-center gap-2 mt-1.5 md:mt-1 pt-1 md:pt-1 border-t border-slate-100/50",
+                    isFullCanvas && "md:mt-0 md:pt-0 md:border-t-0"
+                )}>
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-50/50 text-indigo-600 text-[9px] font-bold uppercase tracking-widest shrink-0">
+                            <MessageSquarePlus className="w-3 h-3" />
+                            <span className="hidden sm:inline">Mode</span>
+                        </div>
+                        <div
+                            data-tour="ai-mode-selector"
+                            className="flex-1 relative min-w-0 h-8"
                         >
-                        {['Review / Chat', 'Continue Writing', 'Improve Scene', 'Add Conflict', 'Rewrite with Emotion', ...(!isNovel ? ['Write as Script Scene'] : [])].map(mode => (
-                            <button
-                                key={mode}
-                                onClick={() => setPromptMode(mode)}
+                            <div 
+                                ref={modeScroll.scrollRef}
+                                onMouseDown={modeScroll.onMouseDown}
+                                onMouseLeave={modeScroll.onMouseLeave}
+                                onMouseUp={modeScroll.onMouseUp}
+                                onMouseMove={modeScroll.onMouseMove}
                                 className={cn(
-                                    "px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all border",
-                                    promptMode === mode 
-                                        ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" 
-                                        : "bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-100 hover:text-slate-600"
+                                    "flex items-center gap-1.5 overflow-x-auto no-scrollbar absolute inset-0 pb-0.5 pr-8 [mask-image:linear-gradient(to_right,black_calc(100%-40px),transparent_100%)] overscroll-x-contain pointer-events-auto",
+                                    modeScroll.isDragging ? "cursor-grabbing" : "cursor-grab"
                                 )}
                             >
-                                {mode.replace('Writing', '').replace('Scene', '').replace('with Emotion', '').replace('Review / ', '').trim()}
-                            </button>
-                        ))}
+                            {['Review / Chat', 'Continue Writing', 'Improve Scene', 'Add Conflict', 'Rewrite with Emotion', ...(!isNovel ? ['Write as Script Scene'] : [])].map(mode => (
+                                <button
+                                    key={mode}
+                                    onClick={() => setPromptMode(mode)}
+                                    className={cn(
+                                        "px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all border",
+                                        promptMode === mode 
+                                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" 
+                                            : "bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-100 hover:text-slate-600"
+                                    )}
+                                >
+                                    {mode.replace('Writing', '').replace('Scene', '').replace('with Emotion', '').replace('Review / ', '').trim()}
+                                </button>
+                            ))}
+                            </div>
                         </div>
+                        {isFullCanvas && (
+                            <div className="hidden shrink-0 md:flex md:items-center">
+                                {utilityIcons}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
 
             {/* Context Indicator */}
+            <div className="hidden border-b border-slate-200/60 bg-white/40 md:block">
+                <div
+                    data-tour="ai-context-strip"
+                    className="flex items-center gap-3 overflow-hidden px-6 py-2"
+                >
+                    <button
+                        type="button"
+                        onClick={handleContextManagerToggle}
+                        disabled={isReadOnly || !activeSceneId || isApplyingContext}
+                        className={cn(
+                            "inline-flex shrink-0 items-center gap-2 rounded-xl border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] transition-all",
+                            contextManagerOpen
+                                ? "border-indigo-200 bg-indigo-50 text-indigo-600"
+                                : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-700",
+                            (isReadOnly || !activeSceneId || isApplyingContext) && "cursor-not-allowed opacity-60"
+                        )}
+                    >
+                        <Database className="h-3 w-3" />
+                        <span>{isApplyingContext ? 'Saving' : 'Context'}</span>
+                        {contextManagerOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                    </button>
+
+                    <div className="h-4 w-px shrink-0 bg-slate-200" />
+
+                    <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto no-scrollbar">
+                        {contextSummaryItems.map((item) => {
+                            const Icon = item.icon
+                            return (
+                                <div
+                                    key={item.key}
+                                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-medium text-slate-600"
+                                >
+                                    <Icon className={cn("h-3 w-3", item.iconClassName)} />
+                                    <span>{item.title}</span>
+                                    <span className="text-slate-400">{item.count}</span>
+                                </div>
+                            )
+                        })}
+
+                        {selectedNodes.length > 0 && (
+                            <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-indigo-200/60 bg-indigo-50 px-2.5 py-1 text-[10px] font-medium text-indigo-700">
+                                <div className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                                <span className="truncate max-w-[220px]">{storySelectionLabel}</span>
+                            </div>
+                        )}
+
+                        {contextSummaryItems.length === 0 && selectedNodes.length === 0 && (
+                            <div className="text-[10px] italic text-slate-300">No specific items linked</div>
+                        )}
+                    </div>
+                </div>
+
+                {contextManagerOpen && (
+                    <div className="border-t border-slate-100 bg-[#fcfbf9] px-6 py-3">
+                        <div className="max-h-72 space-y-4 overflow-y-auto pr-1 custom-scrollbar">
+                            {contextEntityGroups.map((group) => {
+                                const Icon = group.icon
+                                return (
+                                    <div key={group.key} className="space-y-2">
+                                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                                            <Icon className={cn("h-3.5 w-3.5", group.iconClassName)} />
+                                            <span>{group.title}</span>
+                                        </div>
+
+                                        {group.items.length > 0 ? (
+                                            <div className="space-y-1">
+                                                {group.items.map((item) => {
+                                                    const isSelected = contextDraft[group.key].includes(item.id)
+                                                    return (
+                                                        <button
+                                                            key={item.id}
+                                                            type="button"
+                                                            onClick={() => toggleContextDraftItem(group.key, item.id)}
+                                                            className={cn(
+                                                                "flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left transition-all",
+                                                                isSelected
+                                                                    ? "border-slate-200 bg-white text-slate-800 shadow-sm"
+                                                                    : "border-transparent bg-white/50 text-slate-500 hover:border-slate-200 hover:bg-white"
+                                                            )}
+                                                        >
+                                                            <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-50", group.iconClassName)}>
+                                                                <Icon className="h-4 w-4" />
+                                                            </div>
+                                                            <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                                                                {item.label}
+                                                            </span>
+                                                            <div
+                                                                className={cn(
+                                                                    "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-all",
+                                                                    isSelected
+                                                                        ? "border-indigo-500 bg-indigo-500 text-white"
+                                                                        : "border-slate-200 bg-white text-transparent"
+                                                                )}
+                                                            >
+                                                                <Check className="h-3.5 w-3.5" />
+                                                            </div>
+                                                        </button>
+                                                    )
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <div className="rounded-2xl border border-dashed border-slate-200 bg-white/70 px-3 py-2 text-[11px] italic text-slate-300">
+                                                {group.emptyLabel}
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )}
+            </div>
+
             <div 
                 data-tour="ai-context-strip"
-                className="bg-white/40 px-4 py-1.5 border-b border-slate-200/60 flex items-center gap-3 shrink-0 overflow-hidden md:px-6 md:py-2"
+                className="bg-white/40 px-4 py-1.5 border-b border-slate-200/60 flex items-center gap-3 shrink-0 overflow-hidden md:hidden"
             >
                 <div className="flex items-center gap-2 text-[9px] uppercase tracking-widest text-slate-400 font-bold shrink-0 border-r border-slate-200 pr-3 mr-1">
                     <Database className="w-3 h-3" />
@@ -1104,7 +1456,7 @@ export default function AiHelperPanel({
                         )}
                         
                         {/* Fallback if nothing linked */}
-                        {!linkedCharacters.length && !linkedIdeas.length && !linkedLocations.length && !selectedNodes.length && (
+                        {!linkedCharacters.length && !linkedIdeas.length && !linkedLocations.length && !linkedObjects.length && !selectedNodes.length && (
                             <div className="text-[9px] text-slate-300 italic shrink-0">No specific entities linked</div>
                         )}
                     </div>
