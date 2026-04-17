@@ -1017,7 +1017,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             variant="ghost" 
                             size="sm"
                             onClick={() => setCommentsPanelOpen(true)}
-                            className="hidden md:inline-flex h-6 px-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary hover:bg-white transition-all"
+                            className="hidden lg:inline-flex h-6 px-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary hover:bg-white transition-all"
                         >
                             <MessageSquare className="w-3 h-3 mr-1" />
                              Feedback
@@ -1042,7 +1042,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                 size="sm"
                                 onClick={toggleDictation}
                                 className={cn(
-                                    "hidden md:inline-flex h-6 px-2 text-[10px] font-bold uppercase tracking-widest transition-all",
+                                    "hidden lg:inline-flex h-6 px-2 text-[10px] font-bold uppercase tracking-widest transition-all",
                                     isRecording 
                                         ? "text-red-500 bg-red-50 hover:bg-red-100 animate-pulse" 
                                         : "text-slate-400 hover:text-slate-600 hover:bg-white"
@@ -1053,7 +1053,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             </Button>
                         )}
                         
-                        <div className="hidden md:flex ml-1 items-center border-l border-slate-200/50 pl-2">
+                        <div className="hidden lg:flex ml-1 items-center border-l border-slate-200/50 pl-2">
                             <ReaderControls 
                                 getSelection={() => editor?.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to) || ''}
                                 getScene={() => editor?.getText() || ''}

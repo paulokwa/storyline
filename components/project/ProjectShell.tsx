@@ -446,7 +446,7 @@ function ProjectShellInner({
                             <AvatarPortal />
                             
                             {isStoryTab && (
-                                <div className="hidden md:flex lg:hidden items-center gap-1.5 p-1 bg-violet-50/50 rounded-2xl border border-violet-100/50">
+                                <div className="hidden lg:flex xl:hidden items-center gap-1.5 p-1 bg-violet-50/50 rounded-2xl border border-violet-100/50">
                                     <Tooltip>
                                         <TooltipTrigger>
                                             <Button
@@ -505,7 +505,7 @@ function ProjectShellInner({
 
                     
                     {/* Action Buttons Row - Mobile Only */}
-                    <div className="md:hidden border-b border-black/5">
+                    <div className="lg:hidden border-b border-black/5">
                         <div className="snap-row flex items-center gap-2 py-2 pl-1">
                             {isStoryTab && (
                                 <div className="flex items-center gap-2 shrink-0">
