@@ -33,7 +33,6 @@ import {
     Trash2, 
     RotateCcw, 
     Loader2, 
-    History as HistoryIcon,
     Bold,
     Italic,
     Underline as UnderlineIcon,
@@ -1037,18 +1036,6 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                              Gallery
                         </Button>
 
-                        {!isReadOnly && (
-                            <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => router.push(`/project/${scene.project_id}/recovery?section=history&sceneId=${scene.id}`)}
-                                className="hidden md:inline-flex h-6 px-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-[#546354] hover:bg-white transition-all"
-                            >
-                                <HistoryIcon className="w-3 h-3 mr-1" />
-                                 History
-                            </Button>
-                        )}
-                        
                         {!isReadOnly && speechSupported && (
                             <Button
                                 variant="ghost"

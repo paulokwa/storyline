@@ -257,8 +257,8 @@ export function FloatingPlayer() {
     if (speechState === 'idle') return null
 
     return (
-        <div className="fixed bottom-8 right-8 z-[100] animate-in fade-in slide-in-from-bottom-4 duration-500 font-sans">
-            <div className="bg-white/90 backdrop-blur-xl border border-slate-200/50 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] p-2 pr-2 flex items-center gap-4 min-w-[300px]">
+        <div className="fixed bottom-4 left-1/2 z-[100] w-[calc(100vw-1.5rem)] max-w-[420px] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-4 duration-500 font-sans md:bottom-8 md:left-auto md:right-8 md:w-auto md:max-w-none md:translate-x-0">
+            <div className="bg-white/90 backdrop-blur-xl border border-slate-200/50 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] p-2 pr-2 flex items-center gap-4 w-full md:min-w-[300px]">
                 <div className="flex gap-1.5 pl-1 shrink-0">
                     {speechState === 'speaking' ? (
                         <Button 

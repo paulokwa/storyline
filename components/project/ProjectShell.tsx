@@ -27,7 +27,6 @@ import {
     Settings2,
     Mic,
     MicOff,
-    Clock,
     HelpCircle
 } from 'lucide-react'
 import { ShortcutsLegend } from './ShortcutsLegend'
@@ -618,22 +617,6 @@ function ProjectShellInner({
                                     </Tooltip>
                                     </span>
 
-                                    {/* History */}
-                                    <span className="shrink-0">
-                                    <Tooltip>
-                                        <TooltipTrigger>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => router.push(`/project/${project.id}/recovery?section=history&sceneId=${activeNodeId}`)}
-                                                className="rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center bg-black/5 text-slate-500 hover:bg-black/10"
-                                            >
-                                                <Clock className="w-4 h-4" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="bottom">History</TooltipContent>
-                                    </Tooltip>
-                                    </span>
                                 </div>
                             )}
                         </div>
