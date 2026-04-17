@@ -339,10 +339,10 @@ function OllamaGuide({
                         Download and install the free Ollama app for Mac, Windows, or Linux.
                     </p>
                     <a
-                        href="https://ollama.com/download"
+                        href="https://ollama.com"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 mt-1.5 hover:underline"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-700 mt-1.5 hover:underline"
                     >
                         Download Ollama
                         <ExternalLink className="w-3 h-3" />
@@ -359,21 +359,91 @@ function OllamaGuide({
                 </StepItem>
 
                 <StepItem number={3} title="Enable Website Access">
-                    <p className="text-sm text-slate-600 leading-relaxed">
-                        Quit Ollama and restart it from your terminal with this "permission" command:
-                    </p>
-                    <div className="space-y-2 mt-2">
-                        <div className="space-y-1">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Mac / Linux</p>
-                            <code className="block px-3 py-2 bg-slate-800 text-emerald-300 rounded-lg text-xs font-mono break-all leading-relaxed">
-                                OLLAMA_ORIGINS="https://storyline-paulokwa-v2.netlify.app" ollama serve
-                            </code>
-                        </div>
-                        <div className="space-y-1">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Windows (PowerShell)</p>
-                            <code className="block px-3 py-2 bg-slate-800 text-emerald-300 rounded-lg text-xs font-mono break-all leading-relaxed">
-                                $env:OLLAMA_ORIGINS="https://storyline-paulokwa-v2.netlify.app"; ollama serve
-                            </code>
+                    <div className="space-y-4">
+                        <p className="text-sm text-slate-600 leading-relaxed">
+                            To allow this app to connect to your local Ollama, you must grant permission using <code className="text-[11px] bg-slate-100 px-1 py-0.5 rounded text-slate-700 font-bold">OLLAMA_ORIGINS</code>.
+                        </p>
+
+                        <div className="grid gap-3">
+                            {/* Option A */}
+                            <div className="p-3.5 rounded-xl border border-slate-100 bg-white shadow-sm space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h5 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                                        <Zap className="w-3.5 h-3.5 text-amber-500" />
+                                        Option A — Temporary (Quick Test)
+                                    </h5>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Terminal</span>
+                                </div>
+                                
+                                <div className="space-y-3">
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Mac / Linux</p>
+                                        <code className="block px-3 py-2 bg-slate-800 text-emerald-300 rounded-lg text-[11px] font-mono break-all leading-relaxed">
+                                            OLLAMA_ORIGINS="https://storyline-paulokwa-v2.netlify.app" ollama serve
+                                        </code>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Windows (PowerShell)</p>
+                                        <code className="block px-3 py-2 bg-slate-800 text-emerald-300 rounded-lg text-[11px] font-mono break-all leading-relaxed">
+                                            $env:OLLAMA_ORIGINS="https://storyline-paulokwa-v2.netlify.app"; ollama serve
+                                        </code>
+                                    </div>
+                                </div>
+                                
+                                <p className="text-[11px] text-slate-500 italic">
+                                    Best for testing. You must run this every time you restart.
+                                </p>
+                            </div>
+
+                            {/* Option B */}
+                            <div className="p-3.5 rounded-xl border-2 border-emerald-100 bg-emerald-50/20 shadow-sm space-y-3 relative overflow-hidden">
+                                <div className="absolute top-0 right-0">
+                                    <span className="text-[9px] font-bold text-emerald-600 bg-emerald-100 px-2 py-1 rounded-bl-lg uppercase tracking-wider">
+                                        Recommended
+                                    </span>
+                                </div>
+                                <h5 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                                    <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                    Option B — Permanent
+                                </h5>
+
+                                <div className="space-y-4">
+                                    {/* Windows Section */}
+                                    <div className="space-y-1.5 p-3 bg-white/60 rounded-lg border border-emerald-100/50">
+                                        <p className="text-[11px] font-bold text-slate-700 flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                                            Windows (System Environment Variable)
+                                        </p>
+                                        <ol className="text-[11px] text-slate-600 space-y-1 list-decimal ml-4">
+                                            <li>Search for <strong>"Environment Variables"</strong> in Start.</li>
+                                            <li>Click <strong>Edit the system environment variables</strong>.</li>
+                                            <li>Under <strong>User variables</strong>, click <strong>New</strong>.</li>
+                                            <li>Name: <code className="font-bold text-slate-800 bg-slate-100 px-1">OLLAMA_ORIGINS</code></li>
+                                            <li>Value: <code className="font-bold text-slate-800 bg-slate-100 px-1 whitespace-nowrap">https://storyline-paulokwa-v2.netlify.app</code></li>
+                                            <li>Click OK and <strong>restart your computer</strong>.</li>
+                                        </ol>
+                                    </div>
+
+                                    {/* Mac/Linux Section */}
+                                    <div className="space-y-1.5 p-3 bg-white/60 rounded-lg border border-emerald-100/50">
+                                        <p className="text-[11px] font-bold text-slate-700 flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                                            Mac / Linux (Terminal Config)
+                                        </p>
+                                        <p className="text-[10px] text-slate-500 mb-1">Add this to your <code className="bg-slate-50 px-1">~/.zshrc</code> or <code className="bg-slate-50 px-1">~/.bashrc</code>:</p>
+                                        <code className="block px-2.5 py-1.5 bg-slate-800 text-emerald-300 rounded-lg text-[10px] font-mono break-all leading-relaxed">
+                                            export OLLAMA_ORIGINS="https://storyline-paulokwa-v2.netlify.app"
+                                        </code>
+                                        <p className="text-[10px] text-slate-500 italic mt-1 leading-tight">
+                                            Note: If you use the Ollama App (GUI), you may need to restart the app after setting this in your terminal shell.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <p className="text-[11px] text-emerald-700/70 italic font-medium">
+                                    The setting is now permanent. Just start Ollama normally (open the App or run <code className="font-bold">ollama serve</code>) after your restart.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </StepItem>
@@ -383,6 +453,40 @@ function OllamaGuide({
                         Select <strong>Local Ollama</strong> below and click <strong>"Test Local Connection"</strong>.
                     </p>
                 </StepItem>
+            </div>
+
+            {/* Quick Summary Table */}
+            <div className="rounded-xl border border-slate-100 overflow-hidden bg-white shadow-sm mt-2">
+                <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100">
+                    <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <Info className="w-3.5 h-3.5" />
+                        🧠 Quick Summary
+                    </h5>
+                </div>
+                <table className="w-full text-left border-collapse">
+                    <thead>
+                        <tr className="border-b border-slate-50">
+                            <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mode</th>
+                            <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">Setup</th>
+                            <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">Repeat?</th>
+                            <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Best For</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                        <tr>
+                            <td className="px-4 py-2.5 text-xs font-bold text-slate-700">Temporary</td>
+                            <td className="px-4 py-2.5 text-xs text-slate-600 text-center">Easy</td>
+                            <td className="px-4 py-2.5 text-xs text-amber-600 text-center font-bold">Yes</td>
+                            <td className="px-4 py-2.5 text-xs text-slate-500">Quick testing</td>
+                        </tr>
+                        <tr className="bg-emerald-50/10">
+                            <td className="px-4 py-2.5 text-xs font-bold text-emerald-700">Permanent</td>
+                            <td className="px-4 py-2.5 text-xs text-emerald-600 text-center">Medium</td>
+                            <td className="px-4 py-2.5 text-xs text-emerald-600 text-center font-bold">No</td>
+                            <td className="px-4 py-2.5 text-xs text-emerald-700 font-medium">Daily use</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
             <div className="rounded-xl border border-slate-100 overflow-hidden">
@@ -403,15 +507,12 @@ function OllamaGuide({
                 {showAdvanced && (
                     <div className="p-4 space-y-4 border-t border-slate-100 animate-in fade-in slide-in-from-top-1 duration-200">
                         <div className="space-y-1.5">
-                            <h5 className="text-xs font-bold text-slate-700">Browser Blocking?</h5>
+                            <h5 className="text-xs font-bold text-slate-700 flex items-center gap-2">
+                                <Globe className="w-3.5 h-3.5 text-blue-400" />
+                                Browser Blocking?
+                            </h5>
                             <p className="text-xs text-slate-500 leading-relaxed">
                                 If it still won't connect, your browser might be blocking the website from talking to your local machine. Try using <code>http://127.0.0.1:11434</code> as the URL in settings instead of "localhost".
-                            </p>
-                        </div>
-                        <div className="space-y-1.5">
-                            <h5 className="text-xs font-bold text-slate-700">Windows Startup?</h5>
-                            <p className="text-xs text-slate-500 leading-relaxed">
-                                On Windows, you can permanently set the permission in <strong>System Environment Variables</strong>. Add <code>OLLAMA_ORIGINS</code> with value <code>https://storyline-paulokwa-v2.netlify.app</code> to avoid using the terminal every time.
                             </p>
                         </div>
                     </div>
