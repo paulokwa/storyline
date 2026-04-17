@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
-import { ChevronLeft, Palette, Moon, Trees, Check, HelpCircle } from 'lucide-react'
+import { ChevronLeft, Palette, Moon, Trees, Check, HelpCircle, Shield } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import { THEMES, useTheme } from '@/components/providers/ThemeProvider'
 import { cn } from '@/lib/utils'
@@ -306,17 +306,21 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
         } catch (err: any) {
             // We catch everything here so it doesn't bubble up to the Next.js/Turbopack error overlay
             const isTimeout = err.name === 'AbortError'
+            const isNetworkError = err.name === 'TypeError' // Often indicates CORS/Blocked Local Network
+            const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:'
             
             setConnectionStatus({
                 success: false,
-                message: isTimeout ? 'Connection timed out.' : 'Ollama is offline or unreachable.',
+                message: isTimeout ? 'Connection timed out.' : 'Ollama is unreachable.',
                 details: isTimeout 
                     ? "The server took too long to respond. Is it running?" 
-                    : `Could not connect to ${ollamaUrl}. Make sure Ollama is running in your system tray or terminal.`
+                    : (isNetworkError && isHttps)
+                        ? "Your browser might be blocking the connection to your local machine (Mixed Content/CORS). Try using 127.0.0.1 or check the 'Advanced help' in the setup guide above."
+                        : `Could not connect to ${ollamaUrl}. Make sure Ollama is running and OLLAMA_ORIGINS is set.`
             })
             
             // Log to console for debugging, but don't rethrow
-            console.warn('Ollama check failed (Expected if offline):', err.message)
+            console.warn('Ollama check failed:', err.message)
         } finally {
             setTestingConnection(false)
         }
@@ -484,7 +488,9 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
                                         <div className="space-y-2">
                                             <Label htmlFor="ollamaUrl">Local API URL</Label>
                                             <Input id="ollamaUrl" type="text" value={ollamaUrl} onChange={(e) => setOllamaUrl(e.target.value)} placeholder="http://127.0.0.1:11434" className="bg-white" />
-                                            <p className="text-xs text-slate-500">Change this if accessing Ollama from a different device on your network.</p>
+                                            <p className="text-xs text-slate-500">
+                                                Use <code className="bg-slate-100 px-1 rounded">http://127.0.0.1:11434</code> if "localhost" is blocked by your browser.
+                                            </p>
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="ollamaModel">Local Model Name</Label>

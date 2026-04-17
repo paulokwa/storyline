@@ -506,14 +506,43 @@ function OllamaGuide({
 
                 {showAdvanced && (
                     <div className="p-4 space-y-4 border-t border-slate-100 animate-in fade-in slide-in-from-top-1 duration-200">
-                        <div className="space-y-1.5">
-                            <h5 className="text-xs font-bold text-slate-700 flex items-center gap-2">
-                                <Globe className="w-3.5 h-3.5 text-blue-400" />
-                                Browser Blocking?
+                        <div className="space-y-3 bg-white p-3.5 rounded-xl border border-slate-100 shadow-sm">
+                            <h5 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                                <Shield className="w-3.5 h-3.5 text-blue-500" />
+                                Browser Connection Issues
                             </h5>
-                            <p className="text-xs text-slate-500 leading-relaxed">
-                                If it still won't connect, your browser might be blocking the website from talking to your local machine. Try using <code>http://127.0.0.1:11434</code> as the URL in settings instead of "localhost".
-                            </p>
+                            
+                            <div className="space-y-3">
+                                <div className="space-y-1">
+                                    <p className="text-[11px] font-bold text-slate-700">1. Localhost vs 127.0.0.1</p>
+                                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                                        Browsers sometimes treat "localhost" differently than "127.0.0.1". If one doesn't work, try the other in your settings: 
+                                        <code className="bg-slate-50 px-1 font-bold">http://127.0.0.1:11434</code>
+                                    </p>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <p className="text-[11px] font-bold text-slate-700">2. The "Mixed Content" Block</p>
+                                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                                        Because Storyline uses <strong>HTTPS</strong> for security, your browser might block it from talking to Ollama's <strong>HTTP</strong> connection. This is a standard security feature.
+                                    </p>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <p className="text-[11px] font-bold text-slate-700">3. Brave Browser Users</p>
+                                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                                        Brave blocks local network access by default. To fix this:
+                                        <br />
+                                        Go to <code className="bg-slate-50 px-1">Settings</code> → <code className="bg-slate-50 px-1">Privacy and security</code> → <code className="bg-slate-50 px-1">Shields</code> → Ensure "Block fingerprinting" or "Block scripts" isn't stopping the connection.
+                                    </p>
+                                </div>
+                                
+                                <div className="p-2 bg-amber-50 rounded-lg border border-amber-100">
+                                    <p className="text-[10px] text-amber-800 leading-tight">
+                                        <strong>Pro Tip:</strong> Most connection issues are solved by correctly setting the <code>OLLAMA_ORIGINS</code> variable (Step 3) and restarting Ollama.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
