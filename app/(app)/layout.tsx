@@ -9,9 +9,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     if (!user) redirect('/login')
 
     return (
-        <div className="app-shell-viewport bg-slate-50 flex flex-col overflow-hidden">
+        <div className="app-shell-viewport bg-slate-50 flex min-h-0 flex-col overflow-hidden">
             <AppNav user={user} />
-            <main className="app-shell-main flex flex-col overflow-hidden">
+            <main className="app-shell-main flex min-h-0 flex-col overflow-hidden">
                 {children}
             </main>
         </div>
