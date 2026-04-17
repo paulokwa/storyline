@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useImperativeHandle, forwardRef, useRef, useMemo } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import { BubbleMenu } from '@tiptap/react/menus'
+import type { VirtualElement } from '@floating-ui/dom'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Highlight from '@tiptap/extension-highlight'
@@ -84,6 +85,12 @@ const VIEW_FONT_STACKS: Record<string, string> = {
     Inter: "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     'Atkinson Hyperlegible': "var(--font-atkinson), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 }
+
+const ANDROID_NATIVE_SELECTION_TOOLBAR_HEIGHT = 52
+const SELECTION_TOOLBAR_HEIGHT = 48
+const SELECTION_TOOLBAR_GAP = 12
+
+type BubbleMenuPlacement = 'top' | 'bottom'
 
 interface SceneEditorProps {
     scene: any
@@ -212,6 +219,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     
     const isReadOnly = role === 'viewer'
     const isMobile = useMediaQuery('(max-width: 768px)')
+    const isAndroid = useMemo(() => {
+        if (typeof navigator === 'undefined') return false
+        return /Android/i.test(navigator.userAgent)
+    }, [])
     const [title, setTitle] = useState(initialTitle)
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
     const [isRestoring, setIsRestoring] = useState(false)
@@ -230,6 +241,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [remoteVersion, setRemoteVersion] = useState<number>(scene.version || 1)
     const [lastEditorName, setLastEditorName] = useState<string | null>(null)
     const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+    const [bubbleMenuPlacement, setBubbleMenuPlacement] = useState<BubbleMenuPlacement>('top')
+    const [bubbleMenuOffset, setBubbleMenuOffset] = useState(SELECTION_TOOLBAR_GAP)
+    const selectionVirtualElementRef = useRef<VirtualElement | null>(null)
 
     useEffect(() => {
         const supabase = createClient()
@@ -420,6 +434,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                     ' '
                 )
             )
+            window.requestAnimationFrame(() => {
+                updateSelectionToolbarPosition()
+            })
         },
         editorProps: {
             attributes: {
@@ -455,6 +472,90 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             }
         }
     }, [writingMode, scene.id])
+
+    const updateSelectionToolbarPosition = useCallback(() => {
+        if (!editor || !isAndroid) {
+            selectionVirtualElementRef.current = null
+            setBubbleMenuPlacement('top')
+            setBubbleMenuOffset(SELECTION_TOOLBAR_GAP)
+            return
+        }
+
+        const selection = window.getSelection()
+        if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+            selectionVirtualElementRef.current = null
+            return
+        }
+
+        const range = selection.getRangeAt(0)
+        const editorElement = editor.view.dom
+        const commonAncestor = range.commonAncestorContainer
+        const selectionRoot = commonAncestor.nodeType === Node.ELEMENT_NODE
+            ? commonAncestor as Element
+            : commonAncestor.parentElement
+
+        if (!selectionRoot || !editorElement.contains(selectionRoot)) {
+            selectionVirtualElementRef.current = null
+            return
+        }
+
+        const rect = range.getBoundingClientRect()
+        if (!rect.width && !rect.height) {
+            selectionVirtualElementRef.current = null
+            return
+        }
+
+        const viewport = window.visualViewport
+        const viewportTop = viewport?.offsetTop ?? 0
+        const viewportHeight = viewport?.height ?? window.innerHeight
+        const viewportBottom = viewportTop + viewportHeight
+        const safeTop = viewportTop + 8
+        const safeBottom = viewportBottom - 8
+        const spaceAbove = rect.top - safeTop
+        const spaceBelow = safeBottom - rect.bottom
+        const canFitBelow = spaceBelow >= SELECTION_TOOLBAR_HEIGHT + SELECTION_TOOLBAR_GAP
+        const canFitAboveClearOfNativeMenu = spaceAbove >= (
+            ANDROID_NATIVE_SELECTION_TOOLBAR_HEIGHT + SELECTION_TOOLBAR_HEIGHT + (SELECTION_TOOLBAR_GAP * 2)
+        )
+        const nextPlacement: BubbleMenuPlacement = canFitBelow || !canFitAboveClearOfNativeMenu ? 'bottom' : 'top'
+        const nextOffset = nextPlacement === 'bottom'
+            ? SELECTION_TOOLBAR_GAP
+            : ANDROID_NATIVE_SELECTION_TOOLBAR_HEIGHT + SELECTION_TOOLBAR_GAP
+
+        setBubbleMenuPlacement(prev => prev === nextPlacement ? prev : nextPlacement)
+        setBubbleMenuOffset(prev => prev === nextOffset ? prev : nextOffset)
+        selectionVirtualElementRef.current = {
+            getBoundingClientRect: () => range.getBoundingClientRect(),
+            getClientRects: () => Array.from(range.getClientRects()),
+        }
+
+        editor.view.dispatch(editor.state.tr.setMeta('bubbleMenu', 'updatePosition'))
+    }, [editor, isAndroid])
+
+    useEffect(() => {
+        if (!editor || !isAndroid) return
+
+        const syncPosition = () => {
+            window.requestAnimationFrame(() => {
+                updateSelectionToolbarPosition()
+            })
+        }
+
+        syncPosition()
+        document.addEventListener('selectionchange', syncPosition)
+        window.addEventListener('resize', syncPosition)
+        window.addEventListener('scroll', syncPosition, true)
+        window.visualViewport?.addEventListener('resize', syncPosition)
+        window.visualViewport?.addEventListener('scroll', syncPosition)
+
+        return () => {
+            document.removeEventListener('selectionchange', syncPosition)
+            window.removeEventListener('resize', syncPosition)
+            window.removeEventListener('scroll', syncPosition, true)
+            window.visualViewport?.removeEventListener('resize', syncPosition)
+            window.visualViewport?.removeEventListener('scroll', syncPosition)
+        }
+    }, [editor, isAndroid, updateSelectionToolbarPosition])
 
     console.log('SceneEditor Render:', { writingMode, fontFamily: viewSettings.fontFamily, editorReady: !!editor })
 
@@ -1217,6 +1318,16 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 {editor && !isReadOnly && (
                     <BubbleMenu 
                         editor={editor} 
+                        getReferencedVirtualElement={() => selectionVirtualElementRef.current}
+                        options={{
+                            strategy: 'fixed',
+                            placement: isAndroid ? bubbleMenuPlacement : 'top',
+                            offset: bubbleMenuOffset,
+                            flip: false,
+                            shift: { padding: 8 },
+                            hide: true,
+                            inline: true,
+                        }}
                         className="flex items-center gap-0.5 bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl p-1 animate-in fade-in zoom-in duration-200 z-[100] max-w-[calc(100vw-2rem)] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [scroll-snap-type:x_proximity] [scroll-padding-left:0.25rem] pr-6 cursor-default"
                     >
                         {writingMode === 'screenplay' ? (
