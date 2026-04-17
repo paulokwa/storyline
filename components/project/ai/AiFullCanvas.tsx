@@ -1,10 +1,12 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { Layout, Sparkles } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import AiHelperPanel from '../story/AiHelperPanel'
 import { useProjectActions } from '../ProjectContext'
+import { getSceneTextForAi } from '@/lib/story/scene-text'
+import { readStoredSceneNodeId, resolveSceneNodeId, writeStoredSceneNodeId } from '@/lib/project/active-scene'
 
 interface AiFullCanvasProps {
     projectId: string
@@ -35,6 +37,7 @@ export default function AiFullCanvas({
     const { 
         currentSceneText, 
         activeNodeId,
+        setActiveNodeId,
         activeCharacters,
         activeIdeas,
         activeLocations,
@@ -44,7 +47,37 @@ export default function AiFullCanvas({
     } = useProjectActions()
 
     const activeScene = allScenes.find(s => s.node_id === activeNodeId)
+    const sceneNodeIds = useMemo(
+        () => new Set(allScenes.map(scene => scene.node_id).filter(Boolean)),
+        [allScenes]
+    )
+    const firstSceneNodeId = useMemo(
+        () => allNodes.find(node => node.type === 'scene')?.id ?? null,
+        [allNodes]
+    )
+    const fallbackSceneText = useMemo(
+        () => activeScene ? getSceneTextForAi(activeScene.content) : '',
+        [activeScene]
+    )
     const selectedNodes = allNodes.filter(n => selectedNodeIds.includes(n.id))
+
+    useEffect(() => {
+        if (activeNodeId && sceneNodeIds.has(activeNodeId)) return
+
+        const restoredNodeId = resolveSceneNodeId(
+            [readStoredSceneNodeId(projectId), firstSceneNodeId],
+            sceneNodeIds
+        )
+
+        if (restoredNodeId) {
+            setActiveNodeId(restoredNodeId)
+        }
+    }, [activeNodeId, firstSceneNodeId, projectId, sceneNodeIds, setActiveNodeId])
+
+    useEffect(() => {
+        if (!activeScene?.node_id) return
+        writeStoredSceneNodeId(projectId, activeScene.node_id)
+    }, [activeScene?.node_id, projectId])
 
     const handleReturnToSidebar = () => {
         setAiPanelOpen(true)
@@ -79,7 +112,7 @@ export default function AiFullCanvas({
                 <div className="w-full max-w-5xl flex flex-col h-full bg-white shadow-2xl shadow-slate-200/50 border-x border-slate-100 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <AiHelperPanel 
                         projectId={projectId}
-                        sceneText={currentSceneText || ''}
+                        sceneText={currentSceneText || fallbackSceneText}
                         onInsert={(content) => {
                             // In full canvas mode, we might want to handle insertion differently
                             // For now, let's just log and maybe navigate back

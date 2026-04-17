@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/tooltip"
 import { analyzeContextSize, ContextSizingResult } from '@/lib/ai/config'
 import { AiSafeguardDialogs } from '@/components/project/ai/AiSafeguardDialogs'
+import { readStoredSceneNodeId, resolveSceneNodeId, writeStoredSceneNodeId } from '@/lib/project/active-scene'
+import { getSceneTextForAi } from '@/lib/story/scene-text'
 
 type Project = Database['public']['Tables']['projects']['Row']
 type StructureNode = Database['public']['Tables']['structure_nodes']['Row']
@@ -95,23 +97,6 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     const [isConfirmingCost, setIsConfirmingCost] = useState(false)
     const [isExtremeContext, setIsExtremeContext] = useState(false)
 
-    // Handle initial node selection
-    useEffect(() => {
-        const nodeIdFromUrl = searchParams.get('nodeId')
-        
-        if (nodeIdFromUrl) {
-            setActiveNodeId(nodeIdFromUrl)
-        } else if (!activeNodeId) {
-             // Default to first scene if nothing is selected
-             setActiveNodeId(initialNodes.find(n => n.type === 'scene')?.id ?? null)
-        }
-
-        // On small mobile, if no node is explicitly selected via URL, we show the tree (null id)
-        if (typeof window !== 'undefined' && window.innerWidth < 768 && !nodeIdFromUrl) {
-            setActiveNodeId(null)
-        }
-    }, [])
-
     useEffect(() => {
         if (project?.id) {
             fetchComments(project.id)
@@ -120,8 +105,68 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     const writingMode = (project.writing_mode ?? 'simple') as WritingMode
     
     const editorRef = useRef<SceneEditorRef>(null)
+    const hasInitializedSelectionRef = useRef(false)
+    const sceneNodeIds = useMemo(
+        () => new Set(nodes.filter(node => node.type === 'scene').map(node => node.id)),
+        [nodes]
+    )
+    const firstSceneNodeId = useMemo(
+        () => nodes.find(node => node.type === 'scene')?.id ?? null,
+        [nodes]
+    )
 
     const activeScene = scenes.find((s: Scene) => s.node_id === activeNodeId)
+
+    useEffect(() => {
+        hasInitializedSelectionRef.current = false
+    }, [project.id])
+
+    useEffect(() => {
+        const nodeIdFromUrl = searchParams.get('nodeId')
+
+        if (nodeIdFromUrl) {
+            setActiveNodeId(resolveSceneNodeId([nodeIdFromUrl], sceneNodeIds) ?? nodeIdFromUrl)
+            hasInitializedSelectionRef.current = true
+            return
+        }
+
+        if (hasInitializedSelectionRef.current) return
+
+        const restoredNodeId = resolveSceneNodeId(
+            [readStoredSceneNodeId(project.id), firstSceneNodeId],
+            sceneNodeIds
+        )
+
+        if (restoredNodeId) {
+            setActiveNodeId(restoredNodeId)
+            hasInitializedSelectionRef.current = true
+            return
+        }
+
+        hasInitializedSelectionRef.current = true
+
+        // On small mobile, if we do not have a restorable scene, show the structure tree first.
+        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+            setActiveNodeId(null)
+            return
+        }
+
+        setActiveNodeId(null)
+    }, [firstSceneNodeId, project.id, sceneNodeIds, searchParams, setActiveNodeId])
+
+    useEffect(() => {
+        if (!activeScene) {
+            setCurrentSceneText('')
+            return
+        }
+
+        setCurrentSceneText(getSceneTextForAi(activeScene.content))
+    }, [activeScene, setCurrentSceneText])
+
+    useEffect(() => {
+        if (!activeScene?.node_id) return
+        writeStoredSceneNodeId(project.id, activeScene.node_id)
+    }, [activeScene?.node_id, project.id])
 
     useEffect(() => {
         if (!activeNodeId) {

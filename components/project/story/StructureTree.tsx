@@ -488,10 +488,8 @@ const NodeItem = React.memo(({
                         {(!editing && !isReadOnly && confirmingDeleteId !== node.id) && (
                             <div className={cn(
                                 "flex items-center gap-1 shrink-0 transition-all duration-300 md:hidden md:group-hover:flex",
-                                // On desktop: hide unless hover or active (active only if it's a scene)
                                 "opacity-0 md:group-hover:opacity-100",
                                 isActive && "md:opacity-100",
-                                // On mobile: only show if long-pressed
                                 mobileOptionsActive ? "opacity-100 flex-1 justify-end" : "w-0 overflow-hidden pointer-events-none md:w-auto md:overflow-visible md:pointer-events-auto"
                             )} onClick={e => e.stopPropagation()}>
                                 {CHILD_TYPE[node.type as NodeType] && (
