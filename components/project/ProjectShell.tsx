@@ -462,7 +462,7 @@ function ProjectShellInner({
                                                 <Wand2 className="w-4 h-4" />
                                             </Button>
                                         </TooltipTrigger>
-                                        <TooltipContent side="bottom">Analyze with AI</TooltipContent>
+                                        <TooltipContent side="bottom">Analyze this scene with AI</TooltipContent>
                                     </Tooltip>
 
                                     <Tooltip>
@@ -527,7 +527,7 @@ function ProjectShellInner({
                                                     <span className="text-xs font-medium">Analyze</span>
                                                 </Button>
                                             </TooltipTrigger>
-                                            <TooltipContent side="bottom">Analyze with AI Partner</TooltipContent>
+                                            <TooltipContent side="bottom">Analyze this scene with AI</TooltipContent>
                                         </Tooltip>
 
                                         <Tooltip>
