@@ -48,7 +48,7 @@ import { cn, getUserColor } from '@/lib/utils'
 import type { Database } from '@/lib/supabase/types'
 import { ReaderProvider, useSpeech } from '@/hooks/useSpeech'
 import { CommentsProvider, useComments } from '@/components/project/CommentsContext'
-import { FloatingPlayer } from '@/components/project/story/ReaderMode'
+import { FloatingPlayer, ReaderControls } from '@/components/project/story/ReaderMode'
 import { ProjectProvider, useProjectActions } from '@/components/project/ProjectContext'
 import { MessageSquare } from 'lucide-react'
 import { PresenceProvider, usePresence } from '@/components/project/PresenceContext'
@@ -118,29 +118,30 @@ export default function ProjectShell({
         }
     }, [])
 
+    const { activeNodeId } = useProjectActions()
+
     return (
-        <ProjectProvider role={role}>
-            <PresenceWrapper project={project} role={role}>
-                <CommentsProvider projectId={project.id}>
-                    <ReaderProvider>
-                        <ProjectShellInner 
-                            project={project} 
-                            editingTitle={editingTitle} 
-                            setEditingTitle={setEditingTitle} 
-                            titleDraft={titleDraft} 
-                            setTitleDraft={setTitleDraft} 
-                            saveTitle={saveTitle} 
-                            setExportModalOpen={setExportModalOpen}
-                            setSettingsModalOpen={setSettingsModalOpen}
-                            setShareModalOpen={setShareModalOpen}
-                            shortcutsOpen={shortcutsOpen}
-                            setShortcutsOpen={setShortcutsOpen}
-                            role={role}
-                            pathname={pathname} 
-                            onStartTour={() => setTourOpen(true)}
-                        >
-                            {children}
-                        </ProjectShellInner>
+        <PresenceProvider projectId={project.id} currentSceneId={activeNodeId}>
+            <CommentsProvider projectId={project.id}>
+                <ReaderProvider>
+                    <ProjectShellInner 
+                        project={project} 
+                        editingTitle={editingTitle} 
+                        setEditingTitle={setEditingTitle} 
+                        titleDraft={titleDraft} 
+                        setTitleDraft={setTitleDraft} 
+                        saveTitle={saveTitle} 
+                        setExportModalOpen={setExportModalOpen}
+                        setSettingsModalOpen={setSettingsModalOpen}
+                        setShareModalOpen={setShareModalOpen}
+                        shortcutsOpen={shortcutsOpen}
+                        setShortcutsOpen={setShortcutsOpen}
+                        role={role}
+                        pathname={pathname} 
+                        onStartTour={() => setTourOpen(true)}
+                    >
+                        {children}
+                    </ProjectShellInner>
 
                         <OnboardingTour 
                             open={tourOpen} 
@@ -184,22 +185,13 @@ export default function ProjectShell({
                             }}
                         />
 
-                        <FloatingPlayer />
-                    </ReaderProvider>
-                </CommentsProvider>
-            </PresenceWrapper>
-        </ProjectProvider>
-    )
-}
-
-function PresenceWrapper({ project, children }: any) {
-    const { activeNodeId } = useProjectActions()
-    return (
-        <PresenceProvider projectId={project.id} currentSceneId={activeNodeId}>
-            {children}
+                    <FloatingPlayer />
+                </ReaderProvider>
+            </CommentsProvider>
         </PresenceProvider>
     )
 }
+
 
 function ProjectShellInner({ 
     project, 
@@ -577,24 +569,12 @@ function ProjectShellInner({
                                     </div>
 
                                     {/* Reading/Interaction */}
-                                    <span className="shrink-0">
-                                    <Tooltip>
-                                        <TooltipTrigger>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => speak(currentSceneText, 'Scene')}
-                                                className={cn(
-                                                    "rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center shrink-0",
-                                                    isReading ? "bg-amber-100 text-amber-700 animate-pulse border border-amber-200 font-bold" : "bg-black/5 text-slate-500 hover:bg-black/10"
-                                                )}
-                                            >
-                                                <Volume2 className={cn("w-4 h-4", isReading && "animate-bounce")} />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="bottom">Read Aloud</TooltipContent>
-                                    </Tooltip>
-                                    </span>
+                                    <ReaderControls 
+                                        getSelection={() => ''}
+                                        getScene={() => currentSceneText}
+                                        getChapter={() => ''}
+                                        mode="icon-only"
+                                    />
 
                                     {/* Dictate */}
                                     <span className="shrink-0">

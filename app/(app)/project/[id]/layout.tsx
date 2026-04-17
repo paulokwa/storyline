@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import ProjectShell from '@/components/project/ProjectShell'
+import { ProjectProvider } from '@/components/project/ProjectContext'
+import { PresenceProvider } from '@/components/project/PresenceContext'
 
 export default async function ProjectLayout({
     children,
@@ -32,5 +34,11 @@ export default async function ProjectLayout({
         if (error) console.error('Failed to update last_accessed_at:', error)
     })
 
-    return <ProjectShell project={project} role={project.role}>{children}</ProjectShell>
+    return (
+        <ProjectProvider role={project.role}>
+            <ProjectShell project={project} role={project.role}>
+                {children}
+            </ProjectShell>
+        </ProjectProvider>
+    )
 }

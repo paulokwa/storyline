@@ -71,6 +71,7 @@ import { useSpeechToText } from '@/hooks/useSpeechToText'
 import EditorAssetSelector from './EditorAssetSelector'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { ReaderControls } from './ReaderMode'
 
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { useComments } from '@/components/project/CommentsContext'
@@ -1054,6 +1055,14 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                 {isRecording ? 'Listening...' : 'Dictate'}
                             </Button>
                         )}
+                        
+                        <div className="hidden md:flex ml-1 items-center border-l border-slate-200/50 pl-2">
+                            <ReaderControls 
+                                getSelection={() => editor?.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to) || ''}
+                                getScene={() => editor?.getText() || ''}
+                                getChapter={() => ''}
+                            />
+                        </div>
                         
                         {/* Phase B: View Settings */}
                         {writingMode === 'simple' && (
