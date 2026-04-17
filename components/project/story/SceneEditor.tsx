@@ -21,6 +21,7 @@ import { ScreenplayKeyboard } from '@/lib/tiptap/screenplay-keyboard'
 import { createClient } from '@/lib/supabase/client'
 import type { Database, WritingMode } from '@/lib/supabase/types'
 import { cn, getUserColor } from '@/lib/utils'
+import { getSceneTextForAi } from '@/lib/story/scene-text'
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -142,42 +143,6 @@ const ToolbarButton = ({
         <TooltipContent side="top" sideOffset={8}>{tooltip}</TooltipContent>
     </Tooltip>
 )
-
-// Helper to get clean text for AI context, representing custom nodes as placeholders
-function getSceneTextForAi(json: any): string {
-    if (!json || !json.content) return ''
-    
-    return json.content.map((node: any) => {
-        const getText = (content?: any[]) => {
-            if (!content) return ''
-            return content.map((c: any) => c.text || '').join('')
-        }
-
-        switch (node.type) {
-            case 'storyImage':
-                const alt = node.attrs?.alt || 'Illustration'
-                const caption = getText(node.content)
-                return `[Illustration: ${alt}${caption ? ` - Caption: ${caption}` : ''}]`
-            
-            case 'screenplaySceneHeading':
-                return `SCENE HEADING: ${getText(node.content).toUpperCase()}`
-            case 'screenplayCharacter':
-                return `CHARACTER: ${getText(node.content).toUpperCase()}`
-            case 'screenplayDialogue':
-                return `DIALOGUE: ${getText(node.content)}`
-            case 'screenplayAction':
-                return `ACTION: ${getText(node.content)}`
-            case 'screenplayTransition':
-                return `TRANSITION: ${getText(node.content).toUpperCase()}`
-                
-            default:
-                if (node.content) {
-                    return node.content.map((c: any) => c.text || '').join('')
-                }
-                return ''
-        }
-    }).filter((s: string) => s.length > 0).join('\n\n')
-}
 
 const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     scene,

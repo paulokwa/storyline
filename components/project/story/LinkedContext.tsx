@@ -29,6 +29,10 @@ interface LinkedContextProps {
     allNodes?: any[]
 }
 
+function isFeedbackIdea(idea: any) {
+    return idea?.title?.toLowerCase().startsWith('feedback:')
+}
+
 export default function LinkedContext({ 
     sceneId, 
     sceneCharacters, 
@@ -73,9 +77,10 @@ export default function LinkedContext({
     const linkedIdeas = sceneIdeas?.map(si => si.ideas).filter(i => i && !i.deleted_at) || []
     const linkedLocs = sceneLocations?.map(sl => sl.locations).filter(l => l && !l.deleted_at) || []
     const linkedObjs = sceneObjects?.map(so => so.objects).filter(o => o && !o.deleted_at) || []
-    
+
+    const linkableProjectIdeas = projectIdeas.filter(idea => !isFeedbackIdea(idea))
     const unlinkedCharacters = projectCharacters.filter(pc => !linkedChars.some(lc => lc.id === pc.id))
-    const unlinkedIdeas = projectIdeas.filter(pi => !linkedIdeas.some(li => li.id === pi.id))
+    const unlinkedIdeas = linkableProjectIdeas.filter(pi => !linkedIdeas.some(li => li.id === pi.id))
     const unlinkedLocations = projectLocations.filter(pl => !linkedLocs.some(ll => ll.id === pl.id))
     const unlinkedObjects = projectObjects.filter(po => !linkedObjs.some(lo => lo.id === po.id))
     const hasLinkedContext = linkedChars.length > 0 || linkedIdeas.length > 0 || linkedLocs.length > 0 || linkedObjs.length > 0 || selectedNodeIds.length > 0

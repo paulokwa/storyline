@@ -330,7 +330,7 @@ function ProjectShellInner({
 
     return (
         <TooltipProvider>
-            <div className="h-full flex-1 flex flex-col overflow-hidden">
+            <div className="h-full min-h-0 flex-1 flex flex-col overflow-hidden">
                 {/* Project header */}
                 <div className="bg-secondary/50 backdrop-blur-sm px-4 sm:px-6 lg:px-8 border-b border-border">
                 <div className="max-w-[1440px] mx-auto">
@@ -647,7 +647,7 @@ function ProjectShellInner({
             </div>
 
             {/* Page content */}
-            <div className="flex-1 min-h-0 overflow-hidden max-w-[1440px] w-full mx-auto flex flex-col">
+            <div className="flex h-full min-h-0 w-full max-w-[1440px] flex-1 flex-col overflow-hidden mx-auto">
                 {children}
             </div>
             

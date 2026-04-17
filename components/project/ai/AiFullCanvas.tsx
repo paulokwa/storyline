@@ -1,11 +1,12 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Sparkles, ArrowLeft, Send, Loader2, MessageSquare, Copy, ChevronLeft, Layout, Maximize2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import React, { useEffect, useMemo } from 'react'
+import { Layout, Sparkles } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import AiHelperPanel from '../story/AiHelperPanel'
 import { useProjectActions } from '../ProjectContext'
+import { getSceneTextForAi } from '@/lib/story/scene-text'
+import { readStoredSceneNodeId, resolveSceneNodeId, writeStoredSceneNodeId } from '@/lib/project/active-scene'
 
 interface AiFullCanvasProps {
     projectId: string
@@ -36,6 +37,7 @@ export default function AiFullCanvas({
     const { 
         currentSceneText, 
         activeNodeId,
+        setActiveNodeId,
         activeCharacters,
         activeIdeas,
         activeLocations,
@@ -45,26 +47,56 @@ export default function AiFullCanvas({
     } = useProjectActions()
 
     const activeScene = allScenes.find(s => s.node_id === activeNodeId)
+    const sceneNodeIds = useMemo(
+        () => new Set(allScenes.map(scene => scene.node_id).filter(Boolean)),
+        [allScenes]
+    )
+    const firstSceneNodeId = useMemo(
+        () => allNodes.find(node => node.type === 'scene')?.id ?? null,
+        [allNodes]
+    )
+    const fallbackSceneText = useMemo(
+        () => activeScene ? getSceneTextForAi(activeScene.content) : '',
+        [activeScene]
+    )
     const selectedNodes = allNodes.filter(n => selectedNodeIds.includes(n.id))
+
+    useEffect(() => {
+        if (activeNodeId && sceneNodeIds.has(activeNodeId)) return
+
+        const restoredNodeId = resolveSceneNodeId(
+            [readStoredSceneNodeId(projectId), firstSceneNodeId],
+            sceneNodeIds
+        )
+
+        if (restoredNodeId) {
+            setActiveNodeId(restoredNodeId)
+        }
+    }, [activeNodeId, firstSceneNodeId, projectId, sceneNodeIds, setActiveNodeId])
+
+    useEffect(() => {
+        if (!activeScene?.node_id) return
+        writeStoredSceneNodeId(projectId, activeScene.node_id)
+    }, [activeScene?.node_id, projectId])
+
+    const handleReturnToSidebar = () => {
+        setAiPanelOpen(true)
+        router.push(`/project/${projectId}/story${activeNodeId ? `?nodeId=${activeNodeId}` : ''}`)
+    }
 
     return (
         <div className="flex-1 flex flex-col bg-[#fbf9f5] overflow-hidden">
             {/* Minimalist Top Nav for AI Tab */}
-            <div className="h-16 px-8 flex items-center justify-between border-b border-slate-200/50 bg-white/50 backdrop-blur-md">
+            <div className="hidden h-16 items-center justify-between border-b border-slate-200/50 bg-white/50 px-8 backdrop-blur-md md:flex">
                 <div className="flex items-center gap-4">
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => {
-                            setAiPanelOpen(true)
-                            router.push(`/project/${projectId}/story${activeNodeId ? `?nodeId=${activeNodeId}` : ''}`)
-                        }}
-                        className="rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50/50 gap-2 transition-all"
+                    <button
+                        type="button"
+                        onClick={handleReturnToSidebar}
+                        className="flex items-center gap-2 rounded-xl px-3 py-2 text-slate-500 transition-all hover:bg-indigo-50/50 hover:text-indigo-600"
                     >
                         <Layout className="w-4 h-4" />
-                        <span className="hidden sm:inline">Return to Side Panel</span>
-                        <span className="sm:hidden">Sidebar</span>
-                    </Button>
+                        <span>Return to Side Panel</span>
+                    </button>
                     <div className="h-4 w-px bg-slate-200" />
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center">
@@ -80,7 +112,7 @@ export default function AiFullCanvas({
                 <div className="w-full max-w-5xl flex flex-col h-full bg-white shadow-2xl shadow-slate-200/50 border-x border-slate-100 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <AiHelperPanel 
                         projectId={projectId}
-                        sceneText={currentSceneText || ''}
+                        sceneText={currentSceneText || fallbackSceneText}
                         onInsert={(content) => {
                             // In full canvas mode, we might want to handle insertion differently
                             // For now, let's just log and maybe navigate back
@@ -102,12 +134,13 @@ export default function AiFullCanvas({
                         activeNodeId={activeNodeId}
                         activeSceneId={activeScene?.id}
                         isFullCanvas={true}
+                        onReturnToSidebar={handleReturnToSidebar}
                     />
                 </div>
             </div>
 
             {/* Bottom Status Bar */}
-            <div className="h-10 px-8 border-t border-slate-100 flex items-center justify-between bg-white text-[9px] uppercase tracking-widest font-bold text-slate-400">
+            <div className="hidden h-10 items-center justify-between border-t border-slate-100 bg-white px-8 text-[9px] font-bold uppercase tracking-widest text-slate-400 md:flex">
                 <div className="flex items-center gap-6">
                     <span className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
@@ -117,6 +150,16 @@ export default function AiFullCanvas({
                 </div>
                 <div className="hidden sm:block italic lowercase capitalize tracking-normal font-serif text-slate-300">
                     Your story stays private and protected with your AI Partner.
+                </div>
+            </div>
+
+            <div className="border-t border-slate-100 bg-white px-4 py-2 text-[9px] font-bold uppercase tracking-[0.22em] text-slate-400 md:hidden">
+                <div className="flex items-center justify-between gap-3">
+                    <span className="flex items-center gap-2 min-w-0">
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
+                        <span className="truncate">Ready for collaboration</span>
+                    </span>
+                    <span className="truncate">AI Model: {aiSettings.ai_provider}</span>
                 </div>
             </div>
         </div>

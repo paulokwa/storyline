@@ -183,14 +183,14 @@ export default function StructureTree({
 
     return (
         <TooltipProvider>
-            <div className="flex flex-col h-full min-h-0 bg-transparent">
+            <div className="flex h-full min-h-0 flex-col overflow-hidden bg-transparent">
                 <div className="px-4 sm:px-6 pt-2 pb-4 sm:py-6 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <h3 className="text-sm font-serif italic text-slate-500 tracking-wide">The Structure</h3>
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y py-2">
+                <div className="flex-1 min-h-0 overflow-auto overscroll-contain touch-pan-y py-2 custom-scrollbar">
                     <div className="min-h-full flex flex-col">
                         <div className="flex-grow">
                             {/* Virtual Root Node */}
@@ -488,10 +488,8 @@ const NodeItem = React.memo(({
                         {(!editing && !isReadOnly && confirmingDeleteId !== node.id) && (
                             <div className={cn(
                                 "flex items-center gap-1 shrink-0 transition-all duration-300 md:hidden md:group-hover:flex",
-                                // On desktop: hide unless hover or active (active only if it's a scene)
                                 "opacity-0 md:group-hover:opacity-100",
                                 isActive && "md:opacity-100",
-                                // On mobile: only show if long-pressed
                                 mobileOptionsActive ? "opacity-100 flex-1 justify-end" : "w-0 overflow-hidden pointer-events-none md:w-auto md:overflow-visible md:pointer-events-auto"
                             )} onClick={e => e.stopPropagation()}>
                                 {CHILD_TYPE[node.type as NodeType] && (
