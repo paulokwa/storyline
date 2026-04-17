@@ -242,7 +242,7 @@ export default function LocationsTab({
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     {renamingId === loc.id ? (
-                                                        <input ref={renameInputRef} type="text" value={renameValue} onChange={e => setRenameValue(e.target.value)} onBlur={() => commitRename(loc.id)} onKeyDown={e => e.key === 'Enter' && commitRename(loc.id)} onClick={e => e.stopPropagation()} className="w-full bg-[#fbf9f5] border border-[#546354]/20 rounded-lg px-2 py-0.5 text-sm outline-none" />
+                                                        <input ref={renameInputRef} type="text" value={renameValue} onChange={e => setRenameValue(e.target.value)} onBlur={() => commitRename(loc.id)} onKeyDown={e => e.key === 'Enter' && commitRename(loc.id)} onClick={e => e.stopPropagation()} className="w-full bg-[#fbf9f5] border border-[#546354]/20 rounded-lg px-2 py-0.5 text-sm font-medium text-slate-800 outline-none ring-1 ring-[#546354]/10" />
                                                     ) : (
                                                         <>
                                                             <p className={cn("text-sm font-medium truncate", selectedId === loc.id ? "text-slate-800" : "text-slate-500")}>{loc.name}</p>
@@ -361,7 +361,7 @@ export default function LocationsTab({
                                     <PremiumEditor 
                                         value={selectedLocation.atmosphere || ''} 
                                         onValueChange={(val) => handleTextEditorChange(selectedLocation.id, 'atmosphere', val)} 
-                                        className="w-full bg-transparent text-slate-500 font-sans text-sm leading-relaxed min-h-[100px] italic placeholder:text-stone-200" 
+                                        className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-lg sm:text-xl italic placeholder:text-stone-200" 
                                         editorClassName="italic"
                                         placeholder="Describe the vibe, lighting, sounds, and overall mood..." 
                                         minHeight="100px"
@@ -380,7 +380,7 @@ export default function LocationsTab({
                                     <PremiumEditor 
                                         value={selectedLocation.description || ''} 
                                         onValueChange={(val) => handleTextEditorChange(selectedLocation.id, 'description', val)} 
-                                        className="w-full bg-transparent text-slate-600 font-serif text-lg leading-relaxed min-h-[200px] placeholder:text-stone-200" 
+                                        className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-lg sm:text-xl italic placeholder:text-stone-200" 
                                         placeholder="Layout, architectural details, key landmarks..." 
                                         minHeight="200px"
                                     />

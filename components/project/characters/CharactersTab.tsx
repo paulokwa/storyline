@@ -483,7 +483,7 @@ export default function CharactersTab({
                                     <PremiumEditor
                                         value={selectedCharacter.notes || ''}
                                         onValueChange={(val) => handleTextEditorChange(selectedCharacter.id, 'notes', val)}
-                                        className="w-full bg-transparent text-slate-500 font-sans text-sm leading-relaxed italic placeholder:text-stone-200"
+                                        className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-lg sm:text-xl italic placeholder:text-stone-200"
                                         editorClassName="italic"
                                         placeholder="Add internal motivations, personal goals, and narrative arcs..."
                                         minHeight="120px"

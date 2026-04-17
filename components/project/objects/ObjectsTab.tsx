@@ -238,7 +238,7 @@ export default function ObjectsTab({
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     {renamingId === obj.id ? (
-                                                        <input ref={renameInputRef} type="text" value={renameValue} onChange={e => setRenameValue(e.target.value)} onBlur={() => commitRename(obj.id)} onKeyDown={e => e.key === 'Enter' && commitRename(obj.id)} onClick={e => e.stopPropagation()} className="w-full bg-[#fbf9f5] border border-[#546354]/20 rounded-lg px-2 py-0.5 text-sm outline-none" />
+                                                        <input ref={renameInputRef} type="text" value={renameValue} onChange={e => setRenameValue(e.target.value)} onBlur={() => commitRename(obj.id)} onKeyDown={e => e.key === 'Enter' && commitRename(obj.id)} onClick={e => e.stopPropagation()} className="w-full bg-[#fbf9f5] border border-[#546354]/20 rounded-lg px-2 py-0.5 text-sm font-medium text-slate-800 outline-none ring-1 ring-[#546354]/10" />
                                                     ) : (
                                                         <>
                                                             <p className="text-sm font-medium truncate">{obj.name}</p>
@@ -354,7 +354,7 @@ export default function ObjectsTab({
                                     <PremiumEditor 
                                         value={selectedObject.significance || ''} 
                                         onValueChange={(val) => handleTextEditorChange(selectedObject.id, 'significance', val)} 
-                                        className="w-full bg-transparent text-slate-500 font-sans text-sm leading-relaxed min-h-[100px] italic placeholder:text-stone-200" 
+                                        className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-lg sm:text-xl italic placeholder:text-stone-200" 
                                         editorClassName="italic"
                                         placeholder="Why does this item matter? Narrative functions, stakes, or origins..." 
                                         minHeight="100px"
@@ -373,7 +373,7 @@ export default function ObjectsTab({
                                     <PremiumEditor 
                                         value={selectedObject.description || ''} 
                                         onValueChange={(val) => handleTextEditorChange(selectedObject.id, 'description', val)} 
-                                        className="w-full bg-transparent text-slate-600 font-serif text-lg leading-relaxed min-h-[150px] placeholder:text-stone-200" 
+                                        className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-lg sm:text-xl italic placeholder:text-stone-200" 
                                         placeholder="Physical properties, weight, textures, or hidden secrets..." 
                                         minHeight="150px"
                                     />
