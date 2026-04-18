@@ -110,7 +110,7 @@ export function calculateProjectStats(
             id: scene?.id || '',
             nodeId: node.id,
             title: node.title,
-            type: node.type,
+            type: node.type as NodeType,
             wordCount,
             charCount,
             readingTime: Math.ceil(wordCount / 250),

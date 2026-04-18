@@ -1524,7 +1524,7 @@ body {
   box-shadow: 0 26px 60px rgba(2, 6, 23, 0.34) !important;
 }
 
-[data-theme='midnight'] .new-project-page .group:hover\:bg-white:hover,
+[data-theme='midnight'] .new-project-page .group:hover [class*="group-hover:bg-white"],
 [data-theme='midnight'] .new-project-page .hover\:bg-white:hover {
   background-color: rgba(37, 49, 77, 0.88) !important;
 }

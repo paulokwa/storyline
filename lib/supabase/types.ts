@@ -1267,3 +1267,15 @@ export const Constants = {
     },
   },
 } as const
+
+export type ProjectType = "novel" | "tv_script"
+
+export type WritingMode = "simple" | "screenplay"
+
+export type NodeType =
+  | "chapter"
+  | "episode"
+  | "act"
+  | "scene"
+  | "root_novel"
+  | "root_tv"
