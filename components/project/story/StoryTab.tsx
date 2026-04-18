@@ -450,6 +450,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                             onNodeToggleSelection={handleNodeToggleSelection}
                             onNodesChange={handleNodesChange}
                             onSceneCreated={handleSceneCreated}
+                            onClose={() => setSidebarOpen(false)}
                         />
                     </div>
                 ) : (
@@ -674,47 +675,70 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
 
             {/* AI Helper Sidebar */}
             <div className={cn(
-                'story-ai-sidebar bg-white flex flex-col border-l border-slate-200 transition-all duration-300 ease-in-out overflow-hidden z-40 md:z-20',
+                'story-ai-sidebar bg-white flex flex-col transition-all duration-300 ease-in-out overflow-hidden z-40 md:z-20',
                 'absolute top-0 bottom-0 right-0 md:relative md:inset-auto md:h-full',
                 aiPanelOpen 
-                    ? 'w-[320px] lg:w-[380px] opacity-100 translate-x-0' 
-                    : 'w-0 border-none opacity-0 translate-x-full md:translate-x-0 md:opacity-100'
+                    ? 'w-[320px] lg:w-[380px] opacity-100 translate-x-0 border-l border-slate-200'
+                    : theme === 'midnight'
+                        ? 'w-0 border-none opacity-0 translate-x-full md:w-14 md:translate-x-0 md:opacity-100 md:border-l md:border-slate-500/20 md:bg-[linear-gradient(180deg,rgba(19,28,45,0.96)_0%,rgba(16,24,38,0.98)_100%)] md:shadow-[inset_1px_0_0_rgba(148,163,184,0.08),-10px_0_30px_rgba(2,6,23,0.18)]'
+                        : 'ai-collapsed-rail w-0 border-none opacity-0 translate-x-full md:w-14 md:translate-x-0 md:opacity-100 md:border-l md:border-[#d8ddcf] md:bg-[#eef1e8] md:shadow-[inset_1px_0_0_rgba(84,99,84,0.06)]'
             )}>
-                <div className="w-[320px] lg:w-[380px] h-full flex flex-col">
-                    <AiHelperPanel
-                        projectId={project.id}
-                        projectTitle={project.title}
-                        sceneText={currentSceneText}
-                        sceneCharacters={activeScene?.scene_characters ?? []}
-                        sceneIdeas={activeScene?.scene_ideas ?? []}
-                        sceneLocations={activeScene?.scene_locations ?? []}
-                        sceneObjects={activeScene?.scene_objects ?? []}
-                        linkedCharacters={projectCharacters.filter(c => activeCharacters[c.id] !== false && activeScene?.scene_characters?.some((sc: any) => sc.characters?.id === c.id))}
-                        linkedIdeas={projectIdeas.filter(i => activeIdeas[i.id] !== false && activeScene?.scene_ideas?.some((si: any) => si.ideas?.id === i.id))}
-                        linkedLocations={projectLocations.filter(l => activeLocations[l.id] !== false && activeScene?.scene_locations?.some((sl: any) => sl.locations?.id === l.id))}
-                        linkedObjects={projectObjects.filter(o => activeObjects[o.id] !== false && activeScene?.scene_objects?.some((so: any) => so.objects?.id === o.id))}
-                        projectCharacters={projectCharacters}
-                        projectIdeas={projectIdeas}
-                        projectLocations={projectLocations}
-                        projectObjects={projectObjects}
-                        selectedNodes={[
-                            ...(selectedNodeIds.includes('virtual-root') ? [{ id: 'virtual-root', title: project.title, type: 'root' }] : []),
-                            ...nodes.filter(n => selectedNodeIds.includes(n.id))
-                        ]}
-                        allNodes={nodes}
-                        allScenes={scenes}
-                        projectRelationships={projectRelationships}
-                        projectType={project.type as any}
-                        projectPremise={project.premise}
-                        projectTone={project.tone}
-                        aiSettings={aiSettings}
-                        activeNodeId={activeNodeId}
-                        activeSceneId={activeScene?.id}
-                        onClose={() => setAiPanelOpen(false)}
-                        onClearSelection={() => setSelectedNodeIds([])}
-                        onInsert={(content) => editorRef.current?.insertContent(content)}
-                    />
-                </div>
+                {aiPanelOpen ? (
+                    <div className="w-[320px] lg:w-[380px] h-full flex flex-col">
+                        <AiHelperPanel
+                            projectId={project.id}
+                            projectTitle={project.title}
+                            sceneText={currentSceneText}
+                            sceneCharacters={activeScene?.scene_characters ?? []}
+                            sceneIdeas={activeScene?.scene_ideas ?? []}
+                            sceneLocations={activeScene?.scene_locations ?? []}
+                            sceneObjects={activeScene?.scene_objects ?? []}
+                            linkedCharacters={projectCharacters.filter(c => activeCharacters[c.id] !== false && activeScene?.scene_characters?.some((sc: any) => sc.characters?.id === c.id))}
+                            linkedIdeas={projectIdeas.filter(i => activeIdeas[i.id] !== false && activeScene?.scene_ideas?.some((si: any) => si.ideas?.id === i.id))}
+                            linkedLocations={projectLocations.filter(l => activeLocations[l.id] !== false && activeScene?.scene_locations?.some((sl: any) => sl.locations?.id === l.id))}
+                            linkedObjects={projectObjects.filter(o => activeObjects[o.id] !== false && activeScene?.scene_objects?.some((so: any) => so.objects?.id === o.id))}
+                            projectCharacters={projectCharacters}
+                            projectIdeas={projectIdeas}
+                            projectLocations={projectLocations}
+                            projectObjects={projectObjects}
+                            selectedNodes={[
+                                ...(selectedNodeIds.includes('virtual-root') ? [{ id: 'virtual-root', title: project.title, type: 'root' }] : []),
+                                ...nodes.filter(n => selectedNodeIds.includes(n.id))
+                            ]}
+                            allNodes={nodes}
+                            allScenes={scenes}
+                            projectRelationships={projectRelationships}
+                            projectType={project.type as any}
+                            projectPremise={project.premise}
+                            projectTone={project.tone}
+                            aiSettings={aiSettings}
+                            activeNodeId={activeNodeId}
+                            activeSceneId={activeScene?.id}
+                            onClose={() => setAiPanelOpen(false)}
+                            onClearSelection={() => setSelectedNodeIds([])}
+                            onInsert={(content) => editorRef.current?.insertContent(content)}
+                        />
+                    </div>
+                ) : (
+                    <div className="hidden md:flex h-full w-full items-center justify-center px-2 py-6">
+                        <button
+                            type="button"
+                            onClick={handleToggleAiPanel}
+                            className={cn(
+                                "group flex h-full w-full flex-col items-center justify-center rounded-[1.5rem] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2",
+                                theme === 'midnight'
+                                    ? "border border-slate-400/15 bg-[linear-gradient(180deg,rgba(34,48,74,0.48)_0%,rgba(26,37,58,0.58)_100%)] text-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_18px_40px_-30px_rgba(0,0,0,0.6)] hover:border-slate-300/20 hover:bg-[linear-gradient(180deg,rgba(44,63,98,0.56)_0%,rgba(32,47,74,0.66)_100%)] hover:text-slate-100 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_20px_44px_-28px_rgba(15,23,42,0.72)] focus-visible:ring-slate-300/20"
+                                    : "ai-collapsed-rail-button border border-[#d5dccd] bg-[#f6f8f1] text-[#4f5d79] hover:bg-[#eef2e8] hover:shadow-[0_12px_30px_rgba(79,93,121,0.12)] focus-visible:ring-[#4f5d79]/20"
+                            )}
+                            aria-label="Show AI Partner panel"
+                        >
+                            <Sparkles className="mb-4 h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+                            <span className="[writing-mode:vertical-rl] rotate-180 text-[10px] font-bold uppercase tracking-[0.24em]">
+                                AI Partner
+                            </span>
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Comments Sidebar */}

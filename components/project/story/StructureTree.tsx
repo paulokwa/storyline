@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import {
     ChevronRight, ChevronDown, Plus, Trash2,
     Film, Layers, FileText, BookOpen, Check, Pencil,
-    Book, Clapperboard, Shield
+    Book, Clapperboard, Shield, X
 } from 'lucide-react'
 import {
     TooltipProvider,
@@ -32,6 +32,7 @@ interface StructureTreeProps {
     onNodeToggleSelection?: (id: string) => void
     onNodesChange: (nodes: StructureNode[]) => void
     onSceneCreated: (scene: Scene) => void
+    onClose?: () => void
 }
 
 const NODE_ICONS: Record<string, React.ElementType> = {
@@ -73,7 +74,7 @@ function getDescendantIds(nodes: StructureNode[], parentId: string): string[] {
 }
 
 export default function StructureTree({
-    project, nodes, activeNodeId, selectedNodeIds = [], onNodeSelect, onNodeToggleSelection, onNodesChange, onSceneCreated
+    project, nodes, activeNodeId, selectedNodeIds = [], onNodeSelect, onNodeToggleSelection, onNodesChange, onSceneCreated, onClose
 }: StructureTreeProps) {
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'
@@ -188,6 +189,16 @@ export default function StructureTree({
                     <div className="flex items-center gap-2">
                         <h3 className="text-sm font-serif italic text-slate-500 tracking-wide">The Structure</h3>
                     </div>
+                    {onClose && (
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-slate-300 transition-all hover:bg-white/70 hover:text-slate-600"
+                            aria-label="Close structure panel"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    )}
                 </div>
 
                 <div className="flex-1 min-h-0 overflow-auto overscroll-contain touch-pan-y py-2 custom-scrollbar">
