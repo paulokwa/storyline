@@ -11,7 +11,7 @@ import SceneAssetsPanel from './SceneAssetsPanel'
 import LinkedContext from './LinkedContext'
 import SceneAnalysisPanel from './SceneAnalysisPanel'
 
-import { PanelLeftClose, PanelLeftOpen, BookOpen, Sparkles, X, Wand2, BarChart3, Clapperboard, Book, Download } from 'lucide-react'
+import { PanelLeftOpen, BookOpen, Sparkles, X, Wand2, BarChart3, Clapperboard, Book, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { Database, WritingMode } from '@/lib/supabase/types'
@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { useComments } from '@/components/project/CommentsContext'
 import { useProjectActionsStore } from '@/lib/store/projectActionsStore'
+import { useTheme } from '@/components/providers/ThemeProvider'
 import CommentsPanel from '@/components/project/sidebar/CommentsPanel'
 import {
     Tooltip,
@@ -69,6 +70,7 @@ interface StoryTabProps {
 export default function StoryTab({ project, initialNodes, initialScenes, projectCharacters, projectIdeas, projectLocations, projectObjects, projectRelationships, aiSettings }: StoryTabProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
+    const { theme } = useTheme()
     const { 
         sidebarOpen, setSidebarOpen, 
         aiPanelOpen, setAiPanelOpen, 
@@ -83,10 +85,9 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         activeLocations, setActiveLocations,
         activeObjects, setActiveObjects,
         selectedNodeIds, setSelectedNodeIds,
-        showStructureHint, setShowStructureHint
+        setShowStructureHint
     } = useProjectActions()
     const { exportAction, statsAction } = useProjectActionsStore()
-    const [isPeeking, setIsPeeking] = useState(false)
     const { commentsPanelOpen, setCommentsPanelOpen, fetchComments } = useComments()
     
     const [nodes, setNodes] = useState(initialNodes)
@@ -264,25 +265,6 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         }
     }, [project.id, activeNodeId, setActiveNodeId])
 
-    useEffect(() => {
-        const isMobile = window.innerWidth < 768
-        if (isMobile || sidebarOpen) {
-            if (isPeeking) setIsPeeking(false)
-            return
-        }
-
-        const handleMouseMove = (e: MouseEvent) => {
-            if (e.clientX < 40) {
-                setIsPeeking(true)
-            } else if (e.clientX > 100) {
-                setIsPeeking(false)
-            }
-        }
-
-        window.addEventListener('mousemove', handleMouseMove)
-        return () => window.removeEventListener('mousemove', handleMouseMove)
-    }, [sidebarOpen, isPeeking])
-
     const [showExportHint, setShowExportHint] = useState(false)
     const [portalRoot, setPortalRoot] = useState<Element | null>(null)
 
@@ -444,36 +426,52 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             {/* Left sidebar */}
             <div 
                 data-tour="structure-panel"
-                onClick={() => {
-                    if (isPeeking && !sidebarOpen) {
-                        setSidebarOpen(true)
-                        setIsPeeking(false)
-                    }
-                }}
                 className={cn(
-                'bg-[#f5f4ef] flex flex-col transition-all duration-500 ease-in-out overflow-hidden z-40 md:z-20',
-                'absolute top-0 bottom-0 left-0 md:relative md:inset-auto md:h-full',
-                sidebarOpen 
-                    ? 'w-[280px] lg:w-[320px] border-r border-slate-200 opacity-100 translate-x-0' 
-                    : isPeeking
-                        ? 'w-4 border-r-2 border-primary/20 bg-primary/5 cursor-pointer opacity-100 translate-x-0 hover:bg-primary/10 transition-colors shadow-[4px_0_12px_rgba(0,0,0,0.02)]'
-                        : 'w-0 border-none opacity-0 -translate-x-full md:translate-x-0 md:opacity-100'
-            )}>
-                <div className="w-[280px] lg:w-[320px] h-full min-h-0 flex flex-col overflow-hidden">
-                    <StructureTree
-                        project={project}
-                        nodes={nodes}
-                        activeNodeId={activeNodeId}
-                        selectedNodeIds={selectedNodeIds}
-                        onNodeSelect={(id) => {
-                            handleSceneSelect(id)
-                            if (window.innerWidth < 768) setSidebarOpen(false)
-                        }}
-                        onNodeToggleSelection={handleNodeToggleSelection}
-                        onNodesChange={handleNodesChange}
-                        onSceneCreated={handleSceneCreated}
-                    />
-                </div>
+                    'flex flex-col transition-all duration-500 ease-in-out overflow-hidden z-40 md:z-20',
+                    'absolute top-0 bottom-0 left-0 md:relative md:inset-auto md:h-full',
+                    sidebarOpen
+                        ? 'w-[280px] lg:w-[320px] border-r border-slate-200 opacity-100 translate-x-0 bg-[#f5f4ef]'
+                        : theme === 'midnight'
+                            ? 'w-0 border-none opacity-0 -translate-x-full md:w-14 md:translate-x-0 md:opacity-100 md:border-r md:border-slate-500/20 md:bg-[linear-gradient(180deg,rgba(19,28,45,0.96)_0%,rgba(16,24,38,0.98)_100%)] md:shadow-[inset_-1px_0_0_rgba(148,163,184,0.08),10px_0_30px_rgba(2,6,23,0.18)]'
+                            : 'structure-collapsed-rail w-0 border-none opacity-0 -translate-x-full md:w-14 md:translate-x-0 md:opacity-100 md:border-r md:border-[#d8ddcf] md:bg-[#eef1e8] md:shadow-[inset_-1px_0_0_rgba(84,99,84,0.06)]'
+                )}
+            >
+                {sidebarOpen ? (
+                    <div className="w-[280px] lg:w-[320px] h-full min-h-0 flex flex-col overflow-hidden">
+                        <StructureTree
+                            project={project}
+                            nodes={nodes}
+                            activeNodeId={activeNodeId}
+                            selectedNodeIds={selectedNodeIds}
+                            onNodeSelect={(id) => {
+                                handleSceneSelect(id)
+                                if (window.innerWidth < 768) setSidebarOpen(false)
+                            }}
+                            onNodeToggleSelection={handleNodeToggleSelection}
+                            onNodesChange={handleNodesChange}
+                            onSceneCreated={handleSceneCreated}
+                        />
+                    </div>
+                ) : (
+                    <div className="hidden md:flex h-full w-full items-center justify-center px-2 py-6">
+                        <button
+                            type="button"
+                            onClick={() => setSidebarOpen(true)}
+                            className={cn(
+                                "group flex h-full w-full flex-col items-center justify-center rounded-[1.5rem] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2",
+                                theme === 'midnight'
+                                    ? "border border-slate-400/15 bg-[linear-gradient(180deg,rgba(34,48,74,0.48)_0%,rgba(26,37,58,0.58)_100%)] text-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_18px_40px_-30px_rgba(0,0,0,0.6)] hover:border-slate-300/20 hover:bg-[linear-gradient(180deg,rgba(44,63,98,0.56)_0%,rgba(32,47,74,0.66)_100%)] hover:text-slate-100 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_20px_44px_-28px_rgba(15,23,42,0.72)] focus-visible:ring-slate-300/20"
+                                    : "structure-collapsed-rail-button border border-[#d5dccd] bg-[#f6f8f1] text-[#546354] hover:bg-[#f0f4e8] hover:shadow-[0_12px_30px_rgba(84,99,84,0.08)] focus-visible:ring-[#546354]/20"
+                            )}
+                            aria-label="Show structure panel"
+                        >
+                            <PanelLeftOpen className="mb-4 h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+                            <span className="[writing-mode:vertical-rl] rotate-180 text-[10px] font-bold uppercase tracking-[0.28em]">
+                                Structure
+                            </span>
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Main editor area */}

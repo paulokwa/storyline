@@ -24,7 +24,7 @@ const STEPS: Step[] = [
     {
         target: '[data-tour="structure-toggle"]',
         title: 'Quick Navigation',
-        content: 'You can toggle the structure panel any time from this icon, next to the home button.',
+        content: 'You can show or hide the structure panel any time from the Structure button next to Home.',
         placement: 'bottom'
     },
     {
