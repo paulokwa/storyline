@@ -61,6 +61,7 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
     const { theme } = useTheme()
     const isMidnight = theme === 'midnight'
     const [draft, setDraft] = useState<{ state: any; step: any } | null>(null)
+    const [confirmDeleteDraft, setConfirmDeleteDraft] = useState(false)
     const [view, setView] = useState<'active' | 'trash'>('active')
     const [sortFilter, setSortFilter] = useState<'custom' | 'recent' | 'az'>('custom')
     
@@ -87,12 +88,11 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
         }
     }, [])
 
-    function clearDraft(e: React.MouseEvent) {
-        e.preventDefault()
-        e.stopPropagation()
+    function clearDraft() {
         localStorage.removeItem('storyline-new-project-draft')
         localStorage.removeItem('storyline-guided-data-draft')
         setDraft(null)
+        setConfirmDeleteDraft(false)
     }
 
     // Helper to get sorted projects for display
@@ -295,18 +295,63 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
                                                 animate={{ opacity: 1, x: 0 }}
                                                 exit={{ opacity: 0, scale: 0.8 }}
                                             >
-                                                <Link
-                                                    href="/new"
-                                                    className="group block sanctuary-card border-2 border-dashed border-primary/20 bg-primary/5 rounded-[2rem] p-8 h-full transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl relative overflow-hidden active:scale-[0.98]"
-                                                >
-                                                    <div className="relative z-10 flex flex-col h-full gap-6">
+                                                <div className="group sanctuary-card border-2 border-dashed border-primary/20 bg-primary/5 rounded-[2rem] p-8 h-full transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl relative overflow-hidden active:scale-[0.98]">
+                                                    <Link href="/new" className="absolute inset-0 z-10" />
+                                                    <div className="relative z-20 flex flex-col h-full gap-6">
                                                         <div className="flex items-start justify-between">
                                                             <div className="w-14 h-14 rounded-2xl bg-primary shadow-lg shadow-primary/20 text-white flex items-center justify-center">
                                                                 <Sparkles className="w-7 h-7" />
                                                             </div>
-                                                            <Badge variant="default" className="bg-primary/10 text-primary border-none text-[9px] uppercase tracking-widest px-3 py-1 font-bold">
-                                                                Incomplete Setup
-                                                            </Badge>
+                                                            <div className="relative z-30 flex items-center gap-2 pointer-events-auto">
+                                                                <Badge variant="default" className="bg-primary/10 text-primary border-none text-[9px] uppercase tracking-widest px-3 py-1 font-bold">
+                                                                    Incomplete Setup
+                                                                </Badge>
+                                                                {confirmDeleteDraft ? (
+                                                                    <div
+                                                                        onClick={e => e.preventDefault()}
+                                                                        className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200"
+                                                                    >
+                                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-red-400">
+                                                                            Delete?
+                                                                        </span>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={e => {
+                                                                                e.preventDefault()
+                                                                                e.stopPropagation()
+                                                                                setConfirmDeleteDraft(false)
+                                                                            }}
+                                                                            className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 transition-colors"
+                                                                        >
+                                                                            Cancel
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={e => {
+                                                                                e.preventDefault()
+                                                                                e.stopPropagation()
+                                                                                clearDraft()
+                                                                            }}
+                                                                            className="px-3 py-1 text-[10px] font-bold bg-red-500 hover:bg-red-600 text-white rounded-full uppercase tracking-wider transition-colors shadow-lg"
+                                                                        >
+                                                                            Delete
+                                                                        </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={e => {
+                                                                            e.preventDefault()
+                                                                            e.stopPropagation()
+                                                                            setConfirmDeleteDraft(true)
+                                                                        }}
+                                                                        className="transition-all duration-300 p-2.5 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 shadow-sm"
+                                                                        aria-label="Delete incomplete setup"
+                                                                    >
+                                                                        <Trash2 className="w-5 h-5" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                         <div className="space-y-2 flex-1">
                                                             <h3 className="text-2xl font-serif text-slate-800">
@@ -317,18 +362,15 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
                                                             </p>
                                                         </div>
                                                         <div className="mt-4 flex items-center justify-between gap-4 pt-6 border-t border-primary/10">
-                                                            <button 
-                                                                onClick={clearDraft}
-                                                                className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-red-500 transition-colors py-2"
-                                                            >
-                                                                Start over
-                                                            </button>
+                                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                                                Saved draft
+                                                            </span>
                                                             <div className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest group-hover:bg-[#3d4a3d] transition-all shadow-md">
                                                                 Resume <ChevronRight className="w-4 h-4" />
                                                             </div>
                                                         </div>
                                                     </div>
-                                                </Link>
+                                                </div>
                                             </motion.div>
                                         )}
 
