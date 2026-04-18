@@ -108,12 +108,12 @@ export function ReaderControls({
                             size="sm"
                             onClick={handleQuickRead}
                             className={cn(
-                                "h-7 px-3 gap-2 rounded-full transition-all font-serif italic",
-                                speechState !== 'idle' ? "text-indigo-600" : "text-slate-500 hover:text-indigo-600"
+                                "h-7 px-3 gap-2 rounded-full transition-all text-[10px] font-bold uppercase tracking-widest font-sans",
+                                speechState !== 'idle' ? "text-indigo-600" : "text-slate-400 hover:text-indigo-600"
                             )}
                         >
                             <Volume2 className={cn("w-3.5 h-3.5", speechState === 'speaking' && "animate-pulse")} />
-                            <span className="hidden lg:inline text-xs">Read Aloud</span>
+                            <span className="hidden lg:inline">Read Aloud</span>
                         </Button>
 
                         <div className="w-px h-4 bg-slate-200 mx-0.5" />
@@ -372,4 +372,3 @@ export function FloatingPlayer() {
         </div>
     )
 }
-

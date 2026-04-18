@@ -152,6 +152,9 @@ const ToolbarButton = ({
     </Tooltip>
 )
 
+const TOP_ACTION_PILL_BASE =
+    "scene-editor-top-action hidden h-8 rounded-full px-3 text-[10px] font-bold uppercase tracking-widest transition-all border border-slate-200/70 bg-white/70 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
+
 const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     scene,
     title: initialTitle,
@@ -1087,54 +1090,6 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             </span>
                         )}
                         
-                        <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => setCommentsPanelOpen(true)}
-                            className="scene-editor-top-action hidden lg:inline-flex h-6 px-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary hover:bg-white transition-all"
-                        >
-                            <MessageSquare className="w-3 h-3 mr-1" />
-                             Feedback
-                        </Button>
-                        
-                        <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => setSceneAssetsOpen(!sceneAssetsOpen)}
-                            className={cn(
-                                "scene-editor-top-action hidden md:inline-flex h-6 px-2 text-[10px] font-bold uppercase tracking-widest transition-all",
-                                sceneAssetsOpen ? "text-emerald-500 bg-white" : "text-slate-400 hover:text-emerald-600 hover:bg-white"
-                            )}
-                        >
-                            <ImageIcon className="w-3 h-3 mr-1" />
-                             Gallery
-                        </Button>
-
-                        {!isReadOnly && speechSupported && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={toggleDictation}
-                                className={cn(
-                                    "scene-editor-top-action hidden lg:inline-flex h-6 px-2 text-[10px] font-bold uppercase tracking-widest transition-all",
-                                    isRecording 
-                                        ? "text-red-500 bg-red-50 hover:bg-red-100 animate-pulse" 
-                                        : "text-slate-400 hover:text-slate-600 hover:bg-white"
-                                )}
-                            >
-                                {isRecording ? <Mic className="w-3 h-3 mr-1" /> : <MicOff className="w-3 h-3 mr-1" />}
-                                {isRecording ? 'Listening...' : 'Dictate'}
-                            </Button>
-                        )}
-                        
-                        <div className="hidden lg:flex ml-1 items-center border-l border-slate-200/50 pl-2">
-                            <ReaderControls 
-                                getSelection={() => editor?.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to) || ''}
-                                getScene={() => editor?.getText() || ''}
-                                getChapter={() => currentChapterText}
-                            />
-                        </div>
-                        
                         {/* Phase B: View Settings */}
                         {writingMode === 'simple' && (
                             <div className="relative">
@@ -1143,8 +1098,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     size="sm"
                                     onClick={() => setShowViewSettings(!showViewSettings)}
                                     className={cn(
-                                        "h-6 px-2 text-[10px] font-bold uppercase tracking-widest transition-all",
-                                        showViewSettings ? "text-emerald-500 bg-white" : "text-slate-400 hover:text-slate-600"
+                                        TOP_ACTION_PILL_BASE,
+                                        "inline-flex",
+                                        showViewSettings ? "text-emerald-500 bg-white border-emerald-200/80" : "text-slate-400 hover:text-slate-600 hover:bg-white"
                                     )}
                                 >
                                     <Type className="w-3 h-3 mr-1" />
@@ -1279,6 +1235,59 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                 )}
                             </div>
                         )}
+
+                        <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => setCommentsPanelOpen(true)}
+                            className={cn(
+                                TOP_ACTION_PILL_BASE,
+                                "lg:inline-flex text-slate-400 hover:text-primary hover:bg-white"
+                            )}
+                        >
+                            <MessageSquare className="w-3 h-3 mr-1" />
+                             Feedback
+                        </Button>
+                        
+                        <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => setSceneAssetsOpen(!sceneAssetsOpen)}
+                            className={cn(
+                                TOP_ACTION_PILL_BASE,
+                                "md:inline-flex",
+                                sceneAssetsOpen ? "text-emerald-500 bg-white border-emerald-200/80" : "text-slate-400 hover:text-emerald-600 hover:bg-white"
+                            )}
+                        >
+                            <ImageIcon className="w-3 h-3 mr-1" />
+                             Gallery
+                        </Button>
+
+                        {!isReadOnly && speechSupported && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={toggleDictation}
+                                className={cn(
+                                    TOP_ACTION_PILL_BASE,
+                                    "lg:inline-flex",
+                                    isRecording 
+                                        ? "text-red-500 bg-red-50 border-red-200/80 hover:bg-red-100 animate-pulse" 
+                                        : "text-slate-400 hover:text-slate-600 hover:bg-white"
+                                )}
+                            >
+                                {isRecording ? <Mic className="w-3 h-3 mr-1" /> : <MicOff className="w-3 h-3 mr-1" />}
+                                {isRecording ? 'Listening...' : 'Dictate'}
+                            </Button>
+                        )}
+                        
+                        <div className="hidden lg:flex items-center">
+                            <ReaderControls 
+                                getSelection={() => editor?.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to) || ''}
+                                getScene={() => editor?.getText() || ''}
+                                getChapter={() => currentChapterText}
+                            />
+                        </div>
                     </div>
                 </div>
                 
