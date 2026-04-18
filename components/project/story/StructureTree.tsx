@@ -249,6 +249,7 @@ export default function StructureTree({
                                                         key={node.id}
                                                         node={node}
                                                         nodes={nodes}
+                                                        projectType={project.type}
                                                         index={index}
                                                         activeNodeId={activeNodeId}
                                                         depth={0}
@@ -292,6 +293,7 @@ export default function StructureTree({
 interface NodeItemProps {
     node: StructureNode
     nodes: StructureNode[]
+    projectType: Project['type']
     index: number
     activeNodeId: string | null
     selectedNodeIds?: string[]
@@ -306,7 +308,7 @@ interface NodeItemProps {
 }
 
 const NodeItem = React.memo(({
-    node, nodes, index, activeNodeId, selectedNodeIds = [], depth, onSelect, onToggleSelection, onAddChild, onDelete, onRename, confirmingDeleteId, onRequestDelete
+    node, nodes, projectType, index, activeNodeId, selectedNodeIds = [], depth, onSelect, onToggleSelection, onAddChild, onDelete, onRename, confirmingDeleteId, onRequestDelete
 }: NodeItemProps) => {
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'
@@ -347,6 +349,7 @@ const NodeItem = React.memo(({
     const isRoot = node.type === 'episode' || node.type === 'chapter'
     const isActive = isScene && activeNodeId === node.id
     const isSelected = selectedNodeIds.includes(node.id)
+    const isNovelScene = projectType === 'novel' && isScene
 
     const { comments } = useComments()
     const openCommentCount = useMemo(() => {
@@ -457,7 +460,8 @@ const NodeItem = React.memo(({
                         ) : (
                             <span
                                 className={cn(
-                                    "flex-1 truncate md:overflow-visible md:text-clip md:whitespace-normal md:break-words md:group-hover:hidden",
+                                    "flex-1 truncate",
+                                    !isNovelScene && "md:overflow-visible md:text-clip md:whitespace-normal md:break-words md:group-hover:hidden",
                                     isRoot && "tracking-tight text-[#485748]",
                                     isScene && "text-slate-600 font-medium",
                                     mobileOptionsActive && "hidden md:block"
@@ -529,6 +533,7 @@ const NodeItem = React.memo(({
                                             key={child.id}
                                             node={child}
                                             nodes={nodes}
+                                            projectType={projectType}
                                             index={index}
                                             activeNodeId={activeNodeId}
                                             selectedNodeIds={selectedNodeIds}
