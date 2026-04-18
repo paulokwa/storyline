@@ -79,18 +79,53 @@ export default function CommentsPanel({
     const [editingId, setEditingId] = useState<string | null>(null)
     const [editText, setEditText] = useState('')
     const [addingIdeaId, setAddingIdeaId] = useState<string | null>(null)
-    const [addedCommentIds, setAddedCommentIds] = useState<Set<string>>(new Set())
+    const [removingIdeaId, setRemovingIdeaId] = useState<string | null>(null)
+    const [linkedAiIdeaIds, setLinkedAiIdeaIds] = useState<Set<string>>(new Set())
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
     useEffect(() => {
-        setAddedCommentIds(
-            new Set(
-                comments
-                    .filter(comment => Array.isArray(comment.anchor_data?.aiLinkedIdeas) && comment.anchor_data.aiLinkedIdeas.length > 0)
-                    .map(comment => comment.id)
-            )
+        let cancelled = false
+
+        async function refreshLinkedAiIdeas() {
+            if (!activeSceneId) {
+                if (!cancelled) setLinkedAiIdeaIds(new Set())
+                return
+            }
+
+            const { data, error } = await supabase
+                .from('scene_ideas')
+                .select('idea_id')
+                .eq('scene_id', activeSceneId)
+
+            if (cancelled) return
+            if (error) {
+                console.error('Failed to load AI-linked idea ids:', error)
+                setLinkedAiIdeaIds(new Set())
+                return
+            }
+
+            setLinkedAiIdeaIds(new Set((data ?? []).map((row: any) => row.idea_id)))
+        }
+
+        refreshLinkedAiIdeas()
+
+        return () => {
+            cancelled = true
+        }
+    }, [activeSceneId, supabase])
+
+    const addedCommentIds = useMemo(() => {
+        if (!activeSceneId || linkedAiIdeaIds.size === 0) return new Set<string>()
+
+        return new Set(
+            comments
+                .filter(comment => {
+                    const links = Array.isArray(comment.anchor_data?.aiLinkedIdeas) ? comment.anchor_data.aiLinkedIdeas : []
+                    return links.some((link: any) => link?.sceneId === activeSceneId && linkedAiIdeaIds.has(link?.ideaId))
+                })
+                .map(comment => comment.id)
         )
-    }, [comments])
+    }, [comments, activeSceneId, linkedAiIdeaIds])
 
     const handleTyping = (threadId: string | null) => {
         sendTypingIndicator(threadId)
@@ -173,18 +208,79 @@ export default function CommentsPanel({
                     : currentComment
             ))
 
-            setAddedCommentIds(prev => new Set(prev).add(comment.id))
             toast.success('Added as Project Idea', {
                 description: activeSceneId 
                     ? 'This feedback is now linked to the AI Assistant context.' 
                     : 'This feedback was saved as a project idea.'
             })
+            if (idea?.id) {
+                setLinkedAiIdeaIds(prev => new Set(prev).add(idea.id))
+            }
             router.refresh()
         } catch (err: any) {
             console.error('Failed to add comment as idea:', err)
             toast.error('Failed to link to extension')
         } finally {
             setAddingIdeaId(null)
+        }
+    }
+
+    const handleRemoveFromAssistant = async (comment: any) => {
+        if (!activeSceneId) return
+
+        const existingLinks = Array.isArray(comment.anchor_data?.aiLinkedIdeas)
+            ? comment.anchor_data.aiLinkedIdeas
+            : []
+        const linksForCurrentScene = existingLinks.filter((link: any) => link?.sceneId === activeSceneId && link?.ideaId)
+
+        if (linksForCurrentScene.length === 0) return
+
+        setRemovingIdeaId(comment.id)
+
+        try {
+            const ideaIds = linksForCurrentScene.map((link: any) => link.ideaId)
+
+            const { error: unlinkError } = await supabase
+                .from('scene_ideas')
+                .delete()
+                .eq('scene_id', activeSceneId)
+                .in('idea_id', ideaIds)
+
+            if (unlinkError) throw unlinkError
+
+            const nextAnchorData = {
+                ...(comment.anchor_data && typeof comment.anchor_data === 'object' ? comment.anchor_data : {}),
+                aiLinkedIdeas: existingLinks.filter((link: any) => link?.sceneId !== activeSceneId),
+            }
+
+            const { error: commentUpdateError } = await supabase
+                .from('project_comments')
+                .update({ anchor_data: nextAnchorData })
+                .eq('id', comment.id)
+
+            if (commentUpdateError) throw commentUpdateError
+
+            setComments(prev => prev.map(currentComment =>
+                currentComment.id === comment.id
+                    ? { ...currentComment, anchor_data: nextAnchorData }
+                    : currentComment
+            ))
+
+            setLinkedAiIdeaIds(prev => {
+                const next = new Set(prev)
+                ideaIds.forEach((ideaId: string) => next.delete(ideaId))
+                return next
+            })
+
+            toast.success('Removed from AI Context', {
+                description: 'This feedback is no longer linked to the AI Assistant context.'
+            })
+            router.refresh()
+        } catch (err: any) {
+            console.error('Failed to unlink feedback from AI context:', err)
+            toast.error('Failed to remove from AI context')
+        } finally {
+            setRemovingIdeaId(null)
         }
     }
 
@@ -432,7 +528,9 @@ export default function CommentsPanel({
                                                         onTypingChange={(isTyping: boolean) => sendTypingIndicator(isTyping ? comment.id : null)}
                                                         dragHandleProps={role !== 'viewer' ? provided.dragHandleProps : null}
                                                         onAddToAssistant={handleAddAsIdea}
+                                                        onRemoveFromAssistant={handleRemoveFromAssistant}
                                                         addingIdeaId={addingIdeaId}
+                                                        removingIdeaId={removingIdeaId}
                                                         addedCommentIds={addedCommentIds}
                                                         activeSceneId={activeSceneId}
                                                     />
@@ -510,7 +608,9 @@ function CommentThread({
     dragHandleProps,
     isDetached,
     onAddToAssistant,
+    onRemoveFromAssistant,
     addingIdeaId,
+    removingIdeaId,
     addedCommentIds,
     activeSceneId
 }: any) {
@@ -547,7 +647,9 @@ function CommentThread({
                     isDetached={isDetached}
                     dragHandleProps={dragHandleProps}
                     onAddToAssistant={onAddToAssistant}
+                    onRemoveFromAssistant={onRemoveFromAssistant}
                     addingIdeaId={addingIdeaId}
+                    removingIdeaId={removingIdeaId}
                     addedCommentIds={addedCommentIds}
                     activeSceneId={activeSceneId}
                 />
@@ -569,7 +671,9 @@ function CommentThread({
                                 onDelete={() => onDelete(reply.id)}
                                 isReply
                                 onAddToAssistant={onAddToAssistant}
+                                onRemoveFromAssistant={onRemoveFromAssistant}
                                 addingIdeaId={addingIdeaId}
+                                removingIdeaId={removingIdeaId}
                                 addedCommentIds={addedCommentIds}
                                 activeSceneId={activeSceneId}
                             />
@@ -636,7 +740,9 @@ function CommentItem({
     isReply,
     role,
     onAddToAssistant,
+    onRemoveFromAssistant,
     addingIdeaId,
+    removingIdeaId,
     addedCommentIds,
     activeSceneId
 }: any) {
@@ -816,10 +922,28 @@ function CommentItem({
                                 <>
                                     <div className="w-[1px] h-3 bg-slate-200/50 mx-1" />
                                     {addedCommentIds.has(comment.id) ? (
-                                        <div className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg">
-                                            <Check className="w-3 h-3" />
-                                            AI
-                                        </div>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-7 rounded-lg bg-emerald-50 px-2 py-1 text-[8px] font-bold uppercase tracking-widest text-emerald-600 hover:bg-emerald-100"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        onRemoveFromAssistant(comment)
+                                                    }}
+                                                    disabled={removingIdeaId !== null}
+                                                >
+                                                    {removingIdeaId === comment.id ? (
+                                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                                    ) : (
+                                                        <Check className="w-3 h-3" />
+                                                    )}
+                                                    AI
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">Remove from AI Assistant</TooltipContent>
+                                        </Tooltip>
                                     ) : (
                                         <Tooltip>
                                             <TooltipTrigger asChild>
