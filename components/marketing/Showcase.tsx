@@ -70,7 +70,7 @@ export default function Showcase() {
                             Your Creative Sanctuary <br /> for Storytelling
                         </h1>
                         <p className="text-lg md:text-xl text-slate-500 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in-up animation-delay-200">
-                            A focused writing environment that combines elegant structure, <br className="hidden md:block" /> AI collaboration, and deep organization to help you finish your best work.
+                            A focused writing environment that combines elegant structure, <br className="hidden md:block" /> BYOK AI collaboration, and deep organization to help you finish your best work.
                         </p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-300">
                             <Link href="/signup">
@@ -115,7 +115,7 @@ export default function Showcase() {
                                 <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center mb-4">
                                     <Sparkles className="w-6 h-6 text-slate-400" />
                                 </div>
-                                <h3 className="font-serif italic text-lg text-slate-700">AI Partner</h3>
+                                <h3 className="font-serif italic text-lg text-slate-700">BYOK AI Partner</h3>
                             </div>
                             <div className="flex flex-col items-center text-center p-6 grayscale hover:grayscale-0 transition-all opacity-60 hover:opacity-100">
                                 <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center mb-4">
@@ -174,10 +174,10 @@ export default function Showcase() {
                                 </div>
                                 <h2 className="text-4xl font-serif text-slate-800 leading-tight">Collaborate with an <br className="hidden md:block" /> AI partner in context</h2>
                                 <p className="text-lg text-slate-500 leading-relaxed">
-                                    Our AI Partner doesn't just write for you—it writes *with* you. Integrated directly into your editor, it understands your characters, your world, and your voice.
+                                    Bring your own key and choose Gemini, OpenAI, or local Ollama. Storyline’s AI Partner doesn&apos;t just write for you, it writes with you, directly inside the editor and in the context of your characters, world, and voice.
                                 </p>
                                 <ul className="space-y-4 pt-4">
-                                    {['Scene analysis and feedback', 'Context-aware brainstorming', 'Worldbuilding consistency checks'].map((item) => (
+                                    {['BYOK with Gemini, OpenAI, or Ollama', 'Context-aware brainstorming and feedback', 'Worldbuilding consistency checks'].map((item) => (
                                         <li key={item} className="flex items-center gap-3 text-slate-600">
                                             <div className="w-5 h-5 rounded-full bg-[#546354]/10 flex items-center justify-center flex-shrink-0">
                                                 <ChevronRight className="w-3 h-3 text-[#546354]" />

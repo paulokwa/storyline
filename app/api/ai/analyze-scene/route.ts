@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { DEFAULT_OPENAI_MODEL, extractOpenAiOutputText } from '@/lib/ai/providers'
 
 export const maxDuration = 30
 
@@ -33,6 +34,7 @@ interface AnalysisResult {
     pacing: string
     dialogue: string
     suggestions: string[]
+    provider?: string
 }
 
 function isValidAnalysis(obj: unknown): obj is AnalysisResult {
@@ -108,67 +110,123 @@ export async function POST(req: Request) {
         return new Response('AI_DISABLED', { status: 403 })
     }
 
-    const { ai_provider, api_key, ollama_url, ollama_model } = settings
+    const { ai_provider, api_key } = settings
 
-    if (ai_provider !== 'gemini' || !api_key) {
+    if ((ai_provider !== 'gemini' && ai_provider !== 'openai') || !api_key) {
         return new Response('NO_API_KEY', { status: 403 })
     }
 
     // ── Wrap scene text in delimiters (prompt injection hardening) ───────────
     const delimitedScene = `<scene>\n${trimmed}\n</scene>`
 
-    // ── Call Gemini (non-streaming) ──────────────────────────────────────────
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${api_key}`
-
-    let geminiResponse: Response
-    try {
-        geminiResponse = await fetch(geminiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [
-                    { role: 'user', parts: [{ text: delimitedScene }] },
-                ],
-                system_instruction: {
-                    parts: [{ text: SYSTEM_PROMPT }],
-                },
-                generationConfig: {
-                    maxOutputTokens: 2000,
-                    responseMimeType: 'application/json',
-                    thinkingConfig: {
-                        thinkingBudget: 0,
-                    },
-                },
-            }),
-        })
-    } catch (err) {
-        console.error('[analyze-scene] Gemini fetch failed:', err)
-        return new Response('AI_SERVICE_ERROR', { status: 502 })
-    }
-
-    if (!geminiResponse.ok) {
-        const errBody = await geminiResponse.text()
-        console.error('[analyze-scene] Gemini error response:', geminiResponse.status, trunc(errBody))
-        return new Response(`AI_SERVICE_ERROR: ${geminiResponse.status} ${trunc(errBody, 100)}`, { status: 502 })
-    }
-
-    // ── Parse Gemini response ────────────────────────────────────────────────
     let rawText = ''
-    try {
-        const geminiData = await geminiResponse.json()
-        const candidate = geminiData?.candidates?.[0]
-        
-        // Log finish reason to help debug future truncation issues
-        if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
-            console.warn('[analyze-scene] AI finished with non-STOP reason:', candidate.finishReason)
+    if (ai_provider === 'gemini') {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${api_key}`
+
+        let geminiResponse: Response
+        try {
+            geminiResponse = await fetch(geminiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [
+                        { role: 'user', parts: [{ text: delimitedScene }] },
+                    ],
+                    system_instruction: {
+                        parts: [{ text: SYSTEM_PROMPT }],
+                    },
+                    generationConfig: {
+                        maxOutputTokens: 2000,
+                        responseMimeType: 'application/json',
+                        thinkingConfig: {
+                            thinkingBudget: 0,
+                        },
+                    },
+                }),
+            })
+        } catch (err) {
+            console.error('[analyze-scene] Gemini fetch failed:', err)
+            return new Response('AI_SERVICE_ERROR', { status: 502 })
         }
 
-        // Robustly collect all parts (sometimes long responses are segmented)
-        const parts = candidate?.content?.parts || []
-        rawText = parts.map((p: any) => p.text || '').join('').trim()
-    } catch (err) {
-        console.error('[analyze-scene] Failed to parse Gemini JSON envelope:', err)
-        return new Response('INVALID_AI_RESPONSE', { status: 502 })
+        if (!geminiResponse.ok) {
+            const errBody = await geminiResponse.text()
+            console.error('[analyze-scene] Gemini error response:', geminiResponse.status, trunc(errBody))
+            return new Response(`AI_SERVICE_ERROR: ${geminiResponse.status} ${trunc(errBody, 100)}`, { status: 502 })
+        }
+
+        try {
+            const geminiData = await geminiResponse.json()
+            const candidate = geminiData?.candidates?.[0]
+
+            if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+                console.warn('[analyze-scene] AI finished with non-STOP reason:', candidate.finishReason)
+            }
+
+            const parts = candidate?.content?.parts || []
+            rawText = parts.map((p: any) => p.text || '').join('').trim()
+        } catch (err) {
+            console.error('[analyze-scene] Failed to parse Gemini JSON envelope:', err)
+            return new Response('INVALID_AI_RESPONSE', { status: 502 })
+        }
+    } else {
+        let openAiResponse: Response
+        try {
+            openAiResponse = await fetch('https://api.openai.com/v1/responses', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${api_key}`,
+                },
+                body: JSON.stringify({
+                    model: DEFAULT_OPENAI_MODEL,
+                    instructions: SYSTEM_PROMPT,
+                    input: delimitedScene,
+                    max_output_tokens: 1200,
+                    text: {
+                        format: {
+                            type: 'json_schema',
+                            name: 'scene_analysis',
+                            strict: true,
+                            schema: {
+                                type: 'object',
+                                additionalProperties: false,
+                                required: ['summary', 'tension', 'pacing', 'dialogue', 'suggestions'],
+                                properties: {
+                                    summary: { type: 'string' },
+                                    tension: { type: 'string' },
+                                    pacing: { type: 'string' },
+                                    dialogue: { type: 'string' },
+                                    suggestions: {
+                                        type: 'array',
+                                        minItems: 2,
+                                        maxItems: 5,
+                                        items: { type: 'string' },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                }),
+            })
+        } catch (err) {
+            console.error('[analyze-scene] OpenAI fetch failed:', err)
+            return new Response('AI_SERVICE_ERROR', { status: 502 })
+        }
+
+        if (!openAiResponse.ok) {
+            const errBody = await openAiResponse.text()
+            console.error('[analyze-scene] OpenAI error response:', openAiResponse.status, trunc(errBody))
+            return new Response(`AI_SERVICE_ERROR: ${openAiResponse.status} ${trunc(errBody, 100)}`, { status: 502 })
+        }
+
+        try {
+            const openAiData = await openAiResponse.json()
+            rawText = extractOpenAiOutputText(openAiData)
+        } catch (err) {
+            console.error('[analyze-scene] Failed to parse OpenAI JSON envelope:', err)
+            return new Response('INVALID_AI_RESPONSE', { status: 502 })
+        }
     }
 
     if (!rawText) {
@@ -191,6 +249,8 @@ export async function POST(req: Request) {
         console.error('[analyze-scene] AI response failed shape validation:', trunc(finalAnalysis))
         return new Response('INVALID_AI_RESPONSE', { status: 502 })
     }
+
+    finalAnalysis.provider = ai_provider
 
     return new Response(JSON.stringify(finalAnalysis), {
         status: 200,

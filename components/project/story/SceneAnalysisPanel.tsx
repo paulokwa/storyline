@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
+import { getAiProviderLabel } from '@/lib/ai/providers'
 
 interface AnalysisResult {
     summary: string
@@ -19,6 +20,7 @@ interface AnalysisResult {
     pacing: string
     dialogue: string
     suggestions: string[]
+    provider?: string
 }
 
 interface SceneAnalysisPanelProps {
@@ -85,7 +87,7 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
                     response: formattedResponse,
                     type: 'analysis',
                     source_label: `Analysis: ${label}`,
-                    model: 'Gemini (Analysis)',
+                    model: `${getAiProviderLabel(result.provider)} (Analysis)`,
                     action: 'analyze_scene'
                 })
 
@@ -355,5 +357,4 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
         </>
     )
 }
-
 

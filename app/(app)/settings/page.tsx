@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import SettingsView from '@/components/app/SettingsView'
+import { maskApiKey } from '@/lib/ai/providers'
 
 export default async function SettingsPage() {
     const supabase = await createClient()
@@ -14,11 +15,7 @@ export default async function SettingsPage() {
         .eq('user_id', user.id)
         .single()) as { data: any | null }
         
-    let maskedApiKey: string | null = null
-    if (aiSettings?.api_key) {
-        const raw = aiSettings.api_key
-        maskedApiKey = raw.length > 8 ? `sk-••••••••••••${raw.slice(-4)}` : 'sk-••••'
-    }
+    const maskedApiKey = maskApiKey(aiSettings?.api_key)
 
     return (
         <div className="settings-page-shell flex-1 overflow-y-auto min-h-0 bg-slate-50/50">

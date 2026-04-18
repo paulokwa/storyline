@@ -1,4 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
+import {
+    createCloudTextStream,
+    createPlainTextStreamFromProviderResponse,
+    testCloudProviderKey,
+} from '@/lib/ai/providers'
 
 export const maxDuration = 30
 
@@ -52,6 +57,8 @@ export async function POST(req: Request) {
         format, 
         projectId, 
         prompt, 
+        provider,
+        apiKeyOverride,
         linkedCharacters, 
         linkedIdeas, 
         linkedLocations, 
@@ -63,6 +70,8 @@ export async function POST(req: Request) {
         format?: string
         projectId: string
         prompt?: string
+        provider?: 'gemini' | 'openai'
+        apiKeyOverride?: string
         linkedCharacters?: any[]
         linkedIdeas?: any[]
         linkedLocations?: any[]
@@ -73,20 +82,23 @@ export async function POST(req: Request) {
     if (action === 'heartbeat') {
         const { data: keyRecord } = (await supabase
             .from('user_api_keys')
-            .select('api_key')
+            .select('api_key, ai_provider')
             .eq('user_id', user.id)
-            .single()) as { data: { api_key: string } | null }
+            .single()) as { data: { api_key: string, ai_provider: 'gemini' | 'openai' | 'ollama' | null } | null }
 
-        const apiKey = keyRecord?.api_key
+        const selectedProvider = provider ?? keyRecord?.ai_provider
+        const apiKey = apiKeyOverride ?? keyRecord?.api_key
         if (!apiKey) return new Response(JSON.stringify({ ok: false, error: 'NO_API_KEY' }), { status: 200 })
-        
+        if (selectedProvider !== 'gemini' && selectedProvider !== 'openai') {
+            return new Response(JSON.stringify({ ok: false, error: 'UNSUPPORTED_PROVIDER' }), { status: 200 })
+        }
+
         try {
-            const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, { method: 'GET' })
-            const data = await resp.json()
+            const data = await testCloudProviderKey(selectedProvider, apiKey)
             return new Response(JSON.stringify({ 
-                ok: resp.ok, 
-                status: resp.status,
-                error: !resp.ok ? data?.error?.message : null
+                ok: data.ok, 
+                status: data.status,
+                error: data.error,
             }), { status: 200 })
         } catch (e) {
             return new Response(JSON.stringify({ ok: false, error: 'FETCH_FAILED' }), { status: 200 })
@@ -224,82 +236,35 @@ export async function POST(req: Request) {
 
     const { data: keyRecord } = (await supabase
         .from('user_api_keys')
-        .select('api_key')
+        .select('api_key, ai_provider')
         .eq('user_id', user.id)
-        .single()) as { data: { api_key: string } | null }
+        .single()) as { data: { api_key: string, ai_provider: 'gemini' | 'openai' | 'ollama' | null } | null }
 
     const apiKey = keyRecord?.api_key
     if (!apiKey) {
         return new Response('NO_API_KEY', { status: 403 })
     }
 
-    // Direct call to Gemini API — bypasses AI SDK compatibility issues
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`
-
-    const geminiResponse = await fetch(geminiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            contents: [
-                { role: 'user', parts: [{ text: userMessage }] },
-            ],
-            system_instruction: {
-                parts: [{ text: systemPrompt + projectContext }],
-            },
-            generationConfig: {
-                maxOutputTokens: 1000,
-                thinkingConfig: {
-                    thinkingBudget: 0,
-                },
-            },
-        }),
-    })
-
-    if (!geminiResponse.ok) {
-        const errBody = await geminiResponse.text()
-        console.error('Gemini API error:', errBody)
-        return new Response(`AI service error: ${geminiResponse.status} ${errBody.slice(0, 100)}`, { status: 502 })
+    const providerName = keyRecord?.ai_provider
+    if (providerName !== 'gemini' && providerName !== 'openai') {
+        return new Response('UNSUPPORTED_PROVIDER', { status: 400 })
     }
 
-    // Transform the Gemini SSE stream into a plain text stream for useCompletion
-    const reader = geminiResponse.body!.getReader()
-    const decoder = new TextDecoder()
-
-    const stream = new ReadableStream({
-        async start(controller) {
-            try {
-                while (true) {
-                    const { done, value } = await reader.read()
-                    if (done) break
-
-                    const chunk = decoder.decode(value, { stream: true })
-                    // Gemini SSE format: lines starting with "data: " contain JSON
-                    const lines = chunk.split('\n')
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            try {
-                                const data = JSON.parse(line.slice(6))
-                                const parts = data?.candidates?.[0]?.content?.parts
-                                if (parts) {
-                                    for (const part of parts) {
-                                        if (part.text) {
-                                            controller.enqueue(new TextEncoder().encode(part.text))
-                                        }
-                                    }
-                                }
-                            } catch {
-                                // Skip malformed JSON chunks
-                            }
-                        }
-                    }
-                }
-            } catch (err) {
-                console.error('Stream processing error:', err)
-            } finally {
-                controller.close()
-            }
-        },
+    const providerResponse = await createCloudTextStream({
+        provider: providerName,
+        apiKey,
+        systemPrompt: systemPrompt + projectContext,
+        userMessage,
+        maxOutputTokens: 1000,
     })
+
+    if (!providerResponse.ok) {
+        const errBody = await providerResponse.text()
+        console.error(`${providerName} API error:`, errBody)
+        return new Response(`AI service error: ${providerResponse.status} ${errBody.slice(0, 100)}`, { status: 502 })
+    }
+
+    const stream = createPlainTextStreamFromProviderResponse(providerName, providerResponse)
 
     return new Response(stream, {
         headers: {

@@ -52,7 +52,7 @@ export default function PrivacyPage() {
                     <section className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
                         <h2 className="text-2xl text-slate-800 mb-4">AI Processing</h2>
                         <p>
-                            Storyline allows users to connect their own AI provider accounts (such as Google Gemini) by entering personal API keys.
+                            Storyline allows users to connect their own AI provider accounts (such as Google Gemini or OpenAI) by entering personal API keys.
                         </p>
                         <p className="mt-4">
                             When you use AI features, requests are securely processed through Storyline’s backend systems. This allows the application to interact with AI providers without exposing your API keys in your browser.
@@ -64,7 +64,7 @@ export default function PrivacyPage() {
                             AI prompts and responses are processed temporarily to generate results and are not stored by default. They are only saved if you explicitly choose to store them within the app (for example, by saving a response to your project).
                         </p>
                         <p className="mt-4">
-                            Your content may be transmitted to third-party AI providers (such as Google Gemini) solely for the purpose of generating responses. These providers process your data according to their own privacy policies and terms. Storyline does not use your personal content to train general-purpose AI models.
+                            Your content may be transmitted to third-party AI providers (such as Google Gemini or OpenAI) solely for the purpose of generating responses. These providers process your data according to their own privacy policies and terms. Storyline does not use your personal content to train general-purpose AI models.
                         </p>
                         <p className="mt-6 text-sm text-slate-400 italic">
                             While we take reasonable measures to protect your data, no system can guarantee absolute security.

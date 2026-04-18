@@ -12,6 +12,7 @@ import type { User } from '@supabase/supabase-js'
 import { THEMES, useTheme } from '@/components/providers/ThemeProvider'
 import { cn } from '@/lib/utils'
 import AiSetupGuide from '@/components/app/AiSetupGuide'
+import { getAiProviderLabel } from '@/lib/ai/providers'
 
 export default function SettingsView({ user, maskedApiKey, aiSettings }: { 
     user: User, 
@@ -58,12 +59,12 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
         message: string;
         details?: any;
     } | null>(null)
-    const [geminiStatus, setGeminiStatus] = useState<{
+    const [cloudStatus, setCloudStatus] = useState<{
         success: boolean;
         message: string;
         details?: any;
     } | null>(null)
-    const [testingGemini, setTestingGemini] = useState(false)
+    const [testingCloud, setTestingCloud] = useState(false)
 
     // Existing data
     const existingApiKey = maskedApiKey
@@ -190,61 +191,51 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
         router.refresh()
     }
 
-    const handleTestGeminiConnection = async () => {
-        setTestingGemini(true)
-        setGeminiStatus(null)
+    const handleTestCloudConnection = async (provider: 'gemini' | 'openai') => {
+        const providerLabel = getAiProviderLabel(provider)
+        setTestingCloud(true)
+        setCloudStatus(null)
 
         try {
-            // Case 1: Testing a newly typed key (client-side check)
-            if (apiKey) {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
-                    method: 'GET'
-                })
-
-                const data = await response.json()
-
-                if (!response.ok) {
-                    throw new Error(data?.error?.message || `API responded with ${response.status}`)
-                }
-
-                setGeminiStatus({
-                    success: true,
-                    message: "Newly entered API Key is valid!"
-                })
-            } 
-            // Case 2: Testing the existing key stored in DB (secure server-side proxy)
-            else if (existingApiKey) {
-                const response = await fetch('/api/ai', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'heartbeat' })
-                })
-
-                const data = await response.json()
-
-                if (!data.ok) {
-                    throw new Error(data.error || "Stored API Key failed connection test.")
-                }
-
-                setGeminiStatus({
-                    success: true,
-                    message: "Saved API Key is connected and working!"
-                })
-            } else {
-                setGeminiStatus({
+            if (!apiKey && !existingApiKey) {
+                setCloudStatus({
                     success: false,
-                    message: "No API Key to test.",
-                    details: "Please enter a key or ensure you have one saved."
+                    message: 'No API Key to test.',
+                    details: 'Please enter a key or ensure you have one saved.',
+                })
+                return
+            }
+
+            const response = await fetch('/api/ai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'heartbeat',
+                    provider,
+                    apiKeyOverride: apiKey || undefined,
+                }),
+            })
+
+            const data = await response.json()
+
+            if (!data.ok) {
+                throw new Error(data.error || 'Stored API Key failed connection test.')
+            } else {
+                setCloudStatus({
+                    success: true,
+                    message: apiKey
+                        ? `New ${providerLabel} API key is valid!`
+                        : `Saved ${providerLabel} API key is connected and working!`,
                 })
             }
         } catch (err: any) {
-            setGeminiStatus({
+            setCloudStatus({
                 success: false,
-                message: "Gemini Cloud connection failed.",
-                details: err.message || "Invalid API key or network error."
+                message: `${providerLabel} connection failed.`,
+                details: err.message || 'Invalid API key or network error.',
             })
         } finally {
-            setTestingGemini(false)
+            setTestingCloud(false)
         }
     }
 
@@ -403,13 +394,20 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
                                 {/* Provider Selection */}
                                 <div className="space-y-3">
                                     <Label>Preferred AI Provider</Label>
-                                    <div className="flex flex-col sm:flex-row gap-3">
+                                    <div className="grid gap-3 sm:grid-cols-3">
                                         <label className={`flex-1 border p-4 rounded-lg cursor-pointer transition-all ${aiProvider === 'gemini' ? 'border-indigo-500 bg-indigo-50/50 ring-1 ring-indigo-500' : 'border-slate-200 hover:border-slate-300'}`}>
                                             <div className="flex items-center gap-2">
                                                 <input type="radio" name="provider" value="gemini" checked={aiProvider === 'gemini'} onChange={(e) => setAiProvider(e.target.value)} />
                                                 <span className="font-medium text-slate-900">Gemini Cloud</span>
                                             </div>
-                                            <p className="text-xs text-slate-500 mt-1 ml-5">Fast, highly capable, cloud-hosted.</p>
+                                            <p className="text-xs text-slate-500 mt-1 ml-5">Google BYOK. Fast, flexible, and easy to start with.</p>
+                                        </label>
+                                        <label className={`flex-1 border p-4 rounded-lg cursor-pointer transition-all ${aiProvider === 'openai' ? 'border-indigo-500 bg-indigo-50/50 ring-1 ring-indigo-500' : 'border-slate-200 hover:border-slate-300'}`}>
+                                            <div className="flex items-center gap-2">
+                                                <input type="radio" name="provider" value="openai" checked={aiProvider === 'openai'} onChange={(e) => setAiProvider(e.target.value)} />
+                                                <span className="font-medium text-slate-900">OpenAI Cloud</span>
+                                            </div>
+                                            <p className="text-xs text-slate-500 mt-1 ml-5">OpenAI BYOK for cloud writing help inside Storyline.</p>
                                         </label>
                                         <label className={`flex-1 border p-4 rounded-lg cursor-pointer transition-all ${aiProvider === 'ollama' ? 'border-indigo-500 bg-indigo-50/50 ring-1 ring-indigo-500' : 'border-slate-200 hover:border-slate-300'}`}>
                                             <div className="flex items-center gap-2">
@@ -421,10 +419,12 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
                                     </div>
                                 </div>
 
-                                {/* Gemini Config */}
-                                {aiProvider === 'gemini' && (
+                                {/* Cloud Config */}
+                                {(aiProvider === 'gemini' || aiProvider === 'openai') && (
                                     <div className="p-5 border border-slate-200 rounded-lg space-y-4 bg-slate-50">
-                                        <h3 className="font-semibold text-slate-800">Google Gemini Configuration</h3>
+                                        <h3 className="font-semibold text-slate-800">
+                                            {aiProvider === 'gemini' ? 'Google Gemini Configuration' : 'OpenAI Configuration'}
+                                        </h3>
                                         {existingApiKey ? (
                                             <div className="p-3 bg-white border border-slate-200 rounded-md flex justify-between items-center shadow-sm">
                                                 <div>
@@ -437,12 +437,28 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
                                             </div>
                                         ) : (
                                             <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-md text-sm shadow-sm">
-                                                No Gemini API key found. Some features may be disabled.
+                                                No {aiProvider === 'gemini' ? 'Gemini' : 'OpenAI'} API key found. Some features may be disabled.
                                             </div>
                                         )}
                                         <div className="space-y-2">
-                                            <Label htmlFor="apiKey">{existingApiKey ? 'Update API Key' : 'Enter Google Gemini API Key'}</Label>
-                                            <Input id="apiKey" type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="AIzaSy..." className="bg-white" />
+                                            <Label htmlFor="apiKey">
+                                                {existingApiKey
+                                                    ? 'Update API Key'
+                                                    : aiProvider === 'gemini'
+                                                        ? 'Enter Google Gemini API Key'
+                                                        : 'Enter OpenAI API Key'}
+                                            </Label>
+                                            <Input
+                                                id="apiKey"
+                                                type="password"
+                                                value={apiKey}
+                                                onChange={(e) => setApiKey(e.target.value)}
+                                                placeholder={aiProvider === 'gemini' ? 'AIzaSy...' : 'sk-...'}
+                                                className="bg-white"
+                                            />
+                                            <p className="text-xs text-slate-500">
+                                                Storyline uses BYOK, so requests run through your own {aiProvider === 'gemini' ? 'Gemini' : 'OpenAI'} account.
+                                            </p>
                                         </div>
 
                                         <div className="pt-2">
@@ -450,11 +466,11 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
                                                 type="button" 
                                                 variant="outline" 
                                                 size="sm"
-                                                onClick={handleTestGeminiConnection}
-                                                disabled={testingGemini || (!apiKey && !existingApiKey)}
+                                                onClick={() => handleTestCloudConnection(aiProvider as 'gemini' | 'openai')}
+                                                disabled={testingCloud || (!apiKey && !existingApiKey)}
                                                 className="w-full gap-2 border-slate-300 hover:bg-white"
                                             >
-                                                {testingGemini ? (
+                                                {testingCloud ? (
                                                     <>
                                                         <span className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
                                                         Testing Cloud Connection...
@@ -462,18 +478,18 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
                                                 ) : 'Test Cloud Connection'}
                                             </Button>
 
-                                            {geminiStatus && (
+                                            {cloudStatus && (
                                                 <div className={`mt-3 p-3 rounded-lg text-xs animate-in fade-in slide-in-from-top-1 duration-300 ${
-                                                    geminiStatus.success 
+                                                    cloudStatus.success 
                                                         ? 'bg-green-100/50 border border-green-200 text-green-800' 
                                                         : 'bg-amber-100/50 border border-amber-200 text-amber-800'
                                                 }`}>
                                                     <div className="font-bold flex items-center gap-1.5 mb-1">
-                                                        <div className={`w-1.5 h-1.5 rounded-full ${geminiStatus.success ? 'bg-green-500' : 'bg-amber-500'}`} />
-                                                        {geminiStatus.message}
+                                                        <div className={`w-1.5 h-1.5 rounded-full ${cloudStatus.success ? 'bg-green-500' : 'bg-amber-500'}`} />
+                                                        {cloudStatus.message}
                                                     </div>
-                                                    {geminiStatus.details && (
-                                                        <p className="opacity-80 italic">{geminiStatus.details}</p>
+                                                    {cloudStatus.details && (
+                                                        <p className="opacity-80 italic">{cloudStatus.details}</p>
                                                     )}
                                                 </div>
                                             )}

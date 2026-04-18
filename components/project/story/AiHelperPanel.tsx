@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { analyzeContextSize, ContextSizingResult, SAFEGUARD_THRESHOLDS } from '@/lib/ai/config'
+import { getAiProviderLabel } from '@/lib/ai/providers'
 import { AiSafeguardDialogs } from '@/components/project/ai/AiSafeguardDialogs'
 import AiPartnerTour from './AiPartnerTour'
 import { useTheme } from '@/components/providers/ThemeProvider'
@@ -214,6 +215,13 @@ function getAiAccessIssue(aiSettings: AiHelperPanelProps['aiSettings']): AiAcces
         }
     }
 
+    if (aiSettings.ai_provider === 'openai' && !aiSettings.api_key) {
+        return {
+            title: 'OpenAI needs an API key',
+            description: 'Add your OpenAI API key in Account Settings before using AI Partner.',
+        }
+    }
+
     return null
 }
 
@@ -275,9 +283,9 @@ export default function AiHelperPanel({
     const [promptMode, setPromptMode] = useState('Review / Chat')
     const [isOllamaLoading, setIsOllamaLoading] = useState(false)
     const [ollamaStatus, setOllamaStatus] = useState<'online' | 'offline' | 'checking'>('online')
-    const [geminiStatus, setGeminiStatus] = useState<'online' | 'offline' | 'checking'>('online')
+    const [cloudStatus, setCloudStatus] = useState<'online' | 'offline' | 'checking'>('online')
     const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
-    const [lastUsedProvider, setLastUsedProvider] = useState<'gemini' | 'ollama' | null>(null)
+    const [lastUsedProvider, setLastUsedProvider] = useState<'gemini' | 'openai' | 'ollama' | null>(null)
     const [contextWarning, setContextWarning] = useState<string | null>(null)
     const [showAiAccessNotice, setShowAiAccessNotice] = useState(false)
     
@@ -889,9 +897,10 @@ export default function AiHelperPanel({
     }
 
     // --- Provider Orchestration ---
-    const runGeminiCloud = async (finalPrompt: string, contextText: string, strategy: ContextStrategy) => {
-        setLastUsedProvider('gemini')
-        console.log(`--- AI DEBUG: runGeminiCloud [Mode: ${strategy}] ---`)
+    const runCloudProvider = async (finalPrompt: string, contextText: string, strategy: ContextStrategy) => {
+        const cloudProvider = aiSettings.ai_provider === 'openai' ? 'openai' : 'gemini'
+        setLastUsedProvider(cloudProvider)
+        console.log(`--- AI DEBUG: runCloudProvider [Provider: ${cloudProvider}] [Mode: ${strategy}] ---`)
         console.log('Active Scene ID:', activeSceneId)
         console.log('Scene Text Length (original):', sceneTextRef.current.length)
         console.log('Scene Text Length (sent):', contextText.length)
@@ -1026,7 +1035,7 @@ export default function AiHelperPanel({
         } catch (err: any) {
             if (aiSettings.ai_fallback_enabled && aiSettings.api_key) {
                 console.warn('Ollama failed, falling back to Gemini:', err.message)
-                await runGeminiCloud(finalPrompt, contextText, strategy)
+                await runCloudProvider(finalPrompt, contextText, strategy)
             } else {
                 throw err
             }
@@ -1084,7 +1093,7 @@ export default function AiHelperPanel({
             if (aiSettings.ai_provider === 'ollama') {
                 await runLocalOllama(finalPrompt, contextText, strategy)
             } else {
-                await runGeminiCloud(finalPrompt, contextText, strategy)
+                await runCloudProvider(finalPrompt, contextText, strategy)
             }
         } catch (err: any) {
             console.error('AI Processing Error:', err)
@@ -1198,24 +1207,25 @@ export default function AiHelperPanel({
         checkStatus()
     }, [aiSettings.ai_provider, aiSettings.ollama_url])
 
-    // Check Gemini status on mount
+    // Check cloud provider status on mount
     useEffect(() => {
         const checkStatus = async () => {
-            if (aiSettings.ai_provider !== 'gemini') return
+            if (aiSettings.ai_provider !== 'gemini' && aiSettings.ai_provider !== 'openai') return
             if (!aiSettings.api_key) {
-                setGeminiStatus('offline')
+                setCloudStatus('offline')
                 return
             }
             
             try {
-                // Heartbeat to models list
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${aiSettings.api_key}`, {
-                    method: 'GET',
-                    signal: AbortSignal.timeout(5000)
+                const response = await fetch('/api/ai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'heartbeat' }),
                 })
-                setGeminiStatus(response.ok ? 'online' : 'offline')
+                const data = await response.json()
+                setCloudStatus(data.ok ? 'online' : 'offline')
             } catch {
-                setGeminiStatus('offline')
+                setCloudStatus('offline')
             }
         }
         checkStatus()
@@ -1268,7 +1278,7 @@ export default function AiHelperPanel({
         }
     }, [promptMode, hint])
 
-    const activeProviderStatus = aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus
+    const activeProviderStatus = aiSettings.ai_provider === 'ollama' ? ollamaStatus : cloudStatus
     const headerStatus = !aiSettings.ai_enabled ? 'disabled' : activeProviderStatus
     const headerStatusDotClass = headerStatus === 'online'
         ? 'bg-green-400'
@@ -1316,7 +1326,7 @@ export default function AiHelperPanel({
                             <div className={cn("flex items-center gap-2", isFullCanvas ? "hidden" : "flex")}>
                                 {aiSettings.ai_enabled && (
                                     <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold truncate">
-                                        {aiSettings.ai_provider === 'ollama' ? `Ollama` : 'Gemini'}
+                                        {getAiProviderLabel(aiSettings.ai_provider)}
                                     </p>
                                 )}
                                 <div className="flex items-center gap-1">
@@ -1670,9 +1680,11 @@ export default function AiHelperPanel({
                                 {lastUsedProvider && !actualLoading && (
                                     <div className={cn(
                                         "text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-md border",
-                                        lastUsedProvider === 'ollama' 
-                                            ? "bg-indigo-50 border-indigo-100 text-indigo-400" 
-                                            : "bg-blue-50 border-blue-100 text-blue-400"
+                                        lastUsedProvider === 'ollama'
+                                            ? "bg-indigo-50 border-indigo-100 text-indigo-400"
+                                            : lastUsedProvider === 'openai'
+                                                ? "bg-sky-50 border-sky-100 text-sky-500"
+                                                : "bg-blue-50 border-blue-100 text-blue-400"
                                     )}>
                                         {lastUsedProvider}
                                     </div>
@@ -1766,7 +1778,7 @@ export default function AiHelperPanel({
                             sourceSceneId={activeSceneId || undefined}
                             sourceNodeId={activeNodeId || undefined}
                             sourceLabel={sourceLabel}
-                            model={lastUsedProvider === 'ollama' ? aiSettings.ollama_model : (lastUsedProvider === 'gemini' ? 'Gemini' : aiSettings.ai_provider)}
+                            model={lastUsedProvider === 'ollama' ? aiSettings.ollama_model : getAiProviderLabel(lastUsedProvider || aiSettings.ai_provider)}
                             action={promptMode.toLowerCase()}
                             linkedEntities={linkedEntitiesSnapshot}
                             contextSnapshot={contextSnapshotString}
@@ -2033,7 +2045,7 @@ export default function AiHelperPanel({
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></span>
                                 </span>
-                                {aiSettings.ai_provider === 'ollama' ? "Thinking with Ollama..." : "Generating with Gemini..."}
+                                {aiSettings.ai_provider === 'ollama' ? "Thinking with Ollama..." : `Generating with ${getAiProviderLabel(aiSettings.ai_provider)}...`}
                             </div>
                         )}
                         {showAiAccessNotice && aiAccessIssue && (

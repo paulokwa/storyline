@@ -354,7 +354,13 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
                                         </span>
                                         <span className="flex items-center gap-1">
                                             <Sparkles className="w-3 h-3" />
-                                            {r.model?.includes('Gemini') ? 'Gemini' : 'AI'}
+                                            {r.model?.includes('Gemini')
+                                                ? 'Gemini'
+                                                : r.model?.includes('OpenAI')
+                                                    ? 'OpenAI'
+                                                    : r.model?.toLowerCase().includes('llama')
+                                                        ? 'Ollama'
+                                                        : 'AI'}
                                         </span>
                                     </div>
                                 </div>

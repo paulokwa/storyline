@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { DEFAULT_OPENAI_MODEL, extractOpenAiOutputText } from '@/lib/ai/providers'
 
 // Safety Caps
 const MAX_CHARS = 1000000 // 1M chars ~ 180k words
@@ -26,13 +27,17 @@ export async function POST(req: NextRequest) {
 
         const { data: keyRecord } = (await supabase
             .from('user_api_keys')
-            .select('api_key')
+            .select('api_key, ai_provider')
             .eq('user_id', user.id)
-            .single()) as { data: { api_key: string } | null }
+            .single()) as { data: { api_key: string, ai_provider: 'gemini' | 'openai' | 'ollama' | null } | null }
 
         const apiKey = keyRecord?.api_key
         if (!apiKey) {
-            return NextResponse.json({ error: 'No AI API Key found in Settings. Please save your Gemini key first.' }, { status: 400 })
+            return NextResponse.json({ error: 'No cloud AI API key found in Settings. Please save your Gemini or OpenAI key first.' }, { status: 400 })
+        }
+
+        if (keyRecord?.ai_provider !== 'gemini' && keyRecord?.ai_provider !== 'openai') {
+            return NextResponse.json({ error: 'AI import detection currently requires Gemini or OpenAI as your active cloud provider.' }, { status: 400 })
         }
 
         // Partitioning
@@ -48,19 +53,8 @@ export async function POST(req: NextRequest) {
 
         const allChapters: any[] = []
 
-        // Direct Gemini API call — same pattern as /api/ai/route.ts
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
-
         for (const chunk of chunks) {
-            const geminiResponse = await fetch(geminiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [
-                        {
-                            role: 'user',
-                            parts: [{
-                                text: `Analyze the following manuscript segment and identify logical major chapter start points.
+            const promptText = `Analyze the following manuscript segment and identify logical major chapter start points.
 
 PRIORITY:
 - Look for explicit headings (e.g. Chapter 1, PART II).
@@ -82,27 +76,56 @@ Return ONLY a valid JSON array. No markdown, no explanation, no code blocks.
 
 MANUSCRIPT SEGMENT:
 ${chunk}`
-                            }]
-                        }
-                    ],
-                    generationConfig: {
-                        maxOutputTokens: 4096,
-                        thinkingConfig: {
-                            thinkingBudget: 0,
-                        },
-                    },
-                }),
-            })
 
-            if (!geminiResponse.ok) {
-                const errBody = await geminiResponse.text()
-                console.error('Gemini API error (chunk):', errBody)
+            const providerResponse = keyRecord.ai_provider === 'gemini'
+                ? await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [
+                            {
+                                role: 'user',
+                                parts: [{ text: promptText }],
+                            },
+                        ],
+                        generationConfig: {
+                            maxOutputTokens: 4096,
+                            thinkingConfig: {
+                                thinkingBudget: 0,
+                            },
+                        },
+                    }),
+                })
+                : await fetch('https://api.openai.com/v1/responses', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${apiKey}`,
+                    },
+                    body: JSON.stringify({
+                        model: DEFAULT_OPENAI_MODEL,
+                        instructions: 'Return valid JSON only.',
+                        input: promptText,
+                        max_output_tokens: 2500,
+                        text: {
+                            format: {
+                                type: 'json_object',
+                            },
+                        },
+                    }),
+                })
+
+            if (!providerResponse.ok) {
+                const errBody = await providerResponse.text()
+                console.error(`${keyRecord.ai_provider} API error (chunk):`, errBody)
                 // Continue to next chunk rather than aborting entirely
                 continue
             }
 
-            const geminiData = await geminiResponse.json()
-            const rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+            const responseData = await providerResponse.json()
+            const rawText = keyRecord.ai_provider === 'gemini'
+                ? responseData?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+                : extractOpenAiOutputText(responseData)
 
             try {
                 // Strip markdown code fences if present

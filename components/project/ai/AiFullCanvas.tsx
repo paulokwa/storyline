@@ -7,6 +7,7 @@ import AiHelperPanel from '../story/AiHelperPanel'
 import { useProjectActions } from '../ProjectContext'
 import { getSceneTextForAi } from '@/lib/story/scene-text'
 import { readStoredSceneNodeId, resolveSceneNodeId, writeStoredSceneNodeId } from '@/lib/project/active-scene'
+import { getAiProviderLabel } from '@/lib/ai/providers'
 
 interface AiFullCanvasProps {
     projectId: string
@@ -158,7 +159,7 @@ export default function AiFullCanvas({
                         <div className={`w-1.5 h-1.5 rounded-full ${collaborationDotClass}`} />
                         {collaborationLabel}
                     </span>
-                    {isAiEnabled && <span>AI Model: {aiSettings.ai_provider}</span>}
+                    {isAiEnabled && <span>AI Model: {getAiProviderLabel(aiSettings.ai_provider)}</span>}
                 </div>
                 <div className="hidden sm:block italic lowercase capitalize tracking-normal font-serif text-slate-300">
                     Your story stays private and protected with your AI Partner.
@@ -171,7 +172,7 @@ export default function AiFullCanvas({
                         <div className={`w-1.5 h-1.5 rounded-full ${collaborationDotClass} shrink-0`} />
                         <span className="truncate">{collaborationLabel}</span>
                     </span>
-                    {isAiEnabled && <span className="truncate">AI Model: {aiSettings.ai_provider}</span>}
+                    {isAiEnabled && <span className="truncate">AI Model: {getAiProviderLabel(aiSettings.ai_provider)}</span>}
                 </div>
             </div>
         </div>

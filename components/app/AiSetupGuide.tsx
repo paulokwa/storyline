@@ -33,19 +33,20 @@ import {
     ArrowRight,
 } from 'lucide-react'
 
-type GuideView = 'compare' | 'gemini' | 'ollama'
+type GuideView = 'compare' | 'gemini' | 'openai' | 'ollama'
+type ProviderOption = 'gemini' | 'openai' | 'ollama'
 
 interface AiSetupGuideProps {
     open: boolean
     onOpenChange: (open: boolean) => void
-    onNavigateToProvider?: (provider: 'gemini' | 'ollama') => void
+    onNavigateToProvider?: (provider: ProviderOption) => void
 }
 
 export default function AiSetupGuide({ open, onOpenChange, onNavigateToProvider }: AiSetupGuideProps) {
     const [view, setView] = useState<GuideView>('compare')
     const [showAdvancedOllama, setShowAdvancedOllama] = useState(false)
 
-    const handleSelectProvider = (provider: 'gemini' | 'ollama') => {
+    const handleSelectProvider = (provider: ProviderOption) => {
         onNavigateToProvider?.(provider)
         onOpenChange(false)
         setTimeout(() => {
@@ -80,6 +81,12 @@ export default function AiSetupGuide({ open, onOpenChange, onNavigateToProvider 
                         onSelect={() => handleSelectProvider('gemini')}
                     />
                 )}
+                {view === 'openai' && (
+                    <OpenAiGuide
+                        onBack={() => setView('compare')}
+                        onSelect={() => handleSelectProvider('openai')}
+                    />
+                )}
                 {view === 'ollama' && (
                     <OllamaGuide
                         onBack={() => setView('compare')}
@@ -98,7 +105,7 @@ function CompareView({
     onSelect,
 }: {
     onSetView: (v: GuideView) => void
-    onSelect: (p: 'gemini' | 'ollama') => void
+    onSelect: (p: ProviderOption) => void
 }) {
     return (
         <div className="space-y-6">
@@ -110,14 +117,14 @@ function CompareView({
                     <div>
                         <DialogTitle className="text-lg">Set Up Your AI Writing Partner</DialogTitle>
                         <DialogDescription className="mt-1">
-                            Choose the AI option that works best for you. Both are great — they just work differently.
+                            Choose the AI option that works best for you. Gemini, OpenAI, and Ollama all work well in Storyline, but they each fit a different setup.
                         </DialogDescription>
                     </div>
                 </div>
             </DialogHeader>
 
             {/* Provider Cards */}
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid sm:grid-cols-3 gap-4">
                 {/* Gemini Card */}
                 <button
                     onClick={() => onSetView('gemini')}
@@ -135,9 +142,33 @@ function CompareView({
                         <span className="font-bold text-slate-900 text-base">Gemini Cloud</span>
                     </div>
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">
-                        Google's powerful AI, accessible from anywhere. The fastest way to get started.
+                        Google's BYOK option. Fast, approachable, and the quickest cloud setup.
                     </p>
                     <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 group-hover:gap-3 transition-all">
+                        Learn more & set up
+                        <ArrowRight className="w-4 h-4" />
+                    </div>
+                </button>
+
+                <button
+                    onClick={() => onSetView('openai')}
+                    className="group text-left p-5 rounded-2xl border-2 border-slate-100 hover:border-sky-300 bg-gradient-to-br from-white to-sky-50/40 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98] relative overflow-hidden"
+                >
+                    <div className="absolute top-0 right-0 p-1">
+                        <span className="text-[10px] font-bold text-sky-600 bg-sky-50 px-2.5 py-1 rounded-bl-xl rounded-tr-lg uppercase tracking-wider">
+                            BYOK
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 bg-sky-100 rounded-xl group-hover:bg-sky-600 group-hover:text-white transition-colors duration-300">
+                            <Key className="w-5 h-5" />
+                        </div>
+                        <span className="font-bold text-slate-900 text-base">OpenAI Cloud</span>
+                    </div>
+                    <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                        Bring your own OpenAI key and use Storyline with OpenAI in the cloud.
+                    </p>
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-sky-600 group-hover:gap-3 transition-all">
                         Learn more & set up
                         <ArrowRight className="w-4 h-4" />
                     </div>
@@ -178,6 +209,7 @@ function CompareView({
                             <tr className="bg-slate-50/80 border-b border-slate-100">
                                 <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-[30%]">Feature</th>
                                 <th className="px-4 py-3 text-[11px] font-bold text-indigo-600 uppercase tracking-wider">Gemini Cloud</th>
+                                <th className="px-4 py-3 text-[11px] font-bold text-sky-600 uppercase tracking-wider">OpenAI Cloud</th>
                                 <th className="px-4 py-3 text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Local Ollama</th>
                             </tr>
                         </thead>
@@ -186,30 +218,35 @@ function CompareView({
                                 label="Setup"
                                 icon={<Zap className="w-3.5 h-3.5 text-amber-500" />}
                                 gemini="Easy (API Key)"
+                                openai="Easy (API Key)"
                                 ollama="Medium (App Install)"
                             />
                             <CompareRow
                                 label="Privacy"
                                 icon={<Shield className="w-3.5 h-3.5 text-blue-500" />}
                                 gemini="Cloud Hosted"
+                                openai="Cloud Hosted"
                                 ollama="100% On-Device"
                             />
                             <CompareRow
                                 label="Cost"
                                 icon={<DollarSign className="w-3.5 h-3.5 text-green-500" />}
                                 gemini="Free Utility (Usage Restricted)"
+                                openai="Usage-Based"
                                 ollama="Completely Free"
                             />
                             <CompareRow
                                 label="Location"
                                 icon={<Globe className="w-3.5 h-3.5 text-sky-500" />}
                                 gemini="Works Everywhere"
+                                openai="Works Everywhere"
                                 ollama="Best for Local Dev"
                             />
                             <CompareRow
                                 label="Performance"
                                 icon={<Sparkles className="w-3.5 h-3.5 text-indigo-500" />}
                                 gemini="High Speed"
+                                openai="High Speed"
                                 ollama="Depends on your PC"
                             />
                         </tbody>
@@ -222,7 +259,7 @@ function CompareView({
                     <Info className="w-4 h-4 text-amber-600" />
                 </div>
                 <p className="text-xs text-amber-800 leading-relaxed font-medium">
-                    <span className="font-bold">Not sure which to pick?</span> Gemini Cloud is the recommended starting point for most writers. It's fast, easy to set up, and works seamlessly across all your devices.
+                    <span className="font-bold">Not sure which to pick?</span> Gemini and OpenAI are the easiest BYOK options if you want cloud AI. Ollama is best when you want everything to stay local.
                 </p>
             </div>
         </div>
@@ -233,11 +270,13 @@ function CompareRow({
     label,
     icon,
     gemini,
+    openai,
     ollama,
 }: {
     label: string
     icon: React.ReactNode
     gemini: string
+    openai: string
     ollama: string
 }) {
     return (
@@ -252,6 +291,12 @@ function CompareRow({
                 <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
                     <span className="text-xs text-slate-600 leading-snug font-medium">{gemini}</span>
+                </div>
+            </td>
+            <td className="px-4 py-3.5">
+                <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-sky-400 shrink-0" />
+                    <span className="text-xs text-slate-600 leading-snug font-medium">{openai}</span>
                 </div>
             </td>
             <td className="px-4 py-3.5">
@@ -281,6 +326,27 @@ function GeminiGuide({ onBack, onSelect }: { onBack: () => void, onSelect: () =>
                 <StepItem number={3} title="Test & Save" done><p className="text-xs text-slate-600">Click test connection and save your settings.</p></StepItem>
             </div>
             <DialogFooter><Button variant="outline" onClick={onBack}>Back</Button><Button onClick={onSelect} className="bg-indigo-600 text-white">Use Gemini Cloud</Button></DialogFooter>
+        </div>
+    )
+}
+
+function OpenAiGuide({ onBack, onSelect }: { onBack: () => void, onSelect: () => void }) {
+    return (
+        <div className="space-y-6">
+            <DialogHeader>
+                <button onClick={onBack} className="flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors mb-1"><ChevronLeft className="w-3.5 h-3.5" />Back</button>
+                <div className="flex items-center gap-2.5">
+                    <Key className="w-5 h-5 text-sky-600" />
+                    <DialogTitle className="text-lg">Setting Up OpenAI Cloud</DialogTitle>
+                </div>
+                <DialogDescription className="text-slate-500">Use your own OpenAI API key and keep Storyline in a BYOK setup.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+                <StepItem number={1} title="Create API Key" active><p className="text-xs text-slate-600">Open your OpenAI dashboard and create a new secret API key for your account or project.</p><a href="https://platform.openai.com/api-keys" target="_blank" className="text-xs font-bold text-sky-600 flex items-center gap-1 mt-1 underline">Open API Keys <ExternalLink className="w-3 h-3" /></a></StepItem>
+                <StepItem number={2} title="Paste Key"><p className="text-xs text-slate-600">Paste it into the settings panel under "OpenAI Cloud".</p></StepItem>
+                <StepItem number={3} title="Test & Save" done><p className="text-xs text-slate-600">Run the connection test, then save your settings to start using OpenAI in Storyline.</p></StepItem>
+            </div>
+            <DialogFooter><Button variant="outline" onClick={onBack}>Back</Button><Button onClick={onSelect} className="bg-sky-600 text-white hover:bg-sky-700">Use OpenAI Cloud</Button></DialogFooter>
         </div>
     )
 }
