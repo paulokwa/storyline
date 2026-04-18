@@ -573,9 +573,6 @@ export default function CommentsPanel({
                         <Send className="w-4 h-4" />
                     </Button>
                 </div>
-                <div className="mt-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest text-center">
-                    CMD + Enter to send
-                </div>
             </div>
         </div>
     )
