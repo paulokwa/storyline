@@ -5,6 +5,7 @@ import { getProjectTypeLabel } from '@/lib/constants'
 import { useCompletion } from '@ai-sdk/react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Package, Bookmark, Database, Maximize2, MessageSquarePlus, Users, Lightbulb, MapPin, Box, HelpCircle, Layout } from 'lucide-react'
 import { useDragScroll } from '@/hooks/useDragScroll'
 import { PremiumEditor } from '@/components/ui/premium-editor'
@@ -19,9 +20,11 @@ import { useProjectActions } from '@/components/project/ProjectContext'
 import { analyzeContextSize, ContextSizingResult, SAFEGUARD_THRESHOLDS } from '@/lib/ai/config'
 import { AiSafeguardDialogs } from '@/components/project/ai/AiSafeguardDialogs'
 import AiPartnerTour from './AiPartnerTour'
+import { useTheme } from '@/components/providers/ThemeProvider'
 
 interface AiHelperPanelProps {
     projectId: string
+    projectTitle?: string | null
     sceneText: string
     sceneCharacters?: { characters: any }[]
     sceneIdeas?: { ideas: any }[]
@@ -186,9 +189,32 @@ const MAX_SCENE_CHARS_TAIL = 10000
 
 type ContextStrategy = 'continuation' | 'full-scene'
 
+type AiAccessIssue = {
+    title: string
+    description: string
+}
+
 function getContextStrategy(mode: string): ContextStrategy {
     if (mode === 'Continue Writing') return 'continuation'
     return 'full-scene' // Includes Improve, Conflict, Emotion, Script, and Review/Chat
+}
+
+function getAiAccessIssue(aiSettings: AiHelperPanelProps['aiSettings']): AiAccessIssue | null {
+    if (!aiSettings.ai_enabled) {
+        return {
+            title: 'AI Partner is turned off',
+            description: 'Open Account Settings from your avatar, then enable AI Partner to keep chatting.',
+        }
+    }
+
+    if (aiSettings.ai_provider === 'gemini' && !aiSettings.api_key) {
+        return {
+            title: 'Gemini needs an API key',
+            description: 'Add your Gemini API key in Account Settings before using AI Partner.',
+        }
+    }
+
+    return null
 }
 
 function buildContextText(text: string, strategy: ContextStrategy): string {
@@ -217,7 +243,7 @@ const PROMPT_TEMPLATES = [
 ]
 
 export default function AiHelperPanel({
-    projectId, sceneText, onInsert,
+    projectId, projectTitle, sceneText, onInsert,
     sceneCharacters = [], sceneIdeas = [], sceneLocations = [], sceneObjects = [],
     linkedCharacters = [], linkedIdeas = [], linkedLocations = [], linkedObjects = [],
     projectCharacters = [], projectIdeas = [], projectLocations = [], projectObjects = [],
@@ -232,6 +258,9 @@ export default function AiHelperPanel({
     const label = getProjectTypeLabel(projectType)
     const isNovel = projectType === 'novel'
     const router = useRouter()
+    const { theme } = useTheme()
+    const isMidnight = theme === 'midnight'
+    const resolvedProjectTitle = projectTitle?.trim() || 'Untitled Project'
 
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'
@@ -250,6 +279,7 @@ export default function AiHelperPanel({
     const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
     const [lastUsedProvider, setLastUsedProvider] = useState<'gemini' | 'ollama' | null>(null)
     const [contextWarning, setContextWarning] = useState<string | null>(null)
+    const [showAiAccessNotice, setShowAiAccessNotice] = useState(false)
     
     // Safeguard States
     const [preflight, setPreflight] = useState<ContextSizingResult | null>(null)
@@ -277,6 +307,7 @@ export default function AiHelperPanel({
     const [isApplyingContext, setIsApplyingContext] = useState(false)
     const { scrollRef, isDragging, onMouseDown, onMouseLeave, onMouseUp, onMouseMove } = useDragScroll()
     const modeScroll = useDragScroll()
+    const aiAccessIssue = useMemo(() => getAiAccessIssue(aiSettings), [aiSettings])
 
     const currentContextDraft = useMemo(
         () => buildContextDraft({ sceneCharacters, sceneIdeas, sceneLocations, sceneObjects }),
@@ -306,6 +337,12 @@ export default function AiHelperPanel({
         const timer = setTimeout(() => setTourOpen(true), 300)
         return () => clearTimeout(timer)
     }, [])
+
+    useEffect(() => {
+        if (!aiAccessIssue) {
+            setShowAiAccessNotice(false)
+        }
+    }, [aiAccessIssue])
 
     // Snapshot scene text at submit time so the hook body stays stable during streaming
     // Fetch archive context when enabled
@@ -521,7 +558,7 @@ export default function AiHelperPanel({
 
     const contextSnapshotString = useMemo(() => {
         const parts = []
-        if (projectId) parts.push(`Project: ${projectId}`)
+        if (resolvedProjectTitle) parts.push(`Project: ${resolvedProjectTitle}`)
         if (activeNodeId) {
             const node = allNodes.find(n => n.id === activeNodeId)
             if (node) parts.push(`${node.type === 'scene' ? 'Scene' : 'Chapter'}: ${node.title}`)
@@ -532,7 +569,7 @@ export default function AiHelperPanel({
         if (linkedObjects.length > 0) parts.push(objectsLabel)
         if (selectedNodes.length > 0) parts.push(storySelectionLabel)
         return parts.join(' | ')
-    }, [projectId, activeNodeId, allNodes, linkedCharacters, linkedIdeas, linkedLocations, linkedObjects, selectedNodes, charactersLabel, ideasLabel, locationsLabel, objectsLabel, storySelectionLabel])
+    }, [resolvedProjectTitle, activeNodeId, allNodes, linkedCharacters, linkedIdeas, linkedLocations, linkedObjects, selectedNodes, charactersLabel, ideasLabel, locationsLabel, objectsLabel, storySelectionLabel])
 
     const sourceLabel = useMemo(() => {
         if (activeNodeId) {
@@ -908,7 +945,7 @@ export default function AiHelperPanel({
 
     const runLocalOllama = async (finalPrompt: string, contextText: string, strategy: ContextStrategy) => {
         // Build the prompt with context
-        const projectContext = `Project: ${projectId}. ${projectPremise ? `Premise: ${projectPremise}. ` : ''}${projectTone ? `Tone: ${projectTone}. ` : ''}`
+        const projectContext = `Project: ${resolvedProjectTitle}. ${projectType ? `Type: ${label}. ` : ''}${projectPremise ? `Premise: ${projectPremise}. ` : ''}${projectTone ? `Tone: ${projectTone}. ` : ''}`
         const charactersContext = linkedCharacters.length > 0 
             ? `Characters: ${linkedCharacters.map(c => c.name).join(', ')}. ` 
             : ''
@@ -1017,6 +1054,16 @@ export default function AiHelperPanel({
         setPreflight(null)
     }
 
+    const handleBlockedAiSubmit = () => {
+        if (!aiAccessIssue) return false
+
+        setShowAiAccessNotice(true)
+        toast.error(aiAccessIssue.title, {
+            description: aiAccessIssue.description,
+        })
+        return true
+    }
+
     const executeAiRequest = async (finalPrompt: string, contextText: string, strategy: ContextStrategy) => {
         setCompletion('') // Clear for new run
         setLastUsedProvider(null)
@@ -1049,7 +1096,7 @@ export default function AiHelperPanel({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!aiSettings.ai_enabled) return
+        if (handleBlockedAiSubmit()) return
         const currentPrompt = prompt.trim()
         if (actualLoading) return
 
@@ -1181,6 +1228,7 @@ export default function AiHelperPanel({
     }, [])
 
     const promptPlaceholder = useMemo(() => {
+        if (aiAccessIssue) return aiAccessIssue.description
         if (actualLoading) return ""
         switch (promptMode) {
             case 'Continue Writing':
@@ -1196,7 +1244,7 @@ export default function AiHelperPanel({
             default:
                 return `Ask anything about this ${label.toLowerCase()}...`
         }
-    }, [promptMode, actualLoading, label])
+    }, [aiAccessIssue, promptMode, actualLoading, label])
 
     const emptyStateCall = useMemo(() => {
         switch (promptMode) {
@@ -1219,6 +1267,20 @@ export default function AiHelperPanel({
             default: return hint || "Ask for feedback, brainstorm ideas, or just chat about the story."
         }
     }, [promptMode, hint])
+
+    const activeProviderStatus = aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus
+    const headerStatus = !aiSettings.ai_enabled ? 'disabled' : activeProviderStatus
+    const headerStatusDotClass = headerStatus === 'online'
+        ? 'bg-green-400'
+        : headerStatus === 'checking'
+            ? 'bg-slate-300 animate-pulse'
+            : 'bg-red-400'
+    const headerStatusTextClass = headerStatus === 'online'
+        ? 'text-green-600'
+        : headerStatus === 'checking'
+            ? 'text-slate-400'
+            : 'text-red-500'
+    const headerStatusLabel = !aiSettings.ai_enabled ? 'disabled' : headerStatus
 
     return (
         <div className="ai-helper-panel flex flex-col h-full min-h-0 bg-[#fcfbf9] border-l border-slate-200/60 shadow-[-20px_0_50px_rgba(0,0,0,0.02)] overflow-hidden">
@@ -1252,21 +1314,18 @@ export default function AiHelperPanel({
                                 <h3 className="text-sm font-serif font-bold text-slate-800 tracking-tight leading-none mb-1 truncate">AI Partner</h3>
                             )}
                             <div className={cn("flex items-center gap-2", isFullCanvas ? "hidden" : "flex")}>
-                                <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold truncate">
-                                    {aiSettings.ai_provider === 'ollama' ? `Ollama` : 'Gemini'}
-                                </p>
+                                {aiSettings.ai_enabled && (
+                                    <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold truncate">
+                                        {aiSettings.ai_provider === 'ollama' ? `Ollama` : 'Gemini'}
+                                    </p>
+                                )}
                                 <div className="flex items-center gap-1">
-                                    <div className={cn(
-                                        "w-1 h-1 rounded-full",
-                                        (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'online' ? "bg-green-400" : 
-                                        (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'checking' ? "bg-slate-300 animate-pulse" : "bg-red-400"
-                                    )} />
+                                    <div className={cn("w-1 h-1 rounded-full", headerStatusDotClass)} />
                                     <span className={cn(
                                         "text-[8px] font-bold uppercase tracking-tight",
-                                        (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'online' ? "text-green-600" : 
-                                        (aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus) === 'checking' ? "text-slate-400" : "text-red-500"
+                                        headerStatusTextClass
                                     )}>
-                                        {(aiSettings.ai_provider === 'ollama' ? ollamaStatus : geminiStatus)}
+                                        {headerStatusLabel}
                                     </span>
                                 </div>
                             </div>
@@ -1485,7 +1544,45 @@ export default function AiHelperPanel({
                 )}
 
                 {/* Empty state */}
-                {!displayedCompletion && !isLoading && !error && (
+                {!displayedCompletion && !isLoading && !error && aiAccessIssue && (
+                    <div className={cn(
+                        "mx-auto flex w-full max-w-md flex-col items-center rounded-3xl p-6 text-center shadow-sm animate-in fade-in slide-in-from-top-2",
+                        isMidnight
+                            ? "border border-amber-400/20 bg-[rgba(35,25,18,0.9)] shadow-[0_20px_50px_rgba(2,6,23,0.28)]"
+                            : "border border-amber-200 bg-amber-50/90"
+                    )}>
+                        <div className={cn(
+                            "mb-4 flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm",
+                            isMidnight ? "bg-white/8 border border-white/10" : "bg-white"
+                        )}>
+                            <AlertCircle className={cn("h-5 w-5", isMidnight ? "text-amber-300" : "text-amber-500")} />
+                        </div>
+                        <div className="space-y-2">
+                            <p className={cn("text-sm font-semibold", isMidnight ? "text-[#f4eadf]" : "text-amber-950")}>{aiAccessIssue.title}</p>
+                            <p className={cn(
+                                "text-xs leading-relaxed font-serif italic",
+                                isMidnight ? "text-[#d4bfad]" : "text-amber-800"
+                            )}>
+                                {aiAccessIssue.description}
+                            </p>
+                        </div>
+                        <Button
+                            type="button"
+                            onClick={() => router.push('/settings')}
+                            className={cn(
+                                "mt-5 rounded-xl px-4 text-white",
+                                isMidnight
+                                    ? "bg-[#c98b4c] hover:bg-[#d59a5d] shadow-[0_10px_24px_rgba(201,139,76,0.22)]"
+                                    : "bg-amber-500 hover:bg-amber-600"
+                            )}
+                        >
+                            <Settings className="mr-2 h-4 w-4" />
+                            Open Account Settings
+                        </Button>
+                    </div>
+                )}
+
+                {!displayedCompletion && !isLoading && !error && !aiAccessIssue && (
                     <div className="flex flex-col items-center justify-center h-full text-center space-y-5 opacity-50">
                         <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center">
                             <MessageSquare className="w-5 h-5 text-indigo-300" />
@@ -1937,6 +2034,35 @@ export default function AiHelperPanel({
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></span>
                                 </span>
                                 {aiSettings.ai_provider === 'ollama' ? "Thinking with Ollama..." : "Generating with Gemini..."}
+                            </div>
+                        )}
+                        {showAiAccessNotice && aiAccessIssue && (
+                            <div className={cn(
+                                "mb-2 flex items-start gap-2 rounded-xl px-3 py-2 text-[11px] animate-in fade-in slide-in-from-top-1 duration-300",
+                                isMidnight
+                                    ? "border border-amber-400/20 bg-[rgba(35,25,18,0.78)] text-[#f1e6db]"
+                                    : "border border-amber-200 bg-amber-50 text-amber-900"
+                            )}>
+                                <AlertCircle className={cn(
+                                    "mt-0.5 h-3.5 w-3.5 shrink-0",
+                                    isMidnight ? "text-amber-300" : "text-amber-500"
+                                )} />
+                                <div className="flex-1 leading-relaxed">
+                                    <p className="font-semibold">{aiAccessIssue.title}</p>
+                                    <p className={cn(isMidnight ? "text-[#d4bfad]" : "text-amber-800/90")}>{aiAccessIssue.description}</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => router.push('/settings')}
+                                    className={cn(
+                                        "shrink-0 rounded-lg px-2 py-1 font-semibold transition-colors",
+                                        isMidnight
+                                            ? "bg-white/8 text-amber-200 hover:bg-white/12"
+                                            : "bg-white text-amber-700 hover:bg-amber-100"
+                                    )}
+                                >
+                                    Settings
+                                </button>
                             </div>
                         )}
                         <div 

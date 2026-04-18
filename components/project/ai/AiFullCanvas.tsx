@@ -60,6 +60,9 @@ export default function AiFullCanvas({
         [activeScene]
     )
     const selectedNodes = allNodes.filter(n => selectedNodeIds.includes(n.id))
+    const isAiEnabled = !!aiSettings?.ai_enabled
+    const collaborationLabel = isAiEnabled ? 'Ready for collaboration' : 'AI Partner is off'
+    const collaborationDotClass = isAiEnabled ? 'bg-green-400' : 'bg-red-400'
 
     useEffect(() => {
         if (activeNodeId && sceneNodeIds.has(activeNodeId)) return
@@ -112,6 +115,7 @@ export default function AiFullCanvas({
                 <div className="ai-full-canvas-frame w-full max-w-5xl flex flex-col h-full bg-white shadow-2xl shadow-slate-200/50 border-x border-slate-100 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <AiHelperPanel 
                         projectId={projectId}
+                        projectTitle={project.title}
                         sceneText={currentSceneText || fallbackSceneText}
                         onInsert={(content) => {
                             // In full canvas mode, we might want to handle insertion differently
@@ -151,10 +155,10 @@ export default function AiFullCanvas({
             <div className="ai-full-canvas-status hidden h-10 items-center justify-between border-t border-slate-100 bg-white px-8 text-[9px] font-bold uppercase tracking-widest text-slate-400 md:flex">
                 <div className="flex items-center gap-6">
                     <span className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                        Ready for collaboration
+                        <div className={`w-1.5 h-1.5 rounded-full ${collaborationDotClass}`} />
+                        {collaborationLabel}
                     </span>
-                    <span>AI Model: {aiSettings.ai_provider}</span>
+                    {isAiEnabled && <span>AI Model: {aiSettings.ai_provider}</span>}
                 </div>
                 <div className="hidden sm:block italic lowercase capitalize tracking-normal font-serif text-slate-300">
                     Your story stays private and protected with your AI Partner.
@@ -164,10 +168,10 @@ export default function AiFullCanvas({
             <div className="ai-full-canvas-status border-t border-slate-100 bg-white px-4 py-2 text-[9px] font-bold uppercase tracking-[0.22em] text-slate-400 md:hidden">
                 <div className="flex items-center justify-between gap-3">
                     <span className="flex items-center gap-2 min-w-0">
-                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
-                        <span className="truncate">Ready for collaboration</span>
+                        <div className={`w-1.5 h-1.5 rounded-full ${collaborationDotClass} shrink-0`} />
+                        <span className="truncate">{collaborationLabel}</span>
                     </span>
-                    <span className="truncate">AI Model: {aiSettings.ai_provider}</span>
+                    {isAiEnabled && <span className="truncate">AI Model: {aiSettings.ai_provider}</span>}
                 </div>
             </div>
         </div>

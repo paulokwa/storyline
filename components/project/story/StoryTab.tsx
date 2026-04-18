@@ -685,6 +685,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 <div className="w-[320px] lg:w-[380px] h-full flex flex-col">
                     <AiHelperPanel
                         projectId={project.id}
+                        projectTitle={project.title}
                         sceneText={currentSceneText}
                         sceneCharacters={activeScene?.scene_characters ?? []}
                         sceneIdeas={activeScene?.scene_ideas ?? []}
