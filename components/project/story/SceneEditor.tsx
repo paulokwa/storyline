@@ -78,6 +78,7 @@ import { useProjectActions } from '@/components/project/ProjectContext'
 import { useComments } from '@/components/project/CommentsContext'
 import { CommentMark } from '@/lib/tiptap/comment-mark'
 import { usePresence } from '@/components/project/PresenceContext'
+import { useTheme } from '@/components/providers/ThemeProvider'
 
 const VIEW_FONT_STACKS: Record<string, string> = {
     Newsreader: "var(--font-newsreader), var(--font-lora), Georgia, serif",
@@ -216,6 +217,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         setComments
     } = useComments()
     const { activeSceneUsers, setMyStatus } = usePresence()
+    const { theme } = useTheme()
+    const isMidnight = theme === 'midnight'
     
     const isReadOnly = role === 'viewer'
     const isMobile = useMediaQuery('(max-width: 768px)')
@@ -946,7 +949,12 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     return (
         <div className={cn(
             'scene-editor-shell min-h-full pb-32 md:pb-80 transition-all duration-700 ease-in-out relative',
-            writingMode === 'screenplay' ? 'bg-[#f0f0ed] py-10 px-4 sm:px-8' : 'px-4 sm:px-12 md:px-24 max-w-6xl mx-auto pt-4'
+            writingMode === 'screenplay'
+                ? cn(
+                    'scene-editor-shell-screenplay py-10 px-4 sm:px-8',
+                    isMidnight ? 'bg-transparent' : 'bg-[#f0f0ed]'
+                )
+                : 'px-4 sm:px-12 md:px-24 max-w-6xl mx-auto pt-4'
         )}>
             {/* Realtime Conflict / Update Banners */}
             {showUpdateBanner && !showConflictModal && (
@@ -1083,7 +1091,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             variant="ghost" 
                             size="sm"
                             onClick={() => setCommentsPanelOpen(true)}
-                            className="hidden lg:inline-flex h-6 px-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary hover:bg-white transition-all"
+                            className="scene-editor-top-action hidden lg:inline-flex h-6 px-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary hover:bg-white transition-all"
                         >
                             <MessageSquare className="w-3 h-3 mr-1" />
                              Feedback
@@ -1094,7 +1102,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             size="sm"
                             onClick={() => setSceneAssetsOpen(!sceneAssetsOpen)}
                             className={cn(
-                                "h-6 px-2 text-[10px] font-bold uppercase tracking-widest transition-all",
+                                "scene-editor-top-action h-6 px-2 text-[10px] font-bold uppercase tracking-widest transition-all",
                                 sceneAssetsOpen ? "text-emerald-500 bg-white" : "text-slate-400 hover:text-emerald-600 hover:bg-white"
                             )}
                         >
@@ -1108,7 +1116,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                 size="sm"
                                 onClick={toggleDictation}
                                 className={cn(
-                                    "hidden lg:inline-flex h-6 px-2 text-[10px] font-bold uppercase tracking-widest transition-all",
+                                    "scene-editor-top-action hidden lg:inline-flex h-6 px-2 text-[10px] font-bold uppercase tracking-widest transition-all",
                                     isRecording 
                                         ? "text-red-500 bg-red-50 hover:bg-red-100 animate-pulse" 
                                         : "text-slate-400 hover:text-slate-600 hover:bg-white"
@@ -1311,7 +1319,12 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 className={cn(
                     "scene-editor-page transition-all duration-700 relative",
                     writingMode === 'screenplay' 
-                        ? "scene-editor-screenplay-page max-w-[80ch] mx-auto bg-white shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] p-12 sm:p-20 min-h-[11in] border border-slate-200/50" 
+                        ? cn(
+                            "scene-editor-screenplay-page max-w-[80ch] mx-auto p-12 sm:p-20 min-h-[11in] border",
+                            isMidnight
+                                ? "bg-transparent border-slate-700/60 shadow-[0_30px_90px_-40px_rgba(0,0,0,0.82)]"
+                                : "bg-white border-slate-200/50 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)]"
+                        )
                         : "mx-auto w-full transition-[max-width] duration-500 ease-in-out"
                 )}
             >

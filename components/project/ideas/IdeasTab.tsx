@@ -203,7 +203,7 @@ export default function IdeasTab({
         <div className="ideas-tab flex-1 flex overflow-hidden bg-[#fbf9f5] relative">
             {/* Left Sidebar - Ideas List */}
             <div className={cn(
-                "w-full md:w-80 md:min-w-80 bg-[#f5f4ef] flex flex-col border-r border-slate-200/50 transition-all duration-300",
+                "ideas-tab-sidebar w-full md:w-80 md:min-w-80 bg-[#f5f4ef] flex flex-col border-r border-slate-200/50 transition-all duration-300",
                 selectedId && "hidden md:flex"
             )}>
                 <div className="p-6 flex items-center justify-between">
@@ -357,11 +357,11 @@ export default function IdeasTab({
 
             {/* Main Content - Detail view */}
             <div className={cn(
-                "flex-1 flex flex-col overflow-hidden bg-[#fbf9f5] w-full max-w-full",
+                "ideas-tab-detail flex-1 flex flex-col overflow-hidden bg-[#fbf9f5] w-full max-w-full",
                 !selectedId && "hidden md:flex"
             )}>
                 {selectedId && (
-                    <div className="md:hidden sticky top-0 z-20 px-6 py-4 bg-[#fbf9f5] border-b border-stone-200/50">
+                    <div className="ideas-tab-mobilebar md:hidden sticky top-0 z-20 px-6 py-4 bg-[#fbf9f5] border-b border-stone-200/50">
                         <Button 
                             variant="ghost" 
                             size="sm" 

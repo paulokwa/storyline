@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { useSpeech } from '@/hooks/useSpeech'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { useTheme } from '@/components/providers/ThemeProvider'
 
 
 export function ReaderControls({
@@ -29,6 +30,8 @@ export function ReaderControls({
     side?: 'top' | 'bottom'
 }) {
     const { supported, speechState, pause, resume, stop, voices, selectedVoice, setVoice, rate, changeRate, speak } = useSpeech()
+    const { theme } = useTheme()
+    const isMidnight = theme === 'midnight'
     const [open, setOpen] = useState(false)
     const [hasSelection, setHasSelection] = useState(false)
     const [hasChapter, setHasChapter] = useState(false)
@@ -94,7 +97,12 @@ export function ReaderControls({
         <div className={cn("relative flex items-center", mode === 'full' && "gap-2")}>
             {mode === 'full' ? (
                 <>
-                    <div className="flex items-center bg-white/40 hover:bg-white/60 border border-slate-200/50 rounded-full p-0.5 transition-all shadow-sm">
+                    <div className={cn(
+                        "reader-controls-shell flex items-center rounded-full p-0.5 transition-all shadow-sm border",
+                        isMidnight
+                            ? "bg-slate-900/70 hover:bg-slate-800/85 border-slate-700/60"
+                            : "bg-white/40 hover:bg-white/60 border-slate-200/50"
+                    )}>
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button
@@ -131,7 +139,12 @@ export function ReaderControls({
                                 align={dropdownAlign} 
                                 side={side} 
                                 sideOffset={8}
-                                className="w-64 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-slate-100 p-0 overflow-hidden z-[110]"
+                                className={cn(
+                                    "reader-controls-menu w-64 rounded-2xl p-0 overflow-hidden z-[110] border",
+                                    isMidnight
+                                        ? "bg-[#182239]/96 border-slate-700/60 shadow-[0_18px_48px_rgba(2,6,23,0.3)]"
+                                        : "bg-white border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.12)]"
+                                )}
                             >
                                 <MenuContent />
                             </DropdownMenuContent>
@@ -163,7 +176,12 @@ export function ReaderControls({
                         align={dropdownAlign} 
                         side={side} 
                         sideOffset={8}
-                        className="w-64 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-slate-100 p-0 overflow-hidden z-[110]"
+                        className={cn(
+                            "reader-controls-menu w-64 rounded-2xl p-0 overflow-hidden z-[110] border",
+                            isMidnight
+                                ? "bg-[#182239]/96 border-slate-700/60 shadow-[0_18px_48px_rgba(2,6,23,0.3)]"
+                                : "bg-white border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.12)]"
+                        )}
                     >
                         <MenuContent />
                     </DropdownMenuContent>
@@ -258,7 +276,12 @@ export function FloatingPlayer() {
 
     return (
         <div className="fixed bottom-4 left-1/2 z-[100] w-[calc(100vw-1.5rem)] max-w-[420px] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-4 duration-500 font-sans md:bottom-8 md:left-auto md:right-8 md:w-auto md:max-w-none md:translate-x-0">
-            <div className="bg-white/90 backdrop-blur-xl border border-slate-200/50 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] p-2 pr-2 flex items-center gap-4 w-full md:min-w-[300px]">
+            <div className={cn(
+                "reader-floating-player backdrop-blur-xl border rounded-2xl p-2 pr-2 flex items-center gap-4 w-full md:min-w-[300px]",
+                isMidnight
+                    ? "bg-[#182239]/90 border-slate-700/60 shadow-[0_18px_48px_rgba(2,6,23,0.3)]"
+                    : "bg-white/90 border-slate-200/50 shadow-[0_12px_40px_rgba(0,0,0,0.12)]"
+            )}>
                 <div className="flex gap-1.5 pl-1 shrink-0">
                     {speechState === 'speaking' ? (
                         <Button 

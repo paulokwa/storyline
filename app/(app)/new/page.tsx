@@ -333,7 +333,7 @@ function StepTitle({ value, onChange, onContinue }: {
                     value={value}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
                     placeholder="e.g. The Midnight Heir"
-                    className="h-16 text-xl bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all font-serif italic"
+                    className="new-project-step-input h-16 text-xl bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-6 transition-all font-serif italic"
                     autoFocus
                     onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && value.trim() && onContinue()}
                 />

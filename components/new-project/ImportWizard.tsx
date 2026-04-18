@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef } from 'react'
-import { UploadCloud, FileText, SplitSquareHorizontal, CheckCircle2, AlertCircle, Loader2, Info, Sparkles, Wand2, X } from 'lucide-react'
+import { UploadCloud, FileText, SplitSquareHorizontal, CheckCircle2, AlertCircle, Loader2, Info, Sparkles, Wand2, X, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -206,37 +206,43 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
             </div>
 
             {!rawText ? (
-                <div 
-                    onClick={() => fileInputRef.current?.click()}
-                    className={cn(
-                        "border-2 border-dashed rounded-3xl p-12 text-center cursor-pointer transition-all duration-300",
-                        uploading 
-                            ? "border-primary/50 bg-primary/5" 
-                            : "border-slate-200 hover:border-primary/50 hover:bg-stone-50"
-                    )}
-                >
-                    <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        onChange={handleFileChange} 
-                        className="hidden" 
-                        accept=".docx,.txt,.md,.pdf,.epub"
-                    />
-                    
-                    {uploading ? (
-                        <div className="flex flex-col items-center gap-4 text-primary">
-                            <Loader2 className="w-10 h-10 animate-spin" />
-                            <div className="font-medium">Extracting manuscript magic...</div>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center gap-4 text-slate-500">
-                            <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
-                                <UploadCloud className="w-8 h-8" />
+                <div className="space-y-8">
+                    <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        className={cn(
+                            "border-2 border-dashed rounded-3xl p-12 text-center cursor-pointer transition-all duration-300",
+                            uploading 
+                                ? "border-primary/50 bg-primary/5" 
+                                : "border-slate-200 hover:border-primary/50 hover:bg-stone-50"
+                        )}
+                    >
+                        <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            onChange={handleFileChange} 
+                            className="hidden" 
+                            accept=".docx,.txt,.md,.pdf,.epub"
+                        />
+                        
+                        {uploading ? (
+                            <div className="flex flex-col items-center gap-4 text-primary">
+                                <Loader2 className="w-10 h-10 animate-spin" />
+                                <div className="font-medium">Extracting manuscript magic...</div>
                             </div>
-                            <div className="font-semibold text-slate-700 text-lg">Click to select your file</div>
-                            <div className="text-sm">Supports .docx, .epub, .pdf, .txt, and .md</div>
-                        </div>
-                    )}
+                        ) : (
+                            <div className="flex flex-col items-center gap-4 text-slate-500">
+                                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
+                                    <UploadCloud className="w-8 h-8" />
+                                </div>
+                                <div className="font-semibold text-slate-700 text-lg">Click to select your file</div>
+                                <div className="text-sm">Supports .docx, .epub, .pdf, .txt, and .md</div>
+                            </div>
+                        )}
+                    </div>
+
+                    <button onClick={onBack} disabled={creating || uploading} className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-primary transition-colors disabled:opacity-50">
+                        <ChevronLeft className="w-4 h-4" /> Go Back
+                    </button>
                 </div>
             ) : (
                 <div className="space-y-8">

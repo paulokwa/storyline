@@ -510,7 +510,7 @@ function ProjectShellInner({
                             {isStoryTab && (
                                 <div className="flex items-center gap-2 shrink-0">
                                     {/* AI Tools - Generative stuff first */}
-                                    <div className="flex items-center gap-1 bg-violet-50 p-1 rounded-2xl border border-violet-100/50">
+                                    <div className="story-mobile-ai-cluster flex items-center gap-1 bg-violet-50 p-1 rounded-2xl border border-violet-100/50">
                                         <Tooltip>
                                             <TooltipTrigger>
                                                 <Button
@@ -519,8 +519,8 @@ function ProjectShellInner({
                                                     onClick={() => analyzeScene()}
                                                     disabled={isAnalyzing || !currentSceneText}
                                                     className={cn(
-                                                        "rounded-xl transition-all h-9 px-3 gap-2",
-                                                        isAnalyzing ? "bg-white text-violet-600 shadow-sm animate-pulse font-bold" : "text-slate-500 hover:bg-white"
+                                                        "story-mobile-ai-button rounded-xl transition-all h-9 px-3 gap-2",
+                                                        isAnalyzing ? "story-mobile-ai-button-active bg-white text-violet-600 shadow-sm animate-pulse font-bold" : "text-slate-500 hover:bg-white"
                                                     )}
                                                 >
                                                     <Wand2 className="w-4 h-4" />
@@ -538,8 +538,8 @@ function ProjectShellInner({
                                                     onClick={handleToggleAi}
                                                     data-tour="ai-helper"
                                                     className={cn(
-                                                        "rounded-xl transition-all h-9 px-3 gap-2",
-                                                        aiPanelOpen ? "bg-white text-indigo-600 shadow-sm font-bold border-indigo-100" : "text-slate-500 hover:bg-white"
+                                                        "story-mobile-ai-button rounded-xl transition-all h-9 px-3 gap-2",
+                                                        aiPanelOpen ? "story-mobile-ai-button-active bg-white text-indigo-600 shadow-sm font-bold border-indigo-100" : "text-slate-500 hover:bg-white"
                                                     )}
                                                 >
                                                     <Sparkles className="w-4 h-4" />

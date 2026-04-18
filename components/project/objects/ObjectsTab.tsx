@@ -189,7 +189,7 @@ export default function ObjectsTab({
     return (
         <TooltipProvider>
         <div className="objects-tab flex-1 flex overflow-hidden bg-[#fbf9f5] relative">
-            <div className={cn("w-full md:w-80 md:min-w-80 bg-[#f5f4ef] flex flex-col border-r border-slate-200/50 transition-all duration-300", selectedId && "hidden md:flex")}>
+            <div className={cn("objects-tab-sidebar w-full md:w-80 md:min-w-80 bg-[#f5f4ef] flex flex-col border-r border-slate-200/50 transition-all duration-300", selectedId && "hidden md:flex")}>
                 <div className="p-6 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Package className="w-4 h-4 text-[#546354]/60" />
@@ -312,9 +312,9 @@ export default function ObjectsTab({
                 </DragDropContext>
             </div>
 
-            <div className={cn("flex-1 flex flex-col overflow-hidden bg-[#fbf9f5] w-full max-w-full", !selectedId && "hidden md:flex")}>
+            <div className={cn("objects-tab-detail flex-1 flex flex-col overflow-hidden bg-[#fbf9f5] w-full max-w-full", !selectedId && "hidden md:flex")}>
                 {selectedId && (
-                    <div className="md:hidden sticky top-0 z-20 px-6 py-4 bg-[#fbf9f5] border-b border-stone-200/50">
+                    <div className="objects-tab-mobilebar md:hidden sticky top-0 z-20 px-6 py-4 bg-[#fbf9f5] border-b border-stone-200/50">
                         <Button variant="ghost" size="sm" onClick={() => setSelectedId(null)} className="text-[#546354] gap-2 px-0 hover:bg-transparent"><ChevronRight className="w-4 h-4 rotate-180" />Back</Button>
                     </div>
                 )}
@@ -350,7 +350,7 @@ export default function ObjectsTab({
                                     </div>
                                     <div className="w-10 h-px bg-stone-100" />
                                 </div>
-                                <div className="bg-[#fcfbf9]/60 rounded-[3rem] p-10 ring-1 ring-[#546354]/5 border border-dashed border-[#546354]/10">
+                                <div className="objects-tab-significance-card rounded-[3rem] p-10 ring-1 ring-[#546354]/5 border border-dashed border-[#546354]/10">
                                     <PremiumEditor 
                                         value={selectedObject.significance || ''} 
                                         onValueChange={(val) => handleTextEditorChange(selectedObject.id, 'significance', val)} 
@@ -369,7 +369,7 @@ export default function ObjectsTab({
                                     </div>
                                     <div className="w-10 h-px bg-stone-100" />
                                 </div>
-                                <div className="bg-white rounded-[3rem] p-8 sm:p-12 shadow-sm ring-1 ring-slate-100/50">
+                                <div className="objects-tab-description-card bg-white rounded-[3rem] p-8 sm:p-12 shadow-sm ring-1 ring-slate-100/50">
                                     <PremiumEditor 
                                         value={selectedObject.description || ''} 
                                         onValueChange={(val) => handleTextEditorChange(selectedObject.id, 'description', val)} 

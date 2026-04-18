@@ -19,14 +19,14 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-    const [theme, setThemeState] = useState<Theme>(() => {
-        if (typeof window === 'undefined') {
-            return DEFAULT_THEME
-        }
+    const [theme, setThemeState] = useState<Theme>(DEFAULT_THEME)
 
+    useEffect(() => {
         const savedTheme = localStorage.getItem('theme')
-        return isTheme(savedTheme) ? savedTheme : DEFAULT_THEME
-    })
+        const resolvedTheme = isTheme(savedTheme) ? savedTheme : DEFAULT_THEME
+        setThemeState(resolvedTheme)
+        document.documentElement.setAttribute('data-theme', resolvedTheme)
+    }, [])
 
     useEffect(() => {
         localStorage.setItem('theme', theme)
