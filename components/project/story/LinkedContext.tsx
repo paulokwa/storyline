@@ -274,7 +274,7 @@ export default function LinkedContext({
                 </div>
             )}
 
-            <div className="flex min-w-0 items-start gap-3">
+            <div className="flex min-w-0 items-start gap-3 pl-1">
                 <div className="flex shrink-0 items-center gap-2 pt-1 text-[9px] uppercase tracking-widest text-slate-400 font-bold">
                     <span>AI Ready</span>
                 </div>
