@@ -523,7 +523,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                                     <Wand2 className="w-4 h-4" />
                                                 </Button>
                                             </TooltipTrigger>
-                                            <TooltipContent side="bottom">Analyze this scene with AI</TooltipContent>
+                                            <TooltipContent side="bottom" sideOffset={7}>Analyze this scene with AI</TooltipContent>
                                         </Tooltip>
 
                                         <Tooltip>
@@ -540,7 +540,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                                     <Sparkles className="w-4 h-4" />
                                                 </Button>
                                             </TooltipTrigger>
-                                            <TooltipContent side="bottom">Ask AI Partner</TooltipContent>
+                                            <TooltipContent side="bottom" sideOffset={7}>Ask AI Partner</TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>
                                 </div>

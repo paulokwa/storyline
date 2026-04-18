@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import AdminBackButton from '@/components/admin/AdminBackButton'
 import { APPROVED_ADMIN_EMAILS, isAdminEmail } from '@/lib/admin'
 import { getAdminDashboardData } from '@/lib/admin-dashboard'
 import { createClient } from '@/lib/supabase/server'
@@ -102,6 +103,7 @@ export default async function AdminPage() {
         <Card className="border-slate-200/80 bg-white/95 shadow-sm">
           <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-2">
+              <AdminBackButton />
               <Badge variant="outline" className="border-[#546354]/20 bg-[#546354]/5 text-[#546354]">
                 Owner Only
               </Badge>

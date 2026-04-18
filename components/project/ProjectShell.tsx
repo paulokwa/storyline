@@ -32,6 +32,7 @@ import {
 import { ShortcutsLegend } from './ShortcutsLegend'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useProjectActionsStore } from '@/lib/store/projectActionsStore'
+import { useTheme } from '@/components/providers/ThemeProvider'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -210,6 +211,8 @@ function ProjectShellInner({
     children 
 }: any) {
     const router = useRouter()
+    const { theme } = useTheme()
+    const isMidnight = theme === 'midnight'
     const { 
         sidebarOpen, setSidebarOpen, 
         aiPanelOpen, setAiPanelOpen, 
@@ -360,28 +363,21 @@ function ProjectShellInner({
 
                             {isStoryTab && (
                                 <div className="relative">
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={handleToggleStructure}
-                                                data-tour="structure-toggle"
-                                                aria-pressed={sidebarOpen}
-                                                aria-label={sidebarOpen ? "Hide structure panel" : "Show structure panel"}
-                                                className={cn(
-                                                    "rounded-xl transition-all h-9 px-3 gap-2",
-                                                    sidebarOpen ? "bg-primary/10 text-primary hover:bg-primary/20" : "bg-black/5 text-slate-600 hover:bg-black/10 hover:text-slate-800"
-                                                )}
-                                            >
-                                                <PanelLeft className="w-4 h-4 shrink-0" />
-                                                <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-[0.14em]">Structure</span>
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="bottom" sideOffset={-57}>
-                                            {sidebarOpen ? "Hide structure panel" : "Show structure panel"}
-                                        </TooltipContent>
-                                    </Tooltip>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleToggleStructure}
+                                        data-tour="structure-toggle"
+                                        aria-pressed={sidebarOpen}
+                                        aria-label={sidebarOpen ? "Hide structure panel" : "Show structure panel"}
+                                        className={cn(
+                                            "rounded-xl transition-all h-9 px-3 gap-2",
+                                            sidebarOpen ? "bg-primary/10 text-primary hover:bg-primary/20" : "bg-black/5 text-slate-600 hover:bg-black/10 hover:text-slate-800"
+                                        )}
+                                    >
+                                        <PanelLeft className="w-4 h-4 shrink-0" />
+                                        <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-[0.14em]">Structure</span>
+                                    </Button>
                                     {showStructureHint && (
                                         <div className="absolute left-1/2 top-full mt-2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 duration-500 bg-[#546354] text-white text-[11px] leading-relaxed font-medium py-2.5 pl-4 pr-3 rounded-2xl shadow-xl shadow-black/10 flex items-center gap-3 whitespace-normal w-[240px] md:hidden">
                                             <div className="absolute -top-1 left-1/2 -ml-1 border-4 border-transparent border-b-[#546354] border-t-0" />
@@ -417,7 +413,13 @@ function ProjectShellInner({
                                 <>
                                     <div className={cn(
                                         "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm",
-                                        project.type === 'novel' ? "bg-indigo-50 text-indigo-600" : "bg-amber-50 text-amber-600"
+                                        project.type === 'novel'
+                                            ? (isMidnight
+                                                ? "bg-[rgba(245,248,255,0.08)] text-[#aab8ff] border border-[rgba(96,115,151,0.28)] shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12),0_10px_24px_rgba(2,6,23,0.24)]"
+                                                : "bg-indigo-50 text-indigo-600")
+                                            : (isMidnight
+                                                ? "bg-[rgba(245,248,255,0.08)] text-[#f5b767] border border-[rgba(96,115,151,0.28)] shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12),0_10px_24px_rgba(2,6,23,0.24)]"
+                                                : "bg-amber-50 text-amber-600")
                                     )}>
                                         {project.type === 'novel' ? <BookOpen className="w-4 h-4" /> : <Tv className="w-4 h-4" />}
                                     </div>
@@ -475,7 +477,7 @@ function ProjectShellInner({
                                                 <Wand2 className="w-4 h-4" />
                                             </Button>
                                         </TooltipTrigger>
-                                        <TooltipContent side="bottom">Analyze this scene with AI</TooltipContent>
+                                        <TooltipContent side="bottom" sideOffset={7}>Analyze this scene with AI</TooltipContent>
                                     </Tooltip>
 
                                     <Tooltip>
@@ -492,7 +494,7 @@ function ProjectShellInner({
                                                 <Sparkles className="w-4 h-4" />
                                             </Button>
                                         </TooltipTrigger>
-                                        <TooltipContent side="bottom">Ask AI Partner</TooltipContent>
+                                        <TooltipContent side="bottom" sideOffset={7}>Ask AI Partner</TooltipContent>
                                     </Tooltip>
                                 </div>
                             )}
@@ -540,7 +542,7 @@ function ProjectShellInner({
                                                     <span className="text-xs font-medium">Analyze</span>
                                                 </Button>
                                             </TooltipTrigger>
-                                            <TooltipContent side="bottom">Analyze this scene with AI</TooltipContent>
+                                            <TooltipContent side="bottom" sideOffset={7}>Analyze this scene with AI</TooltipContent>
                                         </Tooltip>
 
                                         <Tooltip>
@@ -559,7 +561,7 @@ function ProjectShellInner({
                                                     <span className="text-xs font-medium">Ask AI</span>
                                                 </Button>
                                             </TooltipTrigger>
-                                            <TooltipContent side="bottom">Ask AI Partner</TooltipContent>
+                                            <TooltipContent side="bottom" sideOffset={7}>Ask AI Partner</TooltipContent>
                                         </Tooltip>
 
                                         {showAiHint && (

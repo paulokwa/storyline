@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { X, ChevronRight, ChevronLeft, Sparkles, HelpCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useProjectActions } from '@/components/project/ProjectContext'
+import { useTheme } from '@/components/providers/ThemeProvider'
 
 interface Step {
     target: string
@@ -61,6 +62,8 @@ export default function OnboardingTour({
     const [mounted, setMounted] = useState(false)
     const overlayRef = useRef<HTMLDivElement>(null)
     const { sidebarOpen, setSidebarOpen } = useProjectActions()
+    const { theme } = useTheme()
+    const isMidnight = theme === 'midnight'
     const sidebarStateRef = useRef(sidebarOpen)
 
     useEffect(() => {
@@ -160,6 +163,7 @@ export default function OnboardingTour({
 
     const step = STEPS[currentStep]
     const isLast = currentStep === STEPS.length - 1
+    const overlayFill = isMidnight ? 'rgba(6, 10, 20, 0.72)' : 'rgba(0, 0, 0, 0.6)'
 
     const handleNext = () => {
         if (isLast) {
@@ -236,7 +240,10 @@ export default function OnboardingTour({
         {createPortal(
             <div className="fixed inset-0 z-[9999] pointer-events-none overflow-hidden">
                 {/* Spotlight Overlay */}
-                <div className="absolute inset-0 pointer-events-auto bg-black/60 transition-opacity duration-500">
+                <div className={cn(
+                    "absolute inset-0 pointer-events-auto transition-opacity duration-500",
+                    isMidnight ? "bg-[rgba(6,10,20,0.28)]" : "bg-black/60"
+                )}>
                     <svg className="w-full h-full">
                         <defs>
                             <mask id="spotlight-mask">
@@ -254,7 +261,7 @@ export default function OnboardingTour({
                                 )}
                             </mask>
                         </defs>
-                        <rect x="0" y="0" width="100%" height="100%" fill="currentColor" mask="url(#spotlight-mask)" />
+                        <rect x="0" y="0" width="100%" height="100%" fill={overlayFill} mask="url(#spotlight-mask)" />
                     </svg>
                 </div>
             </div>,
@@ -266,35 +273,58 @@ export default function OnboardingTour({
                 {/* Tooltip Box */}
                 <div 
                     className={cn(
-                        "absolute pointer-events-auto w-[320px] bg-white rounded-[2rem] shadow-2xl p-6 sm:p-8 animate-in fade-in zoom-in duration-300",
-                        "border border-slate-100/50"
+                        "absolute pointer-events-auto w-[320px] rounded-[2rem] p-6 sm:p-8 animate-in fade-in zoom-in duration-300",
+                        isMidnight
+                            ? "bg-[linear-gradient(180deg,rgba(12,20,36,0.98)_0%,rgba(15,23,42,0.98)_100%)] border border-slate-700/70 shadow-[0_30px_80px_rgba(2,6,23,0.55)]"
+                            : "bg-white border border-slate-100/50 shadow-2xl"
                     )}
                     style={tooltipStyles() as any}
                 >
                     <button 
                         onClick={onClose}
-                        className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-all"
+                        className={cn(
+                            "absolute top-4 right-4 p-2 rounded-full transition-all",
+                            isMidnight ? "text-slate-500 hover:text-slate-200 hover:bg-slate-800/80" : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                        )}
                     >
                         <X className="w-4 h-4" />
                     </button>
 
                     <div className="mb-6">
                         <div className="flex items-center gap-2 mb-3">
-                            <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                            <div className={cn(
+                                "w-8 h-8 rounded-xl flex items-center justify-center",
+                                isMidnight ? "bg-slate-800 text-slate-100" : "bg-primary/10 text-primary"
+                            )}>
                                 {currentStep === 3 ? <Sparkles className="w-4 h-4" /> : <HelpCircle className="w-4 h-4" />}
                             </div>
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                            <span className={cn(
+                                "text-[10px] font-black uppercase tracking-[0.2em]",
+                                isMidnight ? "text-slate-400" : "text-slate-400"
+                            )}>
                                 Step {currentStep + 1} of {STEPS.length}
                             </span>
                         </div>
-                        <h3 className="text-xl font-serif font-bold text-slate-900 mb-2">{step.title}</h3>
-                        <p className="text-sm text-slate-500 leading-relaxed">{step.content}</p>
+                        <h3 className={cn(
+                            "mb-2 text-xl font-serif font-bold",
+                            isMidnight ? "text-slate-50" : "text-slate-900"
+                        )}>{step.title}</h3>
+                        <p className={cn(
+                            "text-sm leading-relaxed",
+                            isMidnight ? "text-slate-300" : "text-slate-500"
+                        )}>{step.content}</p>
                     </div>
 
-                    <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-50">
+                    <div className={cn(
+                        "flex items-center justify-between gap-4 pt-4 border-t",
+                        isMidnight ? "border-slate-800" : "border-slate-50"
+                    )}>
                         <button 
                             onClick={onClose}
-                            className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors"
+                            className={cn(
+                                "text-[10px] font-bold uppercase tracking-widest transition-colors",
+                                isMidnight ? "text-slate-500 hover:text-slate-200" : "text-slate-400 hover:text-slate-600"
+                            )}
                         >
                             Skip Tour
                         </button>
@@ -305,7 +335,10 @@ export default function OnboardingTour({
                                     variant="ghost" 
                                     size="sm" 
                                     onClick={handleBack}
-                                    className="h-9 w-9 rounded-xl border border-slate-100 text-slate-500 p-0"
+                                    className={cn(
+                                        "h-9 w-9 rounded-xl p-0",
+                                        isMidnight ? "border border-slate-700 bg-slate-900/70 text-slate-300 hover:bg-slate-800" : "border border-slate-100 text-slate-500"
+                                    )}
                                 >
                                     <ChevronLeft className="w-4 h-4" />
                                 </Button>
