@@ -197,32 +197,47 @@ export function ReaderControls({
                     <button 
                         disabled={!hasSelection}
                         onClick={() => { speak(getSelection(), 'Selection'); setOpen(false) }}
-                        className="w-full text-left px-3 py-2 text-sm font-medium rounded-xl text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-transparent transition-colors flex items-center justify-between"
+                        className={cn(
+                            "w-full text-left px-3 py-2 text-sm font-medium rounded-xl disabled:opacity-40 disabled:hover:bg-transparent transition-colors flex items-center justify-between",
+                            isMidnight ? "text-slate-100 hover:bg-slate-800/80" : "text-slate-700 hover:bg-slate-50"
+                        )}
                     >
                         <span className="flex items-center gap-2"><User className="w-3.5 h-3.5 opacity-50" /> Read Selection</span>
                         {hasSelection && <span className="text-[10px] text-indigo-500 font-bold uppercase tracking-wider">Active</span>}
                     </button>
                     <button 
                         onClick={() => { speak(getScene(), 'Scene'); setOpen(false) }}
-                        className="w-full text-left px-3 py-2 text-sm font-medium rounded-xl text-slate-700 hover:bg-slate-50 transition-colors flex items-center justify-between"
+                        className={cn(
+                            "w-full text-left px-3 py-2 text-sm font-medium rounded-xl transition-colors flex items-center justify-between",
+                            isMidnight ? "text-slate-100 hover:bg-slate-800/80" : "text-slate-700 hover:bg-slate-50"
+                        )}
                     >
                         <span className="flex items-center gap-2"><Volume2 className="w-3.5 h-3.5 opacity-50" /> Read Scene</span>
-                        {!hasSelection && <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Default</span>}
+                        {!hasSelection && <span className={cn("text-[10px] font-bold uppercase tracking-wider", isMidnight ? "text-slate-500" : "text-slate-400")}>Default</span>}
                     </button>
                     <button 
                         disabled={!hasChapter}
                         onClick={() => { speak(getChapter(), 'Chapter'); setOpen(false) }}
-                        className="w-full text-left px-3 py-2 text-sm font-medium rounded-xl text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-transparent transition-colors flex items-center gap-2"
+                        className={cn(
+                            "w-full text-left px-3 py-2 text-sm font-medium rounded-xl disabled:opacity-40 disabled:hover:bg-transparent transition-colors flex items-center gap-2",
+                            isMidnight ? "text-slate-100 hover:bg-slate-800/80" : "text-slate-700 hover:bg-slate-50"
+                        )}
                     >
                         <Book className="w-3.5 h-3.5 opacity-50" /> Read Chapter
                     </button>
                 </div>
 
-                <div className="border-t border-slate-100 p-3 bg-slate-50/50 space-y-4">
+                <div className={cn(
+                    "border-t p-3 space-y-4",
+                    isMidnight ? "border-slate-700/60 bg-slate-900/40" : "border-slate-100 bg-slate-50/50"
+                )}>
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                            <label className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Playback Speed</label>
-                            <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">{rate}x</span>
+                            <label className={cn("text-[10px] font-bold tracking-widest uppercase", isMidnight ? "text-slate-400" : "text-slate-400")}>Playback Speed</label>
+                            <span className={cn(
+                                "text-[10px] font-mono px-1.5 py-0.5 rounded-md",
+                                isMidnight ? "text-slate-300 bg-slate-800/80" : "text-slate-400 bg-slate-100"
+                            )}>{rate}x</span>
                         </div>
                         <div className="flex gap-1.5">
                             {[0.75, 1, 1.25, 1.5, 2].map(r => (
@@ -231,9 +246,9 @@ export function ReaderControls({
                                     onClick={() => changeRate(r)}
                                     className={cn(
                                         "flex-1 h-7 text-[10px] rounded-lg border transition-all font-medium",
-                                        rate === r 
-                                            ? "bg-white border-indigo-200 text-indigo-600 shadow-sm" 
-                                            : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                                        rate === r
+                                            ? (isMidnight ? "bg-slate-950 border-indigo-400/40 text-indigo-300 shadow-sm" : "bg-white border-indigo-200 text-indigo-600 shadow-sm")
+                                            : (isMidnight ? "bg-slate-800/90 border-slate-700 text-slate-300 hover:border-slate-500" : "bg-white border-slate-200 text-slate-500 hover:border-slate-300")
                                     )}
                                 >
                                     {r}x
@@ -244,12 +259,18 @@ export function ReaderControls({
                     
                     {voices.length > 0 && (
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold tracking-widest text-slate-400 uppercase flex items-center gap-1">
+                            <label className={cn("text-[10px] font-bold tracking-widest uppercase flex items-center gap-1", isMidnight ? "text-slate-400" : "text-slate-400")}>
                                 <Settings2 className="w-3 h-3" /> Voice
                             </label>
                             <select 
-                                className="w-full bg-white border border-slate-200 rounded-xl text-xs p-2 outline-none cursor-pointer focus:ring-2 focus:ring-indigo-100 hover:border-slate-300 transition-all shadow-sm"
+                                className={cn(
+                                    "w-full rounded-xl text-xs p-2 outline-none cursor-pointer transition-all shadow-sm",
+                                    isMidnight
+                                        ? "bg-slate-900 border border-slate-700 text-slate-100 focus:ring-2 focus:ring-indigo-400/20 hover:border-slate-500"
+                                        : "bg-white border border-slate-200 text-slate-700 focus:ring-2 focus:ring-indigo-100 hover:border-slate-300"
+                                )}
                                 value={selectedVoice?.voiceURI || ''}
+                                style={{ colorScheme: isMidnight ? 'dark' : 'light' }}
                                 onChange={e => {
                                     const v = voices.find(voice => voice.voiceURI === e.target.value)
                                     if (v) setVoice(v)
@@ -271,6 +292,8 @@ export function ReaderControls({
 
 export function FloatingPlayer() {
     const { speechState, pause, resume, stop, currentMode, selectedVoice, rate } = useSpeech()
+    const { theme } = useTheme()
+    const isMidnight = theme === 'midnight'
 
     if (speechState === 'idle') return null
 

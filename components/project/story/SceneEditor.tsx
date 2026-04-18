@@ -1040,13 +1040,13 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             )}
             {/* Header info bar */}
             <div className="flex flex-col mb-10">
-                <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex min-w-0 items-center gap-2">
                         <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 font-sans">
                             {writingMode === 'screenplay' ? 'Screenplay' : 'Draft'} — {label}
                         </span>
                         {activeSceneUsers.length > 0 && (
-                            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300 ml-4">
+                            <div className="hidden sm:flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300 ml-4">
                                 <div className="flex items-center -space-x-1.5">
                                     {activeSceneUsers.map(u => {
                                         const userColor = getUserColor(u.email)
@@ -1075,7 +1075,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             </div>
                         )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                         {!isReadOnly && (
                              <span className={cn(
                                 "text-[10px] font-bold uppercase tracking-wider transition-colors duration-300 font-sans",
@@ -1102,7 +1102,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             size="sm"
                             onClick={() => setSceneAssetsOpen(!sceneAssetsOpen)}
                             className={cn(
-                                "scene-editor-top-action h-6 px-2 text-[10px] font-bold uppercase tracking-widest transition-all",
+                                "scene-editor-top-action hidden md:inline-flex h-6 px-2 text-[10px] font-bold uppercase tracking-widest transition-all",
                                 sceneAssetsOpen ? "text-emerald-500 bg-white" : "text-slate-400 hover:text-emerald-600 hover:bg-white"
                             )}
                         >

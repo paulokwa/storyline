@@ -444,7 +444,9 @@ export default function LinkedContext({
                 })}
 
                         {!hasLinkedContext && (
-                            <div className="text-[11px] text-slate-300 italic shrink-0">No linked items ready for AI analysis</div>
+                            <div className="flex min-w-0 items-center">
+                                <div className="relative -top-[0.40625rem] inline-block text-[11px] text-slate-300 italic leading-none">No linked items ready for AI analysis</div>
+                            </div>
                         )}
                     </div>
                 </div>

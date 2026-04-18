@@ -313,6 +313,15 @@ function ProjectShellInner({
         setCommentsPanelOpen(nextState)
     }
 
+    const handleToggleAssets = () => {
+        const nextState = !sceneAssetsOpen
+        if (nextState && isMobile) {
+            setAiPanelOpen(false)
+            setCommentsPanelOpen(false)
+        }
+        setSceneAssetsOpen(nextState)
+    }
+
     const { speak, speechState } = useSpeech()
     const isReading = speechState === 'speaking'
 
@@ -386,9 +395,9 @@ function ProjectShellInner({
                             )}
 
                             {!isStoryTab && (
-                                <Tooltip>
-                                    <TooltipTrigger>
-                                        <Button
+                                     <Tooltip>
+                                         <TooltipTrigger>
+                                             <Button
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => router.push(`/project/${project.id}/story${activeNodeId ? `?nodeId=${activeNodeId}` : ''}`)}
@@ -597,13 +606,13 @@ function ProjectShellInner({
                                                 {isDictating ? <Mic className="w-4 h-4 text-red-500" /> : <MicOff className="w-4 h-4" />}
                                             </Button>
                                         </TooltipTrigger>
-                                        <TooltipContent side="bottom">Dictate</TooltipContent>
-                                    </Tooltip>
-                                    </span>
+                                             <TooltipContent side="bottom">Dictate</TooltipContent>
+                                     </Tooltip>
+                                     </span>
 
-                                    {/* Feedback */}
-                                    <span className="shrink-0">
-                                    <Tooltip>
+                                     {/* Feedback */}
+                                     <span className="shrink-0">
+                                     <Tooltip>
                                         <TooltipTrigger>
                                             <Button
                                                 variant="ghost"
@@ -617,9 +626,34 @@ function ProjectShellInner({
                                                 <MessageSquare className="w-4 h-4" />
                                             </Button>
                                         </TooltipTrigger>
-                                        <TooltipContent side="bottom">Feedback</TooltipContent>
-                                    </Tooltip>
-                                    </span>
+                                         <TooltipContent side="bottom">Feedback</TooltipContent>
+                                     </Tooltip>
+                                     </span>
+
+                                     {/* Gallery */}
+                                     <span className="shrink-0">
+                                     <Tooltip>
+                                         <TooltipTrigger>
+                                             <Button
+                                                 variant="ghost"
+                                                 size="sm"
+                                                 onClick={handleToggleAssets}
+                                                 disabled={!activeNodeId || activeNodeId === 'virtual-root'}
+                                                 className={cn(
+                                                     "rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center shrink-0 border border-transparent",
+                                                     !activeNodeId || activeNodeId === 'virtual-root'
+                                                         ? "bg-black/5 text-slate-300"
+                                                         : sceneAssetsOpen
+                                                             ? "bg-emerald-50 text-emerald-600 border-emerald-100 font-bold shadow-sm"
+                                                             : "bg-black/5 text-slate-500 hover:bg-black/10"
+                                                 )}
+                                             >
+                                                 <ImageIcon className="w-4 h-4" />
+                                             </Button>
+                                         </TooltipTrigger>
+                                         <TooltipContent side="bottom">Gallery</TooltipContent>
+                                     </Tooltip>
+                                     </span>
 
                                 </div>
                             )}

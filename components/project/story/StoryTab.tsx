@@ -408,11 +408,11 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     return (
         <div className="flex flex-1 min-h-0 overflow-hidden relative">
             {/* Backdrop for mobile */}
-            {(sidebarOpen || aiPanelOpen || commentsPanelOpen) && (
+            {(sidebarOpen || aiPanelOpen || commentsPanelOpen || sceneAssetsOpen) && (
                 <div 
                     className={cn(
                         "md:hidden absolute inset-0 bg-black/20 backdrop-blur-sm z-30 transition-all duration-500",
-                        (sidebarOpen || aiPanelOpen || commentsPanelOpen) ? "opacity-100" : "opacity-0 pointer-events-none"
+                        (sidebarOpen || aiPanelOpen || commentsPanelOpen || sceneAssetsOpen) ? "opacity-100" : "opacity-0 pointer-events-none"
                     )}
                     onClick={() => {
                         setSidebarOpen(false)
