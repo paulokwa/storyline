@@ -39,10 +39,10 @@ const STEPS: Step[] = [
         placement: 'bottom'
     },
     {
-        target: '[data-tour="ai-prompt-area"]',
-        title: 'Prompt & Idea Starters',
-        content: "Ask anything, or use Quick Writing Ideas for a fast spark. Hold Shift+Enter for a new line, or just hit Enter to send.",
-        placement: 'top'
+        target: '[data-tour="ai-help-icon"]',
+        title: 'Replay This Tour Anytime',
+        content: 'Use this help icon whenever you want to run the AI tour again later.',
+        placement: 'bottom'
     }
 ]
 

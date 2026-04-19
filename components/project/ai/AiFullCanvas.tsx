@@ -10,6 +10,7 @@ import { readStoredSceneNodeId, resolveSceneNodeId, writeStoredSceneNodeId } fro
 import { getAiProviderLabel } from '@/lib/ai/providers'
 import { getBillingModeLabel } from '@/lib/ai/modes'
 import { formatMicrosAsUsd } from '@/lib/ai/trial'
+import { AI_TOUR_COMPLETE_KEY, queueAiTourStart } from '@/lib/ai/tour'
 
 interface AiFullCanvasProps {
     projectId: string
@@ -84,6 +85,13 @@ export default function AiFullCanvas({
         if (!activeScene?.node_id) return
         writeStoredSceneNodeId(projectId, activeScene.node_id)
     }, [activeScene?.node_id, projectId])
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+        if (localStorage.getItem(AI_TOUR_COMPLETE_KEY) === 'true') return
+
+        queueAiTourStart()
+    }, [])
 
     const handleReturnToSidebar = () => {
         setAiPanelOpen(true)

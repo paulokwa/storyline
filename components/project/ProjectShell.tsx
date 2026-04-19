@@ -60,6 +60,7 @@ import {
 } from "@/components/ui/tooltip"
 import { Avatar, AvatarFallback } from "../ui/avatar"
 import OnboardingTour from './OnboardingTour'
+import { queueAiTourStart } from '@/lib/ai/tour'
 
 type Project = Database['public']['Tables']['projects']['Row']
 
@@ -146,14 +147,20 @@ export default function ProjectShell({
                         {children}
                     </ProjectShellInner>
 
-                        <OnboardingTour 
-                            open={tourOpen} 
-                            onClose={() => setTourOpen(false)}
-                            onComplete={() => {
-                                setTourOpen(false)
-                                localStorage.setItem(onboardingStorageKey, 'true')
-                            }}
-                        />
+                        {tourOpen && (
+                            <OnboardingTour 
+                                open={tourOpen} 
+                                onClose={() => setTourOpen(false)}
+                                onDismiss={() => {
+                                    setTourOpen(false)
+                                    localStorage.setItem(onboardingStorageKey, 'true')
+                                }}
+                                onComplete={() => {
+                                    setTourOpen(false)
+                                    localStorage.setItem(onboardingStorageKey, 'true')
+                                }}
+                            />
+                        )}
                         
                         <ExportModal 
                             open={exportModalOpen} 
@@ -269,7 +276,7 @@ function ProjectShellInner({
     const handleToggleAi = () => {
         const nextState = !aiPanelOpen
         if (nextState) {
-            sessionStorage.setItem('storyline-ai-tour-pending', 'true')
+            queueAiTourStart()
             setAnalysisResult(null) // Close analysis panel if opening AI Partner
             if (isMobile) setCommentsPanelOpen(false)
         }
@@ -277,7 +284,7 @@ function ProjectShellInner({
     }
 
     const handleAiTabClick = () => {
-        sessionStorage.setItem('storyline-ai-tour-pending', 'true')
+        queueAiTourStart()
     }
 
     const isStoryTab = pathname.includes('/story')
@@ -489,6 +496,7 @@ function ProjectShellInner({
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={handleToggleAi}
+                                                data-tour="ai-sidebar-trigger"
                                                 className={cn(
                                                     "rounded-xl transition-all h-9 w-9 p-0",
                                                     aiPanelOpen ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:bg-white hover:text-indigo-600"
@@ -672,7 +680,7 @@ function ProjectShellInner({
                                     key={slug}
                                     href={`/project/${project.id}/${slug}${slug === 'story' && activeNodeId ? `?nodeId=${activeNodeId}` : ''}`}
                                     onClick={slug === 'ai' ? handleAiTabClick : undefined}
-                                    data-tour={slug === 'ai' ? 'ai-helper' : undefined}
+                                    data-tour={slug === 'ai' ? 'ai-tab' : undefined}
                                     className={cn(
                                         'flex items-center gap-1.5 px-4 sm:px-6 py-3 text-sm font-medium transition-all duration-300 rounded-t-xl shrink-0',
                                         activeTab === slug

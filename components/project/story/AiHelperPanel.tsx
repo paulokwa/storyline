@@ -16,6 +16,7 @@ import SaveAiResponseModal from '@/components/project/ai/SaveAiResponseModal'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
+import { AI_TOUR_COMPLETE_KEY, AI_TOUR_PENDING_KEY, AI_TOUR_START_EVENT, AI_TOUR_STARTED_KEY } from '@/lib/ai/tour'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { analyzeContextSize, ContextSizingResult, SAFEGUARD_THRESHOLDS } from '@/lib/ai/config'
 import { getAiProviderLabel } from '@/lib/ai/providers'
@@ -372,18 +373,37 @@ export default function AiHelperPanel({
     useEffect(() => {
         if (typeof window === 'undefined') return
 
-        const hasSeenTour = localStorage.getItem('storyline-ai-tour-complete') === 'true'
+        const hasSeenTour = localStorage.getItem(AI_TOUR_COMPLETE_KEY) === 'true'
         if (hasSeenTour) {
-            sessionStorage.removeItem('storyline-ai-tour-pending')
+            sessionStorage.removeItem(AI_TOUR_PENDING_KEY)
+            sessionStorage.removeItem(AI_TOUR_STARTED_KEY)
             return
         }
 
-        const shouldStartTour = sessionStorage.getItem('storyline-ai-tour-pending') === 'true'
-        if (!shouldStartTour) return
+        const shouldStartTour = sessionStorage.getItem(AI_TOUR_PENDING_KEY) === 'true'
+        const hasStartedThisSession = sessionStorage.getItem(AI_TOUR_STARTED_KEY) === 'true'
+        if (!shouldStartTour && hasStartedThisSession) return
 
-        sessionStorage.removeItem('storyline-ai-tour-pending')
+        sessionStorage.removeItem(AI_TOUR_PENDING_KEY)
+        sessionStorage.setItem(AI_TOUR_STARTED_KEY, 'true')
         const timer = setTimeout(() => setTourOpen(true), 300)
         return () => clearTimeout(timer)
+    }, [])
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+
+        const handleStartTour = () => {
+            const hasSeenTour = localStorage.getItem(AI_TOUR_COMPLETE_KEY) === 'true'
+            if (hasSeenTour) return
+
+            sessionStorage.removeItem(AI_TOUR_PENDING_KEY)
+            sessionStorage.setItem(AI_TOUR_STARTED_KEY, 'true')
+            setTourOpen(true)
+        }
+
+        window.addEventListener(AI_TOUR_START_EVENT, handleStartTour)
+        return () => window.removeEventListener(AI_TOUR_START_EVENT, handleStartTour)
     }, [])
 
     useEffect(() => {
@@ -640,6 +660,7 @@ export default function AiHelperPanel({
                             variant="ghost"
                             size="icon"
                             onClick={() => setTourOpen(true)}
+                            data-tour="ai-help-icon"
                             className="w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
                         >
                             <HelpCircle className="w-3.5 h-3.5" />
@@ -2239,8 +2260,9 @@ export default function AiHelperPanel({
                                     "w-full border border-slate-200 rounded-2xl py-1 focus-within:ring-2 focus-within:ring-indigo-500/10 focus-within:border-indigo-400 transition-all shadow-sm",
                                     actualLoading ? "bg-white cursor-wait" : "bg-slate-50"
                                 )}
-                                editorClassName="px-4 py-3.5 text-sm font-serif leading-relaxed"
+                                editorClassName="px-4 pr-14 py-3.5 text-sm font-serif leading-relaxed"
                                 minHeight="80px"
+                                maxHeight="min(32vh, 240px)"
                             />
                             <button
                                 type="submit"

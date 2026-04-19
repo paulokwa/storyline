@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import StructureTree from './StructureTree'
 import SceneEditor, { SceneEditorRef } from './SceneEditor'
 import AiHelperPanel from './AiHelperPanel'
+import { queueAiTourStart } from '@/lib/ai/tour'
 import SceneAssetsPanel from './SceneAssetsPanel'
 import LinkedContext from './LinkedContext'
 import SceneAnalysisPanel from './SceneAnalysisPanel'
@@ -408,7 +409,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     const handleToggleAiPanel = () => {
         const nextState = !aiPanelOpen
         if (nextState) {
-            sessionStorage.setItem('storyline-ai-tour-pending', 'true')
+            queueAiTourStart()
             setAnalysisResult(null)
         }
         setAiPanelOpen(nextState)
@@ -599,7 +600,11 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                         </Button>
                                         <Button 
                                             variant="outline"
-                                            onClick={() => setAiPanelOpen(true)}
+                                            onClick={() => {
+                                                queueAiTourStart()
+                                                setAiPanelOpen(true)
+                                            }}
+                                            data-tour="ai-sidebar-trigger"
                                             className="rounded-xl border-slate-200 text-slate-600 h-11 px-6 bg-white hover:bg-slate-50 transition-all active:scale-95"
                                         >
                                             <Sparkles className="w-4 h-4 mr-2" />
@@ -733,6 +738,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                         <button
                             type="button"
                             onClick={handleToggleAiPanel}
+                            data-tour="ai-sidebar-trigger"
                             className={cn(
                                 "group flex h-full w-full flex-col items-center justify-center rounded-[1.5rem] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2",
                                 theme === 'midnight'

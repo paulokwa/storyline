@@ -14,6 +14,7 @@ interface PremiumEditorProps {
   className?: string
   editorClassName?: string
   minHeight?: string
+  maxHeight?: string
 }
 
 /**
@@ -43,6 +44,7 @@ export function PremiumEditor({
   className,
   editorClassName,
   minHeight = '150px',
+  maxHeight,
 }: PremiumEditorProps) {
   // We store the initial value so we can detect when the parent genuinely
   // switches to a *different* entity (e.g. user clicks a different character).
@@ -120,7 +122,7 @@ export function PremiumEditor({
         'cursor-text premium-editor-container',
         className
       )}
-      style={{ minHeight }}
+      style={{ minHeight, maxHeight }}
       onClick={() => editor?.commands.focus()}
     >
       <EditorContent editor={editor} />
@@ -135,6 +137,9 @@ export function PremiumEditor({
         }
         .premium-editor-container .ProseMirror {
           min-height: ${minHeight};
+          ${maxHeight ? `max-height: ${maxHeight};` : ''}
+          ${maxHeight ? 'overflow-y: auto;' : ''}
+          overscroll-behavior: contain;
         }
       `}</style>
     </div>
