@@ -27,7 +27,8 @@ import {
     Settings2,
     Mic,
     MicOff,
-    HelpCircle
+    HelpCircle,
+    PenLine
 } from 'lucide-react'
 import { ShortcutsLegend } from './ShortcutsLegend'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
@@ -420,7 +421,7 @@ function ProjectShellInner({
                                             onClick={() => router.push(`/project/${project.id}/story${activeNodeId ? `?nodeId=${activeNodeId}` : ''}`)}
                                             className="h-9 px-3 gap-2 rounded-xl bg-indigo-50/50 text-indigo-600 hover:bg-indigo-50 transition-all active:scale-95 ml-1"
                                         >
-                                            <BookOpen className="w-3.5 h-3.5" />
+                                            <PenLine className="w-3.5 h-3.5" />
                                             <span className="hidden lg:inline text-[10px] font-bold uppercase tracking-[0.1em]">Editor</span>
                                         </Button>
                                     </TooltipTrigger>
