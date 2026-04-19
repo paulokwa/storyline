@@ -55,7 +55,7 @@ const STEPS: Step[] = [
         id: 'help-icon',
         targets: ['[data-tour="help-icon"]'],
         title: 'Replay This Tour Anytime',
-        content: 'Use this help icon whenever you want to open shortcuts, tips, or run the main workspace tour again.',
+        content: 'Use this help icon to open the Help Center. From there, you can browse tips, check shortcuts, and launch this workspace tour again.',
         placement: 'bottom'
     }
 ]

@@ -61,6 +61,7 @@ import {
 import { Avatar, AvatarFallback } from "../ui/avatar"
 import OnboardingTour from './OnboardingTour'
 import { queueAiTourStart } from '@/lib/ai/tour'
+import { WORKSPACE_TOUR_PENDING_KEY } from '@/lib/project/tour'
 
 type Project = Database['public']['Tables']['projects']['Row']
 
@@ -122,6 +123,15 @@ export default function ProjectShell({
             return () => clearTimeout(timer)
         }
     }, [onboardingStorageKey])
+
+    useEffect(() => {
+        if (sessionStorage.getItem(WORKSPACE_TOUR_PENDING_KEY) !== 'true') return
+
+        sessionStorage.removeItem(WORKSPACE_TOUR_PENDING_KEY)
+        const timer = setTimeout(() => setTourOpen(true), 200)
+
+        return () => clearTimeout(timer)
+    }, [pathname])
 
     const { activeNodeId } = useProjectActions()
 

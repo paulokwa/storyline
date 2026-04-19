@@ -64,6 +64,46 @@ export const HELP_TOPICS: HelpTopic[] = [
     sampleQuestions: ['How do I add an object?', 'Where do I store props?', 'How do I keep track of items?']
   },
   {
+    id: 'structure-panel',
+    title: 'How do I use the Structure panel?',
+    summary: 'Organize chapters, acts, and scenes from the Structure panel.',
+    answer:
+      'Open the Structure panel next to the Story button to see your project outline. Use it to add chapters, acts, and scenes, rename sections, drag and reorder story beats, and jump instantly to any scene. The virtual root lets you select the entire project while each node lets you focus on one scene or section in the editor.',
+    keywords: ['structure', 'outline', 'chapters', 'scenes', 'reorder', 'sidebar', 'project structure'],
+    relatedRoutes: ['/story'],
+    sampleQuestions: ['How do I use the structure panel?', 'Where is my story outline?', 'How do I reorder scenes?']
+  },
+  {
+    id: 'story-editor-formatting',
+    title: 'What do the story editor formatting controls do?',
+    summary: 'Format text and use rich editor tools while writing scenes.',
+    answer:
+      'In novel mode, the editor toolbar gives you text formatting such as bold, italic, underline, strikethrough, highlight, headings, bullet lists, numbered lists, and block quotes. Select text to reveal the floating toolbar and apply formatting to improve readability and structure.',
+    keywords: ['formatting', 'toolbar', 'bold', 'italic', 'heading', 'list', 'blockquote', 'editor'],
+    relatedRoutes: ['/story'],
+    sampleQuestions: ['How do I format text?', 'What do the toolbar buttons do?', 'How do I add headings and lists?']
+  },
+  {
+    id: 'screenplay-toolbar',
+    title: 'How does screenplay mode work?',
+    summary: 'Use screenplay-specific block types for structured script writing.',
+    answer:
+      'Screenplay mode provides structured blocks like scene heading, action, character, parenthetical, dialogue, and transition. These block types keep your script in the correct screenplay format and let you move through scenes quickly using the screenplay toolbar and keyboard navigation.',
+    keywords: ['screenplay', 'screenplay mode', 'scene heading', 'dialogue', 'parenthetical', 'transition', 'structured writing'],
+    relatedRoutes: ['/story'],
+    sampleQuestions: ['How do I write a screenplay?', 'What are scene headings and dialogue blocks?', 'How do I use screenplay mode?']
+  },
+  {
+    id: 'read-aloud-feedback',
+    title: 'How do I use read-aloud and feedback tools?',
+    summary: 'Listen to your story and leave inline feedback while editing.',
+    answer:
+      'Use the read-aloud controls to hear scenes played back, which is perfect for checking pacing, tone, and dialogue. The feedback tools let you insert comments, highlight passages, and review inline notes while editing. Dictation also allows you to speak directly into the editor for faster drafting.',
+    keywords: ['read aloud', 'reader', 'dictation', 'feedback', 'comments', 'review', 'listen'],
+    relatedRoutes: ['/story'],
+    sampleQuestions: ['How do I hear my story read aloud?', 'Where do I leave feedback?', 'How do I dictate text?']
+  },
+  {
     id: 'ai-partner',
     title: 'How do I use the AI Partner?',
     summary: 'Ask the AI Partner for writing help, scene analysis, and creative suggestions.',
@@ -82,6 +122,16 @@ export const HELP_TOPICS: HelpTopic[] = [
     keywords: ['memory', 'AI Memory', 'saved responses', 'history', 'reuse'],
     relatedRoutes: ['/archive'],
     sampleQuestions: ['What is AI memory?', 'Where are old AI responses stored?', 'How do I reuse previous AI output?']
+  },
+  {
+    id: 'project-assets',
+    title: 'How do I use Assets?',
+    summary: 'Upload images to your project and reuse them across scenes and story details.',
+    answer:
+      'Open the Assets tab to upload and organize project images. Assets give you a shared visual library for your project, so you can keep reference art, inspiration, and story images in one place. After uploading, you can link assets to scenes or attach them to characters, locations, and objects wherever visual reference helps.',
+    keywords: ['assets', 'images', 'upload', 'gallery', 'reference art', 'visuals', 'asset manager'],
+    relatedRoutes: ['/assets'],
+    sampleQuestions: ['How do I upload images?', 'Where do I manage project assets?', 'How do I attach an image to a scene?']
   },
   {
     id: 'export-project',
@@ -110,7 +160,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     answer:
       'Press ? while not typing to open the shortcuts panel. The panel lists navigation keys, editor tools, and other quick commands to speed up your workflow.',
     keywords: ['shortcuts', 'keyboard', 'hotkeys', 'commands'],
-    relatedRoutes: ['/story'],
+    relatedRoutes: [],
     sampleQuestions: ['How do I see keyboard shortcuts?', 'What hotkeys are available?', 'How do I navigate quickly?']
   }
 ]
