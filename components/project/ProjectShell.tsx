@@ -66,6 +66,7 @@ type Project = Database['public']['Tables']['projects']['Row']
 
 const TABS = [
     { slug: 'story', label: 'Story', icon: BookOpen },
+    { slug: 'help', label: 'Help', icon: HelpCircle },
     { slug: 'ai', label: 'AI Partner', icon: Sparkles },
     { slug: 'archive', label: 'AI Memory', icon: Bookmark },
     { slug: 'characters', label: 'Characters', icon: Users },
@@ -517,14 +518,14 @@ function ProjectShellInner({
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => setShortcutsOpen(true)}
+                                        onClick={() => router.push(`/project/${project.id}/help`)}
                                         data-tour="help-icon"
                                         className="h-9 w-9 p-0 rounded-xl bg-black/5 text-slate-500 hover:text-primary hover:bg-primary/5 transition-all"
                                     >
                                         <HelpCircle className="w-5 h-5" />
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent side="bottom">Shortcuts & Help</TooltipContent>
+                                <TooltipContent side="bottom">Help center</TooltipContent>
                             </Tooltip>
                         </div>
                     </div>
