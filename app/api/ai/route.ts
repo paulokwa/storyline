@@ -4,6 +4,15 @@ import {
     createPlainTextStreamFromProviderResponse,
     testCloudProviderKey,
 } from '@/lib/ai/providers'
+import { getAiRuntimeState } from '@/lib/ai/runtime'
+import {
+    APP_MANAGED_OPENAI_MODEL,
+    estimateTokensFromChars,
+    estimateTrialReserveMicros,
+    getTrialStatusMessage,
+    logUsageEvent,
+} from '@/lib/ai/trial'
+import { getRequestContext } from '@/lib/server/request-context'
 
 export const maxDuration = 30
 
@@ -59,6 +68,8 @@ export async function POST(req: Request) {
         prompt, 
         provider,
         apiKeyOverride,
+        requestId,
+        deviceFingerprint,
         linkedCharacters, 
         linkedIdeas, 
         linkedLocations, 
@@ -72,6 +83,8 @@ export async function POST(req: Request) {
         prompt?: string
         provider?: 'gemini' | 'openai'
         apiKeyOverride?: string
+        requestId?: string
+        deviceFingerprint?: string | null
         linkedCharacters?: any[]
         linkedIdeas?: any[]
         linkedLocations?: any[]
@@ -79,29 +92,63 @@ export async function POST(req: Request) {
         storyContext?: any[]
     }
 
-    if (action === 'heartbeat') {
-        const { data: keyRecord } = (await supabase
-            .from('user_api_keys')
-            .select('api_key, ai_provider')
-            .eq('user_id', user.id)
-            .single()) as { data: { api_key: string, ai_provider: 'gemini' | 'openai' | 'ollama' | null } | null }
+    const requestContext = getRequestContext(req, deviceFingerprint)
+    const runtime = await getAiRuntimeState(supabase, user.id)
 
-        const selectedProvider = provider ?? keyRecord?.ai_provider
-        const apiKey = apiKeyOverride ?? keyRecord?.api_key
-        if (!apiKey) return new Response(JSON.stringify({ ok: false, error: 'NO_API_KEY' }), { status: 200 })
-        if (selectedProvider !== 'gemini' && selectedProvider !== 'openai') {
-            return new Response(JSON.stringify({ ok: false, error: 'UNSUPPORTED_PROVIDER' }), { status: 200 })
+    if (action === 'heartbeat') {
+        if (apiKeyOverride && (provider === 'gemini' || provider === 'openai')) {
+            try {
+                const data = await testCloudProviderKey(provider, apiKeyOverride)
+                return new Response(JSON.stringify({
+                    ok: data.ok,
+                    status: data.status,
+                    error: data.error,
+                    billingMode: 'byok',
+                    provider,
+                }), { status: 200 })
+            } catch {
+                return new Response(JSON.stringify({ ok: false, error: 'FETCH_FAILED', billingMode: 'byok', provider }), { status: 200 })
+            }
+        }
+
+        if (runtime.billingMode === 'app_managed_trial') {
+            const hasProviderKey = !!runtime.apiKey
+            const isActive = runtime.trialAccount?.status === 'active'
+
+            return new Response(JSON.stringify({
+                ok: hasProviderKey && isActive,
+                billingMode: runtime.billingMode,
+                provider: runtime.provider,
+                error: !hasProviderKey
+                    ? 'APP_MANAGED_AI_UNAVAILABLE'
+                    : !isActive
+                        ? runtime.trialAccount?.status ?? 'TRIAL_UNAVAILABLE'
+                        : null,
+                trialStatus: runtime.trialAccount?.status ?? 'disabled',
+                remainingMicros: runtime.trialAccount?.remaining_micros ?? 0,
+                message: getTrialStatusMessage(runtime.trialAccount),
+            }), { status: 200 })
+        }
+
+        if (!runtime.apiKey) {
+            return new Response(JSON.stringify({ ok: false, error: 'NO_API_KEY', billingMode: runtime.billingMode }), { status: 200 })
+        }
+
+        if (runtime.provider !== 'gemini' && runtime.provider !== 'openai') {
+            return new Response(JSON.stringify({ ok: false, error: 'UNSUPPORTED_PROVIDER', billingMode: runtime.billingMode }), { status: 200 })
         }
 
         try {
-            const data = await testCloudProviderKey(selectedProvider, apiKey)
-            return new Response(JSON.stringify({ 
-                ok: data.ok, 
+            const data = await testCloudProviderKey(runtime.provider, runtime.apiKey)
+            return new Response(JSON.stringify({
+                ok: data.ok,
                 status: data.status,
                 error: data.error,
+                billingMode: runtime.billingMode,
+                provider: runtime.provider,
             }), { status: 200 })
-        } catch (e) {
-            return new Response(JSON.stringify({ ok: false, error: 'FETCH_FAILED' }), { status: 200 })
+        } catch {
+            return new Response(JSON.stringify({ ok: false, error: 'FETCH_FAILED', billingMode: runtime.billingMode }), { status: 200 })
         }
     }
 
@@ -234,20 +281,67 @@ export async function POST(req: Request) {
         console.log('Final userMessage Preview:', userMessage.substring(0, 500))
     }
 
-    const { data: keyRecord } = (await supabase
-        .from('user_api_keys')
-        .select('api_key, ai_provider')
-        .eq('user_id', user.id)
-        .single()) as { data: { api_key: string, ai_provider: 'gemini' | 'openai' | 'ollama' | null } | null }
+    const requestKey = requestId || crypto.randomUUID()
+    const providerName = runtime.provider
 
-    const apiKey = keyRecord?.api_key
+    if (runtime.billingMode === 'ollama') {
+        return new Response('UNSUPPORTED_PROVIDER', { status: 400 })
+    }
+
+    const apiKey = runtime.apiKey
     if (!apiKey) {
         return new Response('NO_API_KEY', { status: 403 })
     }
 
-    const providerName = keyRecord?.ai_provider
     if (providerName !== 'gemini' && providerName !== 'openai') {
         return new Response('UNSUPPORTED_PROVIDER', { status: 400 })
+    }
+
+    const metadata = {
+        action,
+        projectId,
+    }
+
+    if (runtime.billingMode === 'app_managed_trial') {
+        if (runtime.trialAccount?.status !== 'active') {
+            return new Response(runtime.trialAccount?.status === 'exhausted' ? 'TRIAL_EXHAUSTED' : 'TRIAL_UNAVAILABLE', {
+                status: runtime.trialAccount?.status === 'exhausted' ? 402 : 403,
+            })
+        }
+
+        const reservedMicros = estimateTrialReserveMicros({
+            endpoint: 'ai_helper',
+            inputChars: userMessage.length,
+            outputTokensCap: 1000,
+        })
+
+        const reserveResult = await supabase.rpc('reserve_ai_trial_usage', {
+            p_user_id: user.id,
+            p_request_key: requestKey,
+            p_endpoint: 'ai_helper',
+            p_provider: providerName,
+            p_model: APP_MANAGED_OPENAI_MODEL,
+            p_reserved_micros: reservedMicros,
+            p_input_chars: userMessage.length,
+            p_estimated_input_tokens: estimateTokensFromChars(userMessage),
+            p_estimated_output_tokens: 1000,
+            p_ip_address: requestContext.ipAddress,
+            p_device_fingerprint: requestContext.deviceFingerprint,
+            p_user_agent: requestContext.userAgent,
+            p_metadata: metadata,
+        })
+
+        if (reserveResult.error) {
+            return new Response('TRIAL_RESERVE_FAILED', { status: 500 })
+        }
+
+        const reserveData = reserveResult.data as { ok?: boolean, status?: string, reason?: string } | null
+        if (!reserveData?.ok) {
+            return new Response(
+                reserveData?.status === 'exhausted' ? 'TRIAL_EXHAUSTED' : (reserveData?.reason || 'TRIAL_UNAVAILABLE'),
+                { status: reserveData?.status === 'exhausted' ? 402 : 403 }
+            )
+        }
     }
 
     const providerResponse = await createCloudTextStream({
@@ -259,12 +353,105 @@ export async function POST(req: Request) {
     })
 
     if (!providerResponse.ok) {
+        if (runtime.billingMode === 'app_managed_trial') {
+            await supabase.rpc('fail_ai_trial_usage', {
+                p_user_id: user.id,
+                p_request_key: requestKey,
+                p_error_code: `provider_${providerResponse.status}`,
+                p_http_status: providerResponse.status,
+                p_metadata: metadata,
+            })
+        } else {
+            await logUsageEvent({
+                userId: user.id,
+                requestKey,
+                endpoint: 'ai_helper',
+                billingMode: runtime.billingMode,
+                provider: providerName,
+                model: runtime.model,
+                status: 'failed',
+                inputChars: userMessage.length,
+                errorCode: `provider_${providerResponse.status}`,
+                httpStatus: providerResponse.status,
+                ipAddress: requestContext.ipAddress,
+                deviceFingerprint: requestContext.deviceFingerprint,
+                normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
+                userAgent: requestContext.userAgent,
+                metadata,
+            })
+        }
         const errBody = await providerResponse.text()
         console.error(`${providerName} API error:`, errBody)
         return new Response(`AI service error: ${providerResponse.status} ${errBody.slice(0, 100)}`, { status: 502 })
     }
 
-    const stream = createPlainTextStreamFromProviderResponse(providerName, providerResponse)
+    const stream = createPlainTextStreamFromProviderResponse(providerName, providerResponse, {
+        onComplete: async (fullText) => {
+            if (runtime.billingMode === 'app_managed_trial') {
+                await supabase.rpc('finalize_ai_trial_usage', {
+                    p_user_id: user.id,
+                    p_request_key: requestKey,
+                    p_final_micros: estimateTrialReserveMicros({
+                        endpoint: 'ai_helper',
+                        inputChars: userMessage.length,
+                        outputChars: fullText.length,
+                    }),
+                    p_output_chars: fullText.length,
+                    p_http_status: 200,
+                    p_metadata: metadata,
+                })
+                return
+            }
+
+            await logUsageEvent({
+                userId: user.id,
+                requestKey,
+                endpoint: 'ai_helper',
+                billingMode: runtime.billingMode,
+                provider: providerName,
+                model: runtime.model,
+                status: 'completed',
+                inputChars: userMessage.length,
+                outputChars: fullText.length,
+                httpStatus: 200,
+                ipAddress: requestContext.ipAddress,
+                deviceFingerprint: requestContext.deviceFingerprint,
+                normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
+                userAgent: requestContext.userAgent,
+                metadata,
+            })
+        },
+        onError: async () => {
+            if (runtime.billingMode === 'app_managed_trial') {
+                await supabase.rpc('fail_ai_trial_usage', {
+                    p_user_id: user.id,
+                    p_request_key: requestKey,
+                    p_error_code: 'stream_error',
+                    p_http_status: 502,
+                    p_metadata: metadata,
+                })
+                return
+            }
+
+            await logUsageEvent({
+                userId: user.id,
+                requestKey,
+                endpoint: 'ai_helper',
+                billingMode: runtime.billingMode,
+                provider: providerName,
+                model: runtime.model,
+                status: 'failed',
+                inputChars: userMessage.length,
+                errorCode: 'stream_error',
+                httpStatus: 502,
+                ipAddress: requestContext.ipAddress,
+                deviceFingerprint: requestContext.deviceFingerprint,
+                normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
+                userAgent: requestContext.userAgent,
+                metadata,
+            })
+        },
+    })
 
     return new Response(stream, {
         headers: {

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { DEFAULT_OPENAI_MODEL, extractOpenAiOutputText } from '@/lib/ai/providers'
+import { getAiRuntimeState } from '@/lib/ai/runtime'
+import { getRequestContext } from '@/lib/server/request-context'
+import { logUsageEvent } from '@/lib/ai/trial'
 
 // Safety Caps
 const MAX_CHARS = 1000000 // 1M chars ~ 180k words
@@ -10,7 +13,9 @@ const OVERLAP = 15000     // 10% overlap
 
 export async function POST(req: NextRequest) {
     try {
-        const { text, projectType } = await req.json()
+        const { text, projectType, requestId, deviceFingerprint } = await req.json()
+        const requestKey = typeof requestId === 'string' && requestId ? requestId : crypto.randomUUID()
+        const requestContext = getRequestContext(req, typeof deviceFingerprint === 'string' ? deviceFingerprint : null)
 
         if (!text || text.length === 0) {
             return NextResponse.json({ error: 'No text provided' }, { status: 400 })
@@ -25,18 +30,39 @@ export async function POST(req: NextRequest) {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        const { data: keyRecord } = (await supabase
-            .from('user_api_keys')
-            .select('api_key, ai_provider')
-            .eq('user_id', user.id)
-            .single()) as { data: { api_key: string, ai_provider: 'gemini' | 'openai' | 'ollama' | null } | null }
+        const runtime = await getAiRuntimeState(supabase, user.id)
+        const metadata = { endpoint: 'import_ai_detect', textLength: text.length }
 
-        const apiKey = keyRecord?.api_key
+        if (runtime.billingMode === 'app_managed_trial') {
+            await logUsageEvent({
+                userId: user.id,
+                requestKey,
+                endpoint: 'import_ai_detect',
+                billingMode: runtime.billingMode,
+                provider: runtime.provider,
+                model: runtime.model,
+                status: 'blocked',
+                inputChars: text.length,
+                errorCode: 'trial_restricted_import_detect',
+                httpStatus: 403,
+                ipAddress: requestContext.ipAddress,
+                deviceFingerprint: requestContext.deviceFingerprint,
+                normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
+                userAgent: requestContext.userAgent,
+                metadata,
+            })
+
+            return NextResponse.json({
+                error: 'Magic Detect is available with your own API key for now. Free Trial AI does not cover this feature in v1 because it can fan out into multiple costly AI passes.'
+            }, { status: 403 })
+        }
+
+        const apiKey = runtime.apiKey
         if (!apiKey) {
             return NextResponse.json({ error: 'No cloud AI API key found in Settings. Please save your Gemini or OpenAI key first.' }, { status: 400 })
         }
 
-        if (keyRecord?.ai_provider !== 'gemini' && keyRecord?.ai_provider !== 'openai') {
+        if (runtime.provider !== 'gemini' && runtime.provider !== 'openai') {
             return NextResponse.json({ error: 'AI import detection currently requires Gemini or OpenAI as your active cloud provider.' }, { status: 400 })
         }
 
@@ -77,7 +103,7 @@ Return ONLY a valid JSON array. No markdown, no explanation, no code blocks.
 MANUSCRIPT SEGMENT:
 ${chunk}`
 
-            const providerResponse = keyRecord.ai_provider === 'gemini'
+            const providerResponse = runtime.provider === 'gemini'
                 ? await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -117,13 +143,13 @@ ${chunk}`
 
             if (!providerResponse.ok) {
                 const errBody = await providerResponse.text()
-                console.error(`${keyRecord.ai_provider} API error (chunk):`, errBody)
+                console.error(`${runtime.provider} API error (chunk):`, errBody)
                 // Continue to next chunk rather than aborting entirely
                 continue
             }
 
             const responseData = await providerResponse.json()
-            const rawText = keyRecord.ai_provider === 'gemini'
+            const rawText = runtime.provider === 'gemini'
                 ? responseData?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
                 : extractOpenAiOutputText(responseData)
 
@@ -144,10 +170,44 @@ ${chunk}`
         const uniqueChapters = Array.from(new Map(allChapters.map(c => [c.markerSnippet, c])).values())
 
         if (uniqueChapters.length > 100) {
+            await logUsageEvent({
+                userId: user.id,
+                requestKey,
+                endpoint: 'import_ai_detect',
+                billingMode: runtime.billingMode,
+                provider: runtime.provider,
+                model: runtime.model,
+                status: 'failed',
+                inputChars: text.length,
+                errorCode: 'implausible_chapter_count',
+                httpStatus: 422,
+                ipAddress: requestContext.ipAddress,
+                deviceFingerprint: requestContext.deviceFingerprint,
+                normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
+                userAgent: requestContext.userAgent,
+                metadata,
+            })
             return NextResponse.json({
                 error: 'AI identified an implausible number of chapters (>100). Please use manual markers or refine your manuscript structure.'
             }, { status: 422 })
         }
+
+        await logUsageEvent({
+            userId: user.id,
+            requestKey,
+            endpoint: 'import_ai_detect',
+            billingMode: runtime.billingMode,
+            provider: runtime.provider,
+            model: runtime.model,
+            status: 'completed',
+            inputChars: text.length,
+            httpStatus: 200,
+            ipAddress: requestContext.ipAddress,
+            deviceFingerprint: requestContext.deviceFingerprint,
+            normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
+            userAgent: requestContext.userAgent,
+            metadata: { ...metadata, chunkCount: chunks.length, chapterCount: uniqueChapters.length },
+        })
 
         return NextResponse.json({ chapters: uniqueChapters })
 

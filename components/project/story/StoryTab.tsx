@@ -59,11 +59,18 @@ interface StoryTabProps {
     projectRelationships: any[]
     aiSettings: {
         ai_enabled: boolean
+        billing_mode: string
         ai_provider: string
         ai_fallback_enabled: boolean
         ollama_model: string
         ollama_url: string
         api_key: string | null
+        trial?: {
+            status: string
+            remaining_micros: number
+            granted_micros: number
+            consumed_micros: number
+        } | null
     }
 }
 
@@ -378,8 +385,10 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         
         const analysis = analyzeContextSize(
             currentSceneText, 
-            aiSettings.ai_provider, 
-            aiSettings.ai_provider === 'gemini' ? (aiSettings.ai_fallback_enabled ? 'gemini-1.5-flash' : 'gemini-1.5-pro') : 'default'
+            aiSettings.billing_mode === 'ollama' ? 'ollama' : aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider,
+            aiSettings.billing_mode === 'byok' && aiSettings.ai_provider === 'gemini'
+                ? (aiSettings.ai_fallback_enabled ? 'gemini-1.5-flash' : 'gemini-1.5-pro')
+                : 'default'
         )
         setPreflight(analysis)
 
@@ -808,7 +817,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 setIsConfirmingCost={setIsConfirmingCost}
                 isExtremeContext={isExtremeContext}
                 setIsExtremeContext={setIsExtremeContext}
-                provider={aiSettings.ai_provider}
+                provider={aiSettings.billing_mode === 'ollama' ? 'ollama' : aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider}
                 onConfirm={() => {
                     setIsConfirmingCost(false)
                     setIsExtremeContext(false)

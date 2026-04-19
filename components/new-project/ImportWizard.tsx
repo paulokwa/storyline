@@ -13,6 +13,7 @@ import {
 import { cn } from '@/lib/utils'
 import type { ProjectType, WritingMode } from '@/lib/supabase/types'
 import { getProjectTypeLabel } from '@/lib/constants'
+import { getDeviceFingerprint } from '@/lib/client/device-fingerprint'
 
 interface ImportWizardProps {
     projectType: ProjectType
@@ -126,10 +127,16 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
         setError('')
 
         try {
+            const deviceFingerprint = await getDeviceFingerprint()
             const res = await fetch('/api/import/ai-detect', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: rawText, projectType })
+                body: JSON.stringify({
+                    text: rawText,
+                    projectType,
+                    requestId: crypto.randomUUID(),
+                    deviceFingerprint,
+                })
             })
             const data = await res.json()
             if (!res.ok) throw new Error(data.error || 'AI Detection failed')

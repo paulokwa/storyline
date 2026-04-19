@@ -8,6 +8,8 @@ import { useProjectActions } from '../ProjectContext'
 import { getSceneTextForAi } from '@/lib/story/scene-text'
 import { readStoredSceneNodeId, resolveSceneNodeId, writeStoredSceneNodeId } from '@/lib/project/active-scene'
 import { getAiProviderLabel } from '@/lib/ai/providers'
+import { getBillingModeLabel } from '@/lib/ai/modes'
+import { formatMicrosAsUsd } from '@/lib/ai/trial'
 
 interface AiFullCanvasProps {
     projectId: string
@@ -62,7 +64,7 @@ export default function AiFullCanvas({
     )
     const selectedNodes = allNodes.filter(n => selectedNodeIds.includes(n.id))
     const isAiEnabled = !!aiSettings?.ai_enabled
-    const collaborationLabel = isAiEnabled ? 'Ready for collaboration' : 'AI Partner is off'
+    const collaborationLabel = isAiEnabled ? getBillingModeLabel(aiSettings?.billing_mode ?? 'app_managed_trial') : 'AI Partner is off'
     const collaborationDotClass = isAiEnabled ? 'bg-green-400' : 'bg-red-400'
 
     useEffect(() => {
@@ -159,7 +161,10 @@ export default function AiFullCanvas({
                         <div className={`w-1.5 h-1.5 rounded-full ${collaborationDotClass}`} />
                         {collaborationLabel}
                     </span>
-                    {isAiEnabled && <span>AI Model: {getAiProviderLabel(aiSettings.ai_provider)}</span>}
+                    {isAiEnabled && <span>AI Model: {getAiProviderLabel(aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider)}</span>}
+                    {aiSettings?.billing_mode === 'app_managed_trial' && (
+                        <span>Trial Left: ${formatMicrosAsUsd(aiSettings?.trial?.remaining_micros)}</span>
+                    )}
                 </div>
                 <div className="hidden sm:block italic lowercase capitalize tracking-normal font-serif text-slate-300">
                     Your story stays private and protected with your AI Partner.
@@ -172,7 +177,7 @@ export default function AiFullCanvas({
                         <div className={`w-1.5 h-1.5 rounded-full ${collaborationDotClass} shrink-0`} />
                         <span className="truncate">{collaborationLabel}</span>
                     </span>
-                    {isAiEnabled && <span className="truncate">AI Model: {getAiProviderLabel(aiSettings.ai_provider)}</span>}
+                    {isAiEnabled && <span className="truncate">AI Model: {getAiProviderLabel(aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider)}</span>}
                 </div>
             </div>
         </div>

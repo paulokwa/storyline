@@ -19,9 +19,11 @@ import { createClient } from '@/lib/supabase/client'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { analyzeContextSize, ContextSizingResult, SAFEGUARD_THRESHOLDS } from '@/lib/ai/config'
 import { getAiProviderLabel } from '@/lib/ai/providers'
+import { getBillingModeLabel } from '@/lib/ai/modes'
 import { AiSafeguardDialogs } from '@/components/project/ai/AiSafeguardDialogs'
 import AiPartnerTour from './AiPartnerTour'
 import { useTheme } from '@/components/providers/ThemeProvider'
+import { getDeviceFingerprint } from '@/lib/client/device-fingerprint'
 
 interface AiHelperPanelProps {
     projectId: string
@@ -55,11 +57,18 @@ interface AiHelperPanelProps {
     onReturnToSidebar?: () => void
     aiSettings: {
         ai_enabled: boolean
+        billing_mode: string
         ai_provider: string
         ai_fallback_enabled: boolean
         ollama_model: string
         ollama_url: string
         api_key: string | null
+        trial?: {
+            status: string
+            remaining_micros: number
+            granted_micros: number
+            consumed_micros: number
+        } | null
     }
 }
 
@@ -208,6 +217,35 @@ function getAiAccessIssue(aiSettings: AiHelperPanelProps['aiSettings']): AiAcces
         }
     }
 
+    if (aiSettings.billing_mode === 'app_managed_trial') {
+        if (aiSettings.trial?.status === 'active') {
+            return null
+        }
+
+        if (aiSettings.trial?.status === 'exhausted') {
+            return {
+                title: 'Free Trial AI is exhausted',
+                description: 'Switch to your own API key or Ollama in Account Settings to keep using AI Partner.',
+            }
+        }
+
+        if (aiSettings.trial?.status === 'blocked' || aiSettings.trial?.status === 'abuse_review') {
+            return {
+                title: 'Free Trial AI is currently limited',
+                description: 'You can still switch to your own API key or Ollama from Account Settings.',
+            }
+        }
+
+        return {
+            title: 'Free Trial AI is unavailable',
+            description: 'Open Account Settings to switch to your own key or Ollama.',
+        }
+    }
+
+    if (aiSettings.billing_mode === 'ollama') {
+        return null
+    }
+
     if (aiSettings.ai_provider === 'gemini' && !aiSettings.api_key) {
         return {
             title: 'Gemini needs an API key',
@@ -269,6 +307,8 @@ export default function AiHelperPanel({
     const { theme } = useTheme()
     const isMidnight = theme === 'midnight'
     const resolvedProjectTitle = projectTitle?.trim() || 'Untitled Project'
+    const isOllamaMode = aiSettings.billing_mode === 'ollama' || aiSettings.ai_provider === 'ollama'
+    const modeLabel = getBillingModeLabel((aiSettings.billing_mode as any) || 'app_managed_trial')
 
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'
@@ -898,7 +938,13 @@ export default function AiHelperPanel({
 
     // --- Provider Orchestration ---
     const runCloudProvider = async (finalPrompt: string, contextText: string, strategy: ContextStrategy) => {
-        const cloudProvider = aiSettings.ai_provider === 'openai' ? 'openai' : 'gemini'
+        const cloudProvider = aiSettings.billing_mode === 'app_managed_trial'
+            ? 'openai'
+            : aiSettings.ai_provider === 'openai'
+                ? 'openai'
+                : 'gemini'
+        const deviceFingerprint = await getDeviceFingerprint()
+        const requestId = crypto.randomUUID()
         setLastUsedProvider(cloudProvider)
         console.log(`--- AI DEBUG: runCloudProvider [Provider: ${cloudProvider}] [Mode: ${strategy}] ---`)
         console.log('Active Scene ID:', activeSceneId)
@@ -910,6 +956,8 @@ export default function AiHelperPanel({
         await complete(finalPrompt, {
             body: {
                 action: 'helper',
+                requestId,
+                deviceFingerprint,
                 projectId,
                 sceneId: activeSceneId,
                 input: contextText,
@@ -953,6 +1001,8 @@ export default function AiHelperPanel({
     }
 
     const runLocalOllama = async (finalPrompt: string, contextText: string, strategy: ContextStrategy) => {
+        const deviceFingerprint = await getDeviceFingerprint()
+        const requestId = crypto.randomUUID()
         // Build the prompt with context
         const projectContext = `Project: ${resolvedProjectTitle}. ${projectType ? `Type: ${label}. ` : ''}${projectPremise ? `Premise: ${projectPremise}. ` : ''}${projectTone ? `Tone: ${projectTone}. ` : ''}`
         const charactersContext = linkedCharacters.length > 0 
@@ -1032,7 +1082,34 @@ export default function AiHelperPanel({
                     }
                 }
             }
+
+            await fetch('/api/ai/local-usage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    requestId,
+                    endpoint: 'ai_helper',
+                    status: 'completed',
+                    inputChars: fullInternalPrompt.length,
+                    outputChars: accumulated.length,
+                    deviceFingerprint,
+                }),
+            }).catch(() => {})
         } catch (err: any) {
+            await fetch('/api/ai/local-usage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    requestId,
+                    endpoint: 'ai_helper',
+                    status: 'failed',
+                    inputChars: fullInternalPrompt.length,
+                    outputChars: 0,
+                    errorCode: err?.message || 'ollama_error',
+                    deviceFingerprint,
+                }),
+            }).catch(() => {})
+
             if (aiSettings.ai_fallback_enabled && aiSettings.api_key) {
                 console.warn('Ollama failed, falling back to Gemini:', err.message)
                 await runCloudProvider(finalPrompt, contextText, strategy)
@@ -1085,12 +1162,12 @@ export default function AiHelperPanel({
             setContextWarning("This scene is very long, so AI answers may use a reduced context window.")
         }
         
-        if (preflight?.level === 'medium' && aiSettings.ai_provider !== 'ollama') {
+        if (preflight?.level === 'medium' && !isOllamaMode) {
             setContextWarning(`Note: This request is moderately large (Est. ${preflight.estimatedTokens.toLocaleString()} tokens).`)
         }
         
         try {
-            if (aiSettings.ai_provider === 'ollama') {
+            if (isOllamaMode) {
                 await runLocalOllama(finalPrompt, contextText, strategy)
             } else {
                 await runCloudProvider(finalPrompt, contextText, strategy)
@@ -1162,8 +1239,10 @@ export default function AiHelperPanel({
         // Safeguard Preflight
         const analysis = analyzeContextSize(
             contextText, 
-            aiSettings.ai_provider, 
-            aiSettings.ai_provider === 'gemini' ? (aiSettings.ai_fallback_enabled ? 'gemini-1.5-flash' : 'gemini-1.5-pro') : 'default'
+            isOllamaMode ? 'ollama' : aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider,
+            aiSettings.billing_mode === 'byok' && aiSettings.ai_provider === 'gemini'
+                ? (aiSettings.ai_fallback_enabled ? 'gemini-1.5-flash' : 'gemini-1.5-pro')
+                : 'default'
         )
         setPreflight(analysis)
 
@@ -1182,7 +1261,7 @@ export default function AiHelperPanel({
         }
 
         // Performance warning for local models (Ollama)
-        if (aiSettings.ai_provider === 'ollama' && contextText.length > SAFEGUARD_THRESHOLDS.PERFORMANCE_WARNING_LOCAL_CHARS) {
+        if (isOllamaMode && contextText.length > SAFEGUARD_THRESHOLDS.PERFORMANCE_WARNING_LOCAL_CHARS) {
             setContextWarning(`Warning: Large request for local model (${contextText.length.toLocaleString()} chars). It may be slow.`)
         }
 
@@ -1192,7 +1271,7 @@ export default function AiHelperPanel({
     // Check Ollama status on mount
     useEffect(() => {
         const checkStatus = async () => {
-            if (aiSettings.ai_provider !== 'ollama') return
+            if (!isOllamaMode) return
             
             try {
                 const response = await fetch(`${aiSettings.ollama_url}/api/tags`, {
@@ -1205,13 +1284,13 @@ export default function AiHelperPanel({
             }
         }
         checkStatus()
-    }, [aiSettings.ai_provider, aiSettings.ollama_url])
+    }, [isOllamaMode, aiSettings.ollama_url])
 
     // Check cloud provider status on mount
     useEffect(() => {
         const checkStatus = async () => {
-            if (aiSettings.ai_provider !== 'gemini' && aiSettings.ai_provider !== 'openai') return
-            if (!aiSettings.api_key) {
+            if (isOllamaMode) return
+            if (aiSettings.billing_mode === 'byok' && !aiSettings.api_key) {
                 setCloudStatus('offline')
                 return
             }
@@ -1229,7 +1308,7 @@ export default function AiHelperPanel({
             }
         }
         checkStatus()
-    }, [aiSettings.ai_provider, aiSettings.api_key])
+    }, [aiSettings.billing_mode, isOllamaMode, aiSettings.api_key])
 
     // Pick a random hint on mount
     const [hint, setHint] = useState('')
@@ -1278,7 +1357,7 @@ export default function AiHelperPanel({
         }
     }, [promptMode, hint])
 
-    const activeProviderStatus = aiSettings.ai_provider === 'ollama' ? ollamaStatus : cloudStatus
+    const activeProviderStatus = isOllamaMode ? ollamaStatus : cloudStatus
     const headerStatus = !aiSettings.ai_enabled ? 'disabled' : activeProviderStatus
     const headerStatusDotClass = headerStatus === 'online'
         ? 'bg-green-400'
@@ -1326,7 +1405,7 @@ export default function AiHelperPanel({
                             <div className={cn("flex items-center gap-2", isFullCanvas ? "hidden" : "flex")}>
                                 {aiSettings.ai_enabled && (
                                     <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold truncate">
-                                        {getAiProviderLabel(aiSettings.ai_provider)}
+                                        {modeLabel} · {isOllamaMode ? 'Ollama' : getAiProviderLabel(aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider)}
                                     </p>
                                 )}
                                 <div className="flex items-center gap-1">
@@ -1643,6 +1722,46 @@ export default function AiHelperPanel({
                                     </Link>
                                 </Button>
                             </>
+                        ) : error.message?.includes('TRIAL_EXHAUSTED') ? (
+                            <>
+                                <div className="space-y-1">
+                                    <p className="text-sm font-semibold text-red-900">Free Trial AI Exhausted</p>
+                                    <p className="text-xs text-red-500 leading-relaxed font-serif italic">
+                                        Your sponsored AI trial is fully used. Switch to your own API key or Ollama in Settings to keep going.
+                                    </p>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full bg-white border-red-200 text-red-700 hover:bg-red-50 rounded-xl gap-2 text-xs"
+                                >
+                                    <Link href="/settings" className="flex items-center gap-2 w-full justify-center">
+                                        <Settings className="w-3 h-3" />
+                                        Open AI Settings
+                                    </Link>
+                                </Button>
+                            </>
+                        ) : error.message?.includes('TRIAL_UNAVAILABLE') ? (
+                            <>
+                                <div className="space-y-1">
+                                    <p className="text-sm font-semibold text-red-900">Free Trial AI Unavailable</p>
+                                    <p className="text-xs text-red-500 leading-relaxed font-serif italic">
+                                        This account cannot use the sponsored trial right now. You can still switch to BYOK or Ollama in Settings.
+                                    </p>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full bg-white border-red-200 text-red-700 hover:bg-red-50 rounded-xl gap-2 text-xs"
+                                >
+                                    <Link href="/settings" className="flex items-center gap-2 w-full justify-center">
+                                        <Settings className="w-3 h-3" />
+                                        Open AI Settings
+                                    </Link>
+                                </Button>
+                            </>
                         ) : (
                             <>
                                 <div className="space-y-1">
@@ -1778,7 +1897,9 @@ export default function AiHelperPanel({
                             sourceSceneId={activeSceneId || undefined}
                             sourceNodeId={activeNodeId || undefined}
                             sourceLabel={sourceLabel}
-                            model={lastUsedProvider === 'ollama' ? aiSettings.ollama_model : getAiProviderLabel(lastUsedProvider || aiSettings.ai_provider)}
+                            model={lastUsedProvider === 'ollama'
+                                ? aiSettings.ollama_model
+                                : getAiProviderLabel(lastUsedProvider || (aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider))}
                             action={promptMode.toLowerCase()}
                             linkedEntities={linkedEntitiesSnapshot}
                             contextSnapshot={contextSnapshotString}
@@ -2045,7 +2166,7 @@ export default function AiHelperPanel({
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></span>
                                 </span>
-                                {aiSettings.ai_provider === 'ollama' ? "Thinking with Ollama..." : `Generating with ${getAiProviderLabel(aiSettings.ai_provider)}...`}
+                                {isOllamaMode ? "Thinking with Ollama..." : `Generating with ${getAiProviderLabel(aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider)}...`}
                             </div>
                         )}
                         {showAiAccessNotice && aiAccessIssue && (
@@ -2134,7 +2255,7 @@ export default function AiHelperPanel({
                 projectContextMode={projectContextMode}
                 setProjectContextMode={setProjectContextMode}
                 allScenes={allScenes}
-                provider={aiSettings.ai_provider}
+                provider={isOllamaMode ? 'ollama' : (aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider)}
                 onConfirm={() => {
                     setIsConfirmingCost(false);
                     setIsExtremeContext(false);

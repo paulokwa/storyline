@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useState } from 'react'
+import { getDeviceFingerprint } from '@/lib/client/device-fingerprint'
 
 interface ProjectContextType {
     role: 'owner' | 'editor' | 'viewer'
@@ -82,10 +83,15 @@ export function ProjectProvider({
         setIsAnalyzing(true)
         setAnalysisResult(null)
         try {
+            const deviceFingerprint = await getDeviceFingerprint()
             const res = await fetch('/api/ai/analyze-scene', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sceneText: currentSceneText }),
+                body: JSON.stringify({
+                    sceneText: currentSceneText,
+                    requestId: crypto.randomUUID(),
+                    deviceFingerprint,
+                }),
             })
             if (res.ok) {
                 const data = await res.json()

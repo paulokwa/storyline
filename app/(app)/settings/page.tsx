@@ -14,6 +14,12 @@ export default async function SettingsPage() {
         .select('*')
         .eq('user_id', user.id)
         .single()) as { data: any | null }
+
+    const { data: trialAccount } = await supabase
+        .from('ai_trial_accounts')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle()
         
     const maskedApiKey = maskApiKey(aiSettings?.api_key)
 
@@ -24,10 +30,12 @@ export default async function SettingsPage() {
                 maskedApiKey={maskedApiKey} 
                 aiSettings={{
                     ai_enabled: aiSettings?.ai_enabled ?? true,
+                    billing_mode: aiSettings?.billing_mode ?? 'app_managed_trial',
                     ai_provider: aiSettings?.ai_provider ?? 'gemini',
                     ai_fallback_enabled: aiSettings?.ai_fallback_enabled ?? false,
                     ollama_model: aiSettings?.ollama_model ?? 'llama3',
-                    ollama_url: aiSettings?.ollama_url ?? 'http://127.0.0.1:11434'
+                    ollama_url: aiSettings?.ollama_url ?? 'http://127.0.0.1:11434',
+                    trial: trialAccount ?? null,
                 }} 
             />
         </div>

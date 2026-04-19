@@ -3,12 +3,11 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
-import { getURL } from '@/lib/utils/url'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PenLine, AlertCircle } from 'lucide-react'
+import { getDeviceFingerprint } from '@/lib/client/device-fingerprint'
 
 export default function SignupPage() {
     const router = useRouter()
@@ -23,22 +22,32 @@ export default function SignupPage() {
         setLoading(true)
         setError('')
 
-        const supabase = createClient()
-        const { error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: { display_name: displayName },
-                emailRedirectTo: `${getURL()}api/auth/callback`,
-            },
-        })
+        try {
+            const deviceFingerprint = await getDeviceFingerprint()
+            const response = await fetch('/api/auth/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    displayName,
+                    email,
+                    password,
+                    deviceFingerprint,
+                }),
+            })
 
-        if (error) {
-            setError(error.message)
-            setLoading(false)
-        } else {
+            const data = await response.json().catch(() => null)
+
+            if (!response.ok) {
+                setError(data?.error || 'Unable to create your account right now.')
+                setLoading(false)
+                return
+            }
+
             router.push('/library')
             router.refresh()
+        } catch {
+            setError('Unable to create your account right now.')
+            setLoading(false)
         }
     }
 

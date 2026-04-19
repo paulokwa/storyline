@@ -46,6 +46,12 @@ export default async function AIPage({ params }: { params: Promise<{ id: string 
         .eq('user_id', user.id)
         .single()) as { data: any | null }
 
+    const { data: trialAccount } = await supabase
+        .from('ai_trial_accounts')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
     return (
         <AiFullCanvas 
             projectId={id}
@@ -57,7 +63,10 @@ export default async function AIPage({ params }: { params: Promise<{ id: string 
             projectLocations={projectLocations ?? []}
             projectObjects={projectObjects ?? []}
             projectRelationships={projectRelationships ?? []}
-            aiSettings={aiSettings ?? { ai_enabled: false }}
+            aiSettings={{
+                ...(aiSettings ?? { ai_enabled: true, billing_mode: 'app_managed_trial', ai_provider: 'openai' }),
+                trial: trialAccount ?? null,
+            }}
         />
     )
 }

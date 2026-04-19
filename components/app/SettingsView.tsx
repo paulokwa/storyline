@@ -13,16 +13,26 @@ import { THEMES, useTheme } from '@/components/providers/ThemeProvider'
 import { cn } from '@/lib/utils'
 import AiSetupGuide from '@/components/app/AiSetupGuide'
 import { getAiProviderLabel } from '@/lib/ai/providers'
+import { getBillingModeLabel } from '@/lib/ai/modes'
+import { formatMicrosAsUsd, getTrialStatusMessage, isLowTrialBalance } from '@/lib/ai/trial'
 
 export default function SettingsView({ user, maskedApiKey, aiSettings }: { 
     user: User, 
     maskedApiKey: string | null,
     aiSettings: {
         ai_enabled: boolean,
+        billing_mode: string,
         ai_provider: string,
         ai_fallback_enabled: boolean,
         ollama_model: string,
         ollama_url: string
+        trial: {
+            status: string
+            remaining_micros: number
+            granted_micros: number
+            consumed_micros: number
+            blocked_reason: string | null
+        } | null
     }
 }) {
     const { theme, setTheme } = useTheme()
@@ -40,6 +50,7 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
     
     // AI Settings State
     const [aiEnabled, setAiEnabled] = useState(aiSettings.ai_enabled)
+    const [billingMode, setBillingMode] = useState(aiSettings.billing_mode)
     const [aiProvider, setAiProvider] = useState(aiSettings.ai_provider)
     const [aiFallback, setAiFallback] = useState(aiSettings.ai_fallback_enabled)
     const [ollamaModel, setOllamaModel] = useState(aiSettings.ollama_model)
@@ -68,6 +79,13 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
 
     // Existing data
     const existingApiKey = maskedApiKey
+    const trial = aiSettings.trial
+    const trialStatusMessage = getTrialStatusMessage(trial)
+    const trialUsedMicros = Math.max((trial?.granted_micros ?? 0) - (trial?.remaining_micros ?? 0), 0)
+    const trialProgress = trial?.granted_micros
+        ? Math.min(100, Math.round((trialUsedMicros / trial.granted_micros) * 100))
+        : 0
+    const lowTrialBalance = isLowTrialBalance(trial?.remaining_micros)
 
     const handleUpdateEmail = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -107,26 +125,23 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
         setSuccessMessage(null)
         setErrorMessage(null)
 
-        // Store the actual key in the secure user_api_keys table
-        const updatePayload: any = {
-            user_id: user.id,
-            ai_enabled: aiEnabled,
-            ai_provider: aiProvider,
-            ai_fallback_enabled: aiFallback,
-            ollama_model: ollamaModel,
-            ollama_url: ollamaUrl
-        }
-        
-        if (apiKey) {
-            updatePayload.api_key = apiKey
-        }
+        const response = await fetch('/api/ai/preferences', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                aiEnabled,
+                billingMode,
+                aiProvider,
+                aiFallbackEnabled: aiFallback,
+                ollamaModel,
+                ollamaUrl,
+                apiKey: apiKey || undefined,
+            }),
+        })
 
-        const { error: dbError } = await (supabase as any)
-            .from('user_api_keys')
-            .upsert(updatePayload, { onConflict: 'user_id' })
-
-        if (dbError) {
-            setErrorMessage(dbError.message)
+        const data = await response.json().catch(() => null)
+        if (!response.ok) {
+            setErrorMessage(data?.error || 'Unable to save AI settings.')
             setLoading(false)
             return
         }
@@ -149,13 +164,23 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
         setSuccessMessage(null)
         setErrorMessage(null)
 
-        const { error: dbError } = await (supabase as any)
-            .from('user_api_keys')
-            .delete()
-            .eq('user_id', user.id)
+        const response = await fetch('/api/ai/preferences', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                billingMode: billingMode === 'byok' ? 'app_managed_trial' : billingMode,
+                aiProvider: billingMode === 'ollama' ? 'ollama' : 'openai',
+                aiEnabled,
+                aiFallbackEnabled: aiFallback,
+                ollamaModel,
+                ollamaUrl,
+                removeApiKey: true,
+            }),
+        })
 
-        if (dbError) {
-            setErrorMessage(dbError.message)
+        const data = await response.json().catch(() => null)
+        if (!response.ok) {
+            setErrorMessage(data?.error || 'Unable to remove API key.')
             setLoading(false)
             return
         }
@@ -370,7 +395,10 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
                     <AiSetupGuide
                         open={showAiGuide}
                         onOpenChange={setShowAiGuide}
-                        onNavigateToProvider={(provider) => setAiProvider(provider)}
+                        onNavigateToProvider={(provider) => {
+                            setAiProvider(provider)
+                            setBillingMode(provider === 'ollama' ? 'ollama' : 'byok')
+                        }}
                     />
                     
                     <form onSubmit={handleSaveAiSettings} className="space-y-6">
@@ -391,114 +419,196 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
 
                         {aiEnabled && (
                             <div className="space-y-6 animate-in fade-in duration-300">
-                                {/* Provider Selection */}
                                 <div className="space-y-3">
-                                    <Label>Preferred AI Provider</Label>
+                                    <Label>AI Mode</Label>
                                     <div className="grid gap-3 sm:grid-cols-3">
-                                        <label className={`flex-1 border p-4 rounded-lg cursor-pointer transition-all ${aiProvider === 'gemini' ? 'border-indigo-500 bg-indigo-50/50 ring-1 ring-indigo-500' : 'border-slate-200 hover:border-slate-300'}`}>
+                                        <label className={`border p-4 rounded-lg cursor-pointer transition-all ${billingMode === 'app_managed_trial' ? 'border-indigo-500 bg-indigo-50/50 ring-1 ring-indigo-500' : 'border-slate-200 hover:border-slate-300'}`}>
                                             <div className="flex items-center gap-2">
-                                                <input type="radio" name="provider" value="gemini" checked={aiProvider === 'gemini'} onChange={(e) => setAiProvider(e.target.value)} />
-                                                <span className="font-medium text-slate-900">Gemini Cloud</span>
+                                                <input type="radio" name="billingMode" checked={billingMode === 'app_managed_trial'} onChange={() => {
+                                                    setBillingMode('app_managed_trial')
+                                                    setAiProvider('openai')
+                                                }} />
+                                                <span className="font-medium text-slate-900">Free Trial AI</span>
                                             </div>
-                                            <p className="text-xs text-slate-500 mt-1 ml-5">Google BYOK. Fast, flexible, and easy to start with.</p>
+                                            <p className="text-xs text-slate-500 mt-1 ml-5">Sponsored OpenAI access with a strict, app-managed limit.</p>
                                         </label>
-                                        <label className={`flex-1 border p-4 rounded-lg cursor-pointer transition-all ${aiProvider === 'openai' ? 'border-indigo-500 bg-indigo-50/50 ring-1 ring-indigo-500' : 'border-slate-200 hover:border-slate-300'}`}>
+                                        <label className={`border p-4 rounded-lg cursor-pointer transition-all ${billingMode === 'byok' ? 'border-indigo-500 bg-indigo-50/50 ring-1 ring-indigo-500' : 'border-slate-200 hover:border-slate-300'}`}>
                                             <div className="flex items-center gap-2">
-                                                <input type="radio" name="provider" value="openai" checked={aiProvider === 'openai'} onChange={(e) => setAiProvider(e.target.value)} />
-                                                <span className="font-medium text-slate-900">OpenAI Cloud</span>
+                                                <input type="radio" name="billingMode" checked={billingMode === 'byok'} onChange={() => {
+                                                    setBillingMode('byok')
+                                                    if (aiProvider === 'ollama') setAiProvider('openai')
+                                                }} />
+                                                <span className="font-medium text-slate-900">Use Your Own Key</span>
                                             </div>
-                                            <p className="text-xs text-slate-500 mt-1 ml-5">OpenAI BYOK for cloud writing help inside Storyline.</p>
+                                            <p className="text-xs text-slate-500 mt-1 ml-5">Keep your existing BYOK workflow with OpenAI or Gemini.</p>
                                         </label>
-                                        <label className={`flex-1 border p-4 rounded-lg cursor-pointer transition-all ${aiProvider === 'ollama' ? 'border-indigo-500 bg-indigo-50/50 ring-1 ring-indigo-500' : 'border-slate-200 hover:border-slate-300'}`}>
+                                        <label className={`border p-4 rounded-lg cursor-pointer transition-all ${billingMode === 'ollama' ? 'border-indigo-500 bg-indigo-50/50 ring-1 ring-indigo-500' : 'border-slate-200 hover:border-slate-300'}`}>
                                             <div className="flex items-center gap-2">
-                                                <input type="radio" name="provider" value="ollama" checked={aiProvider === 'ollama'} onChange={(e) => setAiProvider(e.target.value)} />
-                                                <span className="font-medium text-slate-900">Local Ollama</span>
+                                                <input type="radio" name="billingMode" checked={billingMode === 'ollama'} onChange={() => {
+                                                    setBillingMode('ollama')
+                                                    setAiProvider('ollama')
+                                                }} />
+                                                <span className="font-medium text-slate-900">Ollama / Local AI</span>
                                             </div>
-                                            <p className="text-xs text-slate-500 mt-1 ml-5">Private, runs completely on your machine.</p>
+                                            <p className="text-xs text-slate-500 mt-1 ml-5">Runs locally and never touches the sponsored trial balance.</p>
                                         </label>
                                     </div>
                                 </div>
 
-                                {/* Cloud Config */}
-                                {(aiProvider === 'gemini' || aiProvider === 'openai') && (
-                                    <div className="p-5 border border-slate-200 rounded-lg space-y-4 bg-slate-50">
-                                        <h3 className="font-semibold text-slate-800">
-                                            {aiProvider === 'gemini' ? 'Google Gemini Configuration' : 'OpenAI Configuration'}
-                                        </h3>
-                                        {existingApiKey ? (
-                                            <div className="p-3 bg-white border border-slate-200 rounded-md flex justify-between items-center shadow-sm">
-                                                <div>
-                                                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Active API Key</p>
-                                                    <p className="text-sm font-mono text-slate-600">{existingApiKey}</p>
-                                                </div>
-                                                <Button type="button" variant="ghost" size="sm" onClick={handleRemoveApiKey} disabled={loading} className="text-red-500 hover:text-red-700 hover:bg-red-50">
-                                                    Remove
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-md text-sm shadow-sm">
-                                                No {aiProvider === 'gemini' ? 'Gemini' : 'OpenAI'} API key found. Some features may be disabled.
-                                            </div>
-                                        )}
-                                        <div className="space-y-2">
-                                            <Label htmlFor="apiKey">
-                                                {existingApiKey
-                                                    ? 'Update API Key'
-                                                    : aiProvider === 'gemini'
-                                                        ? 'Enter Google Gemini API Key'
-                                                        : 'Enter OpenAI API Key'}
-                                            </Label>
-                                            <Input
-                                                id="apiKey"
-                                                type="password"
-                                                value={apiKey}
-                                                onChange={(e) => setApiKey(e.target.value)}
-                                                placeholder={aiProvider === 'gemini' ? 'AIzaSy...' : 'sk-...'}
-                                                className="bg-white"
-                                            />
-                                            <p className="text-xs text-slate-500">
-                                                Storyline uses BYOK, so requests run through your own {aiProvider === 'gemini' ? 'Gemini' : 'OpenAI'} account.
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-4">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div>
+                                            <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Current Mode</p>
+                                            <h3 className="text-lg font-semibold text-slate-900">{getBillingModeLabel(billingMode as any)}</h3>
+                                            <p className="text-sm text-slate-500 mt-1">
+                                                {billingMode === 'app_managed_trial'
+                                                    ? 'Storyline sponsors a limited OpenAI trial for this mode.'
+                                                    : billingMode === 'byok'
+                                                        ? `Requests use ${getAiProviderLabel(aiProvider)} with your own key.`
+                                                        : 'Requests go directly to your local Ollama server.'}
                                             </p>
                                         </div>
+                                        <span className="rounded-full bg-white px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 border border-slate-200">
+                                            {billingMode === 'app_managed_trial' ? 'Sponsored' : billingMode === 'byok' ? 'BYOK' : 'Local'}
+                                        </span>
+                                    </div>
 
-                                        <div className="pt-2">
-                                            <Button 
-                                                type="button" 
-                                                variant="outline" 
-                                                size="sm"
-                                                onClick={() => handleTestCloudConnection(aiProvider as 'gemini' | 'openai')}
-                                                disabled={testingCloud || (!apiKey && !existingApiKey)}
-                                                className="w-full gap-2 border-slate-300 hover:bg-white"
-                                            >
-                                                {testingCloud ? (
-                                                    <>
-                                                        <span className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
-                                                        Testing Cloud Connection...
-                                                    </>
-                                                ) : 'Test Cloud Connection'}
-                                            </Button>
-
-                                            {cloudStatus && (
-                                                <div className={`mt-3 p-3 rounded-lg text-xs animate-in fade-in slide-in-from-top-1 duration-300 ${
-                                                    cloudStatus.success 
-                                                        ? 'bg-green-100/50 border border-green-200 text-green-800' 
-                                                        : 'bg-amber-100/50 border border-amber-200 text-amber-800'
-                                                }`}>
-                                                    <div className="font-bold flex items-center gap-1.5 mb-1">
-                                                        <div className={`w-1.5 h-1.5 rounded-full ${cloudStatus.success ? 'bg-green-500' : 'bg-amber-500'}`} />
-                                                        {cloudStatus.message}
-                                                    </div>
-                                                    {cloudStatus.details && (
-                                                        <p className="opacity-80 italic">{cloudStatus.details}</p>
-                                                    )}
+                                    {billingMode === 'app_managed_trial' && (
+                                        <div className="rounded-2xl border border-indigo-100 bg-white p-4 space-y-3">
+                                            <div className="flex items-center justify-between gap-4">
+                                                <div>
+                                                    <p className="text-sm font-semibold text-slate-900">Trial Status</p>
+                                                    <p className="text-sm text-slate-500">{trialStatusMessage}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-xs uppercase tracking-[0.16em] text-slate-400 font-bold">Remaining</p>
+                                                    <p className={`text-lg font-semibold ${lowTrialBalance ? 'text-amber-600' : 'text-slate-900'}`}>
+                                                        ${formatMicrosAsUsd(trial?.remaining_micros)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                                                    <div
+                                                        className={cn('h-full rounded-full transition-all', lowTrialBalance ? 'bg-amber-500' : 'bg-indigo-500')}
+                                                        style={{ width: `${trialProgress}%` }}
+                                                    />
+                                                </div>
+                                                <div className="flex items-center justify-between text-xs text-slate-500">
+                                                    <span>Used ${formatMicrosAsUsd(trialUsedMicros)}</span>
+                                                    <span>Budget ${formatMicrosAsUsd(trial?.granted_micros)}</span>
+                                                </div>
+                                            </div>
+                                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                                                Free Trial AI is limited and sponsored by the app. When it runs out, switch to BYOK or Ollama to keep going.
+                                            </div>
+                                            {trial?.status === 'exhausted' && (
+                                                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                                                    Your sponsored trial is exhausted. Switch to <strong>Use Your Own Key</strong> or <strong>Ollama / Local AI</strong> to continue.
+                                                </div>
+                                            )}
+                                            {(trial?.status === 'blocked' || trial?.status === 'abuse_review') && (
+                                                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                                                    Trial access is currently limited for this account. You can still use your own key or Ollama while it is reviewed.
                                                 </div>
                                             )}
                                         </div>
-                                    </div>
-                                )}
+                                    )}
 
-                                {/* Ollama Config */}
-                                {aiProvider === 'ollama' && (
+                                    {billingMode === 'byok' && (
+                                        <div className="space-y-4">
+                                            <div className="space-y-3">
+                                                <Label>BYOK Provider</Label>
+                                                <div className="grid gap-3 sm:grid-cols-2">
+                                                    <label className={`border p-4 rounded-lg cursor-pointer transition-all ${aiProvider === 'gemini' ? 'border-indigo-500 bg-indigo-50/50 ring-1 ring-indigo-500' : 'border-slate-200 hover:border-slate-300'}`}>
+                                                        <div className="flex items-center gap-2">
+                                                            <input type="radio" name="provider" value="gemini" checked={aiProvider === 'gemini'} onChange={() => setAiProvider('gemini')} />
+                                                            <span className="font-medium text-slate-900">Gemini Cloud</span>
+                                                        </div>
+                                                        <p className="text-xs text-slate-500 mt-1 ml-5">Google BYOK. Fast and easy to start with.</p>
+                                                    </label>
+                                                    <label className={`border p-4 rounded-lg cursor-pointer transition-all ${aiProvider === 'openai' ? 'border-indigo-500 bg-indigo-50/50 ring-1 ring-indigo-500' : 'border-slate-200 hover:border-slate-300'}`}>
+                                                        <div className="flex items-center gap-2">
+                                                            <input type="radio" name="provider" value="openai" checked={aiProvider === 'openai'} onChange={() => setAiProvider('openai')} />
+                                                            <span className="font-medium text-slate-900">OpenAI Cloud</span>
+                                                        </div>
+                                                        <p className="text-xs text-slate-500 mt-1 ml-5">OpenAI BYOK inside Storyline.</p>
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            {existingApiKey ? (
+                                                <div className="p-3 bg-white border border-slate-200 rounded-md flex justify-between items-center shadow-sm">
+                                                    <div>
+                                                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Saved API Key</p>
+                                                        <p className="text-sm font-mono text-slate-600">{existingApiKey}</p>
+                                                    </div>
+                                                    <Button type="button" variant="ghost" size="sm" onClick={handleRemoveApiKey} disabled={loading} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                                                        Remove
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-md text-sm shadow-sm">
+                                                    No {aiProvider === 'gemini' ? 'Gemini' : 'OpenAI'} API key is saved yet.
+                                                </div>
+                                            )}
+
+                                            <div className="space-y-2">
+                                                <Label htmlFor="apiKey">
+                                                    {existingApiKey
+                                                        ? 'Update API Key'
+                                                        : aiProvider === 'gemini'
+                                                            ? 'Enter Google Gemini API Key'
+                                                            : 'Enter OpenAI API Key'}
+                                                </Label>
+                                                <Input
+                                                    id="apiKey"
+                                                    type="password"
+                                                    value={apiKey}
+                                                    onChange={(e) => setApiKey(e.target.value)}
+                                                    placeholder={aiProvider === 'gemini' ? 'AIzaSy...' : 'sk-...'}
+                                                    className="bg-white"
+                                                />
+                                                <p className="text-xs text-slate-500">Storyline uses BYOK here, so requests run through your own cloud account.</p>
+                                            </div>
+
+                                            <div className="pt-2">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleTestCloudConnection(aiProvider as 'gemini' | 'openai')}
+                                                    disabled={testingCloud || (!apiKey && !existingApiKey)}
+                                                    className="w-full gap-2 border-slate-300 hover:bg-white"
+                                                >
+                                                    {testingCloud ? (
+                                                        <>
+                                                            <span className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                                                            Testing Cloud Connection...
+                                                        </>
+                                                    ) : 'Test Cloud Connection'}
+                                                </Button>
+
+                                                {cloudStatus && (
+                                                    <div className={`mt-3 p-3 rounded-lg text-xs animate-in fade-in slide-in-from-top-1 duration-300 ${
+                                                        cloudStatus.success
+                                                            ? 'bg-green-100/50 border border-green-200 text-green-800'
+                                                            : 'bg-amber-100/50 border border-amber-200 text-amber-800'
+                                                    }`}>
+                                                        <div className="font-bold flex items-center gap-1.5 mb-1">
+                                                            <div className={`w-1.5 h-1.5 rounded-full ${cloudStatus.success ? 'bg-green-500' : 'bg-amber-500'}`} />
+                                                            {cloudStatus.message}
+                                                        </div>
+                                                        {cloudStatus.details && (
+                                                            <p className="opacity-80 italic">{cloudStatus.details}</p>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {billingMode === 'ollama' && (
                                     <div className="p-5 border border-slate-200 rounded-lg space-y-5 bg-slate-50">
                                         <h3 className="font-semibold text-slate-800">Local Ollama Configuration</h3>
                                         <div className="space-y-2">
@@ -562,7 +672,8 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
                                             </div>
                                         )}
                                     </div>
-                                )}
+                                    )}
+                                </div>
                             </div>
                         )}
 

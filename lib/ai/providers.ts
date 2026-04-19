@@ -104,7 +104,15 @@ export async function createCloudTextStream({
     })
 }
 
-export function createPlainTextStreamFromProviderResponse(provider: CloudAiProvider, response: Response) {
+export function createPlainTextStreamFromProviderResponse(
+    provider: CloudAiProvider,
+    response: Response,
+    options?: {
+        onChunk?: (text: string) => void
+        onComplete?: (fullText: string) => void | Promise<void>
+        onError?: (error: unknown) => void | Promise<void>
+    }
+) {
     const reader = response.body!.getReader()
     const decoder = new TextDecoder()
     const encoder = new TextEncoder()
@@ -113,6 +121,7 @@ export function createPlainTextStreamFromProviderResponse(provider: CloudAiProvi
         return new ReadableStream({
             async start(controller) {
                 let buffer = ''
+                let fullText = ''
 
                 try {
                     while (true) {
@@ -133,6 +142,8 @@ export function createPlainTextStreamFromProviderResponse(provider: CloudAiProvi
 
                                 for (const part of parts) {
                                     if (part.text) {
+                                        fullText += part.text
+                                        options?.onChunk?.(part.text)
                                         controller.enqueue(encoder.encode(part.text))
                                     }
                                 }
@@ -141,6 +152,10 @@ export function createPlainTextStreamFromProviderResponse(provider: CloudAiProvi
                             }
                         }
                     }
+                    await options?.onComplete?.(fullText)
+                } catch (error) {
+                    await options?.onError?.(error)
+                    throw error
                 } finally {
                     controller.close()
                 }
@@ -151,6 +166,7 @@ export function createPlainTextStreamFromProviderResponse(provider: CloudAiProvi
     return new ReadableStream({
         async start(controller) {
             let buffer = ''
+            let fullText = ''
 
             try {
                 while (true) {
@@ -176,8 +192,12 @@ export function createPlainTextStreamFromProviderResponse(provider: CloudAiProvi
                             const event = JSON.parse(payload)
 
                             if (event.type === 'response.output_text.delta' && event.delta) {
+                                fullText += event.delta
+                                options?.onChunk?.(event.delta)
                                 controller.enqueue(encoder.encode(event.delta))
                             } else if (event.type === 'response.refusal.delta' && event.delta) {
+                                fullText += event.delta
+                                options?.onChunk?.(event.delta)
                                 controller.enqueue(encoder.encode(event.delta))
                             }
                         } catch {
@@ -185,6 +205,10 @@ export function createPlainTextStreamFromProviderResponse(provider: CloudAiProvi
                         }
                     }
                 }
+                await options?.onComplete?.(fullText)
+            } catch (error) {
+                await options?.onError?.(error)
+                throw error
             } finally {
                 controller.close()
             }

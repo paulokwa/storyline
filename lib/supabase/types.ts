@@ -96,6 +96,282 @@ export type Database = {
           },
         ]
       }
+      ai_abuse_signals: {
+        Row: {
+          accept_language: string | null
+          billing_mode: string | null
+          created_at: string
+          device_fingerprint: string | null
+          email_domain: string | null
+          endpoint: string | null
+          id: string
+          ip_address: string | null
+          metadata: Json
+          normalized_email: string | null
+          provider: string | null
+          raw_email: string | null
+          risk_flags: Json
+          risk_score: number
+          signal_type: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          accept_language?: string | null
+          billing_mode?: string | null
+          created_at?: string
+          device_fingerprint?: string | null
+          email_domain?: string | null
+          endpoint?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          normalized_email?: string | null
+          provider?: string | null
+          raw_email?: string | null
+          risk_flags?: Json
+          risk_score?: number
+          signal_type: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          accept_language?: string | null
+          billing_mode?: string | null
+          created_at?: string
+          device_fingerprint?: string | null
+          email_domain?: string | null
+          endpoint?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          normalized_email?: string | null
+          provider?: string | null
+          raw_email?: string | null
+          risk_flags?: Json
+          risk_score?: number
+          signal_type?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      ai_trial_accounts: {
+        Row: {
+          blocked_at: string | null
+          blocked_reason: string | null
+          consumed_micros: number
+          created_at: string
+          disabled_at: string | null
+          email_domain: string | null
+          exhausted_at: string | null
+          grant_count: number
+          granted_at: string | null
+          granted_micros: number
+          last_activity_at: string | null
+          last_device_fingerprint: string | null
+          last_request_ip: string | null
+          normalized_email: string | null
+          raw_email: string | null
+          remaining_micros: number
+          reserved_micros: number
+          reviewed_at: string | null
+          signup_accept_language: string | null
+          signup_device_fingerprint: string | null
+          signup_ip: string | null
+          signup_risk_score: number
+          signup_user_agent: string | null
+          status: string
+          suspicious_flags: Json
+          trial_budget_micros: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          blocked_at?: string | null
+          blocked_reason?: string | null
+          consumed_micros?: number
+          created_at?: string
+          disabled_at?: string | null
+          email_domain?: string | null
+          exhausted_at?: string | null
+          grant_count?: number
+          granted_at?: string | null
+          granted_micros?: number
+          last_activity_at?: string | null
+          last_device_fingerprint?: string | null
+          last_request_ip?: string | null
+          normalized_email?: string | null
+          raw_email?: string | null
+          remaining_micros?: number
+          reserved_micros?: number
+          reviewed_at?: string | null
+          signup_accept_language?: string | null
+          signup_device_fingerprint?: string | null
+          signup_ip?: string | null
+          signup_risk_score?: number
+          signup_user_agent?: string | null
+          status?: string
+          suspicious_flags?: Json
+          trial_budget_micros?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          blocked_at?: string | null
+          blocked_reason?: string | null
+          consumed_micros?: number
+          created_at?: string
+          disabled_at?: string | null
+          email_domain?: string | null
+          exhausted_at?: string | null
+          grant_count?: number
+          granted_at?: string | null
+          granted_micros?: number
+          last_activity_at?: string | null
+          last_device_fingerprint?: string | null
+          last_request_ip?: string | null
+          normalized_email?: string | null
+          raw_email?: string | null
+          remaining_micros?: number
+          reserved_micros?: number
+          reviewed_at?: string | null
+          signup_accept_language?: string | null
+          signup_device_fingerprint?: string | null
+          signup_ip?: string | null
+          signup_risk_score?: number
+          signup_user_agent?: string | null
+          status?: string
+          suspicious_flags?: Json
+          trial_budget_micros?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_trial_ledger: {
+        Row: {
+          admin_user_id: string | null
+          balance_after_micros: number
+          created_at: string
+          delta_micros: number
+          entry_type: string
+          id: string
+          metadata: Json
+          note: string | null
+          usage_event_id: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_user_id?: string | null
+          balance_after_micros: number
+          created_at?: string
+          delta_micros: number
+          entry_type: string
+          id?: string
+          metadata?: Json
+          note?: string | null
+          usage_event_id?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_user_id?: string | null
+          balance_after_micros?: number
+          created_at?: string
+          delta_micros?: number
+          entry_type?: string
+          id?: string
+          metadata?: Json
+          note?: string | null
+          usage_event_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_usage_events: {
+        Row: {
+          billing_mode: string
+          completed_at: string | null
+          created_at: string
+          device_fingerprint: string | null
+          endpoint: string
+          error_code: string | null
+          estimated_input_tokens: number
+          estimated_output_tokens: number
+          final_micros: number
+          http_status: number | null
+          id: string
+          input_chars: number
+          ip_address: string | null
+          metadata: Json
+          model: string | null
+          normalized_email: string | null
+          output_chars: number
+          provider: string
+          refunded_micros: number
+          request_key: string
+          reserved_micros: number
+          started_at: string
+          status: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          billing_mode: string
+          completed_at?: string | null
+          created_at?: string
+          device_fingerprint?: string | null
+          endpoint: string
+          error_code?: string | null
+          estimated_input_tokens?: number
+          estimated_output_tokens?: number
+          final_micros?: number
+          http_status?: number | null
+          id?: string
+          input_chars?: number
+          ip_address?: string | null
+          metadata?: Json
+          model?: string | null
+          normalized_email?: string | null
+          output_chars?: number
+          provider: string
+          refunded_micros?: number
+          request_key: string
+          reserved_micros?: number
+          started_at?: string
+          status: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          billing_mode?: string
+          completed_at?: string | null
+          created_at?: string
+          device_fingerprint?: string | null
+          endpoint?: string
+          error_code?: string | null
+          estimated_input_tokens?: number
+          estimated_output_tokens?: number
+          final_micros?: number
+          http_status?: number | null
+          id?: string
+          input_chars?: number
+          ip_address?: string | null
+          metadata?: Json
+          model?: string | null
+          normalized_email?: string | null
+          output_chars?: number
+          provider?: string
+          refunded_micros?: number
+          request_key?: string
+          reserved_micros?: number
+          started_at?: string
+          status?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       characters: {
         Row: {
           created_at: string | null
@@ -1010,6 +1286,7 @@ export type Database = {
         Row: {
           ai_enabled: boolean | null
           ai_fallback_enabled: boolean | null
+          billing_mode: string | null
           ai_provider: string | null
           api_key: string | null
           created_at: string | null
@@ -1022,6 +1299,7 @@ export type Database = {
         Insert: {
           ai_enabled?: boolean | null
           ai_fallback_enabled?: boolean | null
+          billing_mode?: string | null
           ai_provider?: string | null
           api_key?: string | null
           created_at?: string | null
@@ -1034,6 +1312,7 @@ export type Database = {
         Update: {
           ai_enabled?: boolean | null
           ai_fallback_enabled?: boolean | null
+          billing_mode?: string | null
           ai_provider?: string | null
           api_key?: string | null
           created_at?: string | null
@@ -1059,7 +1338,49 @@ export type Database = {
         Returns: undefined
       }
       can_edit_project: { Args: { p_id: string }; Returns: boolean }
+      admin_adjust_ai_trial: {
+        Args: {
+          p_admin_user_id: string
+          p_delta_micros: number
+          p_note?: string | null
+          p_status?: string | null
+          p_target_user_id: string
+        }
+        Returns: Json
+      }
       delete_user: { Args: never; Returns: undefined }
+      evaluate_and_grant_ai_trial: {
+        Args: {
+          p_accept_language: string
+          p_device_fingerprint: string
+          p_ip_address: string
+          p_raw_email: string
+          p_user_agent: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      fail_ai_trial_usage: {
+        Args: {
+          p_error_code: string
+          p_http_status: number
+          p_metadata?: Json
+          p_request_key: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      finalize_ai_trial_usage: {
+        Args: {
+          p_final_micros: number
+          p_http_status: number
+          p_metadata?: Json
+          p_output_chars: number
+          p_request_key: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       get_comment_details: {
         Args: { comment_id_arg: string }
         Returns: {
@@ -1105,6 +1426,35 @@ export type Database = {
       get_project_member_email: {
         Args: { p_project_id: string; p_user_id: string }
         Returns: string
+      }
+      normalize_trial_email: { Args: { p_email: string }; Returns: string }
+      record_signup_attempt_signal: {
+        Args: {
+          p_accept_language: string
+          p_device_fingerprint: string
+          p_ip_address: string
+          p_raw_email: string
+          p_user_agent: string
+        }
+        Returns: Json
+      }
+      reserve_ai_trial_usage: {
+        Args: {
+          p_device_fingerprint: string
+          p_endpoint: string
+          p_estimated_input_tokens: number
+          p_estimated_output_tokens: number
+          p_input_chars: number
+          p_ip_address: string
+          p_metadata?: Json
+          p_model: string
+          p_provider: string
+          p_request_key: string
+          p_reserved_micros: number
+          p_user_agent: string
+          p_user_id: string
+        }
+        Returns: Json
       }
       get_project_members_extended: {
         Args: { project_id_arg: string }
