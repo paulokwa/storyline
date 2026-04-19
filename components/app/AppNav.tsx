@@ -177,7 +177,7 @@ export default function AppNav({ user }: { user: User }) {
                             )}
 
                             <DropdownMenuItem 
-                                onClick={() => window.open('mailto:mwake.dev@gmail.com', '_blank')}
+                                onClick={() => router.push('/feedback')}
                                 className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
                                     isMidnight ? 'text-slate-300 focus:text-[#dbe5ff] focus:bg-white/8' : 'text-slate-600 focus:text-[#546354] focus:bg-[#546354]/5'
                                 }`}
