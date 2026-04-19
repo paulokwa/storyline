@@ -12,6 +12,7 @@ import ImportWizard from '@/components/new-project/ImportWizard'
 import CoverPicker from '@/components/project/CoverPicker'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { isTemporaryCoverUrl, uploadProjectCover } from '@/lib/supabase/project-covers'
 import {
     Tooltip,
     TooltipContent,
@@ -19,6 +20,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { PROJECT_TYPE_LABELS, DEFAULT_WRITING_MODE_BY_TYPE, getProjectTypeLabel } from '@/lib/constants'
+import { toast } from 'sonner'
 
 type StartMode = 'quick' | 'guided' | 'import'
 type Step = 'title' | 'type' | 'start_mode' | 'identity' | 'guided' | 'import'
@@ -39,6 +41,7 @@ export default function NewProjectPage() {
         startMode: null,
         coverUrl: '',
     })
+    const [pendingCoverFile, setPendingCoverFile] = useState<File | null>(null)
     const [creating, setCreating] = useState(false)
 
     // Draft Persistence
@@ -72,6 +75,7 @@ export default function NewProjectPage() {
         writingMode?: WritingMode;
         chunks?: { title: string; content: string }[];
         coverUrl?: string;
+        coverFile?: File | null;
     }) {
         if (creating) return
         setCreating(true)
@@ -84,92 +88,96 @@ export default function NewProjectPage() {
             return
         }
 
-        const writingMode = extras?.writingMode || (state.type ? DEFAULT_WRITING_MODE_BY_TYPE[state.type] : 'simple')
+        try {
+            const writingMode = extras?.writingMode || (state.type ? DEFAULT_WRITING_MODE_BY_TYPE[state.type] : 'simple')
+            const selectedCoverFile = extras?.coverFile ?? pendingCoverFile
+            let persistedCoverUrl = extras?.coverUrl || state.coverUrl
 
-        const payload: any = {
-            user_id: user.id,
-            title: state.title || extras?.title || 'My New Project',
-            type: state.type!,
-            writing_mode: writingMode,
-        }
-
-        if (extras?.premise) payload.premise = extras.premise
-        if (extras?.tone) payload.tone = extras.tone
-        if (extras?.coverUrl || state.coverUrl) payload.cover_url = extras?.coverUrl || state.coverUrl
-
-        if (extras?.locations && extras.locations.length > 0) {
-            payload.setting = extras.locations.join(', ')
-        } else if (extras?.setting) {
-            payload.setting = extras.setting
-        }
-
-        const { data: project, error } = await (supabase as any)
-            .from('projects')
-            .insert(payload)
-            .select()
-            .single()
-
-        if (error || !project) {
-            console.error("Supabase Insert Error:", error)
-            setCreating(false)
-            return
-        }
-
-        // Action: Handle Characters, Locations, Ideas (scaffolding skipped for brevity, keeping original logic if possible)
-        // ... (Character/Location logic stays from original)
-        const charactersToInsert = extras?.characters || (extras?.firstCharacterName ? [extras.firstCharacterName] : [])
-        for (let i = 0; i < charactersToInsert.length; i++) {
-            const name = charactersToInsert[i].trim()
-            if (!name) continue
-            await (supabase as any).from('characters').insert({ project_id: project.id, name: name, description: i === 0 ? 'Protagonist' : 'Supporting Character', order_index: i })
-        }
-
-        const locationsToInsert = extras?.locations || []
-        for (let i = 0; i < locationsToInsert.length; i++) {
-            const name = locationsToInsert[i].trim()
-            if (!name) continue
-            await (supabase as any).from('locations').insert({ project_id: project.id, name: name, order_index: i })
-        }
-
-        let initialSceneContent: any = null
-        const firstIdea = extras?.firstIdea?.trim()
-        if (firstIdea) {
-            await (supabase as any).from('ideas').insert({ project_id: project.id, title: 'Initial Vision', content: firstIdea, order_index: 0 })
-            const nodeType = writingMode === 'screenplay' ? 'screenplayAction' : 'paragraph';
-            const paragraphs = firstIdea.split('\n').filter(l => l.trim() !== '').map(l => ({ type: nodeType, content: [{ type: 'text', text: l }] }))
-            initialSceneContent = { type: 'doc', content: paragraphs.length ? paragraphs : [{ type: nodeType }] }
-        }
-
-        if (extras?.chunks && extras.chunks.length > 0) {
-            const chunks = extras.chunks
-            let actParentId = null
-            if (state.type === 'tv_script') {
-                const { data: episode } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, type: 'episode', title: 'Imported Episode', order_index: 0 }).select().single()
-                if (episode) {
-                    const { data: act } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (episode as any).id, type: 'act', title: 'Imported Act', order_index: 0 }).select().single()
-                    actParentId = act ? (act as any).id : null
-                }
+            if (selectedCoverFile) {
+                const uploadResult = await uploadProjectCover(supabase, user.id, selectedCoverFile)
+                persistedCoverUrl = uploadResult.publicUrl
+            } else if (isTemporaryCoverUrl(persistedCoverUrl)) {
+                persistedCoverUrl = ''
             }
-            for (let i = 0; i < chunks.length; i++) {
-                const chunk = chunks[i]
+
+            const payload: any = {
+                user_id: user.id,
+                title: state.title || extras?.title || 'My New Project',
+                type: state.type!,
+                writing_mode: writingMode,
+            }
+
+            if (extras?.premise) payload.premise = extras.premise
+            if (extras?.tone) payload.tone = extras.tone
+            if (persistedCoverUrl) payload.cover_url = persistedCoverUrl
+
+            if (extras?.locations && extras.locations.length > 0) {
+                payload.setting = extras.locations.join(', ')
+            } else if (extras?.setting) {
+                payload.setting = extras.setting
+            }
+
+            const { data: project, error } = await (supabase as any)
+                .from('projects')
+                .insert(payload)
+                .select()
+                .single()
+
+            if (error || !project) {
+                console.error("Supabase Insert Error:", error)
+                return
+            }
+
+            const charactersToInsert = extras?.characters || (extras?.firstCharacterName ? [extras.firstCharacterName] : [])
+            for (let i = 0; i < charactersToInsert.length; i++) {
+                const name = charactersToInsert[i].trim()
+                if (!name) continue
+                await (supabase as any).from('characters').insert({ project_id: project.id, name: name, description: i === 0 ? 'Protagonist' : 'Supporting Character', order_index: i })
+            }
+
+            const locationsToInsert = extras?.locations || []
+            for (let i = 0; i < locationsToInsert.length; i++) {
+                const name = locationsToInsert[i].trim()
+                if (!name) continue
+                await (supabase as any).from('locations').insert({ project_id: project.id, name: name, order_index: i })
+            }
+
+            let initialSceneContent: any = null
+            const firstIdea = extras?.firstIdea?.trim()
+            if (firstIdea) {
+                await (supabase as any).from('ideas').insert({ project_id: project.id, title: 'Initial Vision', content: firstIdea, order_index: 0 })
                 const nodeType = writingMode === 'screenplay' ? 'screenplayAction' : 'paragraph';
-                const paragraphs = chunk.content.split('\n').filter(l => l.trim() !== '').map(l => ({ type: nodeType, content: [{ type: 'text', text: l }] }))
-                const tiptapJson = { type: 'doc', content: paragraphs.length ? paragraphs : [{ type: nodeType }] }
-                if (state.type === 'novel') {
-                    const { data: chapter } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, type: 'chapter', title: chunk.title || `Chapter ${i + 1}`, order_index: i }).select().single()
-                    if (chapter) {
-                        const { data: scene } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (chapter as any).id, type: 'scene', title: chunk.title || 'Scene 1', order_index: 0 }).select().single()
-                        if (scene) await supabase.from('scenes').insert({ node_id: (scene as any).id, project_id: project.id, writing_mode: writingMode, content: tiptapJson })
+                const paragraphs = firstIdea.split('\n').filter(l => l.trim() !== '').map(l => ({ type: nodeType, content: [{ type: 'text', text: l }] }))
+                initialSceneContent = { type: 'doc', content: paragraphs.length ? paragraphs : [{ type: nodeType }] }
+            }
+
+            if (extras?.chunks && extras.chunks.length > 0) {
+                const chunks = extras.chunks
+                let actParentId = null
+                if (state.type === 'tv_script') {
+                    const { data: episode } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, type: 'episode', title: 'Imported Episode', order_index: 0 }).select().single()
+                    if (episode) {
+                        const { data: act } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (episode as any).id, type: 'act', title: 'Imported Act', order_index: 0 }).select().single()
+                        actParentId = act ? (act as any).id : null
                     }
-                } else {
-                    if (actParentId) {
+                }
+                for (let i = 0; i < chunks.length; i++) {
+                    const chunk = chunks[i]
+                    const nodeType = writingMode === 'screenplay' ? 'screenplayAction' : 'paragraph';
+                    const paragraphs = chunk.content.split('\n').filter(l => l.trim() !== '').map(l => ({ type: nodeType, content: [{ type: 'text', text: l }] }))
+                    const tiptapJson = { type: 'doc', content: paragraphs.length ? paragraphs : [{ type: nodeType }] }
+                    if (state.type === 'novel') {
+                        const { data: chapter } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, type: 'chapter', title: chunk.title || `Chapter ${i + 1}`, order_index: i }).select().single()
+                        if (chapter) {
+                            const { data: scene } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (chapter as any).id, type: 'scene', title: chunk.title || 'Scene 1', order_index: 0 }).select().single()
+                            if (scene) await supabase.from('scenes').insert({ node_id: (scene as any).id, project_id: project.id, writing_mode: writingMode, content: tiptapJson })
+                        }
+                    } else if (actParentId) {
                         const { data: scene } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: actParentId, type: 'scene', title: chunk.title || `Scene ${i + 1}`, order_index: i }).select().single()
                         if (scene) await (supabase as any).from('scenes').insert({ node_id: (scene as any).id, project_id: project.id, writing_mode: writingMode, content: tiptapJson })
                     }
                 }
-            }
-        } else {
-            if (state.type === 'tv_script') {
+            } else if (state.type === 'tv_script') {
                 const { data: episode } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, type: 'episode', title: 'Episode 1', order_index: 0 }).select().single()
                 if (episode) {
                     const { data: act } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (episode as any).id, type: 'act', title: 'Act 1', order_index: 0 }).select().single()
@@ -189,12 +197,18 @@ export default function NewProjectPage() {
                     if (scene) await supabase.from('scenes').insert(sceneData)
                 }
             }
-        }
 
-        localStorage.removeItem('storyline-new-project-draft')
-        localStorage.removeItem('storyline-guided-data-draft')
-        router.refresh()
-        router.push(`/project/${project.id}/story`)
+            localStorage.removeItem('storyline-new-project-draft')
+            localStorage.removeItem('storyline-guided-data-draft')
+            setPendingCoverFile(null)
+            router.refresh()
+            router.push(`/project/${project.id}/story`)
+        } catch (error) {
+            console.error("Project creation error:", error)
+            toast.error(error instanceof Error ? error.message : "Failed to create project.")
+        } finally {
+            setCreating(false)
+        }
     }
 
     const steps: Step[] = (() => {
@@ -300,6 +314,7 @@ export default function NewProjectPage() {
                             <StepIdentity 
                                 value={state.coverUrl}
                                 onChange={(url) => setState(s => ({ ...s, coverUrl: url }))}
+                                onFileChange={setPendingCoverFile}
                                 onComplete={() => createProject()}
                                 onBack={() => setStep('start_mode')}
                                 creating={creating}
@@ -486,9 +501,10 @@ function TypeCard({ icon, title, description, selected, onClick, disabled }: {
     )
 }
 
-function StepIdentity({ value, onChange, onComplete, onBack, creating }: {
+function StepIdentity({ value, onChange, onFileChange, onComplete, onBack, creating }: {
     value: string
     onChange: (v: string) => void
+    onFileChange: (file: File | null) => void
     onComplete: () => void
     onBack: () => void
     creating: boolean
@@ -502,7 +518,7 @@ function StepIdentity({ value, onChange, onComplete, onBack, creating }: {
                 <p className="text-slate-500 font-medium text-lg leading-relaxed max-w-xl italic opacity-80">Choose a cover for your library card or skip to keep it minimal.</p>
             </div>
 
-            <CoverPicker value={value} onChange={onChange} />
+            <CoverPicker value={value} onChange={onChange} deferUpload onPendingFileChange={onFileChange} />
 
             <div className="flex items-center justify-between pt-6 border-t border-slate-100">
                 <button

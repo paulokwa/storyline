@@ -23,7 +23,7 @@ interface GuidedData {
 interface GuidedFlowProps {
     projectType: ProjectType
     initialTitle?: string
-    onComplete: (data: GuidedData) => void
+    onComplete: (data: GuidedData & { coverFile?: File | null }) => void
     onBack: () => void
     creating: boolean
     onDataChange?: (data: GuidedData) => void
@@ -62,6 +62,7 @@ const TONES = [
 
 export default function GuidedFlow({ projectType, initialTitle, onComplete, onBack, creating, onDataChange }: GuidedFlowProps) {
     const [stepIndex, setStepIndex] = useState(0)
+    const [coverFile, setCoverFile] = useState<File | null>(null)
     const [data, setData] = useState<GuidedData>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('storyline-guided-data-draft')
@@ -100,6 +101,7 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
                 ...data,
                 characters: data.characters.filter(c => c.trim() !== ''),
                 locations: data.locations.filter(l => l.trim() !== ''),
+                coverFile,
             })
         }
     }
@@ -311,6 +313,8 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
                             <CoverPicker 
                                 value={data.coverUrl}
                                 onChange={(url) => setData(d => ({ ...d, coverUrl: url }))}
+                                deferUpload
+                                onPendingFileChange={setCoverFile}
                             />
                         </StepBlock>
                     )}

@@ -1,24 +1,48 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { THEME_COVERS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
-import { Upload, Image as ImageIcon, Sparkles, Loader2, Link as LinkIcon, X } from 'lucide-react'
+import { Upload, Sparkles, Loader2, Link as LinkIcon, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { uploadProjectCover } from '@/lib/supabase/project-covers'
 
 interface CoverPickerProps {
     value: string
     onChange: (url: string) => void
-    onClose?: () => void
+    deferUpload?: boolean
+    onPendingFileChange?: (file: File | null) => void
 }
 
-export default function CoverPicker({ value, onChange, onClose }: CoverPickerProps) {
+export default function CoverPicker({
+    value,
+    onChange,
+    deferUpload = false,
+    onPendingFileChange,
+}: CoverPickerProps) {
     const [uploading, setUploading] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
+    const localPreviewUrlRef = useRef<string | null>(null)
     const supabase = createClient()
+
+    function clearPendingUpload() {
+        onPendingFileChange?.(null)
+
+        if (localPreviewUrlRef.current) {
+            URL.revokeObjectURL(localPreviewUrlRef.current)
+            localPreviewUrlRef.current = null
+        }
+    }
+
+    useEffect(() => {
+        return () => {
+            if (localPreviewUrlRef.current) {
+                URL.revokeObjectURL(localPreviewUrlRef.current)
+            }
+        }
+    }, [])
 
     async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0]
@@ -26,11 +50,13 @@ export default function CoverPicker({ value, onChange, onClose }: CoverPickerPro
 
         if (!file.type.startsWith('image/')) {
             toast.error("Please upload an image file.")
+            e.target.value = ''
             return
         }
 
         if (file.size > 5 * 1024 * 1024) {
             toast.error("File is too large. Maximum size is 5MB.")
+            e.target.value = ''
             return
         }
 
@@ -40,30 +66,31 @@ export default function CoverPicker({ value, onChange, onClose }: CoverPickerPro
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) {
                 toast.error("You must be logged in to upload.")
+                e.target.value = ''
                 return
             }
 
-            const fileExt = file.name.split('.').pop()
-            const fileName = `${user.id}/${Date.now()}.${fileExt}`
-            const filePath = `covers/${fileName}`
+            if (deferUpload) {
+                clearPendingUpload()
+                const previewUrl = URL.createObjectURL(file)
+                localPreviewUrlRef.current = previewUrl
+                onPendingFileChange?.(file)
+                onChange(previewUrl)
+                toast.success("Cover selected. It will upload when you create the project.")
+                return
+            }
 
-            const { error: uploadError } = await supabase.storage
-                .from('project-covers')
-                .upload(filePath, file)
-
-            if (uploadError) throw uploadError
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('project-covers')
-                .getPublicUrl(filePath)
+            const { publicUrl } = await uploadProjectCover(supabase, user.id, file)
 
             onChange(publicUrl)
             toast.success("Cover uploaded successfully!")
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "Failed to upload image."
             console.error("Upload error:", error)
-            toast.error(error.message || "Failed to upload image.")
+            toast.error(message)
         } finally {
             setUploading(false)
+            e.target.value = ''
         }
     }
 
@@ -105,6 +132,7 @@ export default function CoverPicker({ value, onChange, onClose }: CoverPickerPro
                 {/* No Cover Option */}
                 <button
                     onClick={() => {
+                        clearPendingUpload()
                         onChange('')
                         setCustomUrl('')
                     }}
@@ -129,6 +157,7 @@ export default function CoverPicker({ value, onChange, onClose }: CoverPickerPro
                     <button
                         key={cover.id}
                         onClick={() => {
+                            clearPendingUpload()
                             onChange(cover.url)
                             setCustomUrl('')
                         }}
@@ -163,6 +192,7 @@ export default function CoverPicker({ value, onChange, onClose }: CoverPickerPro
                     <Input
                         value={customUrl}
                         onChange={(e) => {
+                            clearPendingUpload()
                             setCustomUrl(e.target.value)
                             onChange(e.target.value)
                         }}
