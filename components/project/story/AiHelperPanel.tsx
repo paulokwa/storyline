@@ -661,7 +661,7 @@ export default function AiHelperPanel({
                             size="icon"
                             onClick={() => setTourOpen(true)}
                             data-tour="ai-help-icon"
-                            className="w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                            className="h-8 w-8 rounded-xl border border-slate-200/70 bg-white/75 text-slate-400 shadow-sm transition-all hover:border-indigo-200 hover:bg-white hover:text-indigo-600"
                         >
                             <HelpCircle className="w-3.5 h-3.5" />
                         </Button>
@@ -676,7 +676,7 @@ export default function AiHelperPanel({
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                                    className="h-8 w-8 rounded-xl border border-slate-200/70 bg-white/75 text-slate-400 shadow-sm transition-all hover:border-indigo-200 hover:bg-white hover:text-indigo-600"
                                 >
                                     <Maximize2 className="w-3.5 h-3.5" />
                                 </Button>
@@ -694,8 +694,10 @@ export default function AiHelperPanel({
                             data-tour="ai-memory-btn"
                             onClick={() => setIncludeArchiveContext(!includeArchiveContext)}
                             className={cn(
-                                "w-8 h-8 rounded-lg relative transition-all",
-                                includeArchiveContext ? "text-indigo-600 bg-indigo-50 border border-indigo-100/50" : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                                "relative h-8 w-8 rounded-xl border shadow-sm transition-all",
+                                includeArchiveContext
+                                    ? "border-indigo-200 bg-indigo-50/90 text-indigo-600"
+                                    : "border-slate-200/70 bg-white/75 text-slate-400 hover:border-slate-300 hover:bg-white hover:text-slate-600"
                             )}
                         >
                             {isLoadingArchive ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Package className="w-3.5 h-3.5" />}
@@ -718,7 +720,7 @@ export default function AiHelperPanel({
                                     variant="ghost"
                                     size="icon"
                                     onClick={onClose}
-                                    className="flex w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
+                                    className="flex h-8 w-8 rounded-xl border border-slate-200/70 bg-white/75 text-slate-400 shadow-sm transition-all hover:border-slate-300 hover:bg-white hover:text-slate-700"
                                 >
                                     <X className="w-4 h-4" />
                                 </Button>
@@ -1393,11 +1395,11 @@ export default function AiHelperPanel({
     const headerStatusLabel = !aiSettings.ai_enabled ? 'disabled' : headerStatus
 
     return (
-        <div className="ai-helper-panel flex flex-col h-full min-h-0 bg-[#fcfbf9] border-l border-slate-200/60 shadow-[-20px_0_50px_rgba(0,0,0,0.02)] overflow-hidden">
+        <div className="ai-helper-panel flex flex-col h-full min-h-0 overflow-hidden border-l border-[#d8ddcf] bg-[linear-gradient(180deg,#f5f4ef_0%,#fbf9f5_52%,#f8f6f1_100%)] shadow-[inset_1px_0_0_rgba(255,255,255,0.45),-18px_0_40px_rgba(84,99,84,0.04)]">
             {/* Header */}
             <div 
                 data-tour="ai-header"
-                className="ai-helper-header flex flex-col gap-2 px-4 py-2.5 border-b border-slate-200/60 bg-white/50 backdrop-blur-sm shrink-0 md:gap-2 md:px-6 md:py-3"
+                className="ai-helper-header shrink-0 border-b border-[#ddd8ce] bg-[linear-gradient(180deg,rgba(251,249,245,0.96)_0%,rgba(245,244,239,0.92)_100%)] px-4 py-3 backdrop-blur-sm md:px-6 md:py-4"
             >
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -1406,7 +1408,7 @@ export default function AiHelperPanel({
                                 <button
                                     type="button"
                                     onClick={onReturnToSidebar}
-                                    className="inline-flex items-center gap-2 rounded-xl px-2.5 py-2 text-[11px] font-medium text-slate-500 transition-all hover:bg-indigo-50 hover:text-indigo-600"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200/70 bg-white/75 px-2.5 py-2 text-[11px] font-medium text-slate-500 shadow-sm transition-all hover:border-indigo-200 hover:bg-white hover:text-indigo-600"
                                 >
                                     <Layout className="w-4 h-4 shrink-0" />
                                     <span>Sidebar</span>
@@ -1421,11 +1423,11 @@ export default function AiHelperPanel({
                             isFullCanvas && onReturnToSidebar ? "hidden md:block" : "block"
                         )}>
                             {!isFullCanvas && (
-                                <h3 className="text-sm font-serif font-bold text-slate-800 tracking-tight leading-none mb-1 truncate">AI Partner</h3>
+                                <h3 className="mb-1 truncate text-sm font-serif font-bold italic tracking-tight text-slate-800">AI Partner</h3>
                             )}
                             <div className={cn("flex items-center gap-2", isFullCanvas ? "hidden" : "flex")}>
                                 {aiSettings.ai_enabled && (
-                                    <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold truncate">
+                                    <p className="truncate text-[9px] font-bold uppercase tracking-[0.22em] text-[#8fa0c0]">
                                         {modeLabel} · {isOllamaMode ? 'Ollama' : getAiProviderLabel(aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider)}
                                     </p>
                                 )}
@@ -1465,11 +1467,11 @@ export default function AiHelperPanel({
 
                 {/* Mode Buttons Row */}
                 <div className={cn(
-                    "flex items-center gap-2 mt-1.5 md:mt-1 pt-1 md:pt-1 border-t border-slate-100/50",
+                    "mt-2 flex items-center gap-2 border-t border-white/70 pt-2",
                     isFullCanvas && "md:mt-0 md:pt-0 md:border-t-0"
                 )}>
                     <div className="flex min-w-0 flex-1 items-center gap-3">
-                        <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-50/50 text-indigo-600 text-[9px] font-bold uppercase tracking-widest shrink-0">
+                        <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-indigo-200/70 bg-white/80 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.22em] text-indigo-600 shadow-sm">
                             <MessageSquarePlus className="w-3 h-3" />
                             <span className="hidden sm:inline">Mode</span>
                         </div>
@@ -1493,10 +1495,10 @@ export default function AiHelperPanel({
                                     key={mode}
                                     onClick={() => setPromptMode(mode)}
                                     className={cn(
-                                        "px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all border",
+                                        "rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.18em] transition-all",
                                         promptMode === mode 
-                                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" 
-                                            : "bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-100 hover:text-slate-600"
+                                            ? "border-indigo-200 bg-indigo-50 text-indigo-700 shadow-sm" 
+                                            : "border-slate-200/70 bg-white/72 text-slate-500 hover:border-slate-300 hover:bg-white hover:text-slate-700"
                                     )}
                                 >
                                     {mode.replace('Writing', '').replace('Scene', '').replace('with Emotion', '').replace('Review / ', '').trim()}
@@ -1514,7 +1516,7 @@ export default function AiHelperPanel({
             </div>
 
             {/* Context Indicator */}
-                <div className="ai-helper-context hidden border-b border-slate-200/60 bg-white/40 md:block">
+                <div className="ai-helper-context hidden border-b border-[#e2ddd3] bg-[rgba(250,248,243,0.92)] md:block">
                 <div
                     data-tour="ai-context-strip"
                     className="flex items-center gap-3 overflow-hidden px-6 py-2"
@@ -1524,10 +1526,10 @@ export default function AiHelperPanel({
                         onClick={handleContextManagerToggle}
                         disabled={isReadOnly || !activeSceneId || isApplyingContext}
                         className={cn(
-                            "inline-flex shrink-0 items-center gap-2 rounded-xl border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] transition-all",
+                            "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] shadow-sm transition-all",
                             contextManagerOpen
-                                ? "border-indigo-200 bg-indigo-50 text-indigo-600"
-                                : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-700",
+                                ? "border-indigo-200 bg-indigo-50/90 text-indigo-600"
+                                : "border-slate-200/70 bg-white/85 text-slate-500 hover:border-slate-300 hover:bg-white hover:text-slate-700",
                             (isReadOnly || !activeSceneId || isApplyingContext) && "cursor-not-allowed opacity-60"
                         )}
                     >
@@ -1544,7 +1546,7 @@ export default function AiHelperPanel({
                             return (
                                 <div
                                     key={item.key}
-                                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-medium text-slate-600"
+                                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200/70 bg-white/85 px-2.5 py-1 text-[10px] font-medium text-slate-600 shadow-sm"
                                 >
                                     <Icon className={cn("h-3 w-3", item.iconClassName)} />
                                     <span>{item.title}</span>
@@ -1554,7 +1556,7 @@ export default function AiHelperPanel({
                         })}
 
                         {selectedNodes.length > 0 && (
-                            <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-indigo-200/60 bg-indigo-50 px-2.5 py-1 text-[10px] font-medium text-indigo-700">
+                            <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-indigo-200/70 bg-indigo-50/90 px-2.5 py-1 text-[10px] font-medium text-indigo-700 shadow-sm">
                                 <div className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
                                 <span className="truncate max-w-[220px]">{storySelectionLabel}</span>
                             </div>
@@ -1567,7 +1569,7 @@ export default function AiHelperPanel({
                 </div>
 
                 {contextManagerOpen && (
-                    <div className="border-t border-slate-100 bg-[#fcfbf9] px-6 py-3">
+                    <div className="border-t border-white/70 bg-[rgba(245,244,239,0.88)] px-6 py-3">
                         {contextManagerList}
                     </div>
                 )}
@@ -1575,7 +1577,7 @@ export default function AiHelperPanel({
 
             <div 
                 data-tour="ai-context-strip"
-                className="ai-helper-context bg-white/40 border-b border-slate-200/60 shrink-0 overflow-hidden md:hidden"
+                className="ai-helper-context shrink-0 overflow-hidden border-b border-[#e2ddd3] bg-[rgba(250,248,243,0.92)] md:hidden"
             >
                 <div className="px-4 py-1.5 space-y-2">
                     <div className="flex items-center gap-3">
@@ -1584,10 +1586,10 @@ export default function AiHelperPanel({
                             onClick={handleContextManagerToggle}
                             disabled={isReadOnly || !activeSceneId || isApplyingContext}
                             className={cn(
-                                "inline-flex shrink-0 items-center gap-2 rounded-xl border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] transition-all",
+                                "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] shadow-sm transition-all",
                                 contextManagerOpen
-                                    ? "border-indigo-200 bg-indigo-50 text-indigo-600"
-                                    : "border-slate-200 bg-white text-slate-500",
+                                    ? "border-indigo-200 bg-indigo-50/90 text-indigo-600"
+                                    : "border-slate-200/70 bg-white/85 text-slate-500",
                                 (isReadOnly || !activeSceneId || isApplyingContext) && "cursor-not-allowed opacity-60"
                             )}
                         >
@@ -1597,7 +1599,7 @@ export default function AiHelperPanel({
                         </button>
 
                         {selectedNodes.length > 0 && (
-                            <div className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-indigo-200/60 bg-indigo-50 px-2.5 py-1 text-[10px] font-medium text-indigo-700">
+                            <div className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-indigo-200/70 bg-indigo-50/90 px-2.5 py-1 text-[10px] font-medium text-indigo-700 shadow-sm">
                                 <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
                                 <span className="truncate">{storySelectionLabel}</span>
                             </div>
@@ -1610,7 +1612,7 @@ export default function AiHelperPanel({
                             return (
                                 <div
                                     key={item.key}
-                                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-medium text-slate-600"
+                                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200/70 bg-white/85 px-2.5 py-1 text-[10px] font-medium text-slate-600 shadow-sm"
                                 >
                                     <Icon className={cn("h-3 w-3", item.iconClassName)} />
                                     <span>{item.title}</span>
@@ -1625,7 +1627,7 @@ export default function AiHelperPanel({
                     </div>
                 </div>
                 {contextManagerOpen && (
-                    <div className="border-t border-slate-100 bg-[#fcfbf9] px-4 py-3">
+                    <div className="border-t border-white/70 bg-[rgba(245,244,239,0.88)] px-4 py-3">
                         {contextManagerList}
                     </div>
                 )}
@@ -1693,8 +1695,8 @@ export default function AiHelperPanel({
                 )}
 
                 {!displayedCompletion && !isLoading && !error && !aiAccessIssue && (
-                    <div className="flex flex-col items-center justify-center h-full text-center space-y-5 opacity-50">
-                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center">
+                    <div className="flex flex-col items-center justify-center h-full text-center space-y-5 opacity-60">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-[1.6rem] border border-slate-200/70 bg-white/85 shadow-sm">
                             <MessageSquare className="w-5 h-5 text-indigo-300" />
                         </div>
                         <div className="space-y-1.5 flex flex-col items-center">
@@ -1854,7 +1856,7 @@ export default function AiHelperPanel({
 
                         {/* Response bubble — dimmed when showing previous while new loads */}
                         <div className={cn(
-                            "bg-white rounded-2xl p-5 shadow-sm border border-slate-100/80 text-sm leading-relaxed text-slate-700 font-serif whitespace-pre-wrap italic min-h-[4rem] transition-opacity duration-300",
+                            "min-h-[4rem] rounded-[1.7rem] border border-slate-200/80 bg-white/88 p-5 text-sm leading-relaxed text-slate-700 font-serif whitespace-pre-wrap italic shadow-sm transition-opacity duration-300",
                             isShowingPrevious && "opacity-40"
                         )}>
                             {displayedCompletion}
@@ -2007,20 +2009,20 @@ export default function AiHelperPanel({
             )}
 
             {/* Input Area */}
-            <div className="bg-white border-t border-slate-200/60 z-10">
+            <div className="z-10 border-t border-[#ddd8ce] bg-[linear-gradient(180deg,rgba(245,244,239,0.9)_0%,rgba(251,249,245,0.96)_100%)]">
                 {/* Context Preview */}
-                <div className="border-b border-slate-100">
+                <div className="border-b border-white/70">
                     <button
                         type="button"
                         onClick={() => setPreviewOpen(!previewOpen)}
-                        className="w-full px-4 py-1.5 md:py-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
+                        className="flex w-full items-center justify-between px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400 transition-colors hover:bg-white/60 hover:text-slate-600 md:py-2"
                     >
                         <span>What the AI is noticing</span>
                         {previewOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
                     </button>
                     
                     {previewOpen && (
-                        <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 max-h-80 md:max-h-64 overflow-y-auto text-[11px] font-mono whitespace-pre-wrap text-slate-600 space-y-4 overscroll-contain touch-auto custom-scrollbar">
+                        <div className="max-h-80 overflow-y-auto border-t border-white/70 bg-[rgba(255,255,255,0.5)] px-4 py-3 text-[11px] font-mono whitespace-pre-wrap text-slate-600 space-y-4 overscroll-contain touch-auto custom-scrollbar md:max-h-64">
                             <div>
                                 <div className="font-bold text-slate-400 mb-1">{label.toUpperCase()}:</div>
                                 <div className="italic bg-white p-2 border border-slate-100 rounded-lg">{sceneTextRef.current.slice(-1000) || '(empty)'}</div>
@@ -2142,24 +2144,24 @@ export default function AiHelperPanel({
                 </div>
 
                 {/* Prompt templates - Collapsible */}
-                <div className="border-b border-slate-100">
+                <div className="border-b border-white/70">
                     <button
                         type="button"
                         onClick={() => setPromptsOpen(!promptsOpen)}
-                        className="w-full px-4 py-1.5 md:py-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
+                        className="flex w-full items-center justify-between px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400 transition-colors hover:bg-white/60 hover:text-slate-600 md:py-2"
                     >
                         <span>Quick Writing Ideas</span>
                         {promptsOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
                     </button>
                     
                     {promptsOpen && (
-                        <div className="px-4 pt-3 pb-3 flex flex-wrap gap-2.5 justify-center bg-slate-50 border-t border-slate-100 animate-in slide-in-from-top-1 duration-300">
+                        <div className="animate-in slide-in-from-top-1 border-t border-white/70 bg-[rgba(255,255,255,0.5)] px-4 pt-3 pb-3 flex flex-wrap gap-2.5 justify-center duration-300">
                             {PROMPT_TEMPLATES.map((t) => (
                                 <button
                                     key={t.label}
                                     type="button"
                                     onClick={() => handleTemplate(t.value)}
-                                    className="px-3 py-1.5 text-[11px] font-medium rounded-xl border border-slate-200 text-slate-500 bg-white hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50/50 transition-all active:scale-95 shadow-sm whitespace-nowrap"
+                                    className="whitespace-nowrap rounded-full border border-slate-200/80 bg-white/88 px-3 py-1.5 text-[11px] font-medium text-slate-500 shadow-sm transition-all hover:border-indigo-300 hover:bg-white hover:text-indigo-600 active:scale-95"
                                 >
                                     {t.label}
                                 </button>
@@ -2257,8 +2259,8 @@ export default function AiHelperPanel({
                                 }}
                                 placeholder={promptPlaceholder}
                                 className={cn(
-                                    "w-full border border-slate-200 rounded-2xl py-1 focus-within:ring-2 focus-within:ring-indigo-500/10 focus-within:border-indigo-400 transition-all shadow-sm",
-                                    actualLoading ? "bg-white cursor-wait" : "bg-slate-50"
+                                    "w-full rounded-[1.8rem] border border-slate-200/80 py-1 shadow-sm transition-all focus-within:ring-2 focus-within:ring-indigo-500/10 focus-within:border-indigo-300",
+                                    actualLoading ? "bg-white/90 cursor-wait" : "bg-white/78"
                                 )}
                                 editorClassName="px-4 pr-14 py-3.5 text-sm font-serif leading-relaxed"
                                 minHeight="80px"

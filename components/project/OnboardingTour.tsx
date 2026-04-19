@@ -79,10 +79,52 @@ function getStepTargets(step: Step) {
     if (typeof window === 'undefined') return step.targets
 
     if (step.id === 'ai-entry-points' && window.innerWidth < 768) {
-        return ['[data-tour="ai-helper"]']
+        return ['[data-tour="ai-helper"]', '[data-tour="ai-tab"]']
     }
 
     return step.targets
+}
+
+function getViewportRect(rect: DOMRect) {
+    if (typeof window === 'undefined') return rect
+
+    const left = Math.max(0, rect.left)
+    const top = Math.max(0, rect.top)
+    const right = Math.min(window.innerWidth, rect.right)
+    const bottom = Math.min(window.innerHeight, rect.bottom)
+
+    if (right <= left || bottom <= top) return null
+
+    return toSpotlightRect(left, top, right, bottom)
+}
+
+function getMobileEditorRect(rect: DOMRect) {
+    const visibleRect = getViewportRect(rect)
+    if (!visibleRect || typeof window === 'undefined') return visibleRect
+
+    const horizontalInset = Math.min(16, Math.max(8, visibleRect.width * 0.04))
+    const topInset = Math.min(72, Math.max(28, visibleRect.height * 0.12))
+    const bottomInset = Math.min(24, Math.max(12, visibleRect.height * 0.04))
+
+    const left = visibleRect.left + horizontalInset
+    const right = visibleRect.right - horizontalInset
+    const top = visibleRect.top + topInset
+    const bottom = visibleRect.bottom - bottomInset
+
+    if (right <= left || bottom <= top) return visibleRect
+
+    return toSpotlightRect(left, top, right, bottom)
+}
+
+function getTargetRect(step: Step, rect: DOMRect) {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+    if (!isMobile) return rect
+
+    if (step.id === 'main-editor') {
+        return getMobileEditorRect(rect)
+    }
+
+    return getViewportRect(rect)
 }
 
 export default function OnboardingTour({
@@ -174,10 +216,13 @@ export default function OnboardingTour({
                 const elements = document.querySelectorAll(selector)
                 const element = Array.from(elements).find(el => {
                     const rect = el.getBoundingClientRect()
-                    return rect.width > 0 && rect.height > 0
+                    return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.right > 0 && rect.left < window.innerWidth && rect.top < window.innerHeight
                 })
 
-                return element ? [element.getBoundingClientRect()] : []
+                if (!element) return []
+
+                const rect = getTargetRect(step, element.getBoundingClientRect())
+                return rect ? [rect] : []
             })
 
             setTargetRects(rects)
