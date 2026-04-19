@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import AdminBackButton from '@/components/admin/AdminBackButton'
 import AiTrialAdjustmentForm from '@/components/admin/AiTrialAdjustmentForm'
@@ -263,9 +263,9 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
               </div>
               <div className="md:col-span-5 flex flex-wrap gap-3">
                 <Button type="submit">Apply Filters</Button>
-                <Button asChild variant="outline">
-                  <a href="/admin">Clear</a>
-                </Button>
+                <a href="/admin" className={buttonVariants({ variant: 'outline' })}>
+                  Clear
+                </a>
               </div>
             </form>
           </CardContent>
