@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getBillingModeLabel, type BillingMode } from '@/lib/ai/modes'
-import { logAiModeChange } from '@/lib/ai/trial'
+import { logAiModeChange } from '@/lib/ai/trial-server'
 
 type PreferencesBody = {
     aiEnabled?: boolean
@@ -12,6 +12,7 @@ type PreferencesBody = {
     ollamaUrl?: string
     apiKey?: string
     removeApiKey?: boolean
+    completeOnboarding?: boolean
 }
 
 export async function POST(request: Request) {
@@ -70,12 +71,23 @@ export async function POST(request: Request) {
         api_key: nextApiKey,
     }
 
-    const { error } = await (supabase as any)
+    const { error } = await supabase
         .from('user_api_keys')
         .upsert(payload, { onConflict: 'user_id' })
 
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 400 })
+    }
+
+    if (body.completeOnboarding) {
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .update({ ai_onboarding_completed: true })
+            .eq('id', user.id)
+
+        if (profileError) {
+            return NextResponse.json({ error: profileError.message }, { status: 400 })
+        }
     }
 
     const modeChanged =

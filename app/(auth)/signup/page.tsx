@@ -15,12 +15,14 @@ export default function SignupPage() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
+    const [successMessage, setSuccessMessage] = useState('')
     const [loading, setLoading] = useState(false)
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
         setLoading(true)
         setError('')
+        setSuccessMessage('')
 
         try {
             const deviceFingerprint = await getDeviceFingerprint()
@@ -39,6 +41,13 @@ export default function SignupPage() {
 
             if (!response.ok) {
                 setError(data?.error || 'Unable to create your account right now.')
+                setLoading(false)
+                return
+            }
+
+            if (data?.verificationRequired) {
+                setSuccessMessage(`Check ${data.email ?? email} to verify your account before signing in.`)
+                setPassword('')
                 setLoading(false)
                 return
             }
@@ -79,7 +88,7 @@ export default function SignupPage() {
                                 value={displayName}
                                 onChange={(e) => setDisplayName(e.target.value)}
                                 placeholder="Alex"
-                                className="h-12 bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-4 transition-all"
+                                className="h-12 rounded-2xl border-transparent bg-stone-50/50 px-4 text-slate-800 placeholder:text-slate-400 transition-all focus:bg-white focus:border-primary/20"
                             />
                         </div>
 
@@ -92,7 +101,7 @@ export default function SignupPage() {
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="you@example.com"
                                 required
-                                className="h-12 bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-4 transition-all"
+                                className="h-12 rounded-2xl border-transparent bg-stone-50/50 px-4 text-slate-800 placeholder:text-slate-400 transition-all focus:bg-white focus:border-primary/20"
                             />
                         </div>
 
@@ -106,7 +115,7 @@ export default function SignupPage() {
                                 placeholder="At least 8 characters"
                                 minLength={8}
                                 required
-                                className="h-12 bg-stone-50/50 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl px-4 transition-all"
+                                className="h-12 rounded-2xl border-transparent bg-stone-50/50 px-4 text-slate-800 placeholder:text-slate-400 transition-all focus:bg-white focus:border-primary/20"
                             />
                         </div>
 
@@ -114,6 +123,12 @@ export default function SignupPage() {
                             <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50/50 border border-red-100 rounded-xl px-4 py-3">
                                 <AlertCircle className="w-4 h-4 shrink-0" />
                                 <span className="font-medium">{error}</span>
+                            </div>
+                        )}
+
+                        {successMessage && (
+                            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                                {successMessage}
                             </div>
                         )}
 

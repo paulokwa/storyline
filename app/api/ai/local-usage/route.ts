@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getRequestContext } from '@/lib/server/request-context'
 import { getAiRuntimeState } from '@/lib/ai/runtime'
-import { logUsageEvent } from '@/lib/ai/trial'
+import { logUsageEvent } from '@/lib/ai/trial-server'
 
 export async function POST(request: Request) {
     const supabase = await createClient()

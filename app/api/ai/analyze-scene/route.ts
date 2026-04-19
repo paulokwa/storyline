@@ -5,8 +5,8 @@ import {
     APP_MANAGED_OPENAI_MODEL,
     estimateTokensFromChars,
     estimateTrialReserveMicros,
-    logUsageEvent,
 } from '@/lib/ai/trial'
+import { logUsageEvent } from '@/lib/ai/trial-server'
 import { getRequestContext } from '@/lib/server/request-context'
 
 export const maxDuration = 30

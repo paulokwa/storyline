@@ -31,18 +31,38 @@ CREATE INDEX IF NOT EXISTS idx_scene_locations_location_id ON scene_locations(lo
 ALTER TABLE locations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scene_locations ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "locations_own" ON locations FOR ALL
-  USING (EXISTS (SELECT 1 FROM projects WHERE projects.id = locations.project_id AND projects.user_id = auth.uid()));
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_policies
+        WHERE schemaname = 'public'
+          AND tablename = 'locations'
+          AND policyname = 'locations_own'
+    ) THEN
+        CREATE POLICY "locations_own" ON locations FOR ALL
+          USING (EXISTS (SELECT 1 FROM projects WHERE projects.id = locations.project_id AND projects.user_id = auth.uid()));
+    END IF;
 
-CREATE POLICY "scene_locations_own" ON scene_locations FOR ALL
-  USING (EXISTS (
-    SELECT 1 FROM scenes
-    JOIN locations ON scenes.project_id = locations.project_id
-    JOIN projects ON scenes.project_id = projects.id
-    WHERE scenes.id = scene_locations.scene_id
-    AND locations.id = scene_locations.location_id
-    AND projects.user_id = auth.uid()
-  ));
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_policies
+        WHERE schemaname = 'public'
+          AND tablename = 'scene_locations'
+          AND policyname = 'scene_locations_own'
+    ) THEN
+        CREATE POLICY "scene_locations_own" ON scene_locations FOR ALL
+          USING (EXISTS (
+            SELECT 1 FROM scenes
+            JOIN locations ON scenes.project_id = locations.project_id
+            JOIN projects ON scenes.project_id = projects.id
+            WHERE scenes.id = scene_locations.scene_id
+            AND locations.id = scene_locations.location_id
+            AND projects.user_id = auth.uid()
+          ));
+    END IF;
+END $$;
 
 -- Update updated_at trigger
+DROP TRIGGER IF EXISTS locations_updated_at ON locations;
 CREATE TRIGGER locations_updated_at BEFORE UPDATE ON locations FOR EACH ROW EXECUTE FUNCTION update_updated_at();

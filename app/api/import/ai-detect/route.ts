@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { DEFAULT_OPENAI_MODEL, extractOpenAiOutputText } from '@/lib/ai/providers'
 import { getAiRuntimeState } from '@/lib/ai/runtime'
 import { getRequestContext } from '@/lib/server/request-context'
-import { logUsageEvent } from '@/lib/ai/trial'
+import { logUsageEvent } from '@/lib/ai/trial-server'
 
 // Safety Caps
 const MAX_CHARS = 1000000 // 1M chars ~ 180k words

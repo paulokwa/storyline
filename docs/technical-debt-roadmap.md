@@ -22,6 +22,18 @@ This document tracks identified architectural risks, technical debt, and reliabi
 *   **Suggested Implementation**: Implement an exponential backoff retry strategy for core Supabase operations, especially for the `SceneEditor` save flow.
 *   **Priority**: High
 
+### 4. AI Trial Reconciliation & RPC Failure Handling
+*   **Why it matters**: The free-trial AI system is server-authoritative, but several routes still assume `finalize_ai_trial_usage`, `fail_ai_trial_usage`, and trial-grant RPCs succeed once called.
+*   **Risk if ignored**: Balance drift, silent trial-grant failures, or usage-event rows that do not reconcile cleanly with account balances after provider errors or partial failures.
+*   **Suggested Implementation**: Add explicit error handling and alerting around all trial RPC calls, add an admin-visible reconciliation check between `ai_trial_accounts`, `ai_usage_events`, and `ai_trial_ledger`, and add tests for duplicate submit / retry / provider failure scenarios.
+*   **Priority**: High
+
+### 5. AI Abuse Controls Hardening
+*   **Why it matters**: Current trial abuse protections rely on normalized email checks, a static disposable-domain list, forwarded IP headers, and a browser fingerprint. These are useful signals but remain easy to evade.
+*   **Risk if ignored**: Trial farming, noisy false negatives, and avoidable sponsored AI spend during wider rollout.
+*   **Suggested Implementation**: Add stronger signup friction for suspicious traffic, move rate limiting to centralized infrastructure, expand or externalize disposable-domain intelligence, and treat fingerprint/IP signals as heuristics rather than strong identity.
+*   **Priority**: High
+
 ## Medium Priority Later
 
 ### 1. Unified Type Safety (Supabase Generics)
@@ -40,6 +52,18 @@ This document tracks identified architectural risks, technical debt, and reliabi
 *   **Why it matters**: The `StructureTree` re-renders frequently and uses nested mapping for large trees.
 *   **Risk if ignored**: Significant UI lag in projects with hundreds of scenes or chapters.
 *   **Suggested Implementation**: Implement `React.memo` for tree nodes and verify performance via React Profiler. Consider a virtualized list if the tree exceeds 500+ nodes.
+*   **Priority**: Medium
+
+### 4. AI Trial Cost Model Calibration
+*   **Why it matters**: The sponsored AI budget currently uses character-based token estimation and fixed reserve profiles rather than exact provider billing data.
+*   **Risk if ignored**: The internal `$2` cap stays approximate. It is protected against obvious overspend in app balance terms, but it may still undercount real provider cost for some request shapes.
+*   **Suggested Implementation**: Compare estimated cost against real provider usage during limited testing, tighten endpoint reserve profiles, and bias reserves toward conservative underspend for app-managed trial mode.
+*   **Priority**: Medium
+
+### 5. Local AI Usage Logging Integrity
+*   **Why it matters**: The Ollama logging endpoint is useful for admin analytics, but it currently trusts authenticated client posts for local usage event reporting.
+*   **Risk if ignored**: Admin reporting for local AI can become noisy or misleading, especially if clients post malformed or duplicated usage events.
+*   **Suggested Implementation**: Validate active mode before accepting local usage logs, deduplicate more aggressively, and clearly separate analytics-grade data from billing-grade data in admin views.
 *   **Priority**: Medium
 
 ## Lower Priority / Future Enhancements

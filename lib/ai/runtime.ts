@@ -4,7 +4,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/types'
 import type { BillingMode } from '@/lib/ai/modes'
 import { resolveBillingModeFromSettings } from '@/lib/ai/modes'
-import { APP_MANAGED_OPENAI_MODEL, getAppManagedOpenAiApiKey } from '@/lib/ai/trial'
+import { APP_MANAGED_OPENAI_MODEL } from '@/lib/ai/trial'
+import { getAppManagedOpenAiApiKey } from '@/lib/ai/trial-server'
 import { DEFAULT_GEMINI_MODEL } from '@/lib/ai/providers'
 
 export type AiRuntimeState = {

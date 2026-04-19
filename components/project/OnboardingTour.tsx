@@ -178,7 +178,6 @@ export default function OnboardingTour({
     }
 
     const handleComplete = () => {
-        localStorage.setItem('storyline-onboarding-complete', 'true')
         onComplete()
         onClose()
     }

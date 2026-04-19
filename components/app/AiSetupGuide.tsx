@@ -40,39 +40,48 @@ interface AiSetupGuideProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     onNavigateToProvider?: (provider: ProviderOption) => void
+    onSelectTrial?: () => void
 }
 
-export default function AiSetupGuide({ open, onOpenChange, onNavigateToProvider }: AiSetupGuideProps) {
+export default function AiSetupGuide({ open, onOpenChange, onNavigateToProvider, onSelectTrial }: AiSetupGuideProps) {
     const [view, setView] = useState<GuideView>('compare')
     const [showAdvancedOllama, setShowAdvancedOllama] = useState(false)
+
+    const resetGuide = () => {
+        setTimeout(() => {
+            setView('compare')
+            setShowAdvancedOllama(false)
+        }, 300)
+    }
 
     const handleSelectProvider = (provider: ProviderOption) => {
         onNavigateToProvider?.(provider)
         onOpenChange(false)
-        setTimeout(() => {
-            setView('compare')
-            setShowAdvancedOllama(false)
-        }, 300)
+        resetGuide()
     }
 
-    const handleClose = () => {
-        onOpenChange(false)
-        setTimeout(() => {
-            setView('compare')
-            setShowAdvancedOllama(false)
-        }, 300)
+    const handleOpenChange = (nextOpen: boolean) => {
+        onOpenChange(nextOpen)
+        if (!nextOpen) {
+            resetGuide()
+        }
     }
 
     return (
-        <Dialog open={open} onOpenChange={handleClose}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent
-                className="sm:max-w-2xl max-h-[85vh] overflow-y-auto bg-white"
+                className="max-h-[90vh] overflow-y-auto bg-white sm:max-w-5xl"
                 showCloseButton
             >
                 {view === 'compare' && (
                     <CompareView 
                         onSetView={setView} 
                         onSelect={handleSelectProvider} 
+                        onSelectTrial={() => {
+                            onSelectTrial?.()
+                            onOpenChange(false)
+                            resetGuide()
+                        }}
                     />
                 )}
                 {view === 'gemini' && (
@@ -103,9 +112,11 @@ export default function AiSetupGuide({ open, onOpenChange, onNavigateToProvider 
 function CompareView({
     onSetView,
     onSelect,
+    onSelectTrial,
 }: {
     onSetView: (v: GuideView) => void
     onSelect: (p: ProviderOption) => void
+    onSelectTrial: () => void
 }) {
     return (
         <div className="space-y-6">
@@ -115,16 +126,40 @@ function CompareView({
                         <Sparkles className="w-4.5 h-4.5 text-indigo-500" />
                     </div>
                     <div>
-                        <DialogTitle className="text-lg">Set Up Your AI Writing Partner</DialogTitle>
-                        <DialogDescription className="mt-1">
-                            Choose the AI option that works best for you. Gemini, OpenAI, and Ollama all work well in Storyline, but they each fit a different setup.
+                        <DialogTitle className="text-xl text-slate-900">Set Up Your AI Writing Partner</DialogTitle>
+                        <DialogDescription className="mt-2 max-w-3xl text-base leading-7 text-slate-600">
+                            Choose the AI option that works best for you. Storyline supports a sponsored free trial, BYOK cloud providers, and fully local Ollama.
                         </DialogDescription>
                     </div>
                 </div>
             </DialogHeader>
 
             {/* Provider Cards */}
-            <div className="grid sm:grid-cols-3 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <button
+                    onClick={onSelectTrial}
+                    className="group text-left p-5 rounded-2xl border-2 border-slate-100 hover:border-violet-300 bg-gradient-to-br from-white to-violet-50/40 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98] relative overflow-hidden"
+                >
+                    <div className="absolute top-0 right-0 p-1">
+                        <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-2.5 py-1 rounded-bl-xl rounded-tr-lg uppercase tracking-wider">
+                            Sponsored
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 bg-violet-100 rounded-xl group-hover:bg-violet-600 group-hover:text-white transition-colors duration-300">
+                            <Sparkles className="w-5 h-5" />
+                        </div>
+                        <span className="font-bold text-slate-900 text-base">Free Trial AI</span>
+                    </div>
+                    <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                        Start immediately with Storyline-sponsored OpenAI usage and a built-in budget cap.
+                    </p>
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-violet-600 group-hover:gap-3 transition-all">
+                        Choose free trial
+                        <ArrowRight className="w-4 h-4" />
+                    </div>
+                </button>
+
                 {/* Gemini Card */}
                 <button
                     onClick={() => onSetView('gemini')}
@@ -208,6 +243,7 @@ function CompareView({
                         <thead>
                             <tr className="bg-slate-50/80 border-b border-slate-100">
                                 <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-[30%]">Feature</th>
+                                <th className="px-4 py-3 text-[11px] font-bold text-violet-600 uppercase tracking-wider">Free Trial</th>
                                 <th className="px-4 py-3 text-[11px] font-bold text-indigo-600 uppercase tracking-wider">Gemini Cloud</th>
                                 <th className="px-4 py-3 text-[11px] font-bold text-sky-600 uppercase tracking-wider">OpenAI Cloud</th>
                                 <th className="px-4 py-3 text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Local Ollama</th>
@@ -217,6 +253,7 @@ function CompareView({
                             <CompareRow
                                 label="Setup"
                                 icon={<Zap className="w-3.5 h-3.5 text-amber-500" />}
+                                trial="Instant"
                                 gemini="Easy (API Key)"
                                 openai="Easy (API Key)"
                                 ollama="Medium (App Install)"
@@ -224,6 +261,7 @@ function CompareView({
                             <CompareRow
                                 label="Privacy"
                                 icon={<Shield className="w-3.5 h-3.5 text-blue-500" />}
+                                trial="Cloud Hosted"
                                 gemini="Cloud Hosted"
                                 openai="Cloud Hosted"
                                 ollama="100% On-Device"
@@ -231,6 +269,7 @@ function CompareView({
                             <CompareRow
                                 label="Cost"
                                 icon={<DollarSign className="w-3.5 h-3.5 text-green-500" />}
+                                trial="Sponsored Limit"
                                 gemini="Free Utility (Usage Restricted)"
                                 openai="Usage-Based"
                                 ollama="Completely Free"
@@ -238,6 +277,7 @@ function CompareView({
                             <CompareRow
                                 label="Location"
                                 icon={<Globe className="w-3.5 h-3.5 text-sky-500" />}
+                                trial="Works Everywhere"
                                 gemini="Works Everywhere"
                                 openai="Works Everywhere"
                                 ollama="Best for Local Dev"
@@ -245,6 +285,7 @@ function CompareView({
                             <CompareRow
                                 label="Performance"
                                 icon={<Sparkles className="w-3.5 h-3.5 text-indigo-500" />}
+                                trial="High Speed"
                                 gemini="High Speed"
                                 openai="High Speed"
                                 ollama="Depends on your PC"
@@ -259,7 +300,7 @@ function CompareView({
                     <Info className="w-4 h-4 text-amber-600" />
                 </div>
                 <p className="text-xs text-amber-800 leading-relaxed font-medium">
-                    <span className="font-bold">Not sure which to pick?</span> Gemini and OpenAI are the easiest BYOK options if you want cloud AI. Ollama is best when you want everything to stay local.
+                    <span className="font-bold">Not sure which to pick?</span> Free Trial AI is the fastest start. Gemini and OpenAI are the easiest BYOK options if you want your own billing. Ollama is best when you want everything to stay local.
                 </p>
             </div>
         </div>
@@ -269,12 +310,14 @@ function CompareView({
 function CompareRow({
     label,
     icon,
+    trial,
     gemini,
     openai,
     ollama,
 }: {
     label: string
     icon: React.ReactNode
+    trial: string
     gemini: string
     openai: string
     ollama: string
@@ -285,6 +328,12 @@ function CompareRow({
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
                     {icon}
                     {label}
+                </div>
+            </td>
+            <td className="px-4 py-3.5">
+                <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-violet-400 shrink-0" />
+                    <span className="text-xs text-slate-600 leading-snug font-medium">{trial}</span>
                 </div>
             </td>
             <td className="px-4 py-3.5">

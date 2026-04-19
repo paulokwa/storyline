@@ -10,8 +10,8 @@ import {
     estimateTokensFromChars,
     estimateTrialReserveMicros,
     getTrialStatusMessage,
-    logUsageEvent,
 } from '@/lib/ai/trial'
+import { logUsageEvent } from '@/lib/ai/trial-server'
 import { getRequestContext } from '@/lib/server/request-context'
 
 export const maxDuration = 30
@@ -290,7 +290,10 @@ export async function POST(req: Request) {
 
     const apiKey = runtime.apiKey
     if (!apiKey) {
-        return new Response('NO_API_KEY', { status: 403 })
+        return new Response(
+            runtime.billingMode === 'app_managed_trial' ? 'APP_MANAGED_AI_UNAVAILABLE' : 'NO_API_KEY',
+            { status: 403 }
+        )
     }
 
     if (providerName !== 'gemini' && providerName !== 'openai') {

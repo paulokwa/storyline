@@ -36,7 +36,7 @@ export default async function ProjectLayout({
 
     return (
         <ProjectProvider role={project.role}>
-            <ProjectShell project={project} role={project.role}>
+            <ProjectShell project={project} currentUserId={user.id} role={project.role}>
                 {children}
             </ProjectShell>
         </ProjectProvider>

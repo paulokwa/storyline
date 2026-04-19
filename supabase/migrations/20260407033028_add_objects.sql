@@ -32,14 +32,26 @@ ALTER TABLE objects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scene_objects ENABLE ROW LEVEL SECURITY;
 
 /* Policies */
-DO $$ 
+DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'objects_own') THEN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_policies
+        WHERE schemaname = 'public'
+          AND tablename = 'objects'
+          AND policyname = 'objects_own'
+    ) THEN
         CREATE POLICY "objects_own" ON objects FOR ALL
           USING (EXISTS (SELECT 1 FROM projects WHERE projects.id = objects.project_id AND projects.user_id = auth.uid()));
     END IF;
 
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'scene_objects_own') THEN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_policies
+        WHERE schemaname = 'public'
+          AND tablename = 'scene_objects'
+          AND policyname = 'scene_objects_own'
+    ) THEN
         CREATE POLICY "scene_objects_own" ON scene_objects FOR ALL
           USING (EXISTS (
             SELECT 1 FROM scenes

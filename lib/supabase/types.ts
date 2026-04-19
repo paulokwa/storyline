@@ -633,6 +633,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ai_onboarding_completed: boolean
           avatar_url: string | null
           created_at: string | null
           display_name: string | null
@@ -642,6 +643,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ai_onboarding_completed?: boolean
           avatar_url?: string | null
           created_at?: string | null
           display_name?: string | null
@@ -651,6 +653,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ai_onboarding_completed?: boolean
           avatar_url?: string | null
           created_at?: string | null
           display_name?: string | null

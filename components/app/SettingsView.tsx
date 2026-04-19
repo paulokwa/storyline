@@ -395,7 +395,13 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
                     <AiSetupGuide
                         open={showAiGuide}
                         onOpenChange={setShowAiGuide}
+                        onSelectTrial={() => {
+                            setAiEnabled(true)
+                            setBillingMode('app_managed_trial')
+                            setAiProvider('openai')
+                        }}
                         onNavigateToProvider={(provider) => {
+                            setAiEnabled(true)
                             setAiProvider(provider)
                             setBillingMode(provider === 'ollama' ? 'ollama' : 'byok')
                         }}

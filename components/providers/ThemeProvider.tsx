@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
 export const DEFAULT_THEME = 'sanctuary' as const
 export const THEMES = [DEFAULT_THEME, 'midnight'] as const
@@ -20,22 +21,51 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [theme, setThemeState] = useState<Theme>(DEFAULT_THEME)
+    const [storageKey, setStorageKey] = useState<string | null>(null)
 
     useEffect(() => {
-        const savedTheme = localStorage.getItem('theme')
-        const resolvedTheme = isTheme(savedTheme) ? savedTheme : DEFAULT_THEME
-        setThemeState(resolvedTheme)
-        document.documentElement.setAttribute('data-theme', resolvedTheme)
+        const supabase = createClient()
+
+        const applyThemeForUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            const nextStorageKey = user ? `theme:${user.id}` : null
+            const savedTheme = nextStorageKey ? localStorage.getItem(nextStorageKey) : null
+            const resolvedTheme = isTheme(savedTheme) ? savedTheme : DEFAULT_THEME
+
+            setStorageKey(nextStorageKey)
+            setThemeState(resolvedTheme)
+            document.documentElement.setAttribute('data-theme', resolvedTheme)
+        }
+
+        applyThemeForUser()
+
+        const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+            const nextStorageKey = session?.user ? `theme:${session.user.id}` : null
+            const savedTheme = nextStorageKey ? localStorage.getItem(nextStorageKey) : null
+            const resolvedTheme = isTheme(savedTheme) ? savedTheme : DEFAULT_THEME
+
+            setStorageKey(nextStorageKey)
+            setThemeState(resolvedTheme)
+            document.documentElement.setAttribute('data-theme', resolvedTheme)
+        })
+
+        return () => {
+            authListener.subscription.unsubscribe()
+        }
     }, [])
 
     useEffect(() => {
-        localStorage.setItem('theme', theme)
+        if (storageKey) {
+            localStorage.setItem(storageKey, theme)
+        }
         document.documentElement.setAttribute('data-theme', theme)
-    }, [theme])
+    }, [storageKey, theme])
 
     const setTheme = (newTheme: Theme) => {
         setThemeState(newTheme)
-        localStorage.setItem('theme', newTheme)
+        if (storageKey) {
+            localStorage.setItem(storageKey, newTheme)
+        }
         document.documentElement.setAttribute('data-theme', newTheme)
     }
 

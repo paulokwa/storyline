@@ -77,10 +77,12 @@ const TABS = [
 
 export default function ProjectShell({
     project: initialProject,
+    currentUserId,
     role = 'owner',
     children,
 }: {
     project: Project
+    currentUserId: string
     role?: 'owner' | 'editor' | 'viewer'
     children: React.ReactNode
 }) {
@@ -94,6 +96,7 @@ export default function ProjectShell({
     const [shareModalOpen, setShareModalOpen] = useState(false)
     const [shortcutsOpen, setShortcutsOpen] = useState(false)
     const [tourOpen, setTourOpen] = useState(false)
+    const onboardingStorageKey = `storyline-onboarding:${currentUserId}:${project.type}`
 
     async function saveTitle() {
         if (!titleDraft.trim()) return setEditingTitle(false)
@@ -110,13 +113,13 @@ export default function ProjectShell({
     }
 
     useEffect(() => {
-        const completed = localStorage.getItem('storyline-onboarding-complete')
+        const completed = localStorage.getItem(onboardingStorageKey)
         if (!completed) {
             // Delay slightly to ensure elements are rendered
             const timer = setTimeout(() => setTourOpen(true), 1500)
             return () => clearTimeout(timer)
         }
-    }, [])
+    }, [onboardingStorageKey])
 
     const { activeNodeId } = useProjectActions()
 
@@ -148,7 +151,7 @@ export default function ProjectShell({
                             onClose={() => setTourOpen(false)}
                             onComplete={() => {
                                 setTourOpen(false)
-                                localStorage.setItem('storyline-onboarding-complete', 'true')
+                                localStorage.setItem(onboardingStorageKey, 'true')
                             }}
                         />
                         

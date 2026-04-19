@@ -1702,7 +1702,27 @@ export default function AiHelperPanel({
                         <div className="bg-white w-9 h-9 rounded-full flex items-center justify-center mx-auto shadow-sm">
                             <AlertCircle className="w-4 h-4 text-red-400" />
                         </div>
-                        {error.message?.includes('NO_API_KEY') ? (
+                        {error.message?.includes('APP_MANAGED_AI_UNAVAILABLE') ? (
+                            <>
+                                <div className="space-y-1">
+                                    <p className="text-sm font-semibold text-red-900">Free Trial AI Unavailable</p>
+                                    <p className="text-xs text-red-500 leading-relaxed font-serif italic">
+                                        Storyline&apos;s sponsored AI is not configured right now. Please try again later or switch to another AI option in Settings.
+                                    </p>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full bg-white border-red-200 text-red-700 hover:bg-red-50 rounded-xl gap-2 text-xs"
+                                >
+                                    <Link href="/settings" className="flex items-center gap-2 w-full justify-center">
+                                        <Settings className="w-3 h-3" />
+                                        Open AI Settings
+                                    </Link>
+                                </Button>
+                            </>
+                        ) : error.message?.includes('NO_API_KEY') ? (
                             <>
                                 <div className="space-y-1">
                                     <p className="text-sm font-semibold text-red-900">API Key Missing</p>
