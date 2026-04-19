@@ -36,6 +36,7 @@ const ENDPOINT_COST_PROFILES: Record<TrialEndpoint, EndpointCostProfile> = {
 
 export type TrialAccountRow = Database['public']['Tables']['ai_trial_accounts']['Row']
 export type UserAiSettingsRow = Database['public']['Tables']['user_api_keys']['Row']
+type TrialStatusLike = Pick<TrialAccountRow, 'status'>
 
 export function estimateTokensFromChars(text: string | number | null | undefined) {
     if (!text) return 0
@@ -71,7 +72,7 @@ export function estimateTrialReserveMicros(params: {
     return Math.max(profile.minMicros, inputMicros + outputMicros)
 }
 
-export function getTrialStatusMessage(account: TrialAccountRow | null | undefined) {
+export function getTrialStatusMessage(account: TrialStatusLike | null | undefined) {
     if (!account) {
         return 'Free Trial AI is unavailable right now.'
     }

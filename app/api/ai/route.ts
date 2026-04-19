@@ -328,9 +328,9 @@ export async function POST(req: Request) {
             p_input_chars: userMessage.length,
             p_estimated_input_tokens: estimateTokensFromChars(userMessage),
             p_estimated_output_tokens: 1000,
-            p_ip_address: requestContext.ipAddress,
-            p_device_fingerprint: requestContext.deviceFingerprint,
-            p_user_agent: requestContext.userAgent,
+            p_ip_address: requestContext.ipAddress ?? '',
+            p_device_fingerprint: requestContext.deviceFingerprint ?? '',
+            p_user_agent: requestContext.userAgent ?? '',
             p_metadata: metadata,
         })
 

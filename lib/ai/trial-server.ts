@@ -2,6 +2,7 @@ import 'server-only'
 
 import type { BillingMode } from '@/lib/ai/modes'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Json } from '@/lib/supabase/types'
 
 type TrialEndpoint = 'ai_helper' | 'analyze_scene' | 'import_ai_detect'
 
@@ -31,7 +32,7 @@ export async function logAiModeChange(params: {
         provider: params.provider,
         risk_score: 0,
         risk_flags: [],
-        metadata: params.metadata ?? {},
+        metadata: (params.metadata ?? {}) as Json,
     })
 }
 
@@ -74,7 +75,7 @@ export async function logUsageEvent(params: {
         device_fingerprint: params.deviceFingerprint ?? null,
         normalized_email: params.normalizedEmail ?? null,
         user_agent: params.userAgent ?? null,
-        metadata: params.metadata ?? {},
+        metadata: (params.metadata ?? {}) as Json,
         completed_at: params.status === 'completed' || params.status === 'failed' || params.status === 'blocked'
             ? now
             : null,

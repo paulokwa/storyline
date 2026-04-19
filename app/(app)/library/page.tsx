@@ -76,8 +76,8 @@ export default async function LibraryPage() {
         members: p.project_members?.map((m) => ({
             role: m.role,
             user_id: m.user_id,
-            display_name: m.profiles?.display_name,
-            avatar_url: m.profiles?.avatar_url
+            display_name: m.profiles?.display_name ?? null,
+            avatar_url: m.profiles?.avatar_url ?? null
         })) || []
     })
 
