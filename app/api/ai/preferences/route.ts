@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getBillingModeLabel, type BillingMode } from '@/lib/ai/modes'
 import { logAiModeChange } from '@/lib/ai/trial-server'
+import { getRequestContext } from '@/lib/server/request-context'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 type PreferencesBody = {
     aiEnabled?: boolean
@@ -21,6 +23,8 @@ export async function POST(request: Request) {
     if (!user) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const requestContext = getRequestContext(request)
 
     let body: PreferencesBody
     try {
@@ -58,6 +62,45 @@ export async function POST(request: Request) {
 
     if (nextBillingMode === 'byok' && !nextApiKey) {
         return NextResponse.json({ error: 'Please save an API key before switching to BYOK mode.' }, { status: 400 })
+    }
+
+    if (nextBillingMode === 'app_managed_trial') {
+        const admin = createAdminClient()
+        if (!admin) {
+            return NextResponse.json(
+                { error: 'Free Trial AI needs the server admin connection to be configured before it can enroll accounts.' },
+                { status: 503 }
+            )
+        }
+
+        const { error: trialGrantError } = await admin.rpc('evaluate_and_grant_ai_trial', {
+            p_user_id: user.id,
+            p_raw_email: trialAccount?.raw_email ?? user.email ?? '',
+            p_ip_address: requestContext.ipAddress ?? '',
+            p_device_fingerprint: requestContext.deviceFingerprint ?? '',
+            p_user_agent: requestContext.userAgent ?? '',
+            p_accept_language: requestContext.acceptLanguage ?? '',
+        })
+
+        if (trialGrantError) {
+            return NextResponse.json(
+                { error: 'Unable to verify Free Trial AI for this account right now. Please try again.' },
+                { status: 503 }
+            )
+        }
+
+        const { data: ensuredTrialAccount, error: ensuredTrialAccountError } = await supabase
+            .from('ai_trial_accounts')
+            .select('status')
+            .eq('user_id', user.id)
+            .maybeSingle()
+
+        if (ensuredTrialAccountError || !ensuredTrialAccount) {
+            return NextResponse.json(
+                { error: 'Free Trial AI could not finish setting up this account. Please try again.' },
+                { status: 503 }
+            )
+        }
     }
 
     const payload = {

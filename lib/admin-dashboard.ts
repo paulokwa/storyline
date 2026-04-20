@@ -1,7 +1,7 @@
 import 'server-only'
 
 import type { Database, Json } from '@/lib/supabase/types'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createAdminClient, getAdminClientConfigStatus } from '@/lib/supabase/admin'
 import { BETA_CUTOFF_DATE } from './admin'
 
 type AdminUser = {
@@ -182,9 +182,15 @@ type ManualActionSummary = {
   status: string | null
 }
 
+function getMisconfiguredReason(): 'missing_supabase_url' | 'missing_service_role_key' {
+  const status = getAdminClientConfigStatus()
+  return status === 'missing_supabase_url' ? 'missing_supabase_url' : 'missing_service_role_key'
+}
+
 export type AdminDashboardData =
   | {
       status: 'misconfigured'
+      reason: 'missing_supabase_url' | 'missing_service_role_key'
     }
   | {
       status: 'ready'
@@ -451,7 +457,7 @@ function buildClusterSummary(params: {
 export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const supabase = createAdminClient()
   if (!supabase) {
-    return { status: 'misconfigured' }
+    return { status: 'misconfigured', reason: getMisconfiguredReason() }
   }
 
   const [
@@ -481,7 +487,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   ])
 
   if (!users) {
-    return { status: 'misconfigured' }
+    return { status: 'misconfigured', reason: getMisconfiguredReason() }
   }
 
   if (projectsResult.error) throw projectsResult.error

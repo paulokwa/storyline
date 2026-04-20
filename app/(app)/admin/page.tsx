@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import AdminBackButton from '@/components/admin/AdminBackButton'
 import AiTrialAdjustmentForm from '@/components/admin/AiTrialAdjustmentForm'
@@ -133,8 +133,14 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
   const selectedProvider = readQueryValue(query.provider) ?? 'all'
   const selectedSuspicious = readQueryValue(query.suspicious) ?? 'all'
   const selectedWindow = readQueryValue(query.window) ?? 'all'
+  const emailSearch = (readQueryValue(query.email) ?? '').trim().toLowerCase()
 
   if (dashboard.status === 'misconfigured') {
+    const envMessage =
+      dashboard.reason === 'missing_supabase_url'
+        ? '`NEXT_PUBLIC_SUPABASE_URL` is not configured on the server.'
+        : '`SUPABASE_SERVICE_ROLE_KEY` is not configured on the server.'
+
     return (
       <div className="admin-page-shell flex h-full min-h-0 flex-1 flex-col overflow-auto bg-slate-50/50 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
@@ -142,7 +148,7 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
             <CardHeader>
               <CardTitle className="text-slate-900">Admin metrics need server configuration</CardTitle>
               <CardDescription className="text-amber-900/80">
-                `SUPABASE_SERVICE_ROLE_KEY` is not configured on the server, so global owner-only metrics cannot be loaded yet.
+                {envMessage} Restart the Next.js server after updating `.env.local`, then reload this page.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -163,6 +169,9 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
   })
 
   const filteredTrialUsers = windowedTrialUsers.filter((entry) => {
+    const searchableEmail = `${entry.email ?? ''} ${entry.normalizedEmail ?? ''}`.toLowerCase()
+
+    if (emailSearch && !searchableEmail.includes(emailSearch)) return false
     if (selectedStatus !== 'all' && entry.status !== selectedStatus) return false
     if (selectedMode !== 'all' && entry.currentBillingMode !== selectedMode) return false
     if (selectedProvider !== 'all' && entry.currentProvider !== selectedProvider) return false
@@ -215,7 +224,18 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
             <CardDescription>Filter the user-level trial table without changing the global overview cards.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="grid gap-3 md:grid-cols-5">
+            <form className="grid gap-3 md:grid-cols-6">
+              <div className="space-y-2 md:col-span-2">
+                <label htmlFor="email" className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Email Search</label>
+                <input
+                  id="email"
+                  name="email"
+                  type="text"
+                  defaultValue={emailSearch}
+                  placeholder="skytra7@gmail.com"
+                  className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm"
+                />
+              </div>
               <div className="space-y-2">
                 <label htmlFor="status" className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Status</label>
                 <select id="status" name="status" defaultValue={selectedStatus} className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm">
@@ -263,7 +283,10 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
               </div>
               <div className="md:col-span-5 flex flex-wrap gap-3">
                 <Button type="submit">Apply Filters</Button>
-                <a href="/admin" className={buttonVariants({ variant: 'outline' })}>
+                <a
+                  href="/admin"
+                  className="inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 text-sm font-medium whitespace-nowrap text-slate-900 transition-all outline-none hover:bg-slate-100 disabled:pointer-events-none disabled:opacity-50"
+                >
                   Clear
                 </a>
               </div>

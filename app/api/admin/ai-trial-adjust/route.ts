@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createAdminClient, getAdminClientConfigStatus } from '@/lib/supabase/admin'
 import { isAdminEmail } from '@/lib/admin'
 
 type AdjustTrialBody = {
@@ -34,7 +34,12 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient()
   if (!admin) {
-    return NextResponse.json({ error: 'Admin service role is not configured.' }, { status: 500 })
+    const reason = getAdminClientConfigStatus()
+    return NextResponse.json({
+      error: reason === 'missing_supabase_url'
+        ? 'Admin Supabase URL is not configured on the server.'
+        : 'Admin service role key is not configured on the server.',
+    }, { status: 500 })
   }
 
   let body: AdjustTrialBody
