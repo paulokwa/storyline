@@ -321,10 +321,10 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
                 </div>
             </div>
 
-            <div className="guided-flow-footer flex items-center justify-between pt-10 border-t border-stone-100">
+            <div className="guided-flow-footer flex flex-col-reverse gap-3 border-t border-stone-100 pt-8 sm:flex-row sm:items-center sm:justify-between sm:pt-10">
                 <button
                     onClick={back}
-                    className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-300 hover:text-primary transition-all disabled:opacity-30"
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-stone-200 bg-white/80 px-4 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 transition-all hover:border-primary/20 hover:text-primary disabled:opacity-30 sm:h-auto sm:w-auto sm:justify-start sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:text-xs sm:tracking-widest"
                     disabled={creating}
                 >
                     <ChevronLeft className="w-4 h-4" /> Go Back
@@ -333,7 +333,7 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
                 <Button
                     onClick={next}
                     disabled={!canAdvance() || creating}
-                    className="sanctuary-btn-primary h-14 px-10 rounded-full text-base font-semibold gap-3"
+                    className="sanctuary-btn-primary h-14 w-full rounded-[1.75rem] px-6 text-base font-semibold gap-3 sm:w-auto sm:px-10 sm:rounded-full"
                 >
                     {creating ? (
                         <><Sparkles className="w-4 h-4 animate-spin-slow" /> Creating Sanctuary...</>

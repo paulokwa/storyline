@@ -254,21 +254,29 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
             ) : (
                 <div className="space-y-8">
                     {/* Header */}
-                    <div className="flex items-center justify-between p-4 bg-primary/5 rounded-2xl border border-primary/10">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-primary shadow-sm">
-                                <FileText className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <div className="font-semibold text-slate-800">{file?.name}</div>
-                                <div className="text-xs text-slate-500 font-medium">
+                    <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex min-w-0 items-center gap-3">
+                                <div className="w-10 h-10 shrink-0 bg-white rounded-full flex items-center justify-center text-primary shadow-sm">
+                                    <FileText className="w-5 h-5" />
+                                </div>
+                                <div className="min-w-0">
+                                    <div className="truncate font-semibold text-slate-800">{file?.name}</div>
+                                    <div className="text-xs text-slate-500 font-medium">
                                     {(rawText.length / 5).toFixed(0).toLocaleString()} estimated words
+                                    </div>
                                 </div>
                             </div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setRawText('')}
+                                disabled={creating}
+                                className="w-full sm:w-auto"
+                            >
+                                Change File
+                            </Button>
                         </div>
-                        <Button variant="outline" size="sm" onClick={() => setRawText('')} disabled={creating}>
-                            Change File
-                        </Button>
                     </div>
 
                     {/* Splitting engine */}

@@ -513,23 +513,25 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging }: 
                 hasCover ? "p-8 justify-end" : ""
             )}>
                 <div className={cn(
-                    "flex items-start justify-between mb-8",
+                    "mb-8 flex items-start justify-between gap-4 sm:gap-5",
                     hasCover ? "absolute top-8 left-8 right-8" : ""
                 )}>
-                    <div className="flex items-center gap-3">
-                        {dragHandleProps && (
-                            <div 
-                                {...dragHandleProps}
-                                className={cn(
-                                    "p-2.5 rounded-xl transition-all cursor-grab active:cursor-grabbing pointer-events-auto",
-                                    hasCover ? "bg-white/10 text-white/40 hover:text-white" : "text-slate-300 hover:text-slate-500"
-                                )}
-                            >
-                                <GripVertical className="w-5 h-5" />
-                            </div>
-                        )}
+                    <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                        <div className="flex h-11 w-11 items-center justify-center">
+                            {dragHandleProps && (
+                                <div 
+                                    {...dragHandleProps}
+                                    className={cn(
+                                        "pointer-events-auto rounded-xl p-2.5 transition-all cursor-grab active:cursor-grabbing",
+                                        hasCover ? "bg-white/10 text-white/40 hover:text-white" : "text-slate-300 hover:text-slate-500"
+                                    )}
+                                >
+                                    <GripVertical className="w-5 h-5" />
+                                </div>
+                            )}
+                        </div>
                         <div className={cn(
-                            "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm",
+                            "h-14 w-14 shrink-0 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm",
                             hasCover 
                                 ? "bg-white/10 backdrop-blur-md text-white border border-white/20 group-hover:bg-white/20"
                                 : (isTV ? "bg-stone-50 text-stone-600 group-hover:bg-primary/10 group-hover:text-primary" : "bg-stone-50 text-stone-500 group-hover:bg-primary/10 group-hover:text-primary")
@@ -559,7 +561,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging }: 
                                     >{isActionInProgress ? '...' : (mode === 'active' ? 'Delete' : 'Destroy')}</button>
                                 </div>
                             ) : (
-                                <div className="flex items-center gap-2">
+                                <div className="flex shrink-0 items-center gap-2.5 sm:gap-3">
                                     {mode === 'trash' && (
                                         <button
                                             onClick={handleRestore}

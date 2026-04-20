@@ -16,7 +16,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Trash2, AlertTriangle, Save, Globe, Info, Tag, Hash, Copyright, Book, Type } from 'lucide-react'
-import { Separator } from '@/components/ui/separator'
 import type { Database } from '@/lib/supabase/types'
 import type { ExportMetadata } from '@/lib/export/buildExportPayload'
 import { cn } from '@/lib/utils'
@@ -94,7 +93,7 @@ export default function ProjectSettingsModal({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className={cn(
-                "project-settings-modal sm:max-w-[500px] p-0 overflow-hidden rounded-3xl shadow-2xl !opacity-100 backdrop-blur-none",
+                "project-settings-modal dialog-viewport-safe flex w-[calc(100%-0.75rem)] max-w-[500px] flex-col gap-0 p-0 overflow-hidden rounded-[2rem] shadow-2xl !opacity-100 backdrop-blur-none sm:w-full",
                 isMidnight
                     ? "border border-slate-600/30 bg-[#10192b]"
                     : "border border-slate-200/50 bg-[#fbf9f5]"
@@ -102,7 +101,7 @@ export default function ProjectSettingsModal({
                 {!showDeleteConfirm ? (
                     <>
                         <DialogHeader className={cn(
-                            "p-6 pt-12 sm:p-8 border-b",
+                            "shrink-0 border-b px-5 pb-5 pt-10 sm:px-8 sm:pb-8 sm:pt-12",
                             isMidnight ? "bg-[#182239]/88 border-slate-700/60" : "bg-white/50 border-[#f0eee9]"
                         )}>
                             <DialogTitle className="text-2xl sm:text-3xl font-serif text-foreground">Project Settings</DialogTitle>
@@ -111,7 +110,7 @@ export default function ProjectSettingsModal({
                             </DialogDescription>
                         </DialogHeader>
 
-                        <div className="flex gap-1 p-1 bg-slate-100 rounded-xl mt-4 mx-8">
+                        <div className="mx-5 mt-3 flex shrink-0 gap-1 rounded-xl bg-slate-100 p-1 sm:mx-8 sm:mt-4">
                             <button
                                 onClick={() => setActiveTab('general')}
                                 className={cn(
@@ -136,10 +135,10 @@ export default function ProjectSettingsModal({
                             </button>
                         </div>
 
-                        <div className="p-8 pb-0 pt-6 font-sans max-h-[50vh] overflow-y-auto custom-scrollbar">
+                        <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto px-5 pb-0 pt-5 font-sans sm:px-8 sm:pt-6">
                             {activeTab === 'general' ? (
-                                <div className="space-y-6">
-                                    <div className="space-y-2">
+                                <div className="space-y-5 sm:space-y-6">
+                                    <div className="space-y-2.5">
                                         <Label htmlFor="title" className="text-sm font-semibold text-foreground ml-1">Project Title</Label>
                                         <Input
                                             id="title"
@@ -150,7 +149,7 @@ export default function ProjectSettingsModal({
                                         />
                                     </div>
 
-                                    <div className="space-y-2">
+                                    <div className="space-y-2.5">
                                         <Label htmlFor="type" className="text-sm font-semibold text-slate-700 ml-1">Project Format</Label>
                                         <div className="relative">
                                             <select 
@@ -168,7 +167,7 @@ export default function ProjectSettingsModal({
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2">
+                                    <div className="space-y-2.5">
                                         <Label htmlFor="writingMode" className="text-sm font-semibold text-slate-700 ml-1">Editor Mode</Label>
                                         <div className="relative">
                                             <select 
@@ -194,10 +193,10 @@ export default function ProjectSettingsModal({
                                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                                             </div>
                                         </div>
-                                        <p className="text-[10px] text-slate-400 px-1 italic">Controls the behavior and formatting of the editor.</p>
+                                        <p className="px-1 text-[10px] italic text-slate-400">Controls the behavior and formatting of the editor.</p>
                                     </div>
 
-                                    <div className="space-y-2">
+                                    <div className="space-y-2.5">
                                         <Label htmlFor="premise" className="text-sm font-semibold text-foreground ml-1">Core Premise</Label>
                                         <div className="p-4 bg-muted/30 rounded-2xl border border-border/50 text-[10px] text-slate-400 font-medium leading-relaxed italic mb-2">
                                             The central spark. This provides context for the AI and serves as the foundation for your narrative arc.
@@ -211,7 +210,7 @@ export default function ProjectSettingsModal({
                                         />
                                     </div>
 
-                                    <div className="space-y-2">
+                                    <div className="space-y-2.5">
                                         <div className="flex items-center justify-between ml-1">
                                             <Label htmlFor="tone" className="text-sm font-semibold text-foreground">Story Tone</Label>
                                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">Optional</span>
@@ -229,9 +228,9 @@ export default function ProjectSettingsModal({
                                     </div>
                                 </div>
                             ) : (
-                                <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
+                                <div className="space-y-5 animate-in fade-in slide-in-from-right-2 duration-300 sm:space-y-6">
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
+                                        <div className="space-y-2.5">
                                             <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                                 <Type className="w-3 h-3" /> Author Name
                                             </Label>
@@ -242,7 +241,7 @@ export default function ProjectSettingsModal({
                                                 className="rounded-xl border-border bg-muted/50 h-10 text-sm"
                                             />
                                         </div>
-                                        <div className="space-y-2">
+                                        <div className="space-y-2.5">
                                             <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                                 <Info className="w-3 h-3" /> Pen Name
                                             </Label>
@@ -256,7 +255,7 @@ export default function ProjectSettingsModal({
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
+                                        <div className="space-y-2.5">
                                             <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                                 <Copyright className="w-3 h-3" /> Copyright
                                             </Label>
@@ -267,7 +266,7 @@ export default function ProjectSettingsModal({
                                                 className="rounded-xl border-border bg-muted/50 h-10 text-sm"
                                             />
                                         </div>
-                                        <div className="space-y-2">
+                                        <div className="space-y-2.5">
                                             <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                                 <Info className="w-3 h-3" /> Year
                                             </Label>
@@ -281,7 +280,7 @@ export default function ProjectSettingsModal({
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
+                                        <div className="space-y-2.5">
                                             <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                                 <Globe className="w-3 h-3" /> Language
                                             </Label>
@@ -292,7 +291,7 @@ export default function ProjectSettingsModal({
                                                 className="rounded-xl border-border bg-muted/50 h-10 text-sm"
                                             />
                                         </div>
-                                        <div className="space-y-2">
+                                        <div className="space-y-2.5">
                                             <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                                 <Book className="w-3 h-3" /> Publisher
                                             </Label>
@@ -305,7 +304,7 @@ export default function ProjectSettingsModal({
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2">
+                                    <div className="space-y-2.5">
                                         <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                             <Info className="w-3 h-3" /> Blurb / Description
                                         </Label>
@@ -318,7 +317,7 @@ export default function ProjectSettingsModal({
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
+                                        <div className="space-y-2.5">
                                             <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                                 <Tag className="w-3 h-3" /> Keywords
                                             </Label>
@@ -329,7 +328,7 @@ export default function ProjectSettingsModal({
                                                 className="rounded-xl border-border bg-muted/50 h-10 text-sm"
                                             />
                                         </div>
-                                        <div className="space-y-2">
+                                        <div className="space-y-2.5">
                                             <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                                 <Hash className="w-3 h-3" /> ISBN
                                             </Label>
@@ -353,7 +352,7 @@ export default function ProjectSettingsModal({
                         </div>
 
                         <DialogFooter className={cn(
-                            "p-6 flex flex-col sm:flex-row gap-3",
+                            "shrink-0 gap-3 p-5 sm:flex-row sm:p-6",
                             isMidnight ? "bg-[#182239]/88 border-slate-700/60" : "bg-white border-[#f0eee9]"
                         )}>
                             <Button
@@ -389,7 +388,7 @@ export default function ProjectSettingsModal({
                         <div className="text-center space-y-2">
                             <h2 className="text-2xl font-serif text-foreground">Delete Project?</h2>
                             <p className="text-muted-foreground max-w-xs mx-auto">
-                                This will permanently delete <span className="font-bold text-foreground">"{project.title}"</span> and all its scenes, characters, and ideas.
+                                This will permanently delete <span className="font-bold text-foreground">&quot;{project.title}&quot;</span> and all its scenes, characters, and ideas.
                             </p>
                         </div>
                         <div className="flex flex-col gap-3">

@@ -17,7 +17,13 @@ const EMAILJS_PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || ''
 
 function FeedbackPageFallback() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+    <div
+      className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4 py-4"
+      style={{
+        paddingTop: 'calc(0.75rem + env(safe-area-inset-top))',
+        paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))',
+      }}
+    >
       <Card className="w-full max-w-md">
         <CardContent className="pt-6">
           <p className="text-center text-sm text-slate-600">Loading feedback form...</p>
@@ -142,7 +148,13 @@ ${formData.feedback}
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+      <div
+        className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4 py-4"
+        style={{
+          paddingTop: 'calc(0.75rem + env(safe-area-inset-top))',
+          paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))',
+        }}
+      >
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
@@ -179,19 +191,25 @@ ${formData.feedback}
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+    <div
+      className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 px-4 pb-4 pt-3 sm:py-4"
+      style={{
+        paddingTop: 'calc(0.5rem + env(safe-area-inset-top))',
+        paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))',
+      }}
+    >
       <div className="max-w-2xl mx-auto">
         <Button
           variant="ghost"
           onClick={() => router.back()}
-          className="mb-6 text-slate-600 hover:text-slate-800"
+          className="mb-3 text-slate-600 hover:text-slate-800 sm:mb-6"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
 
-        <Card>
-          <CardHeader>
+        <Card className="rounded-[2rem] py-5 sm:py-4">
+          <CardHeader className="px-5 sm:px-4">
             <CardTitle className="text-2xl font-serif italic text-slate-800">
               Share Your Feedback
             </CardTitle>
@@ -199,8 +217,8 @@ ${formData.feedback}
               Help us improve Storyline by sharing your thoughts, bug reports, or feature requests.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <CardContent className="px-5 pb-2 sm:px-4">
+            <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
               {feedbackStatus ? (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
                   {feedbackStatus}
@@ -292,7 +310,7 @@ ${formData.feedback}
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-[#546354] hover:bg-[#435243] text-white h-12"
+                className="mt-1 h-12 w-full rounded-2xl bg-[#546354] text-white hover:bg-[#435243]"
               >
                 {isSubmitting ? (
                   <>
