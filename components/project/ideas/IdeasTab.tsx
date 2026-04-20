@@ -369,7 +369,7 @@ export default function IdeasTab({
                             className="text-amber-600 gap-2 px-0 hover:bg-transparent"
                         >
                             <ChevronRight className="w-4 h-4 rotate-180" />
-                            Back
+                            Back to ideas list
                         </Button>
                     </div>
                 )}

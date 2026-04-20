@@ -407,7 +407,7 @@ export default function CharactersTab({
                             className="text-[#546354] gap-2 px-0 hover:bg-transparent"
                         >
                             <ChevronRight className="w-4 h-4 rotate-180" />
-                            Back
+                            Back to characters list
                         </Button>
                     </div>
                 )}

@@ -315,7 +315,7 @@ export default function ObjectsTab({
             <div className={cn("objects-tab-detail flex-1 flex flex-col overflow-hidden bg-[#fbf9f5] w-full max-w-full", !selectedId && "hidden md:flex")}>
                 {selectedId && (
                     <div className="objects-tab-mobilebar md:hidden sticky top-0 z-20 px-6 py-4 bg-[#fbf9f5] border-b border-stone-200/50">
-                        <Button variant="ghost" size="sm" onClick={() => setSelectedId(null)} className="text-[#546354] gap-2 px-0 hover:bg-transparent"><ChevronRight className="w-4 h-4 rotate-180" />Back</Button>
+                        <Button variant="ghost" size="sm" onClick={() => setSelectedId(null)} className="text-[#546354] gap-2 px-0 hover:bg-transparent"><ChevronRight className="w-4 h-4 rotate-180" />Back to objects list</Button>
                     </div>
                 )}
                 <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">

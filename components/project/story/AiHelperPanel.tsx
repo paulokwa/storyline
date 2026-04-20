@@ -438,6 +438,15 @@ export default function AiHelperPanel({
     )
     const [contextDraft, setContextDraft] = useState<ContextDraft>(currentContextDraft)
 
+    const navigateToContextTab = async (type: ContextEntityType) => {
+        if (contextManagerOpen) {
+            await syncSceneContext()
+            setContextManagerOpen(false)
+        }
+
+        router.push(`/project/${projectId}/${type}`)
+    }
+
     useEffect(() => {
         if (!contextManagerOpen) {
             setContextDraft(currentContextDraft)
@@ -652,6 +661,7 @@ export default function AiHelperPanel({
             {
                 key: 'characters' as const,
                 title: 'Characters',
+                singularLabel: 'character',
                 icon: Users,
                 iconClassName: 'text-[#546354]',
                 emptyLabel: 'No characters yet',
@@ -660,6 +670,7 @@ export default function AiHelperPanel({
             {
                 key: 'ideas' as const,
                 title: 'Ideas',
+                singularLabel: 'idea',
                 icon: Lightbulb,
                 iconClassName: 'text-indigo-600',
                 emptyLabel: 'No ideas yet',
@@ -670,6 +681,7 @@ export default function AiHelperPanel({
             {
                 key: 'locations' as const,
                 title: 'Locations',
+                singularLabel: 'location',
                 icon: MapPin,
                 iconClassName: 'text-emerald-600',
                 emptyLabel: 'No locations yet',
@@ -678,6 +690,7 @@ export default function AiHelperPanel({
             {
                 key: 'objects' as const,
                 title: 'Objects',
+                singularLabel: 'object',
                 icon: Box,
                 iconClassName: 'text-sky-600',
                 emptyLabel: 'No objects yet',
@@ -855,9 +868,16 @@ export default function AiHelperPanel({
                                 })}
                             </div>
                         ) : (
-                            <div className="rounded-2xl border border-dashed border-slate-200 bg-white/70 px-3 py-2 text-[11px] italic text-slate-300">
-                                {group.emptyLabel}
-                            </div>
+                            <button
+                                type="button"
+                                onClick={() => navigateToContextTab(group.key)}
+                                className="w-full rounded-2xl border border-dashed border-slate-200 bg-white/70 px-3 py-2 text-left transition-all hover:border-slate-300 hover:bg-white"
+                            >
+                                <span className="block text-[11px] italic text-slate-400">{group.emptyLabel}</span>
+                                <span className="mt-1 block text-[10px] font-medium uppercase tracking-[0.18em] text-slate-400">
+                                    Click here to add a {group.singularLabel}
+                                </span>
+                            </button>
                         )}
                     </div>
                 )
