@@ -15,6 +15,7 @@ import {
     Clock, 
     Sparkles, 
     Palette,
+    Pencil,
     GripVertical,
     ArrowUpDown,
     Calendar,
@@ -33,6 +34,7 @@ import {
 } from "@/components/ui/tooltip"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import CoverEditModal from './CoverEditModal'
+import ProjectSettingsModal from '../project/ProjectSettingsModal'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import {
     DropdownMenu,
@@ -438,10 +440,12 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging }: 
     isDragging?: boolean
 }) {
     const router = useRouter()
-    const isTV = project.project_type === 'tv_script'
+    const resolvedProjectType = project.project_type || project.type
+    const isTV = resolvedProjectType === 'tv_script'
     const [confirmDelete, setConfirmDelete] = useState(false)
     const [isActionInProgress, setIsActionInProgress] = useState(false)
     const [isEditingCover, setIsEditingCover] = useState(false)
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
 
     useEffect(() => {
@@ -451,6 +455,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging }: 
     const hasCover = !!project.cover_url
     const members = project.members || []
     const isShared = members.length > 1
+    const cardDescription = project.premise || (project as any).export_metadata?.description || ''
 
     async function handleDelete(e: React.MouseEvent) {
         e.preventDefault()
@@ -566,18 +571,32 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging }: 
                                         </button>
                                     )}
                                     {mode === 'active' && (
-                                        <button
-                                            onClick={e => { e.preventDefault(); e.stopPropagation(); setIsEditingCover(true) }}
-                                            className={cn(
-                                                "transition-all duration-300 p-2.5 rounded-xl shadow-sm",
-                                                hasCover 
-                                                    ? "bg-white/10 backdrop-blur-md text-white/40 hover:text-white hover:bg-white/30 border border-white/10" 
-                                                    : "opacity-0 group-hover:opacity-100 text-slate-300 hover:text-primary hover:bg-primary/10"
-                                            )}
-                                            title="Change Cover"
-                                        >
-                                            <Palette className="w-5 h-5" />
-                                        </button>
+                                        <>
+                                            <button
+                                                onClick={e => { e.preventDefault(); e.stopPropagation(); setIsSettingsOpen(true) }}
+                                                className={cn(
+                                                    "transition-all duration-300 p-2.5 rounded-xl shadow-sm",
+                                                    hasCover 
+                                                        ? "bg-white/10 backdrop-blur-md text-white/40 hover:text-white hover:bg-white/30 border border-white/10" 
+                                                        : "opacity-0 group-hover:opacity-100 text-slate-300 hover:text-primary hover:bg-primary/10"
+                                                )}
+                                                title="Edit project details"
+                                            >
+                                                <Pencil className="w-5 h-5" />
+                                            </button>
+                                            <button
+                                                onClick={e => { e.preventDefault(); e.stopPropagation(); setIsEditingCover(true) }}
+                                                className={cn(
+                                                    "transition-all duration-300 p-2.5 rounded-xl shadow-sm",
+                                                    hasCover 
+                                                        ? "bg-white/10 backdrop-blur-md text-white/40 hover:text-white hover:bg-white/30 border border-white/10" 
+                                                        : "opacity-0 group-hover:opacity-100 text-slate-300 hover:text-primary hover:bg-primary/10"
+                                                )}
+                                                title="Change Cover"
+                                            >
+                                                <Palette className="w-5 h-5" />
+                                            </button>
+                                        </>
                                     )}
                                     <button
                                         onClick={e => { e.preventDefault(); e.stopPropagation(); setConfirmDelete(true) }}
@@ -611,7 +630,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging }: 
                                 ? "bg-white/5 backdrop-blur-md text-white/70 border-white/10 group-hover:bg-white/10" 
                                 : "bg-slate-50 text-slate-400 border-transparent group-hover:bg-primary/5 group-hover:text-primary/60"
                         )}>
-                            {getProjectTypeLabel(project.project_type as any)}
+                            {getProjectTypeLabel(resolvedProjectType as any)}
                         </span>
                         
                         {project.role === 'owner' && (
@@ -625,20 +644,20 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging }: 
 
                         <span className={cn(
                             "text-xs font-medium flex items-center gap-1.5",
-                            hasCover ? "text-white/40" : "text-slate-400"
+                            hasCover ? "text-white/80" : "text-slate-400"
                         )}>
-                            <Clock className="w-3.5 h-3.5" />
-                            <span className="opacity-70">Last accessed:</span>
-                            {isMounted ? formatDistanceToNow(project.last_accessed_at || new Date().toISOString()) + ' ago' : '...'}
+                            <Clock className={cn("w-3.5 h-3.5", hasCover ? "text-white/70" : "text-slate-400")} />
+                            <span className={cn("font-medium", hasCover ? "text-white/70" : "text-slate-400")}>Last accessed:</span>
+                            {isMounted ? <span className={cn(hasCover ? "text-white/80" : "text-slate-500")}>{formatDistanceToNow(project.last_accessed_at || new Date().toISOString()) + ' ago'}</span> : '...'}
                         </span>
                     </div>
 
-                    {project.premise && (
+                    {cardDescription && (
                         <p className={cn(
                             "mt-6 text-sm leading-relaxed line-clamp-2 italic font-serif transition-colors duration-500",
                             hasCover ? "text-white/60 group-hover:text-white/80" : "text-slate-500"
                         )}>
-                            &ldquo;{project.premise}&rdquo;
+                            &ldquo;{cardDescription}&rdquo;
                         </p>
                     )}
                 </div>
@@ -690,7 +709,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging }: 
                                         Deleted {isMounted ? formatDistanceToNow(project.deleted_at) + ' ago' : '...'}
                                     </span>
                                 ) : (
-                                    <>Private Draft</>
+                                    <span className={cn(hasCover ? "text-white/70" : "text-slate-400")}>Private Draft</span>
                                 )}
                             </span>
                         )}
@@ -720,6 +739,12 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging }: 
                 }}
                 isOpen={isEditingCover}
                 onOpenChange={setIsEditingCover}
+            />
+
+            <ProjectSettingsModal
+                open={isSettingsOpen}
+                onOpenChange={setIsSettingsOpen}
+                project={project}
             />
         </div>
     )

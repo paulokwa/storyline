@@ -1340,11 +1340,19 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 {editor && !isReadOnly && (
                     <BubbleMenu 
                         editor={editor} 
-                        getReferencedVirtualElement={() => selectionVirtualElementRef.current}
+                        getReferencedVirtualElement={isAndroid ? () => selectionVirtualElementRef.current : undefined}
+                        shouldShow={({ view, state, from, to }) => {
+                            // On Android, only show if we have a valid virtual element
+                            if (isAndroid) {
+                                return selectionVirtualElementRef.current !== null && from !== to
+                            }
+                            // On desktop, use default behavior (show if text is selected)
+                            return from !== to
+                        }}
                         options={{
                             strategy: 'fixed',
                             placement: isAndroid ? bubbleMenuPlacement : 'top',
-                            offset: bubbleMenuOffset,
+                            offset: isAndroid ? bubbleMenuOffset : 8,
                             flip: false,
                             shift: { padding: 8 },
                             hide: true,
