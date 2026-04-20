@@ -7,7 +7,6 @@ import type { VirtualElement } from '@floating-ui/dom'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Highlight from '@tiptap/extension-highlight'
-import BubbleMenuExtension from '@tiptap/extension-bubble-menu'
 import Underline from '@tiptap/extension-underline'
 import { 
     ScreenplaySceneHeading, 
@@ -92,6 +91,14 @@ const SELECTION_TOOLBAR_HEIGHT = 48
 const SELECTION_TOOLBAR_GAP = 12
 
 type BubbleMenuPlacement = 'top' | 'bottom'
+
+const cloneDOMRect = (rect: DOMRect | DOMRectReadOnly) =>
+    DOMRect.fromRect({
+        x: rect.x,
+        y: rect.y,
+        width: rect.width,
+        height: rect.height,
+    })
 
 interface SceneEditorProps {
     scene: any
@@ -340,9 +347,6 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             Placeholder.configure({
                 placeholder: writingMode === 'screenplay' ? 'Start with INT. or EXT. — highlight text to access formatting options.' : 'Start writing your scene here.',
             }),
-            BubbleMenuExtension.configure({
-                element: null, 
-            }),
             CommentMark.extend({
                 addAttributes() {
                     return {
@@ -480,7 +484,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     }, [writingMode, scene.id])
 
     const updateSelectionToolbarPosition = useCallback(() => {
-        if (!editor || !isAndroid) {
+        if (!editor) {
             selectionVirtualElementRef.current = null
             setBubbleMenuPlacement('top')
             setBubbleMenuOffset(SELECTION_TOOLBAR_GAP)
@@ -490,6 +494,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         const selection = window.getSelection()
         if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
             selectionVirtualElementRef.current = null
+            if (!isAndroid) {
+                setBubbleMenuPlacement('top')
+                setBubbleMenuOffset(SELECTION_TOOLBAR_GAP)
+            }
             return
         }
 
@@ -502,12 +510,34 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
         if (!selectionRoot || !editorElement.contains(selectionRoot)) {
             selectionVirtualElementRef.current = null
+            if (!isAndroid) {
+                setBubbleMenuPlacement('top')
+                setBubbleMenuOffset(SELECTION_TOOLBAR_GAP)
+            }
             return
         }
 
-        const rect = range.getBoundingClientRect()
+        const rect = cloneDOMRect(range.getBoundingClientRect())
         if (!rect.width && !rect.height) {
             selectionVirtualElementRef.current = null
+            if (!isAndroid) {
+                setBubbleMenuPlacement('top')
+                setBubbleMenuOffset(SELECTION_TOOLBAR_GAP)
+            }
+            return
+        }
+
+        const clientRects = Array.from(range.getClientRects()).map(cloneDOMRect)
+
+        selectionVirtualElementRef.current = {
+            getBoundingClientRect: () => rect,
+            getClientRects: () => clientRects,
+        }
+
+        if (!isAndroid) {
+            setBubbleMenuPlacement('top')
+            setBubbleMenuOffset(SELECTION_TOOLBAR_GAP)
+            editor.view.dispatch(editor.state.tr.setMeta('bubbleMenu', 'updatePosition'))
             return
         }
 
@@ -530,16 +560,11 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
         setBubbleMenuPlacement(prev => prev === nextPlacement ? prev : nextPlacement)
         setBubbleMenuOffset(prev => prev === nextOffset ? prev : nextOffset)
-        selectionVirtualElementRef.current = {
-            getBoundingClientRect: () => range.getBoundingClientRect(),
-            getClientRects: () => Array.from(range.getClientRects()),
-        }
-
         editor.view.dispatch(editor.state.tr.setMeta('bubbleMenu', 'updatePosition'))
     }, [editor, isAndroid])
 
     useEffect(() => {
-        if (!editor || !isAndroid) return
+        if (!editor) return
 
         const syncPosition = () => {
             window.requestAnimationFrame(() => {
@@ -1340,15 +1365,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 {editor && !isReadOnly && (
                     <BubbleMenu 
                         editor={editor} 
-                        getReferencedVirtualElement={isAndroid ? () => selectionVirtualElementRef.current : undefined}
-                        shouldShow={({ view, state, from, to }) => {
-                            // On Android, only show if we have a valid virtual element
-                            if (isAndroid) {
-                                return selectionVirtualElementRef.current !== null && from !== to
-                            }
-                            // On desktop, use default behavior (show if text is selected)
-                            return from !== to
-                        }}
+                        updateDelay={0}
+                        getReferencedVirtualElement={() => selectionVirtualElementRef.current}
+                        shouldShow={({ from, to }) => selectionVirtualElementRef.current !== null && from !== to}
                         options={{
                             strategy: 'fixed',
                             placement: isAndroid ? bubbleMenuPlacement : 'top',
