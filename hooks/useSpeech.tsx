@@ -12,6 +12,7 @@ interface ReaderContextValue {
     rate: number
     speechState: SpeechState
     currentMode: SpeechMode | null
+    currentChunkText: string | null
     setVoice: (voice: SpeechSynthesisVoice) => void
     changeRate: (rate: number) => void
     speak: (text: string, mode: SpeechMode) => void
@@ -28,6 +29,7 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
     const [rate, setRate] = useState(1)
     const [speechState, setSpeechState] = useState<SpeechState>('idle')
     const [currentMode, setCurrentMode] = useState<SpeechMode | null>(null)
+    const [currentChunkText, setCurrentChunkText] = useState<string | null>(null)
     const [supported, setSupported] = useState(true)
 
     const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
@@ -89,13 +91,15 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
         window.speechSynthesis.cancel()
         setSpeechState('idle')
         setCurrentMode(null)
+        setCurrentChunkText(null)
     }, [supported])
 
-    const speakNext = useCallback(() => {
+    const speakNext = useCallback(function playNext() {
         if (!supported || queueRef.current.length === 0) {
             isPlayingRef.current = false
             setSpeechState('idle')
             setCurrentMode(null)
+            setCurrentChunkText(null)
             return
         }
 
@@ -112,13 +116,14 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
         utterance.onstart = () => {
             setSpeechState('speaking')
             setCurrentMode(next.mode)
+            setCurrentChunkText(next.text)
         }
         utterance.onpause = () => setSpeechState('paused')
         utterance.onresume = () => setSpeechState('speaking')
         
         utterance.onend = () => {
             queueRef.current.shift()
-            speakNext()
+            playNext()
         }
 
         utterance.onerror = (e) => {
@@ -126,7 +131,7 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
                 console.error('Speech chunk error:', e)
                 // Continue to next chunk if it wasn't a deliberate cancellation
                 queueRef.current.shift()
-                speakNext()
+                playNext()
             }
         }
 
@@ -171,7 +176,7 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <ReaderContext.Provider value={{
-            supported, voices, selectedVoice, rate, speechState, currentMode,
+            supported, voices, selectedVoice, rate, speechState, currentMode, currentChunkText,
             setVoice, changeRate, speak, pause, resume, stop
         }}>
             {children}

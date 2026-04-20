@@ -138,6 +138,18 @@ body {
   margin-bottom: 1.5em;
 }
 
+.ProseMirror > .reader-active-block {
+  background: rgba(99, 102, 241, 0.08);
+  border-radius: 0.75rem;
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.12);
+  transition: background-color 180ms ease, box-shadow 180ms ease;
+}
+
+[data-theme='midnight'] .ProseMirror > .reader-active-block {
+  background: rgba(129, 140, 248, 0.12);
+  box-shadow: 0 0 0 1px rgba(165, 180, 252, 0.18);
+}
+
 /* TipTap Placeholder Refinement */
 .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);

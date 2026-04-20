@@ -68,6 +68,7 @@ import { restoreStructureNode, captureSceneVersion } from '@/lib/supabase/recove
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { useSpeechToText } from '@/hooks/useSpeechToText'
+import { useSpeech } from '@/hooks/useSpeech'
 import EditorAssetSelector from './EditorAssetSelector'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
@@ -89,6 +90,7 @@ const VIEW_FONT_STACKS: Record<string, string> = {
 const ANDROID_NATIVE_SELECTION_TOOLBAR_HEIGHT = 52
 const SELECTION_TOOLBAR_HEIGHT = 48
 const SELECTION_TOOLBAR_GAP = 12
+const ACTIVE_READER_BLOCK_CLASS = 'reader-active-block'
 
 type BubbleMenuPlacement = 'top' | 'bottom'
 
@@ -265,6 +267,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [androidToolbarPosition, setAndroidToolbarPosition] = useState<AndroidToolbarPosition | null>(null)
     const androidToolbarRef = useRef<HTMLDivElement | null>(null)
     const [androidToolbarWidth, setAndroidToolbarWidth] = useState(0)
+    const editorPageRef = useRef<HTMLDivElement | null>(null)
+    const activeReaderBlockRef = useRef<HTMLElement | null>(null)
 
     useEffect(() => {
         const supabase = createClient()
@@ -272,6 +276,67 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             setCurrentUserId(data.user?.id || null)
         })
     }, [])
+
+    const { speechState, currentChunkText } = useSpeech()
+
+    useEffect(() => {
+        const clearActiveReaderBlock = () => {
+            if (!activeReaderBlockRef.current) return
+            activeReaderBlockRef.current.classList.remove(ACTIVE_READER_BLOCK_CLASS)
+            activeReaderBlockRef.current = null
+        }
+
+        if (speechState === 'idle' || !currentChunkText) {
+            clearActiveReaderBlock()
+            return
+        }
+
+        const editorRoot = editorPageRef.current?.querySelector('.ProseMirror')
+        if (!(editorRoot instanceof HTMLElement)) return
+
+        const normalizeText = (value: string) => value.replace(/\s+/g, ' ').trim().toLowerCase()
+        const targetChunk = normalizeText(currentChunkText)
+
+        if (!targetChunk) {
+            clearActiveReaderBlock()
+            return
+        }
+
+        const blockNodes = Array.from(editorRoot.children).filter(
+            (node): node is HTMLElement => node instanceof HTMLElement
+        )
+
+        const matchingBlock = blockNodes.find((node) => {
+            const blockText = normalizeText(node.innerText || node.textContent || '')
+            return blockText.length > 0 && (blockText.includes(targetChunk) || targetChunk.includes(blockText))
+        })
+
+        if (!matchingBlock) {
+            clearActiveReaderBlock()
+            return
+        }
+
+        if (activeReaderBlockRef.current !== matchingBlock) {
+            clearActiveReaderBlock()
+            matchingBlock.classList.add(ACTIVE_READER_BLOCK_CLASS)
+            activeReaderBlockRef.current = matchingBlock
+        }
+
+        const rect = matchingBlock.getBoundingClientRect()
+        const viewportTop = 120
+        const viewportBottom = window.innerHeight - 180
+        const isOutsideViewportBand = rect.top < viewportTop || rect.bottom > viewportBottom
+
+        if (isOutsideViewportBand) {
+            matchingBlock.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+                inline: 'nearest',
+            })
+        }
+
+        return clearActiveReaderBlock
+    }, [currentChunkText, speechState])
 
 
     const { toggle: toggleDictation, isRecording, supported: speechSupported } = useSpeechToText({
@@ -1410,6 +1475,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             </div>
 
             <div 
+                ref={editorPageRef}
                 style={isMounted && writingMode === 'simple' ? {
                     '--editor-font': resolvedEditorFont,
                     '--editor-font-size': viewSettings.fontSize,
