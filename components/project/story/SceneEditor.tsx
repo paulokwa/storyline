@@ -100,6 +100,11 @@ const cloneDOMRect = (rect: DOMRect | DOMRectReadOnly) =>
         height: rect.height,
     })
 
+type AndroidToolbarPosition = {
+    top: number
+    left: number
+}
+
 interface SceneEditorProps {
     scene: any
     title: string
@@ -257,6 +262,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [bubbleMenuPlacement, setBubbleMenuPlacement] = useState<BubbleMenuPlacement>('top')
     const [bubbleMenuOffset, setBubbleMenuOffset] = useState(SELECTION_TOOLBAR_GAP)
     const selectionVirtualElementRef = useRef<VirtualElement | null>(null)
+    const [androidToolbarPosition, setAndroidToolbarPosition] = useState<AndroidToolbarPosition | null>(null)
 
     useEffect(() => {
         const supabase = createClient()
@@ -486,6 +492,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const updateSelectionToolbarPosition = useCallback(() => {
         if (!editor) {
             selectionVirtualElementRef.current = null
+            setAndroidToolbarPosition(null)
             setBubbleMenuPlacement('top')
             setBubbleMenuOffset(SELECTION_TOOLBAR_GAP)
             return
@@ -494,6 +501,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         const selection = window.getSelection()
         if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
             selectionVirtualElementRef.current = null
+            setAndroidToolbarPosition(null)
             if (!isAndroid) {
                 setBubbleMenuPlacement('top')
                 setBubbleMenuOffset(SELECTION_TOOLBAR_GAP)
@@ -510,6 +518,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
         if (!selectionRoot || !editorElement.contains(selectionRoot)) {
             selectionVirtualElementRef.current = null
+            setAndroidToolbarPosition(null)
             if (!isAndroid) {
                 setBubbleMenuPlacement('top')
                 setBubbleMenuOffset(SELECTION_TOOLBAR_GAP)
@@ -520,6 +529,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         const rect = cloneDOMRect(range.getBoundingClientRect())
         if (!rect.width && !rect.height) {
             selectionVirtualElementRef.current = null
+            setAndroidToolbarPosition(null)
             if (!isAndroid) {
                 setBubbleMenuPlacement('top')
                 setBubbleMenuOffset(SELECTION_TOOLBAR_GAP)
@@ -567,6 +577,16 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
         setBubbleMenuPlacement(prev => prev === nextPlacement ? prev : nextPlacement)
         setBubbleMenuOffset(prev => prev === nextOffset ? prev : nextOffset)
+        const viewportWidth = window.visualViewport?.width ?? window.innerWidth
+        const toolbarCenter = rect.left + (rect.width / 2)
+        const clampedLeft = Math.min(Math.max(toolbarCenter, 24), viewportWidth - 24)
+        const toolbarTop = nextPlacement === 'bottom'
+            ? rect.bottom + nextOffset
+            : rect.top - nextOffset
+        setAndroidToolbarPosition({
+            left: clampedLeft,
+            top: toolbarTop,
+        })
         editor.view.dispatch(editor.state.tr.setMeta('bubbleMenu', 'updatePosition'))
     }, [editor, isAndroid])
 
@@ -1369,7 +1389,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                         : "mx-auto w-full transition-[max-width] duration-500 ease-in-out"
                 )}
             >
-                {editor && !isReadOnly && (
+                {editor && !isReadOnly && !isAndroid && (
                     <BubbleMenu 
                         editor={editor} 
                         updateDelay={0}
@@ -1520,6 +1540,67 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             </>
                         )}
                     </BubbleMenu>
+                )}
+                {editor && !isReadOnly && isAndroid && writingMode === 'screenplay' && androidToolbarPosition && (
+                    <div
+                        className="fixed z-[100] flex items-center gap-0.5 bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl p-1 max-w-[calc(100vw-2rem)] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [scroll-snap-type:x_proximity] [scroll-padding-left:0.25rem] pr-6 cursor-default"
+                        style={{
+                            top: `${androidToolbarPosition.top}px`,
+                            left: `${androidToolbarPosition.left}px`,
+                            transform: bubbleMenuPlacement === 'bottom'
+                                ? 'translate(-50%, 0)'
+                                : 'translate(-50%, -100%)',
+                        }}
+                    >
+                        <ToolbarButton
+                            onClick={() => editor.chain().focus().setNode('screenplaySceneHeading').run()}
+                            active={editor.isActive('screenplaySceneHeading')}
+                            icon={Clapperboard}
+                            tooltip="Scene Heading"
+                        />
+                        <ToolbarButton
+                            onClick={() => editor.chain().focus().setNode('screenplayAction').run()}
+                            active={editor.isActive('screenplayAction')}
+                            icon={TypeIcon}
+                            tooltip="Action"
+                        />
+                        <ToolbarButton
+                            onClick={() => editor.chain().focus().setNode('screenplayCharacter').run()}
+                            active={editor.isActive('screenplayCharacter')}
+                            icon={User}
+                            tooltip="Character"
+                        />
+                        <ToolbarButton
+                            onClick={() => editor.chain().focus().setNode('screenplayParenthetical').run()}
+                            active={editor.isActive('screenplayParenthetical')}
+                            icon={() => <span className="text-[10px] font-bold">( )</span>}
+                            tooltip="Parenthetical"
+                        />
+
+                        <div className="w-px h-4 bg-slate-200 mx-1" />
+
+                        <ToolbarButton
+                            onClick={() => editor.chain().focus().setNode('screenplayDialogue').run()}
+                            active={editor.isActive('screenplayDialogue')}
+                            icon={MessageCircle}
+                            tooltip="Dialogue"
+                        />
+                        <ToolbarButton
+                            onClick={() => editor.chain().focus().setNode('screenplayTransition').run()}
+                            active={editor.isActive('screenplayTransition')}
+                            icon={ArrowRight}
+                            tooltip="Transition"
+                        />
+
+                        <div className="w-px h-4 bg-slate-200 mx-1" />
+
+                        <ToolbarButton
+                            onClick={handleAddInlineComment}
+                            active={false}
+                            icon={MessageSquarePlus}
+                            tooltip="Add Feedback"
+                        />
+                    </div>
                 )}
                 <EditorContent editor={editor} />
                 
