@@ -102,7 +102,7 @@ const cloneDOMRect = (rect: DOMRect | DOMRectReadOnly) =>
 
 type AndroidToolbarPosition = {
     top: number
-    left: number
+    anchorLeft: number
 }
 
 interface SceneEditorProps {
@@ -263,6 +263,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [bubbleMenuOffset, setBubbleMenuOffset] = useState(SELECTION_TOOLBAR_GAP)
     const selectionVirtualElementRef = useRef<VirtualElement | null>(null)
     const [androidToolbarPosition, setAndroidToolbarPosition] = useState<AndroidToolbarPosition | null>(null)
+    const androidToolbarRef = useRef<HTMLDivElement | null>(null)
+    const [androidToolbarWidth, setAndroidToolbarWidth] = useState(0)
 
     useEffect(() => {
         const supabase = createClient()
@@ -309,6 +311,16 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     })
 
     const resolvedEditorFont = VIEW_FONT_STACKS[viewSettings.fontFamily] ?? VIEW_FONT_STACKS.Newsreader
+    const androidViewportWidth = typeof window === 'undefined'
+        ? 0
+        : (window.visualViewport?.width ?? window.innerWidth)
+    const androidToolbarHalfWidth = androidToolbarWidth > 0 ? androidToolbarWidth / 2 : 180
+    const androidToolbarLeft = androidToolbarPosition
+        ? Math.min(
+            Math.max(androidToolbarPosition.anchorLeft, androidToolbarHalfWidth + 8),
+            Math.max(androidToolbarHalfWidth + 8, androidViewportWidth - androidToolbarHalfWidth - 8)
+        )
+        : 0
 
 
     useEffect(() => {
@@ -577,18 +589,28 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
         setBubbleMenuPlacement(prev => prev === nextPlacement ? prev : nextPlacement)
         setBubbleMenuOffset(prev => prev === nextOffset ? prev : nextOffset)
-        const viewportWidth = window.visualViewport?.width ?? window.innerWidth
         const toolbarCenter = rect.left + (rect.width / 2)
-        const clampedLeft = Math.min(Math.max(toolbarCenter, 24), viewportWidth - 24)
         const toolbarTop = nextPlacement === 'bottom'
             ? rect.bottom + nextOffset
             : rect.top - nextOffset
         setAndroidToolbarPosition({
-            left: clampedLeft,
+            anchorLeft: toolbarCenter,
             top: toolbarTop,
         })
         editor.view.dispatch(editor.state.tr.setMeta('bubbleMenu', 'updatePosition'))
     }, [editor, isAndroid])
+
+    useEffect(() => {
+        if (!isAndroid || !androidToolbarPosition) return
+
+        const measureToolbar = () => {
+            const nextWidth = androidToolbarRef.current?.offsetWidth ?? 0
+            setAndroidToolbarWidth(prev => prev === nextWidth ? prev : nextWidth)
+        }
+
+        measureToolbar()
+        window.requestAnimationFrame(measureToolbar)
+    }, [androidToolbarPosition, isAndroid])
 
     useEffect(() => {
         if (!editor) return
@@ -1543,10 +1565,11 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 )}
                 {editor && !isReadOnly && isAndroid && writingMode === 'screenplay' && androidToolbarPosition && (
                     <div
+                        ref={androidToolbarRef}
                         className="fixed z-[100] flex items-center gap-0.5 bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl p-1 max-w-[calc(100vw-2rem)] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [scroll-snap-type:x_proximity] [scroll-padding-left:0.25rem] pr-6 cursor-default"
                         style={{
                             top: `${androidToolbarPosition.top}px`,
-                            left: `${androidToolbarPosition.left}px`,
+                            left: `${androidToolbarLeft}px`,
                             transform: bubbleMenuPlacement === 'bottom'
                                 ? 'translate(-50%, 0)'
                                 : 'translate(-50%, -100%)',
