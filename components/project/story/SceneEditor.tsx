@@ -600,6 +600,21 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         editor.view.dispatch(editor.state.tr.setMeta('bubbleMenu', 'updatePosition'))
     }, [editor, isAndroid])
 
+    const dismissSelectionToolbar = useCallback(() => {
+        selectionVirtualElementRef.current = null
+        setAndroidToolbarPosition(null)
+        setCurrentSelectionText('')
+
+        const selection = window.getSelection()
+        selection?.removeAllRanges()
+
+        if (!editor) return
+
+        setBubbleMenuPlacement('top')
+        setBubbleMenuOffset(SELECTION_TOOLBAR_GAP)
+        editor.view.dispatch(editor.state.tr.setMeta('bubbleMenu', 'updatePosition'))
+    }, [editor, setCurrentSelectionText])
+
     useEffect(() => {
         if (!isAndroid || !androidToolbarPosition) return
 
@@ -611,6 +626,11 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         measureToolbar()
         window.requestAnimationFrame(measureToolbar)
     }, [androidToolbarPosition, isAndroid])
+
+    useEffect(() => {
+        if (!aiPanelOpen) return
+        dismissSelectionToolbar()
+    }, [aiPanelOpen, dismissSelectionToolbar])
 
     useEffect(() => {
         if (!editor) return
@@ -1417,6 +1437,11 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                         updateDelay={0}
                         getReferencedVirtualElement={() => selectionVirtualElementRef.current}
                         shouldShow={({ from, to }) => selectionVirtualElementRef.current !== null && from !== to}
+                        style={{
+                            position: 'fixed',
+                            top: '-9999px',
+                            left: '-9999px',
+                        }}
                         options={{
                             strategy: 'fixed',
                             placement: isAndroid ? bubbleMenuPlacement : 'top',
