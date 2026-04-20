@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,12 +11,23 @@ import { ArrowLeft, Send, CheckCircle } from 'lucide-react'
 import { toast } from '@/lib/toast-shim'
 import emailjs from '@emailjs/browser'
 
-// EmailJS configuration - You'll need to set these up in your EmailJS account
 const EMAILJS_SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || ''
 const EMAILJS_TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || ''
 const EMAILJS_PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || ''
 
-export default function FeedbackPage() {
+function FeedbackPageFallback() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardContent className="pt-6">
+          <p className="text-center text-sm text-slate-600">Loading feedback form...</p>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function FeedbackPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const fromPath = searchParams.get('from')
@@ -51,9 +62,7 @@ export default function FeedbackPage() {
     setIsSubmitting(true)
 
     try {
-      // Check if EmailJS is configured
       if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY) {
-        // Fallback to mailto if email sending is not configured
         const emailBody = `
 Contact email: ${formData.email?.trim() || 'Not provided'}
 Device: ${formData.device || 'Not specified'}
@@ -75,7 +84,6 @@ ${formData.feedback}
         return
       }
 
-      // Send email using EmailJS
       const templateParams: Record<string, string> = {
         email: formData.email.trim(),
         to_email: 'mwake.dev@gmail.com',
@@ -101,7 +109,7 @@ ${formData.feedback}
       toast.success('Thank you for your feedback! It has been submitted successfully.')
     } catch (error) {
       console.error('Error sending feedback:', error)
-      const errorText = typeof error === 'object' && error !== null ? (error as any).text || (error as any).message : String(error)
+      const errorText = typeof error === 'object' && error !== null ? (error as { text?: string; message?: string }).text || (error as { text?: string; message?: string }).message : String(error)
       const isRecipientError = String(errorText).toLowerCase().includes('recipients address is empty')
 
       if (isRecipientError) {
@@ -303,5 +311,13 @@ ${formData.feedback}
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function FeedbackPage() {
+  return (
+    <Suspense fallback={<FeedbackPageFallback />}>
+      <FeedbackPageContent />
+    </Suspense>
   )
 }
