@@ -587,6 +587,86 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          actor_id: string | null
+          body: string | null
+          comment_id: string | null
+          created_at: string
+          event_key: string | null
+          id: string
+          link_href: string | null
+          metadata: Json
+          project_id: string | null
+          read_at: string | null
+          summary: string | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          body?: string | null
+          comment_id?: string | null
+          created_at?: string
+          event_key?: string | null
+          id?: string
+          link_href?: string | null
+          metadata?: Json
+          project_id?: string | null
+          read_at?: string | null
+          summary?: string | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          body?: string | null
+          comment_id?: string | null
+          created_at?: string
+          event_key?: string | null
+          id?: string
+          link_href?: string | null
+          metadata?: Json
+          project_id?: string | null
+          read_at?: string | null
+          summary?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "project_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       objects: {
         Row: {
           created_at: string | null
@@ -1494,6 +1574,11 @@ export type Database = {
       }
     }
     Enums: {
+      notification_type:
+        | "welcome"
+        | "collaborator_feedback"
+        | "project_shared"
+        | "project_role_changed"
       project_role: "owner" | "editor" | "viewer"
     }
     CompositeTypes: {
@@ -1622,6 +1707,12 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      notification_type: [
+        "welcome",
+        "collaborator_feedback",
+        "project_shared",
+        "project_role_changed",
+      ],
       project_role: ["owner", "editor", "viewer"],
     },
   },

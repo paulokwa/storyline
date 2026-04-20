@@ -19,6 +19,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useProjectActionsStore } from '@/lib/store/projectActionsStore'
 import { useTheme } from '@/components/providers/ThemeProvider'
+import NotificationBell from '@/components/notifications/NotificationBell'
 
 export default function AppNav({ user }: { user: User }) {
     const router = useRouter()
@@ -67,7 +68,9 @@ export default function AppNav({ user }: { user: User }) {
 
                 <div className="flex items-center gap-2 sm:gap-4">
                     <div id="app-nav-portal" className="flex items-center" />
-                    
+
+                    <NotificationBell />
+
                     <DropdownMenu>
                         <DropdownMenuTrigger>
                             <div className={`app-nav-avatar-trigger relative h-10 w-10 flex items-center justify-center rounded-full cursor-pointer ${
