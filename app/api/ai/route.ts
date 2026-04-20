@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import {
     createCloudTextStream,
     createPlainTextStreamFromProviderResponse,
+    getCloudProviderErrorMessage,
     testCloudProviderKey,
 } from '@/lib/ai/providers'
 import { getAiRuntimeState } from '@/lib/ai/runtime'
@@ -384,8 +385,9 @@ export async function POST(req: Request) {
             })
         }
         const errBody = await providerResponse.text()
-        console.error(`${providerName} API error:`, errBody)
-        return new Response(`AI service error: ${providerResponse.status} ${errBody.slice(0, 100)}`, { status: 502 })
+        const friendlyError = getCloudProviderErrorMessage(providerName, providerResponse.status, errBody)
+        console.error(`${providerName} API error (${providerResponse.status})`)
+        return new Response(friendlyError, { status: providerResponse.status })
     }
 
     const stream = createPlainTextStreamFromProviderResponse(providerName, providerResponse, {

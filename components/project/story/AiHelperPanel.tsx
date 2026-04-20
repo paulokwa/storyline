@@ -205,6 +205,80 @@ type AiAccessIssue = {
     description: string
 }
 
+type FriendlyAiError = {
+    title: string
+    description: string
+    showSettingsCta?: boolean
+}
+
+function getFriendlyAiError(message: string | undefined): FriendlyAiError | null {
+    if (!message) return null
+
+    if (message.includes('APP_MANAGED_AI_UNAVAILABLE')) {
+        return {
+            title: 'Free Trial AI Unavailable',
+            description: "Storyline's sponsored AI is not configured right now. Please try again later or switch to another AI option in Settings.",
+            showSettingsCta: true,
+        }
+    }
+
+    if (message.includes('NO_API_KEY')) {
+        return {
+            title: 'API Key Missing',
+            description: 'Please provide an AI API key in your account settings to use the AI Partner.',
+            showSettingsCta: true,
+        }
+    }
+
+    if (message.includes('TRIAL_EXHAUSTED')) {
+        return {
+            title: 'Free Trial AI Exhausted',
+            description: 'Your sponsored AI trial is fully used. Switch to your own API key or Ollama in Settings to keep going.',
+            showSettingsCta: true,
+        }
+    }
+
+    if (message.includes('TRIAL_UNAVAILABLE')) {
+        return {
+            title: 'Free Trial AI Unavailable',
+            description: 'This account cannot use the sponsored trial right now. You can still switch to BYOK or Ollama in Settings.',
+            showSettingsCta: true,
+        }
+    }
+
+    if (message.includes("couldn't verify your")) {
+        return {
+            title: 'Check Your API Key',
+            description: message,
+            showSettingsCta: true,
+        }
+    }
+
+    if (message.includes('needs available billing or usage credits')) {
+        return {
+            title: 'Check Your AI Billing',
+            description: message,
+            showSettingsCta: true,
+        }
+    }
+
+    if (message.includes('is busy right now')) {
+        return {
+            title: 'AI Service Busy',
+            description: message,
+        }
+    }
+
+    if (message.includes('temporary problem')) {
+        return {
+            title: 'AI Service Unavailable',
+            description: message,
+        }
+    }
+
+    return null
+}
+
 function getContextStrategy(mode: string): ContextStrategy {
     if (mode === 'Continue Writing') return 'continuation'
     return 'full-scene' // Includes Improve, Conflict, Emotion, Script, and Review/Chat
@@ -900,6 +974,10 @@ export default function AiHelperPanel({
         body: useMemo(() => ({ action: 'helper', projectId }), [projectId]),
         onError: (err) => {
             console.error('AI Error:', err)
+            const friendlyError = getFriendlyAiError(err.message)
+            toast.error(friendlyError?.title || 'AI request failed', {
+                description: friendlyError?.description || 'The AI partner hit a problem. Please try again.',
+            })
         }
     })
 
@@ -907,6 +985,7 @@ export default function AiHelperPanel({
     const actualLoading = isLoading || isOllamaLoading
     const displayedCompletion = completion || (actualLoading ? previousCompletion : '')
     const isShowingPrevious = actualLoading && !completion && !!previousCompletion
+    const friendlyError = getFriendlyAiError(error?.message)
 
 
 
@@ -1805,13 +1884,32 @@ export default function AiHelperPanel({
                                     </Link>
                                 </Button>
                             </>
+                        ) : friendlyError ? (
+                            <>
+                                <div className="space-y-1">
+                                    <p className="text-sm font-semibold text-red-900">{friendlyError.title}</p>
+                                    <p className="text-xs text-red-500 leading-relaxed font-serif italic">
+                                        {friendlyError.description}
+                                    </p>
+                                </div>
+                                <Button
+                                    type="button"
+                                    onClick={() => lastPrompt && handleSubmit({ preventDefault: () => {} } as any)}
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={!lastPrompt || isLoading}
+                                    className="w-full bg-white border-red-200 text-red-700 hover:bg-red-50 rounded-xl gap-2 text-xs"
+                                >
+                                    <RefreshCcw className="w-3 h-3" />
+                                    Try again
+                                </Button>
+                            </>
                         ) : (
                             <>
                                 <div className="space-y-1">
                                     <p className="text-sm font-semibold text-red-900">Something went wrong</p>
                                     <p className="text-xs text-red-500 leading-relaxed font-serif italic">
                                         The AI partner ran into an issue. Your prompt is saved — you can retry below.
-                                        {error.message ? ` (${error.message})` : ''}
                                     </p>
                                 </div>
                                 <Button

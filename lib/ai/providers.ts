@@ -17,6 +17,42 @@ export function getAiProviderLabel(provider: string | null | undefined) {
     }
 }
 
+export function getCloudProviderErrorMessage(
+    provider: CloudAiProvider,
+    status: number,
+    rawError?: string | null
+) {
+    const providerLabel = getAiProviderLabel(provider)
+    const detail = rawError?.toLowerCase() ?? ''
+
+    if (status === 401) {
+        return `We couldn't verify your ${providerLabel} API key. Check the key in Settings and try again.`
+    }
+
+    if (
+        detail.includes('insufficient_quota') ||
+        detail.includes('quota') ||
+        detail.includes('billing') ||
+        detail.includes('credit')
+    ) {
+        return `${providerLabel} needs available billing or usage credits before Storyline can use it.`
+    }
+
+    if (status === 403) {
+        return `${providerLabel} denied this request. Check that your account and API key have the right access, then try again.`
+    }
+
+    if (status === 429 || detail.includes('rate limit') || detail.includes('too many requests')) {
+        return `${providerLabel} is busy right now. Please wait a moment and try again.`
+    }
+
+    if (status >= 500) {
+        return `${providerLabel} is having a temporary problem right now. Please try again in a moment.`
+    }
+
+    return `Storyline couldn't get a response from ${providerLabel}. Please try again.`
+}
+
 export function maskApiKey(raw: string | null | undefined) {
     if (!raw) return null
     const suffix = raw.slice(-4)
@@ -29,11 +65,12 @@ export async function testCloudProviderKey(provider: CloudAiProvider, apiKey: st
             method: 'GET',
         })
         const data = await response.json().catch(() => null)
+        const rawError = data?.error?.message ?? null
 
         return {
             ok: response.ok,
             status: response.status,
-            error: !response.ok ? data?.error?.message ?? 'Gemini request failed' : null,
+            error: !response.ok ? getCloudProviderErrorMessage(provider, response.status, rawError) : null,
         }
     }
 
@@ -44,11 +81,12 @@ export async function testCloudProviderKey(provider: CloudAiProvider, apiKey: st
         },
     })
     const data = await response.json().catch(() => null)
+    const rawError = data?.error?.message ?? null
 
     return {
         ok: response.ok,
         status: response.status,
-        error: !response.ok ? data?.error?.message ?? 'OpenAI request failed' : null,
+        error: !response.ok ? getCloudProviderErrorMessage(provider, response.status, rawError) : null,
     }
 }
 
