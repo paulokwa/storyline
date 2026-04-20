@@ -95,7 +95,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         selectedNodeIds, setSelectedNodeIds,
         setShowStructureHint
     } = useProjectActions()
-    const { exportAction, statsAction } = useProjectActionsStore()
+    const { exportAction, statsAction, canExport } = useProjectActionsStore()
     const { commentsPanelOpen, setCommentsPanelOpen, fetchComments } = useComments()
     
     const [nodes, setNodes] = useState(initialNodes)
@@ -278,6 +278,11 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
 
     useEffect(() => {
         setPortalRoot(document.getElementById('app-nav-portal'))
+
+        if (!canExport) {
+            setShowExportHint(false)
+            return
+        }
         
         if (nodes.length >= 5) {
             const discovered = localStorage.getItem('storyline-export-discovered')
@@ -290,7 +295,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 return () => clearTimeout(timer)
             }
         }
-    }, [nodes.length])
+    }, [canExport, nodes.length])
 
     const dismissExportHint = useCallback((e: React.MouseEvent) => {
         e.preventDefault()
@@ -593,10 +598,11 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                         <Button 
                                             variant="outline"
                                             onClick={() => exportAction?.()}
+                                            disabled={!canExport}
                                             className="rounded-xl border-slate-200 text-slate-600 h-11 px-6 bg-white hover:bg-slate-50 transition-all active:scale-95"
                                         >
                                             <Download className="w-4 h-4 mr-2" />
-                                            Export Project
+                                            {canExport ? 'Export Project' : 'Export Disabled by Owner'}
                                         </Button>
                                         <Button 
                                             variant="outline"
@@ -767,6 +773,8 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 <div className="w-[320px] lg:w-[380px] h-full flex flex-col">
                     <CommentsPanel 
                         projectId={project.id}
+                        projectOwnerId={project.user_id}
+                        shareOwnerFeedback={project.share_owner_feedback ?? false}
                         activeNodeId={activeNodeId}
                         activeSceneId={activeScene?.id}
                         onSelectNode={handleSceneSelect}

@@ -90,6 +90,24 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
         }
     }, [])
 
+    useEffect(() => {
+        const supabase = createClient()
+        const channel = supabase
+            .channel('library-memberships')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'project_members',
+            }, () => {
+                router.refresh()
+            })
+            .subscribe()
+
+        return () => {
+            void supabase.removeChannel(channel)
+        }
+    }, [router])
+
     function clearDraft() {
         localStorage.removeItem('storyline-new-project-draft')
         localStorage.removeItem('storyline-guided-data-draft')
@@ -456,7 +474,9 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging }: 
 
     const hasCover = !!project.cover_url
     const members = project.members || []
-    const isShared = members.length > 1
+    const activeCollaborators = members.filter(member => member.role !== 'owner')
+    const visibleMembers = activeCollaborators.length > 0 ? members : []
+    const isShared = activeCollaborators.length > 0
     const cardDescription = project.premise || (project as any).export_metadata?.description || ''
 
     async function handleDelete(e: React.MouseEvent) {
@@ -673,7 +693,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging }: 
                     <div className="flex items-center gap-4">
                         {isShared && mode === 'active' ? (
                             <div className="flex items-center -space-x-2 pointer-events-auto">
-                                {members.slice(0, 4).map((member, i) => (
+                                {visibleMembers.slice(0, 4).map((member) => (
                                     <Tooltip key={member.user_id}>
                                         <TooltipTrigger>
                                             <Avatar className={cn(
@@ -696,12 +716,12 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging }: 
                                         </TooltipContent>
                                     </Tooltip>
                                 ))}
-                                {members.length > 4 && (
+                                {visibleMembers.length > 4 && (
                                     <div className={cn(
                                         "w-7 h-7 rounded-full flex items-center justify-center border-2 text-[8px] font-bold z-0",
                                         hasCover ? "bg-white/10 border-black/50 text-white" : "bg-slate-50 border-white text-slate-400"
                                     )}>
-                                        +{members.length - 4}
+                                        +{visibleMembers.length - 4}
                                     </div>
                                 )}
                             </div>
@@ -749,6 +769,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging }: 
                 open={isSettingsOpen}
                 onOpenChange={setIsSettingsOpen}
                 project={project}
+                role={project.role ?? 'owner'}
             />
         </div>
     )

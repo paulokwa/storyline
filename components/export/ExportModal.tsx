@@ -46,12 +46,24 @@ interface ExportModalProps {
     projectId: string
     projectTitle: string
     projectType?: 'tv_script' | 'novel'
+    role?: 'owner' | 'editor' | 'viewer'
+    allowCollaboratorExports?: boolean
     onOpenSettings?: () => void
 }
 
-export default function ExportModal({ open, onOpenChange, projectId, projectTitle, projectType, onOpenSettings }: ExportModalProps) {
+export default function ExportModal({
+    open,
+    onOpenChange,
+    projectId,
+    projectTitle,
+    projectType,
+    role = 'owner',
+    allowCollaboratorExports = false,
+    onOpenSettings,
+}: ExportModalProps) {
     const { theme } = useTheme()
     const isMidnight = theme === 'midnight'
+    const canExport = role === 'owner' || allowCollaboratorExports
     const [loading, setLoading] = useState(false)
     const [metadata, setMetadata] = useState<ExportMetadata | null>(null)
     const [options, setOptions] = useState<ExportOptions>({
@@ -65,6 +77,12 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
 
     // Stats for preview
     const [stats, setStats] = useState<{ chapters: number, scenes: number, hasProse: boolean, hasSummaries: boolean } | null>(null)
+    const exportRestrictionMessage = useMemo(
+        () => role === 'owner'
+            ? null
+            : 'The owner has disabled exports for collaborators. They can enable it later in Project Settings.',
+        [role]
+    )
 
     useEffect(() => {
         if (!open) return
@@ -82,6 +100,11 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
                     setMetadata(project.export_metadata as ExportMetadata)
                 }
 
+                if (!canExport) {
+                    setStats(null)
+                    return
+                }
+
                 const payload = await buildExportPayload(projectId)
                 const chapters = payload.nodes.filter(n => n.type === 'chapter' || n.type === 'episode').length
                 const scenes = payload.nodes.filter(n => n.type === 'scene').length
@@ -93,9 +116,10 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
             }
         }
         fetchStats()
-    }, [open, projectId])
+    }, [canExport, open, projectId])
 
     async function handleExport() {
+        if (!canExport) return
         setLoading(true)
         try {
             const payload = await buildExportPayload(projectId)
@@ -181,6 +205,11 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
                 </DialogHeader>
 
                 <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                    {!canExport && exportRestrictionMessage && (
+                        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                            {exportRestrictionMessage}
+                        </div>
+                    )}
                     <div className="space-y-4">
                         <label className="flex items-center gap-2 text-[10px] font-sans tracking-[0.2em] uppercase text-slate-400 font-bold mb-2">
                             Scope
@@ -191,12 +220,13 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
                                     <TooltipTrigger asChild>
                                         <button
                                             onClick={() => setOptions({ ...options, scope: s })}
+                                            disabled={!canExport || s !== 'entire_project'}
                                             className={cn(
                                                 "px-4 py-2 rounded-xl text-xs font-medium transition-all duration-300",
                                                 options.scope === s
                                                     ? "bg-white text-slate-900 shadow-sm"
                                                     : "text-slate-500 hover:text-slate-700 hover:bg-white/40",
-                                                s !== 'entire_project' && "opacity-50 grayscale cursor-not-allowed" // Disabled for V1
+                                                (!canExport || s !== 'entire_project') && "opacity-50 grayscale cursor-not-allowed"
                                             )}
                                         >
                                             {s === 'entire_project' ? 'Entire Project' : s === 'selected_chapters' ? (projectType === 'tv_script' ? 'Episodes' : 'Chapters') : 'Scenes'}
@@ -221,11 +251,13 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
                                 <button
                                     key={f.id}
                                     onClick={() => setOptions({ ...options, format: f.id as any })}
+                                    disabled={!canExport}
                                     className={cn(
                                         "flex flex-col items-start p-4 rounded-2xl border transition-all duration-300 text-left",
                                         options.format === f.id
                                             ? "bg-white border-amber-200 shadow-lg shadow-amber-900/5 ring-1 ring-amber-200"
-                                            : "border-slate-100 bg-white/40 hover:bg-white hover:border-slate-200"
+                                            : "border-slate-100 bg-white/40 hover:bg-white hover:border-slate-200",
+                                        !canExport && "cursor-not-allowed opacity-60"
                                     )}
                                 >
                                     <div className="flex items-center gap-1.5 mb-1.5 overflow-hidden w-full">
@@ -311,6 +343,7 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
                                         id="inc-title"
                                         checked={options.includeProjectTitle}
                                         onCheckedChange={(v) => setOptions({ ...options, includeProjectTitle: v })}
+                                        disabled={!canExport}
                                     />
                                 </div>
                                 <div className="flex items-center justify-between group">
@@ -321,6 +354,7 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
                                         id="inc-chapters"
                                         checked={options.includeChapterTitles}
                                         onCheckedChange={(v) => setOptions({ ...options, includeChapterTitles: v })}
+                                        disabled={!canExport}
                                     />
                                 </div>
                                 <div className="flex items-center justify-between group">
@@ -331,6 +365,7 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
                                         id="inc-scenes"
                                         checked={options.includeSceneSubtitles}
                                         onCheckedChange={(v) => setOptions({ ...options, includeSceneSubtitles: v })}
+                                        disabled={!canExport}
                                     />
                                 </div>
                             </div>
@@ -345,11 +380,13 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
                                     <button
                                         key={mode}
                                         onClick={() => setOptions({ ...options, contentMode: mode })}
+                                        disabled={!canExport}
                                         className={cn(
                                             "w-full flex items-center justify-between px-3 py-2 rounded-xl border text-sm transition-all duration-300",
                                             options.contentMode === mode
                                                 ? "bg-amber-50 border-amber-200 text-amber-900 font-medium"
-                                                : "bg-white/40 border-transparent text-slate-500 hover:bg-white hover:border-slate-100"
+                                                : "bg-white/40 border-transparent text-slate-500 hover:bg-white hover:border-slate-100",
+                                            !canExport && "cursor-not-allowed opacity-60"
                                         )}
                                     >
                                         <span>
@@ -376,7 +413,7 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
                                     {projectTitle}
                                 </p>
                                 <p className="text-xs text-slate-400">
-                                    {stats ? `${stats.chapters} chapters, ${stats.scenes} scenes` : 'Loading project stats...'}
+                                    {stats ? `${stats.chapters} chapters, ${stats.scenes} scenes` : canExport ? 'Loading project stats...' : 'Export stats unavailable while export is disabled'}
                                 </p>
                             </div>
                             <div className="text-right">
@@ -411,11 +448,11 @@ export default function ExportModal({ open, onOpenChange, projectId, projectTitl
                         </Button>
                         <Button
                             onClick={handleExport}
-                            disabled={loading}
+                            disabled={loading || !canExport}
                             className="bg-[#546354] hover:bg-[#3d4a3d] text-white rounded-xl px-8 flex-1 sm:flex-none shadow-lg shadow-slate-900/10 transition-all duration-300"
                         >
                             <Download className={cn("w-4 h-4 mr-2", loading && "animate-pulse")} />
-                            {loading ? 'Generating...' : 'Generate Export'}
+                            {loading ? 'Generating...' : canExport ? 'Generate Export' : 'Export Disabled by Owner'}
                         </Button>
                     </div>
                 </DialogFooter>

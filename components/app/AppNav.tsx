@@ -36,7 +36,7 @@ export default function AppNav({ user }: { user: User }) {
     }
 
     const displayName = (user.user_metadata?.display_name as string) || user.email?.split('@')[0] || 'Writer'
-    const { exportAction, shareAction, settingsAction, statsAction, canShare } = useProjectActionsStore()
+    const { exportAction, shareAction, settingsAction, statsAction, canShare, canExport, exportDisabledReason } = useProjectActionsStore()
 
     return (
         <nav className={`app-nav-shell sticky top-0 z-40 shrink-0 px-4 sm:px-6 lg:px-8 ${
@@ -108,12 +108,18 @@ export default function AppNav({ user }: { user: User }) {
                                 <>
                                     <DropdownMenuItem 
                                         onClick={exportAction}
+                                        disabled={!canExport}
                                         className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
-                                            isMidnight ? 'text-slate-300 focus:text-indigo-200 focus:bg-white/8' : 'text-slate-600 focus:text-indigo-600 focus:bg-indigo-50'
+                                            !canExport
+                                                ? 'pointer-events-none opacity-50'
+                                                : isMidnight ? 'text-slate-300 focus:text-indigo-200 focus:bg-white/8' : 'text-slate-600 focus:text-indigo-600 focus:bg-indigo-50'
                                         }`}
+                                        title={!canExport ? (exportDisabledReason ?? 'Export is currently disabled.') : undefined}
                                     >
                                         <Download className="w-4 h-4" />
-                                        <span className="font-semibold text-sm">Export Project</span>
+                                        <span className="font-semibold text-sm">
+                                            {canExport ? 'Export Project' : 'Export Disabled by Owner'}
+                                        </span>
                                     </DropdownMenuItem>
                                     
                                     {canShare && shareAction && (

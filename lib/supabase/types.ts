@@ -872,6 +872,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          allow_collaborator_exports: boolean | null
           cover_url: string | null
           created_at: string | null
           deleted_at: string | null
@@ -881,6 +882,7 @@ export type Database = {
           order_index: number | null
           premise: string | null
           project_type: string | null
+          share_owner_feedback: boolean | null
           setting: string | null
           title: string | null
           tone: string | null
@@ -890,6 +892,7 @@ export type Database = {
           writing_mode: string | null
         }
         Insert: {
+          allow_collaborator_exports?: boolean | null
           cover_url?: string | null
           created_at?: string | null
           deleted_at?: string | null
@@ -899,6 +902,7 @@ export type Database = {
           order_index?: number | null
           premise?: string | null
           project_type?: string | null
+          share_owner_feedback?: boolean | null
           setting?: string | null
           title?: string | null
           tone?: string | null
@@ -908,6 +912,7 @@ export type Database = {
           writing_mode?: string | null
         }
         Update: {
+          allow_collaborator_exports?: boolean | null
           cover_url?: string | null
           created_at?: string | null
           deleted_at?: string | null
@@ -917,6 +922,7 @@ export type Database = {
           order_index?: number | null
           premise?: string | null
           project_type?: string | null
+          share_owner_feedback?: boolean | null
           setting?: string | null
           title?: string | null
           tone?: string | null

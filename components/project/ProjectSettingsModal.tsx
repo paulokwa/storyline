@@ -15,7 +15,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Trash2, AlertTriangle, Save, Globe, Info, Tag, Hash, Copyright, Book, Type } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { Trash2, AlertTriangle, Save, Globe, Info, Tag, Hash, Copyright, Book, Type, MessageSquare, LogOut } from 'lucide-react'
 import type { Database } from '@/lib/supabase/types'
 import type { ExportMetadata } from '@/lib/export/buildExportPayload'
 import { cn } from '@/lib/utils'
@@ -28,18 +29,21 @@ interface ProjectSettingsModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     project: Project
+    role?: 'owner' | 'editor' | 'viewer'
 }
 
 export default function ProjectSettingsModal({
     open,
     onOpenChange,
     project,
+    role = 'owner',
 }: ProjectSettingsModalProps) {
     const { theme } = useTheme()
     const isMidnight = theme === 'midnight'
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const canManageProject = role === 'owner'
 
     const [activeTab, setActiveTab] = useState<'general' | 'metadata'>('general')
     const [title, setTitle] = useState(project.title ?? '')
@@ -47,6 +51,8 @@ export default function ProjectSettingsModal({
     const [premise, setPremise] = useState(project.premise || '')
     const [tone, setTone] = useState(project.tone || '')
     const [writingMode, setWritingMode] = useState(project.writing_mode || 'simple')
+    const [shareOwnerFeedback, setShareOwnerFeedback] = useState(project.share_owner_feedback ?? false)
+    const [allowCollaboratorExports, setAllowCollaboratorExports] = useState(project.allow_collaborator_exports ?? false)
     const [metadata, setMetadata] = useState<ExportMetadata>((project.export_metadata as any) || {})
 
     const updateMetadata = (key: keyof ExportMetadata, value: string) => {
@@ -54,6 +60,7 @@ export default function ProjectSettingsModal({
     }
 
     async function handleSave() {
+        if (!canManageProject) return
         setLoading(true)
         const supabase = createClient()
         const { error } = await (supabase
@@ -64,6 +71,8 @@ export default function ProjectSettingsModal({
                 premise: premise.trim() || null,
                 tone: tone.trim() || null,
                 writing_mode: writingMode,
+                share_owner_feedback: shareOwnerFeedback,
+                allow_collaborator_exports: allowCollaboratorExports,
                 export_metadata: metadata as any,
             })
             .eq('id', project.id)
@@ -76,6 +85,7 @@ export default function ProjectSettingsModal({
     }
 
     async function handleDelete() {
+        if (!canManageProject) return
         setLoading(true)
         const supabase = createClient()
         const { error } = await supabase
@@ -87,6 +97,33 @@ export default function ProjectSettingsModal({
             router.push('/library')
             router.refresh()
         }
+        setLoading(false)
+    }
+
+    async function handleLeaveCollaboration() {
+        if (canManageProject) return
+
+        setLoading(true)
+        const supabase = createClient()
+        const { data } = await supabase.auth.getUser()
+        const userId = data.user?.id
+
+        if (!userId) {
+            setLoading(false)
+            return
+        }
+
+        const { error } = await supabase.rpc('remove_project_member', {
+            p_id: project.id,
+            p_user_id: userId,
+        })
+
+        if (!error) {
+            onOpenChange(false)
+            router.push('/library')
+            router.refresh()
+        }
+
         setLoading(false)
     }
 
@@ -145,6 +182,7 @@ export default function ProjectSettingsModal({
                                             value={title}
                                             onChange={(e) => setTitle(e.target.value)}
                                             placeholder="Enter story title..."
+                                            disabled={!canManageProject}
                                             className="rounded-2xl border-border bg-muted/50 focus:bg-card focus:ring-primary/20 transition-all h-12"
                                         />
                                     </div>
@@ -156,6 +194,7 @@ export default function ProjectSettingsModal({
                                                 id="type"
                                                 value={type} 
                                                 onChange={(e) => setType(e.target.value as any)}
+                                                disabled={!canManageProject}
                                                 className="w-full rounded-2xl border border-border bg-muted/50 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all h-12 px-4 appearance-none text-sm"
                                             >
                                                 <option value="novel">{PROJECT_TYPE_LABELS.novel}</option>
@@ -174,6 +213,7 @@ export default function ProjectSettingsModal({
                                                 id="writingMode"
                                                 value={writingMode} 
                                                 onChange={(e) => {
+                                                    if (!canManageProject) return
                                                     const newMode = e.target.value as any;
                                                     const isMismatch = (type === 'novel' && newMode === 'screenplay') ||
                                                                      (type === 'tv_script' && newMode === 'simple');
@@ -184,6 +224,7 @@ export default function ProjectSettingsModal({
                                                     }
                                                     setWritingMode(newMode);
                                                 }}
+                                                disabled={!canManageProject}
                                                 className="w-full rounded-2xl border border-border bg-muted/50 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all h-12 px-4 appearance-none text-sm"
                                             >
                                                 <option value="simple">Simple (Prose)</option>
@@ -206,6 +247,7 @@ export default function ProjectSettingsModal({
                                             value={premise}
                                             onChange={(e) => setPremise(e.target.value)}
                                             placeholder="The elevator pitch for your story..."
+                                            disabled={!canManageProject}
                                             className="rounded-2xl border-border bg-muted/50 focus:bg-card focus:ring-primary/20 transition-all min-h-[100px] resize-none"
                                         />
                                     </div>
@@ -223,8 +265,51 @@ export default function ProjectSettingsModal({
                                             value={tone}
                                             onChange={(e) => setTone(e.target.value)}
                                             placeholder="e.g. Noir, Whimsical, Gritty Realism..."
+                                            disabled={!canManageProject}
                                             className="rounded-2xl border-border bg-muted/50 focus:bg-card focus:ring-primary/20 transition-all min-h-[80px] resize-none"
                                         />
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <div className="flex items-start justify-between gap-4 rounded-2xl border border-border bg-muted/30 p-4">
+                                            <div className="space-y-1">
+                                                <Label htmlFor="shareOwnerFeedback" className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                                    <MessageSquare className="h-4 w-4 text-primary" />
+                                                    Share Owner Feedback
+                                                </Label>
+                                                <p className="text-xs leading-relaxed text-slate-500">
+                                                    When off, collaborators can leave feedback but cannot see feedback authored by the owner.
+                                                </p>
+                                            </div>
+                                            <Switch
+                                                id="shareOwnerFeedback"
+                                                checked={shareOwnerFeedback}
+                                                onCheckedChange={setShareOwnerFeedback}
+                                                disabled={!canManageProject}
+                                            />
+                                        </div>
+                                        <div className="flex items-start justify-between gap-4 rounded-2xl border border-border bg-muted/30 p-4">
+                                            <div className="space-y-1">
+                                                <Label htmlFor="allowCollaboratorExports" className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                                    <Globe className="h-4 w-4 text-primary" />
+                                                    Allow Collaborator Exports
+                                                </Label>
+                                                <p className="text-xs leading-relaxed text-slate-500">
+                                                    When off, collaborators can still read the shared {getProjectTypeLabel(project.type).toLowerCase()} but cannot export it. The owner can always export.
+                                                </p>
+                                            </div>
+                                            <Switch
+                                                id="allowCollaboratorExports"
+                                                checked={allowCollaboratorExports}
+                                                onCheckedChange={setAllowCollaboratorExports}
+                                                disabled={!canManageProject}
+                                            />
+                                        </div>
+                                        {!canManageProject && (
+                                            <p className="px-1 text-[10px] italic text-slate-400">
+                                                Only the owner can change collaboration, feedback visibility, and export access settings.
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             ) : (
@@ -238,6 +323,7 @@ export default function ProjectSettingsModal({
                                                 value={metadata.authorName || ''}
                                                 onChange={(e) => updateMetadata('authorName', e.target.value)}
                                                 placeholder="Legal name"
+                                                disabled={!canManageProject}
                                                 className="rounded-xl border-border bg-muted/50 h-10 text-sm"
                                             />
                                         </div>
@@ -249,6 +335,7 @@ export default function ProjectSettingsModal({
                                                 value={metadata.penName || ''}
                                                 onChange={(e) => updateMetadata('penName', e.target.value)}
                                                 placeholder="Byline"
+                                                disabled={!canManageProject}
                                                 className="rounded-xl border-border bg-muted/50 h-10 text-sm"
                                             />
                                         </div>
@@ -263,6 +350,7 @@ export default function ProjectSettingsModal({
                                                 value={metadata.copyrightHolder || ''}
                                                 onChange={(e) => updateMetadata('copyrightHolder', e.target.value)}
                                                 placeholder="Holder"
+                                                disabled={!canManageProject}
                                                 className="rounded-xl border-border bg-muted/50 h-10 text-sm"
                                             />
                                         </div>
@@ -274,6 +362,7 @@ export default function ProjectSettingsModal({
                                                 value={metadata.copyrightYear || ''}
                                                 onChange={(e) => updateMetadata('copyrightYear', e.target.value)}
                                                 placeholder="e.g. 2024"
+                                                disabled={!canManageProject}
                                                 className="rounded-xl border-border bg-muted/50 h-10 text-sm"
                                             />
                                         </div>
@@ -288,6 +377,7 @@ export default function ProjectSettingsModal({
                                                 value={metadata.language || ''}
                                                 onChange={(e) => updateMetadata('language', e.target.value)}
                                                 placeholder="e.g. English"
+                                                disabled={!canManageProject}
                                                 className="rounded-xl border-border bg-muted/50 h-10 text-sm"
                                             />
                                         </div>
@@ -299,6 +389,7 @@ export default function ProjectSettingsModal({
                                                 value={metadata.publisher || ''}
                                                 onChange={(e) => updateMetadata('publisher', e.target.value)}
                                                 placeholder="Imprint"
+                                                disabled={!canManageProject}
                                                 className="rounded-xl border-border bg-muted/50 h-10 text-sm"
                                             />
                                         </div>
@@ -312,6 +403,7 @@ export default function ProjectSettingsModal({
                                             value={metadata.description || ''}
                                             onChange={(e) => updateMetadata('description', e.target.value)}
                                             placeholder="A short summary for publishing metadata..."
+                                            disabled={!canManageProject}
                                             className="rounded-xl border-border bg-muted/50 min-h-[80px] text-sm resize-none"
                                         />
                                     </div>
@@ -325,6 +417,7 @@ export default function ProjectSettingsModal({
                                                 value={metadata.keywords || ''}
                                                 onChange={(e) => updateMetadata('keywords', e.target.value)}
                                                 placeholder="Comma separated"
+                                                disabled={!canManageProject}
                                                 className="rounded-xl border-border bg-muted/50 h-10 text-sm"
                                             />
                                         </div>
@@ -336,6 +429,7 @@ export default function ProjectSettingsModal({
                                                 value={metadata.isbn || ''}
                                                 onChange={(e) => updateMetadata('isbn', e.target.value)}
                                                 placeholder="Optional"
+                                                disabled={!canManageProject}
                                                 className="rounded-xl border-border bg-muted/50 h-10 text-sm"
                                             />
                                         </div>
@@ -355,14 +449,26 @@ export default function ProjectSettingsModal({
                             "shrink-0 gap-3 p-5 sm:flex-row sm:p-6",
                             isMidnight ? "bg-[#182239]/88 border-slate-700/60" : "bg-white border-[#f0eee9]"
                         )}>
-                            <Button
-                                variant="ghost"
-                                onClick={() => setShowDeleteConfirm(true)}
-                                className="sm:mr-auto rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50"
-                            >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete Project
-                            </Button>
+                            {canManageProject ? (
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => setShowDeleteConfirm(true)}
+                                    className="sm:mr-auto rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50"
+                                >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete Project
+                                </Button>
+                            ) : (
+                                <Button
+                                    variant="ghost"
+                                    onClick={handleLeaveCollaboration}
+                                    disabled={loading}
+                                    className="sm:mr-auto rounded-full text-slate-400 hover:text-amber-600 hover:bg-amber-50"
+                                >
+                                    <LogOut className="w-4 h-4 mr-2" />
+                                    Leave Collaboration
+                                </Button>
+                            )}
                             <Button
                                 variant="outline"
                                 onClick={() => onOpenChange(false)}
@@ -370,14 +476,16 @@ export default function ProjectSettingsModal({
                             >
                                 Cancel
                             </Button>
-                            <Button
-                                onClick={handleSave}
-                                disabled={loading || !title.trim()}
-                                className="sanctuary-btn-primary rounded-full px-8 h-11 transition-all active:scale-95"
-                            >
-                                <Save className="w-4 h-4 mr-2" />
-                                Save Changes
-                            </Button>
+                            {canManageProject && (
+                                <Button
+                                    onClick={handleSave}
+                                    disabled={loading || !title.trim()}
+                                    className="sanctuary-btn-primary rounded-full px-8 h-11 transition-all active:scale-95"
+                                >
+                                    <Save className="w-4 h-4 mr-2" />
+                                    Save Changes
+                                </Button>
+                            )}
                         </DialogFooter>
                     </>
                 ) : (

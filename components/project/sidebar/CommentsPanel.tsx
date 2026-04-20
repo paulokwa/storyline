@@ -8,11 +8,9 @@ import {
     MessageSquare, 
     Send, 
     CheckCircle2, 
-    Circle, 
     Reply, 
     Trash2, 
     Edit3, 
-    User,
     Clock,
     Filter,
     X,
@@ -35,12 +33,16 @@ import { toast } from 'sonner'
 
 export default function CommentsPanel({ 
     projectId, 
+    projectOwnerId,
+    shareOwnerFeedback = false,
     activeNodeId, 
     activeSceneId,
     onSelectNode,
     onClose
 }: { 
     projectId: string, 
+    projectOwnerId: string,
+    shareOwnerFeedback?: boolean,
     activeNodeId: string | null,
     activeSceneId?: string,
     onSelectNode?: (id: string) => void,
@@ -73,6 +75,7 @@ export default function CommentsPanel({
     
     const [filterByNode, setFilterByNode] = useState(true)
     const [showResolved, setShowResolved] = useState(false)
+    const [authorFilter, setAuthorFilter] = useState<'all' | 'mine' | 'collaborators'>('all')
     const [newCommentText, setNewCommentText] = useState('')
     const [replyToId, setReplyToId] = useState<string | null>(null)
     const [replyText, setReplyText] = useState('')
@@ -307,6 +310,17 @@ export default function CommentsPanel({
         }
     }
 
+    const shouldHideOwnerFeedback = role === 'viewer' && !shareOwnerFeedback
+    const canFilterByAuthor = role === 'owner' || role === 'editor'
+
+    const getVisibleReplies = useMemo(() => {
+        return (parentId: string) => comments.filter(c => {
+            if (c.parent_id !== parentId) return false
+            if (shouldHideOwnerFeedback && c.author_id === projectOwnerId) return false
+            return true
+        })
+    }, [comments, projectOwnerId, shouldHideOwnerFeedback])
+
     const filteredComments = useMemo(() => {
         let list = comments.filter(c => !c.parent_id)
         
@@ -314,6 +328,18 @@ export default function CommentsPanel({
         // (threads they started)
         if (role === 'viewer') {
             list = list.filter(c => c.author_id === currentUserId)
+        }
+
+        if (shouldHideOwnerFeedback) {
+            list = list.filter(c => c.author_id !== projectOwnerId)
+        }
+
+        if (authorFilter === 'mine' && currentUserId) {
+            list = list.filter(c => c.author_id === currentUserId)
+        }
+
+        if (authorFilter === 'collaborators' && currentUserId) {
+            list = list.filter(c => c.author_id !== currentUserId)
         }
         
         if (filterByNode && activeNodeId) {
@@ -331,7 +357,7 @@ export default function CommentsPanel({
             }
             return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         })
-    }, [comments, activeNodeId, filterByNode, showResolved, currentUserId, role])
+    }, [authorFilter, comments, activeNodeId, currentUserId, filterByNode, projectOwnerId, role, shouldHideOwnerFeedback, showResolved])
 
     // Meta-counts for UI feedback
     const resolvedCount = useMemo(() => 
@@ -345,6 +371,18 @@ export default function CommentsPanel({
     const currentSceneCount = useMemo(() => 
         comments.filter(c => !c.parent_id && c.node_id === activeNodeId).length, 
     [comments, activeNodeId])
+
+    const mineCount = useMemo(() => {
+        if (!currentUserId) return 0
+
+        return comments.filter(c => !c.parent_id && c.author_id === currentUserId).length
+    }, [comments, currentUserId])
+
+    const collaboratorCount = useMemo(() => {
+        if (!currentUserId) return 0
+
+        return comments.filter(c => !c.parent_id && c.author_id !== currentUserId).length
+    }, [comments, currentUserId])
 
     async function handleAddComment() {
         if (!newCommentText.trim()) return
@@ -454,6 +492,49 @@ export default function CommentsPanel({
                 </div>
             </div>
 
+            {canFilterByAuthor && (
+                <div className="border-b border-slate-100 px-4 py-3">
+                    <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        <button
+                            type="button"
+                            onClick={() => setAuthorFilter('all')}
+                            className={cn(
+                                "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
+                                authorFilter === 'all'
+                                    ? "bg-slate-900 text-white"
+                                    : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                            )}
+                        >
+                            All {allProjectCount}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setAuthorFilter('mine')}
+                            className={cn(
+                                "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
+                                authorFilter === 'mine'
+                                    ? "bg-slate-900 text-white"
+                                    : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                            )}
+                        >
+                            Mine {mineCount}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setAuthorFilter('collaborators')}
+                            className={cn(
+                                "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
+                                authorFilter === 'collaborators'
+                                    ? "bg-slate-900 text-white"
+                                    : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                            )}
+                        >
+                            Collaborators {collaboratorCount}
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Global Typing Indicator (outside thread) */}
             {typingUsers.some(u => !u.threadId) && (
                 <div className="px-4 py-1.5 bg-slate-50 border-b border-slate-100 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-300">
@@ -501,7 +582,7 @@ export default function CommentsPanel({
                                                 >
                                                     <CommentThread 
                                                         comment={comment}
-                                                        replies={comments.filter(c => c.parent_id === comment.id)}
+                                                        replies={getVisibleReplies(comment.id)}
                                                         onReply={(id: string) => { setReplyToId(id); setReplyText('') }}
                                                         isReplying={replyToId === comment.id}
                                                         replyText={replyText}

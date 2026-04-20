@@ -181,6 +181,8 @@ export default function ProjectShell({
                             projectId={project.id}
                             projectTitle={project.title ?? 'Untitled'}
                             projectType={project.type as any}
+                            role={role}
+                            allowCollaboratorExports={project.allow_collaborator_exports ?? false}
                             onOpenSettings={() => {
                                 setExportModalOpen(false)
                                 setSettingsModalOpen(true)
@@ -191,6 +193,7 @@ export default function ProjectShell({
                             open={settingsModalOpen} 
                             onOpenChange={setSettingsModalOpen} 
                             project={project} 
+                            role={role}
                         />
 
                         <ShareModal
@@ -252,16 +255,19 @@ function ProjectShellInner({
 
     // Register actions in the global state for AppNav access
     const setActions = useProjectActionsStore(state => state.setActions)
+    const canExport = role === 'owner' || (project.allow_collaborator_exports ?? false)
     useEffect(() => {
         setActions({
             export: () => setExportModalOpen(true),
             share: () => setShareModalOpen(true),
             settings: () => setSettingsModalOpen(true),
             stats: () => router.push(`/project/${project.id}/stats`),
-            canShare: role === 'owner'
+            canShare: role === 'owner',
+            canExport,
+            exportDisabledReason: canExport ? null : 'The owner has disabled exports for collaborators.'
         })
         return () => setActions(null)
-    }, [role, setActions, setExportModalOpen, setShareModalOpen, setSettingsModalOpen])
+    }, [canExport, project.id, role, router, setActions, setExportModalOpen, setShareModalOpen, setSettingsModalOpen])
     const { commentsPanelOpen, setCommentsPanelOpen } = useComments()
     
     // Responsive checks
