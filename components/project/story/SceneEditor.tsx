@@ -527,11 +527,18 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             return
         }
 
-        const clientRects = Array.from(range.getClientRects()).map(cloneDOMRect)
+        if (isAndroid) {
+            selectionVirtualElementRef.current = {
+                getBoundingClientRect: () => range.getBoundingClientRect(),
+                getClientRects: () => Array.from(range.getClientRects()),
+            }
+        } else {
+            const clientRects = Array.from(range.getClientRects()).map(cloneDOMRect)
 
-        selectionVirtualElementRef.current = {
-            getBoundingClientRect: () => rect,
-            getClientRects: () => clientRects,
+            selectionVirtualElementRef.current = {
+                getBoundingClientRect: () => rect,
+                getClientRects: () => clientRects,
+            }
         }
 
         if (!isAndroid) {
