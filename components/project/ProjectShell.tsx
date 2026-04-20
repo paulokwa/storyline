@@ -171,6 +171,7 @@ export default function ProjectShell({
                                     setTourOpen(false)
                                     localStorage.setItem(onboardingStorageKey, 'true')
                                 }}
+                                projectType={project.type}
                             />
                         )}
                         

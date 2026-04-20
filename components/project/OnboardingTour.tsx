@@ -16,49 +16,53 @@ interface Step {
     placement: 'right' | 'left' | 'top' | 'bottom' | 'center'
 }
 
-const STEPS: Step[] = [
-    {
-        id: 'welcome',
-        title: 'Welcome to Storyline',
-        content: 'This is your creative workspace. We will show you the essentials so you can settle in and start writing quickly.',
-        placement: 'center'
-    },
-    {
-        id: 'structure-panel',
-        targets: ['[data-tour="structure-panel"]'],
-        title: 'Structure Panel',
-        content: 'This is your story structure. Organize chapters and scenes here.',
-        placement: 'right'
-    },
-    {
-        id: 'structure-toggle',
-        targets: ['[data-tour="structure-toggle"]'],
-        title: 'Quick Navigation',
-        content: 'You can show or hide the structure panel any time from the Structure button next to Home.',
-        placement: 'bottom'
-    },
-    {
-        id: 'main-editor',
-        targets: ['[data-tour="main-editor"]'],
-        title: 'Editor',
-        content: 'Write your story here. Everything starts in the editor.',
-        placement: 'center'
-    },
-    {
-        id: 'ai-entry-points',
-        targets: ['[data-tour="ai-tab"]', '[data-tour="ai-sidebar-trigger"]'],
-        title: 'Two Ways Into AI',
-        content: 'Open the full AI page from the tab, or pull in the AI sidebar while you write for in-context help.',
-        placement: 'center'
-    },
-    {
-        id: 'help-icon',
-        targets: ['[data-tour="help-icon"]'],
-        title: 'Replay This Tour Anytime',
-        content: 'Use this help icon to open the Help Center. From there, you can browse tips, check shortcuts, and launch this workspace tour again.',
-        placement: 'bottom'
-    }
-]
+function getSteps(projectType: string): Step[] {
+    const structureLabel = projectType === 'tv_script' ? 'acts and scenes' : 'chapters and scenes'
+    
+    return [
+        {
+            id: 'welcome',
+            title: 'Welcome to Storyline',
+            content: 'This is your creative workspace. We will show you the essentials so you can settle in and start writing quickly.',
+            placement: 'center'
+        },
+        {
+            id: 'structure-panel',
+            targets: ['[data-tour="structure-panel"]'],
+            title: 'Structure Panel',
+            content: `This is your story structure. Organize ${structureLabel} here.`,
+            placement: 'right'
+        },
+        {
+            id: 'structure-toggle',
+            targets: ['[data-tour="structure-toggle"]'],
+            title: 'Quick Navigation',
+            content: 'You can show or hide the structure panel any time from the Structure button next to Home.',
+            placement: 'bottom'
+        },
+        {
+            id: 'main-editor',
+            targets: ['[data-tour="main-editor"]'],
+            title: 'Editor',
+            content: 'Write your story here. Everything starts in the editor.',
+            placement: 'center'
+        },
+        {
+            id: 'ai-entry-points',
+            targets: ['[data-tour="ai-tab"]', '[data-tour="ai-sidebar-trigger"]'],
+            title: 'Two Ways Into AI',
+            content: 'Open the full AI page from the tab, or pull in the AI sidebar while you write for in-context help.',
+            placement: 'center'
+        },
+        {
+            id: 'help-icon',
+            targets: ['[data-tour="help-icon"]'],
+            title: 'Replay This Tour Anytime',
+            content: 'Use this help icon to open the Help Center. From there, you can browse tips, check shortcuts, and launch this workspace tour again.',
+            placement: 'bottom'
+        }
+    ]
+}
 
 function toSpotlightRect(left: number, top: number, right: number, bottom: number): DOMRect {
     return {
@@ -132,11 +136,13 @@ export default function OnboardingTour({
     onClose,
     onComplete,
     onDismiss,
+    projectType = 'novel',
 }: {
     open: boolean
     onClose: () => void
     onComplete: () => void
     onDismiss: () => void
+    projectType?: string
 }) {
     const [phase, setPhase] = useState<'intro' | 'tour'>('intro')
     const [currentStep, setCurrentStep] = useState(0)
@@ -145,6 +151,8 @@ export default function OnboardingTour({
     const { theme } = useTheme()
     const isMidnight = theme === 'midnight'
     const sidebarStateRef = useRef(sidebarOpen)
+    
+    const STEPS = getSteps(projectType)
 
     useEffect(() => {
         sidebarStateRef.current = sidebarOpen

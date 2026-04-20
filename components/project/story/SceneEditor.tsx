@@ -338,7 +338,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             }),
             Highlight.configure({ multicolor: true }),
             Placeholder.configure({
-                placeholder: writingMode === 'screenplay' ? 'Start with INT. or EXT., or press Tab for options.' : 'Start writing your scene here.',
+                placeholder: writingMode === 'screenplay' ? 'Start with INT. or EXT. — highlight text to access formatting options.' : 'Start writing your scene here.',
             }),
             BubbleMenuExtension.configure({
                 element: null, 
@@ -1494,11 +1494,11 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                     <div className="absolute top-0 right-0 -translate-y-12 animate-in fade-in slide-in-from-top-4 duration-500">
                         <div className="flex items-center gap-3 bg-white/90 backdrop-blur-md border border-indigo-100 px-4 py-2 rounded-2xl shadow-lg ring-1 ring-indigo-500/10">
                             <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs ring-1 ring-indigo-100 shadow-sm">
-                                Tab
+                                ✓
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-[10px] uppercase font-bold tracking-widest text-indigo-500">Writing Tip</span>
-                                <span className="text-[11px] font-medium text-slate-600">Tip: Press Tab to switch elements</span>
+                                <span className="text-[10px] uppercase font-bold tracking-widest text-indigo-500">Screenplay Tip</span>
+                                <span className="text-[11px] font-medium text-slate-600">Highlight text to format or change block types</span>
                             </div>
                             <button 
                                 onClick={dismissHint}
