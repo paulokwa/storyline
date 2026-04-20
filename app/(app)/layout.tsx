@@ -1,12 +1,8 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { requireVerifiedUser } from '@/lib/supabase/auth'
 import AppNav from '@/components/app/AppNav'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) redirect('/login')
+    const user = await requireVerifiedUser()
 
     return (
         <div className="app-shell-viewport bg-slate-50 flex min-h-0 flex-col overflow-hidden">

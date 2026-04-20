@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
     Dialog,
@@ -16,7 +16,6 @@ import {
     UserPlus, 
     Trash2, 
     ShieldCheck, 
-    Check,
     Loader2,
     Mail,
     AlertCircle
@@ -25,11 +24,11 @@ import { Badge } from '@/components/ui/badge'
 import {
     Tooltip,
     TooltipContent,
-    TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/components/providers/ThemeProvider'
+import { useProjectActions } from '@/components/project/ProjectContext'
 
 interface Member {
     id: string
@@ -37,6 +36,12 @@ interface Member {
     email: string
     role: 'owner' | 'editor' | 'viewer'
     created_at: string
+}
+
+const COLLABORATOR_ROLES = ['editor', 'viewer'] as const
+
+function isCollaboratorRole(value: string): value is (typeof COLLABORATOR_ROLES)[number] {
+    return COLLABORATOR_ROLES.includes(value as (typeof COLLABORATOR_ROLES)[number])
 }
 
 export default function ShareModal({
@@ -49,24 +54,21 @@ export default function ShareModal({
     projectId: string
 }) {
     const { theme } = useTheme()
+    const { role: currentRole } = useProjectActions()
     const isMidnight = theme === 'midnight'
+    const canManageMembers = currentRole === 'owner'
     const [members, setMembers] = useState<Member[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [inviteEmail, setInviteEmail] = useState('')
     const [inviteRole, setInviteRole] = useState<'editor' | 'viewer'>('viewer')
     const [isInviting, setIsInviting] = useState(false)
+    const [isRemoving, setIsRemoving] = useState(false)
+    const [memberPendingRemoval, setMemberPendingRemoval] = useState<Member | null>(null)
     const [error, setError] = useState<string | null>(null)
 
-    const supabase = createClient() as any
+    const supabase = useMemo(() => createClient(), [])
 
-    useEffect(() => {
-        if (open) {
-            fetchMembers()
-            setError(null)
-        }
-    }, [open, projectId])
-
-    async function fetchMembers() {
+    const fetchMembers = useCallback(async () => {
         setIsLoading(true)
         const { data, error } = await supabase.rpc('get_project_members_extended', { project_id_arg: projectId })
         if (error) {
@@ -77,10 +79,21 @@ export default function ShareModal({
                 hint: error.hint
             })
         } else {
-            setMembers(data as Member[] || [])
+            setMembers((data as Member[]) || [])
         }
         setIsLoading(false)
-    }
+    }, [projectId, supabase])
+
+    useEffect(() => {
+        if (!open) return
+
+        const frame = window.requestAnimationFrame(() => {
+            setError(null)
+            void fetchMembers()
+        })
+
+        return () => window.cancelAnimationFrame(frame)
+    }, [open, fetchMembers])
 
     async function handleAddMember() {
         if (!inviteEmail.trim()) return
@@ -118,24 +131,36 @@ export default function ShareModal({
     }
 
     async function handleRemoveMember(userId: string) {
-        if (!confirm('Are you sure you want to remove this member?')) return
+        const member = members.find((entry) => entry.user_id === userId)
+        if (!member) return
+
+        setMemberPendingRemoval(member)
+    }
+
+    async function confirmRemoveMember() {
+        if (!memberPendingRemoval) return
+
+        setIsRemoving(true)
 
         const { error } = await supabase.rpc('remove_project_member', {
             p_id: projectId,
-            p_user_id: userId
+            p_user_id: memberPendingRemoval.user_id
         })
 
         if (error) {
             setError(error.message)
         } else {
+            setMemberPendingRemoval(null)
             fetchMembers()
         }
+
+        setIsRemoving(false)
     }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className={cn(
-                "share-project-modal sm:max-w-[500px] p-0 overflow-hidden rounded-3xl shadow-2xl !opacity-100 backdrop-blur-none",
+                "share-project-modal w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:max-w-[500px] p-0 overflow-hidden rounded-3xl shadow-2xl !opacity-100 backdrop-blur-none",
                 isMidnight
                     ? "border border-slate-600/30 bg-[#10192b]"
                     : "border border-slate-200/50 bg-[#fbf9f5]"
@@ -153,11 +178,11 @@ export default function ShareModal({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="p-8 space-y-8">
+                <div className="p-5 sm:p-8 space-y-8">
                     {/* Add Member Form */}
-                    <div className="space-y-3">
-                        <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">Invite Collaborator</label>
-                        <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="space-y-4">
+                        <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 ml-1 pb-1">Invite Collaborator</label>
+                        <div className="flex flex-col gap-3">
                             <div className="relative flex-1">
                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                 <Input
@@ -168,12 +193,16 @@ export default function ShareModal({
                                     onKeyDown={(e) => e.key === 'Enter' && handleAddMember()}
                                 />
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex flex-col sm:flex-row gap-2">
                                 <div className="relative">
                                     <select 
                                         value={inviteRole} 
-                                        onChange={(e) => setInviteRole(e.target.value as any)}
-                                        className="h-12 px-4 pr-10 rounded-2xl border border-border bg-muted/50 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm appearance-none min-w-[110px]"
+                                        onChange={(e) => {
+                                            if (isCollaboratorRole(e.target.value)) {
+                                                setInviteRole(e.target.value)
+                                            }
+                                        }}
+                                        className="h-12 w-full px-4 pr-10 rounded-2xl border border-border bg-muted/50 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm appearance-none min-w-[110px] sm:w-auto"
                                     >
                                         <option value="editor">Editor</option>
                                         <option value="viewer">Viewer</option>
@@ -185,7 +214,7 @@ export default function ShareModal({
                                 <Button 
                                     onClick={handleAddMember} 
                                     disabled={isInviting || !inviteEmail.trim()}
-                                    className="h-12 rounded-2xl sanctuary-btn-primary px-6 transition-all active:scale-95 shadow-lg shadow-primary/20"
+                                    className="h-12 rounded-2xl sanctuary-btn-primary px-6 transition-all active:scale-95 shadow-lg shadow-primary/20 sm:min-w-[120px]"
                                 >
                                     {isInviting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Invite'}
                                 </Button>
@@ -216,20 +245,17 @@ export default function ShareModal({
                                 </div>
                             ) : (
                                 members.map((member) => (
-                                    <div 
-                                        key={member.user_id} 
-                                        className="flex items-center justify-between p-4 bg-muted/30 rounded-[1.25rem] border border-border group hover:bg-muted/50 transition-colors"
-                                    >
-                                        <div className="flex flex-col min-w-0 pr-4">
-                                            <span className="text-sm font-semibold text-foreground truncate">
-                                                {member.email}
-                                            </span>
-                                            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-tight">
-                                                Joined {new Date(member.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                                            </span>
-                                        </div>
+                                <div 
+                                    key={member.user_id} 
+                                    className="flex flex-col gap-3 p-4 bg-muted/30 rounded-[1.25rem] border border-border group hover:bg-muted/50 transition-colors sm:flex-row sm:items-center sm:justify-between"
+                                >
+                                    <div className="flex min-w-0 flex-1 flex-col pr-0 sm:pr-4">
+                                        <span className="text-sm font-semibold text-foreground break-all sm:truncate">
+                                            {member.email}
+                                        </span>
+                                    </div>
                                         
-                                        <div className="flex items-center gap-2 shrink-0">
+                                    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
                                             {member.role === 'owner' ? (
                                                 <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/10 border-none px-3 py-1 pointer-events-none gap-1.5 h-8 rounded-xl font-bold text-[10px] uppercase tracking-wider">
                                                     <ShieldCheck className="w-3.5 h-3.5" />
@@ -240,8 +266,13 @@ export default function ShareModal({
                                                     <div className="relative">
                                                         <select
                                                             value={member.role}
-                                                            onChange={(e) => handleUpdateRole(member.user_id, e.target.value as any)}
-                                                            className="h-8 px-3 pr-8 rounded-xl border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-[11px] font-bold uppercase tracking-tight appearance-none min-w-[90px]"
+                                                            onChange={(e) => {
+                                                                if (isCollaboratorRole(e.target.value)) {
+                                                                    handleUpdateRole(member.user_id, e.target.value)
+                                                                }
+                                                            }}
+                                                            disabled={!canManageMembers}
+                                                            className="h-8 w-full min-w-[110px] px-3 pr-8 rounded-xl border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-[11px] font-bold uppercase tracking-tight appearance-none disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                                                         >
                                                             <option value="editor">Editor</option>
                                                             <option value="viewer">Viewer</option>
@@ -250,22 +281,25 @@ export default function ShareModal({
                                                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                                                         </div>
                                                     </div>
-                                                    <Tooltip>
-                                                        <TooltipTrigger>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => handleRemoveMember(member.user_id)}
-                                                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-colors"
-                                                            >
-                                                                <Trash2 className="w-4 h-4" />
-                                                            </Button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent side="top">Remove member</TooltipContent>
-                                                    </Tooltip>
+                                                    {canManageMembers && (
+                                                        <Tooltip>
+                                                            <TooltipTrigger>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => handleRemoveMember(member.user_id)}
+                                                                    className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-colors"
+                                                                    aria-label={`Remove ${member.email}`}
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent side="top">Remove member</TooltipContent>
+                                                        </Tooltip>
+                                                    )}
                                                 </>
                                             )}
-                                        </div>
+                                    </div>
                                     </div>
                                 ))
                             )}
@@ -285,6 +319,64 @@ export default function ShareModal({
                         Close
                     </Button>
                 </DialogFooter>
+
+                {memberPendingRemoval && (
+                    <div className={cn(
+                        "absolute inset-0 z-20 flex items-end justify-center bg-slate-950/20 p-3 backdrop-blur-[2px] sm:items-center sm:p-6",
+                        isMidnight ? "bg-slate-950/35" : "bg-slate-900/18"
+                    )}>
+                        <div className={cn(
+                            "w-full max-w-sm rounded-[2rem] border p-6 shadow-2xl",
+                            isMidnight
+                                ? "border-slate-600/40 bg-[#142033] text-slate-100 shadow-[0_24px_60px_rgba(2,6,23,0.55)]"
+                                : "border-white/70 bg-[#fffdfa] text-slate-900 shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
+                        )}>
+                            <div className="flex items-start gap-4">
+                                <div className={cn(
+                                    "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border",
+                                    isMidnight
+                                        ? "border-rose-400/20 bg-rose-500/10 text-rose-200"
+                                        : "border-rose-200 bg-rose-50 text-rose-500"
+                                )}>
+                                    <Trash2 className="h-5 w-5" />
+                                </div>
+                                <div className="min-w-0 flex-1 space-y-2">
+                                    <h3 className="font-serif text-2xl leading-none">Remove collaborator?</h3>
+                                    <p className={cn(
+                                        "text-sm leading-relaxed",
+                                        isMidnight ? "text-slate-300" : "text-slate-600"
+                                    )}>
+                                        <span className="font-semibold break-all">{memberPendingRemoval.email}</span> will lose access to this project immediately.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => setMemberPendingRemoval(null)}
+                                    disabled={isRemoving}
+                                    className={cn(
+                                        "h-11 rounded-full px-5",
+                                        isMidnight
+                                            ? "text-slate-300 hover:bg-white/8 hover:text-white"
+                                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                                    )}
+                                >
+                                    Keep member
+                                </Button>
+                                <Button
+                                    variant="destructive"
+                                    onClick={confirmRemoveMember}
+                                    disabled={isRemoving}
+                                    className="h-11 rounded-full px-5"
+                                >
+                                    {isRemoving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Remove'}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </DialogContent>
         </Dialog>
     )

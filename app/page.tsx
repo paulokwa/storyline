@@ -1,12 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Showcase from '@/components/marketing/Showcase'
+import { getVerifiedUser } from '@/lib/supabase/auth'
 
 export default async function Home() {
-  const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const user = await getVerifiedUser()
 
-  if (session) {
+  if (user) {
     redirect('/library')
   }
 

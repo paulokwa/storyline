@@ -1,8 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
-import { redirect, notFound } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import ProjectShell from '@/components/project/ProjectShell'
 import { ProjectProvider } from '@/components/project/ProjectContext'
-import { PresenceProvider } from '@/components/project/PresenceContext'
+import type { Database } from '@/lib/supabase/types'
+import { requireVerifiedUser } from '@/lib/supabase/auth'
+
+type ProjectRole = Database['public']['Enums']['project_role']
+type ProjectLayoutRow = Database['public']['Tables']['projects']['Row'] & {
+    project_members: Array<{ role: ProjectRole }> | null
+}
 
 export default async function ProjectLayout({
     children,
@@ -13,8 +19,7 @@ export default async function ProjectLayout({
 }) {
     const { id } = await params
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect('/login')
+    const user = await requireVerifiedUser()
 
     const { data: projectData } = await supabase
         .from('projects')
@@ -24,13 +29,15 @@ export default async function ProjectLayout({
 
     if (!projectData) notFound()
 
+    const projectDataWithMembers = projectData as ProjectLayoutRow
+
     const project = {
         ...projectData,
-        role: (projectData.project_members as any)?.[0]?.role as 'owner' | 'editor' | 'viewer'
+        role: projectDataWithMembers.project_members?.[0]?.role ?? 'viewer'
     }
 
     // Update last accessed time asynchronously via RPC (safe for all members)
-    ;(supabase as any).rpc('touch_project', { p_id: id }).then(({ error }: any) => {
+    void supabase.rpc('touch_project', { p_id: id }).then(({ error }) => {
         if (error) console.error('Failed to update last_accessed_at:', error)
     })
 

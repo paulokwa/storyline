@@ -1,12 +1,19 @@
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 import StoryTab from '@/components/project/story/StoryTab'
+import type { Database } from '@/lib/supabase/types'
+import { requireVerifiedUser } from '@/lib/supabase/auth'
+
+type SceneWithLinks = Database['public']['Tables']['scenes']['Row'] & {
+    scene_characters: { characters: Database['public']['Tables']['characters']['Row'] | null }[]
+    scene_ideas: { ideas: Database['public']['Tables']['ideas']['Row'] | null }[]
+    scene_locations: { locations: Database['public']['Tables']['locations']['Row'] | null }[]
+    scene_objects: { objects: Database['public']['Tables']['objects']['Row'] | null }[]
+}
 
 export default async function StoryPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect('/login')
+    const user = await requireVerifiedUser()
 
     const { data: project } = await supabase.from('projects').select('*').eq('id', id).single()
     const { data: nodes } = await supabase
@@ -40,11 +47,11 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
         supabase.from('entity_relationships').select('*').eq('project_id', id)
     ])
 
-    const { data: aiSettings } = (await supabase
+    const { data: aiSettings } = await supabase
         .from('user_api_keys')
         .select('*')
         .eq('user_id', user.id)
-        .single()) as { data: any | null }
+        .single()
 
     const { data: trialAccount } = await supabase
         .from('ai_trial_accounts')
@@ -56,7 +63,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
         <StoryTab
             project={project!}
             initialNodes={nodes ?? []}
-            initialScenes={allScenes as any ?? []}
+            initialScenes={(allScenes as SceneWithLinks[] | null) ?? []}
             projectCharacters={projectCharacters ?? []}
             projectIdeas={projectIdeas ?? []}
             projectLocations={projectLocations ?? []}

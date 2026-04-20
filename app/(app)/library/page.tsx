@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { requireVerifiedUser } from '@/lib/supabase/auth'
 import ProjectGrid from '@/components/library/ProjectGrid'
 import type { Database } from '@/lib/supabase/types'
 
@@ -19,8 +20,7 @@ type ProjectWithMembers = ProjectRow & {
 
 export default async function LibraryPage() {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect('/login')
+    const user = await requireVerifiedUser()
 
     const { data: profile } = await supabase
         .from('profiles')

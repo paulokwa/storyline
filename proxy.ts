@@ -9,6 +9,15 @@ export async function proxy(request: NextRequest) {
         return NextResponse.next()
     }
 
+    const authRoutes = ['/login', '/signup']
+    const unauthenticatedPublicRoutes = ['/', '/forgot-password', '/reset-password', '/terms', '/privacy', '/ai-disclaimer']
+    const isAuthRoute = authRoutes.some((r) => pathname === r || pathname.startsWith(r + '/'))
+    const isUnauthenticatedPublicRoute = unauthenticatedPublicRoutes.some((r) => pathname === r || pathname.startsWith(r + '/'))
+
+    if (isUnauthenticatedPublicRoute) {
+        return NextResponse.next()
+    }
+
     let supabaseResponse = NextResponse.next({ request })
 
     const supabase = createServerClient(
@@ -36,17 +45,13 @@ export async function proxy(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
-    // Public routes - allowing the root for the new showcase
-    const publicRoutes = ['/', '/login', '/signup', '/forgot-password', '/reset-password', '/terms', '/privacy', '/ai-disclaimer']
-    const isPublicRoute = publicRoutes.some((r) => pathname === r || pathname.startsWith(r + '/'))
-
-    if (!user && !isPublicRoute) {
+    if (!user && !isAuthRoute) {
         const url = request.nextUrl.clone()
         url.pathname = '/login'
         return NextResponse.redirect(url)
     }
 
-    if (user && (pathname === '/login' || pathname === '/signup')) {
+    if (user && isAuthRoute) {
         const url = request.nextUrl.clone()
         url.pathname = '/library'
         return NextResponse.redirect(url)
