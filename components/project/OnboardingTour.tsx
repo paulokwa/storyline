@@ -180,8 +180,13 @@ export default function OnboardingTour({
         if (!selectors.length) return
 
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
-        const needsSidebarTransition = step.id === 'structure-panel' || step.id === 'structure-toggle'
-        const delay = isMobile && needsSidebarTransition ? 400 : 100
+        const needsSidebarTransition =
+            isMobile && (
+                step.id === 'structure-panel' ||
+                step.id === 'structure-toggle' ||
+                step.id === 'main-editor'
+            )
+        const delay = needsSidebarTransition ? 400 : 100
 
         const timer = setTimeout(() => {
             selectors.forEach((selector) => {
@@ -247,18 +252,51 @@ export default function OnboardingTour({
 
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
         const stepId = STEPS[currentStep]?.id
-        const needsSidebarTransition = isMobile && (stepId === 'structure-panel' || stepId === 'structure-toggle')
-        const delay = needsSidebarTransition ? 400 : 50
+        const needsSidebarTransition = isMobile && (
+            stepId === 'structure-panel' ||
+            stepId === 'structure-toggle' ||
+            stepId === 'main-editor'
+        )
+        const timers = [
+            window.setTimeout(updateRects, needsSidebarTransition ? 400 : 50),
+        ]
 
-        const timer = setTimeout(updateRects, delay)
+        if (isMobile && stepId === 'main-editor') {
+            // Mobile layout settles after the sidebar finishes closing, so
+            // re-measure a few times instead of trusting the first rect.
+            timers.push(window.setTimeout(updateRects, 550))
+            timers.push(window.setTimeout(updateRects, 750))
+        }
 
+        const resizeObserver = typeof ResizeObserver === 'undefined'
+            ? null
+            : new ResizeObserver(() => {
+                updateRects()
+            })
+
+        const observedElements = new Set<Element>()
+        const selectors = getStepTargets(STEPS[currentStep])
+        selectors.forEach((selector) => {
+            document.querySelectorAll(selector).forEach((element) => {
+                if (observedElements.has(element)) return
+                observedElements.add(element)
+                resizeObserver?.observe(element)
+            })
+        })
+
+        const handleViewportChange = () => updateRects()
         window.addEventListener('resize', updateRects)
         window.addEventListener('scroll', updateRects, true)
+        window.visualViewport?.addEventListener('resize', handleViewportChange)
+        window.visualViewport?.addEventListener('scroll', handleViewportChange)
 
         return () => {
-            clearTimeout(timer)
+            timers.forEach((timer) => clearTimeout(timer))
+            resizeObserver?.disconnect()
             window.removeEventListener('resize', updateRects)
             window.removeEventListener('scroll', updateRects, true)
+            window.visualViewport?.removeEventListener('resize', handleViewportChange)
+            window.visualViewport?.removeEventListener('scroll', handleViewportChange)
         }
     }, [open, phase, currentStep])
 

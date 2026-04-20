@@ -198,65 +198,67 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
                             }
                         </p>
                     </div>
-                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full md:w-auto">
-                        <div className={cn("p-1.5 rounded-full flex gap-1 min-w-0", isMidnight ? "bg-slate-800/80 border border-slate-700/60" : "bg-slate-100")}>
-                            <button 
-                                onClick={() => setView('active')}
-                                className={cn(
-                                    "px-5 sm:px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all",
-                                    view === 'active'
-                                        ? (isMidnight ? "bg-slate-700/90 text-slate-100 shadow-sm" : "bg-white text-slate-800 shadow-sm")
-                                        : (isMidnight ? "text-slate-400 hover:text-slate-200" : "text-slate-400 hover:text-slate-600")
-                                )}
-                            >
-                                Active
-                            </button>
-                            <button 
-                                onClick={() => setView('trash')}
-                                className={cn(
-                                    "px-5 sm:px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2",
-                                    view === 'trash'
-                                        ? (isMidnight ? "bg-slate-700/90 text-red-300 shadow-sm" : "bg-white text-red-500 shadow-sm")
-                                        : (isMidnight ? "text-slate-400 hover:text-red-300" : "text-slate-400 hover:text-red-400")
-                                )}
-                            >
-                                Trash
-                                {deletedProjects.length > 0 && (
-                                    <span className="w-5 h-5 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-[10px]">
-                                        {deletedProjects.length}
-                                    </span>
-                                )}
-                            </button>
+                    <div className="w-full md:w-auto flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center md:justify-end sm:gap-4">
+                        <div className="flex items-stretch gap-3 w-full md:w-auto sm:gap-4">
+                            <div className={cn("p-1.5 rounded-full flex gap-1 min-w-0 flex-1 md:flex-none", isMidnight ? "bg-slate-800/80 border border-slate-700/60" : "bg-slate-100")}>
+                                <button 
+                                    onClick={() => setView('active')}
+                                    className={cn(
+                                        "px-5 sm:px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all flex-1 md:flex-none",
+                                        view === 'active'
+                                            ? (isMidnight ? "bg-slate-700/90 text-slate-100 shadow-sm" : "bg-white text-slate-800 shadow-sm")
+                                            : (isMidnight ? "text-slate-400 hover:text-slate-200" : "text-slate-400 hover:text-slate-600")
+                                    )}
+                                >
+                                    Active
+                                </button>
+                                <button 
+                                    onClick={() => setView('trash')}
+                                    className={cn(
+                                        "px-5 sm:px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 flex-1 md:flex-none",
+                                        view === 'trash'
+                                            ? (isMidnight ? "bg-slate-700/90 text-red-300 shadow-sm" : "bg-white text-red-500 shadow-sm")
+                                            : (isMidnight ? "text-slate-400 hover:text-red-300" : "text-slate-400 hover:text-red-400")
+                                    )}
+                                >
+                                    Trash
+                                    {deletedProjects.length > 0 && (
+                                        <span className="w-5 h-5 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-[10px]">
+                                            {deletedProjects.length}
+                                        </span>
+                                    )}
+                                </button>
+                            </div>
+
+                            <DropdownMenu>
+                                <DropdownMenuTrigger className={cn(
+                                    buttonVariants({ variant: "ghost" }),
+                                    `h-14 w-14 sm:w-auto min-w-0 px-0 sm:px-6 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] gap-0 sm:gap-3 shrink-0 ${
+                                        isMidnight
+                                            ? 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/70 border border-slate-700/60'
+                                            : 'text-slate-400 hover:text-slate-800 hover:bg-slate-100 border border-slate-100'
+                                    }`
+                                )}>
+                                    <ArrowUpDown className="w-4 h-4" />
+                                    <span className="sr-only sm:not-sr-only sm:inline">Sort</span>
+                                    <span className="hidden md:inline">: {sortFilter === 'custom' ? 'Custom' : sortFilter === 'recent' ? 'Recent' : 'A-Z'}</span>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className={cn("w-56 rounded-3xl shadow-2xl p-2 backdrop-blur-xl", isMidnight ? "border-slate-700/60 bg-[#182239]/96" : "border-stone-100 bg-white/80")}>
+                                    <DropdownMenuItem onClick={() => setSortFilter('custom')} className={cn("gap-3 text-xs font-bold uppercase tracking-widest py-4 rounded-2xl cursor-pointer transition-colors", isMidnight ? "hover:bg-white/6 text-slate-300" : "hover:bg-slate-50 text-slate-600")}>
+                                        <LayoutGrid className="w-4 h-4" /> Custom Order
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setSortFilter('recent')} className={cn("gap-3 text-xs font-bold uppercase tracking-widest py-4 rounded-2xl cursor-pointer transition-colors", isMidnight ? "hover:bg-white/6 text-slate-300" : "hover:bg-slate-50 text-slate-600")}>
+                                        <Calendar className="w-4 h-4" /> Recently Used
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setSortFilter('az')} className={cn("gap-3 text-xs font-bold uppercase tracking-widest py-4 rounded-2xl cursor-pointer transition-colors", isMidnight ? "hover:bg-white/6 text-slate-300" : "hover:bg-slate-50 text-slate-600")}>
+                                        <ArrowUpDown className="w-4 h-4" /> Alphabetical
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
 
-                        <DropdownMenu>
-                            <DropdownMenuTrigger className={cn(
-                                buttonVariants({ variant: "ghost" }),
-                                `h-14 min-w-0 px-4 sm:px-6 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] gap-2 sm:gap-3 ${
-                                    isMidnight
-                                        ? 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/70 border border-slate-700/60'
-                                        : 'text-slate-400 hover:text-slate-800 hover:bg-slate-100 border border-slate-100'
-                                }`
-                            )}>
-                                <ArrowUpDown className="w-4 h-4" />
-                                <span className="sm:hidden">Sort</span>
-                                <span className="hidden sm:inline">Sort: {sortFilter === 'custom' ? 'Custom' : sortFilter === 'recent' ? 'Recent' : 'A-Z'}</span>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className={cn("w-56 rounded-3xl shadow-2xl p-2 backdrop-blur-xl", isMidnight ? "border-slate-700/60 bg-[#182239]/96" : "border-stone-100 bg-white/80")}>
-                                <DropdownMenuItem onClick={() => setSortFilter('custom')} className={cn("gap-3 text-xs font-bold uppercase tracking-widest py-4 rounded-2xl cursor-pointer transition-colors", isMidnight ? "hover:bg-white/6 text-slate-300" : "hover:bg-slate-50 text-slate-600")}>
-                                    <LayoutGrid className="w-4 h-4" /> Custom Order
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setSortFilter('recent')} className={cn("gap-3 text-xs font-bold uppercase tracking-widest py-4 rounded-2xl cursor-pointer transition-colors", isMidnight ? "hover:bg-white/6 text-slate-300" : "hover:bg-slate-50 text-slate-600")}>
-                                    <Calendar className="w-4 h-4" /> Recently Used
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setSortFilter('az')} className={cn("gap-3 text-xs font-bold uppercase tracking-widest py-4 rounded-2xl cursor-pointer transition-colors", isMidnight ? "hover:bg-white/6 text-slate-300" : "hover:bg-slate-50 text-slate-600")}>
-                                    <ArrowUpDown className="w-4 h-4" /> Alphabetical
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-
-                        <Link href="/new">
-                            <Button className="sanctuary-btn-primary h-14 px-5 sm:px-8 rounded-full text-sm sm:text-base font-semibold gap-2 sm:gap-3">
+                        <Link href="/new" className="w-full md:w-auto">
+                            <Button className="sanctuary-btn-primary h-14 w-full md:w-auto justify-center px-5 sm:px-8 rounded-full text-sm sm:text-base font-semibold gap-2 sm:gap-3 shadow-xl hover:shadow-primary/20">
                                 <Plus className="w-5 h-5" />
                                 <span className="sm:hidden">New Project</span>
                                 <span className="hidden sm:inline">Start New Project</span>
