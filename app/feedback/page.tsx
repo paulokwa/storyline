@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,6 +18,8 @@ const EMAILJS_PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || ''
 
 export default function FeedbackPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const fromPath = searchParams.get('from')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [feedbackStatus, setFeedbackStatus] = useState<string | null>(null)
@@ -25,6 +27,7 @@ export default function FeedbackPage() {
     device: '',
     platform: '',
     browser: '',
+    email: '',
     feedback: ''
   })
 
@@ -40,13 +43,19 @@ export default function FeedbackPage() {
       return
     }
 
+    if (!formData.email.trim()) {
+      toast.error('Please provide your email address so we can respond.')
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
       // Check if EmailJS is configured
       if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY) {
-        // Fallback to mailto if EmailJS not configured
+        // Fallback to mailto if email sending is not configured
         const emailBody = `
+Contact email: ${formData.email?.trim() || 'Not provided'}
 Device: ${formData.device || 'Not specified'}
 Platform: ${formData.platform || 'Not specified'}
 Browser: ${formData.browser || 'Not specified'}
@@ -60,16 +69,18 @@ ${formData.feedback}
         const mailtoLink = `mailto:mwake.dev@gmail.com?subject=${subject}&body=${body}`
 
         window.open(mailtoLink, '_blank')
-        setFeedbackStatus('EmailJS is not configured in this environment; opening the email client instead.')
+        setFeedbackStatus('Your feedback is ready in your email client. Please send it to complete submission.')
         setIsSubmitted(true)
-        toast.success('Your email client has opened with the feedback details. Please send the email.')
+        toast.success('Your feedback is ready to send from your email client.')
         return
       }
 
       // Send email using EmailJS
-      const templateParams = {
+      const templateParams: Record<string, string> = {
+        email: formData.email.trim(),
         to_email: 'mwake.dev@gmail.com',
         from_name: 'Storyline User',
+        reply_to: formData.email.trim(),
         device: formData.device || 'Not specified',
         platform: formData.platform || 'Not specified',
         browser: formData.browser || 'Not specified',
@@ -84,14 +95,38 @@ ${formData.feedback}
         EMAILJS_PUBLIC_KEY
       )
 
-      console.log('EmailJS send result:', result)
-      setFeedbackStatus('Feedback email sent successfully through EmailJS.')
+      console.log('Email send result:', result)
+      setFeedbackStatus('Your feedback has been submitted successfully.')
       setIsSubmitted(true)
-      toast.success('Thank you for your feedback! It has been sent successfully.')
+      toast.success('Thank you for your feedback! It has been submitted successfully.')
     } catch (error) {
       console.error('Error sending feedback:', error)
-      setFeedbackStatus('Failed to send feedback through EmailJS. Please try again or contact support directly.')
-      toast.error('Failed to send feedback. Please try again or contact support directly.')
+      const errorText = typeof error === 'object' && error !== null ? (error as any).text || (error as any).message : String(error)
+      const isRecipientError = String(errorText).toLowerCase().includes('recipients address is empty')
+
+      if (isRecipientError) {
+        const emailBody = `
+Contact email: ${formData.email?.trim() || 'Not provided'}
+Device: ${formData.device || 'Not specified'}
+Platform: ${formData.platform || 'Not specified'}
+Browser: ${formData.browser || 'Not specified'}
+
+Feedback:
+${formData.feedback}
+        `.trim()
+
+        const subject = encodeURIComponent('Storyline Feedback')
+        const body = encodeURIComponent(emailBody)
+        const mailtoLink = `mailto:mwake.dev@gmail.com?subject=${subject}&body=${body}`
+
+        window.open(mailtoLink, '_blank')
+        setFeedbackStatus('Your feedback is ready in your email client. Please send it to complete submission.')
+        setIsSubmitted(true)
+        toast.success('Your feedback is ready to send from your email client.')
+      } else {
+        setFeedbackStatus('Failed to send your feedback. Please try again or contact support directly.')
+        toast.error('Failed to send your feedback. Please try again or contact support directly.')
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -107,7 +142,7 @@ ${formData.feedback}
               <div>
                 <h2 className="text-2xl font-serif italic text-slate-800 mb-2">Thank You!</h2>
                 <p className="text-slate-600">
-                  {feedbackStatus || 'Your feedback has been processed.'}
+                  Your feedback has been processed.
                 </p>
                 {feedbackStatus ? (
                   <p className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
@@ -116,7 +151,13 @@ ${formData.feedback}
                 ) : null}
               </div>
               <Button
-                onClick={() => router.back()}
+                onClick={() => {
+                  if (fromPath) {
+                    router.push(fromPath)
+                  } else {
+                    router.back()
+                  }
+                }}
                 className="w-full bg-[#546354] hover:bg-[#435243] text-white"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -210,6 +251,21 @@ ${formData.feedback}
                     <option value="other">Other</option>
                   </select>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  required
+                />
+                <p className="text-xs text-slate-500">
+                  We require an email address so Storyline support can follow up with you.
+                </p>
               </div>
 
               <div className="space-y-2">

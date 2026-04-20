@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { isAdminEmail } from '@/lib/admin'
 import { 
@@ -22,6 +22,8 @@ import { useTheme } from '@/components/providers/ThemeProvider'
 
 export default function AppNav({ user }: { user: User }) {
     const router = useRouter()
+    const pathname = usePathname()
+    const searchParams = useSearchParams()
     const canAccessAdmin = isAdminEmail(user.email)
     const { theme } = useTheme()
     const isMidnight = theme === 'midnight'
@@ -177,7 +179,10 @@ export default function AppNav({ user }: { user: User }) {
                             )}
 
                             <DropdownMenuItem 
-                                onClick={() => router.push('/feedback')}
+                                onClick={() => {
+                                    const currentPath = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : '')
+                                    router.push(`/feedback?from=${encodeURIComponent(currentPath)}`)
+                                }}
                                 className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
                                     isMidnight ? 'text-slate-300 focus:text-[#dbe5ff] focus:bg-white/8' : 'text-slate-600 focus:text-[#546354] focus:bg-[#546354]/5'
                                 }`}

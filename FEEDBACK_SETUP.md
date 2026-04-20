@@ -17,6 +17,7 @@ The feedback form uses EmailJS to send emails directly to your inbox without req
      ```
      Subject: Storyline Feedback from {{from_name}}
 
+     Contact email: {{email}}
      Device: {{device}}
      Platform: {{platform}}
      Browser: {{browser}}
@@ -25,7 +26,13 @@ The feedback form uses EmailJS to send emails directly to your inbox without req
      Feedback:
      {{feedback}}
      ```
+   - Optional: add `{{reply_to}}` as a reply address field in your template if EmailJS supports it for your service.
    - Note the Template ID
+
+   **Why this matters**:
+   - `{{email}}` is the address the user typed if they chose to leave it.
+   - `{{reply_to}}` lets your inbox know where to send a direct reply.
+   - If the user leaves the email blank, feedback still sends normally and the form remains anonymous.
 
 4. **Get your Public Key**:
    - Go to Account → General
