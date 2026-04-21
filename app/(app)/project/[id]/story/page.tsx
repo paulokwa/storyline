@@ -70,7 +70,13 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
             projectObjects={projectObjects ?? []}
             projectRelationships={projectRelationships ?? []}
             aiSettings={{
-                ...(aiSettings ?? { ai_enabled: true, billing_mode: 'app_managed_trial', ai_provider: 'openai' }),
+                ai_enabled: aiSettings?.ai_enabled ?? true,
+                billing_mode: aiSettings?.billing_mode ?? 'app_managed_trial',
+                ai_provider: aiSettings?.ai_provider ?? 'openai',
+                ai_fallback_enabled: aiSettings?.ai_fallback_enabled ?? false,
+                ollama_model: aiSettings?.ollama_model ?? '',
+                ollama_url: aiSettings?.ollama_url ?? '',
+                api_key: aiSettings?.api_key ?? null,
                 trial: trialAccount ?? null,
             }}
         />
