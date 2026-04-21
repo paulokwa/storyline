@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 
 export interface Comment {
     id: string
@@ -19,6 +20,8 @@ export interface Comment {
     author_email?: string
     order_index: number
     is_shared?: boolean
+    deleted_at?: string | null
+    deleted_by?: string | null
 }
 
 interface TypingState {
@@ -230,6 +233,12 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
                 if (payload.eventType === 'INSERT') {
                     const extended = await fetchSingleExtended(payload.new.id)
                     if (extended) {
+                        if (extended.author_id !== currentUser?.id) {
+                            toast.info(extended.parent_id ? 'New reply received' : 'New feedback received', {
+                                description: extended.author_email || 'A collaborator added feedback',
+                            })
+                        }
+
                         setComments(prev => {
                             if (prev.some(c => c.id === extended.id)) return prev
                             const next = [extended, ...prev]
@@ -237,8 +246,23 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
                         })
                     }
                 } else if (payload.eventType === 'UPDATE') {
-                    setComments(prev => prev.map(c => 
-                        c.id === payload.new.id ? { ...c, ...payload.new } : c
+                    const updatedId = payload.new?.id as string | undefined
+                    if (payload.new?.deleted_at && updatedId) {
+                        setComments(prev => prev.filter(comment => comment.id !== updatedId))
+                        return
+                    }
+
+                    const extended = updatedId ? await fetchSingleExtended(updatedId) : null
+                    if (extended && extended.author_id !== currentUser?.id) {
+                        toast.info(extended.parent_id ? 'Reply updated' : 'Feedback updated', {
+                            description: extended.author_email || 'A collaborator updated feedback',
+                        })
+                    }
+
+                    setComments(prev => prev.map(comment =>
+                        comment.id === payload.new.id
+                            ? { ...comment, ...(extended ?? payload.new) }
+                            : comment
                     ))
                 } else if (payload.eventType === 'DELETE') {
                     const deletedId = payload.old?.id
@@ -263,7 +287,7 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
         return () => {
             channel.unsubscribe()
         }
-    }, [projectId])
+    }, [currentUser?.id, projectId])
 
     const sendTypingIndicator = useCallback(async (threadId: string | null) => {
         if (!channelRef.current) return
@@ -342,22 +366,43 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
     const deleteComment = async (id: string) => {
         console.log('Attempting to delete comment:', id)
 
-        const commentsToDelete = comments.filter(c => c.id === id || c.parent_id === id)
-        
-        // Optimistic update
-        setComments(prev => prev.filter(c => c.id !== id && c.parent_id !== id))
+        const collectDescendantIds = (commentId: string) => {
+            const ids = new Set<string>([commentId])
+            let changed = true
+
+            while (changed) {
+                changed = false
+                comments.forEach(comment => {
+                    if (comment.parent_id && ids.has(comment.parent_id) && !ids.has(comment.id)) {
+                        ids.add(comment.id)
+                        changed = true
+                    }
+                })
+            }
+
+            return ids
+        }
+
+        const targetComment = comments.find(comment => comment.id === id)
+        const optimisticIds = targetComment?.parent_id ? new Set([id]) : collectDescendantIds(id)
+        const commentsToDelete = comments.filter(comment => optimisticIds.has(comment.id))
+
+        setComments(prev => prev.filter(comment => !optimisticIds.has(comment.id)))
         if (activeCommentId === id) setActiveCommentId(null)
 
         try {
             await Promise.all(commentsToDelete.map(unlinkAiFeedbackForComment))
 
-            const { error } = await supabase
-                .from('project_comments')
-                .delete()
-                .eq('id', id)
-            
+            const { data, error } = await supabase
+                .rpc('soft_delete_project_comment', { comment_id_arg: id })
+
             if (error) {
                 throw error
+            }
+
+            const deletedIds = new Set(((data as { deleted_id: string }[] | null) ?? []).map(row => row.deleted_id))
+            if (deletedIds.size > 0) {
+                setComments(prev => prev.filter(comment => !deletedIds.has(comment.id)))
             }
         } catch (error) {
             console.error('Error deleting comment:', error)
@@ -429,14 +474,20 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
     }
 
     const setCommentSharing = async (id: string, isShared: boolean) => {
+        const targetComment = comments.find(comment => comment.id === id)
+        const replyIds = comments
+            .filter(comment => comment.parent_id === id)
+            .map(comment => comment.id)
+        const idsToUpdate = targetComment?.parent_id ? [id] : [id, ...replyIds]
+
         setComments(prev => prev.map(c =>
-            c.id === id ? { ...c, is_shared: isShared } : c
+            idsToUpdate.includes(c.id) ? { ...c, is_shared: isShared } : c
         ))
 
         const { error } = await supabase
             .from('project_comments')
             .update({ is_shared: isShared, updated_at: new Date().toISOString() })
-            .eq('id', id)
+            .in('id', idsToUpdate)
 
         if (error) {
             console.error('Error updating comment sharing:', error)

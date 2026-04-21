@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { RealtimeChannel } from '@supabase/supabase-js'
 
@@ -25,6 +25,16 @@ interface PresenceContextType {
 
 const PresenceContext = createContext<PresenceContextType | undefined>(undefined)
 
+function collapsePresenceState(state: Record<string, PresenceUser[]>): PresenceUser[] {
+    return Object.values(state)
+        .map((presences) =>
+            [...presences]
+                .filter(Boolean)
+                .sort((a, b) => (b.last_active ?? 0) - (a.last_active ?? 0))[0]
+        )
+        .filter(Boolean) as PresenceUser[]
+}
+
 export function PresenceProvider({ 
     projectId, 
     children,
@@ -44,7 +54,7 @@ export function PresenceProvider({
 
     useEffect(() => {
         supabase.auth.getUser().then(({ data }) => setUser(data.user))
-    }, [])
+    }, [supabase])
 
     useEffect(() => {
         if (!user || !projectId) return
@@ -58,19 +68,14 @@ export function PresenceProvider({
         })
 
         channelRef.current = channel
+        const syncPresenceState = () => {
+            setPresenceUsers(collapsePresenceState(channel.presenceState() as Record<string, PresenceUser[]>))
+        }
 
         channel
-            .on('presence', { event: 'sync' }, () => {
-                const newState = channel.presenceState()
-                
-                // newState is { [key: string]: Presence[] } where key is user_id
-                // We take the first presence for each user to deduplicate multiple tabs
-                const deduplicated = Object.values(newState)
-                    .map((presences: any) => presences[0])
-                    .filter(Boolean) as PresenceUser[]
-                
-                setPresenceUsers(deduplicated)
-            })
+            .on('presence', { event: 'sync' }, syncPresenceState)
+            .on('presence', { event: 'join' }, syncPresenceState)
+            .on('presence', { event: 'leave' }, syncPresenceState)
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') {
                     await channel.track({
@@ -81,14 +86,16 @@ export function PresenceProvider({
                         status: myStatus,
                         last_active: Date.now()
                     })
+                    syncPresenceState()
                 }
             })
 
         return () => {
             channel.unsubscribe()
             channelRef.current = null
+            setPresenceUsers([])
         }
-    }, [user, projectId])
+    }, [projectId, supabase, user])
 
     // Update presence when my state changes
     useEffect(() => {

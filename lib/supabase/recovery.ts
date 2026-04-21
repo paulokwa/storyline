@@ -90,6 +90,22 @@ export async function restoreEntity(
     if (error) throw error;
 }
 
+export async function restoreDeletedComment(
+    supabase: SupabaseClient<Database>,
+    id: string
+) {
+    const { error } = await supabase.rpc('restore_project_comment', { comment_id_arg: id });
+    if (error) throw error;
+}
+
+export async function permanentlyDeleteComment(
+    supabase: SupabaseClient<Database>,
+    id: string
+) {
+    const { error } = await supabase.rpc('permanently_delete_project_comment', { comment_id_arg: id });
+    if (error) throw error;
+}
+
 /**
  * Helper to get descendant IDs from a flat list of nodes
  */
@@ -428,7 +444,7 @@ export async function restoreProjectSnapshot(
  */
 export async function permanentlyDeleteTrashItem(
     supabase: SupabaseClient<Database>,
-    type: 'structure' | 'assets' | 'ai',
+    type: 'structure' | 'assets' | 'ai' | 'feedback',
     id: string,
     typeLabel?: string
 ) {
@@ -440,6 +456,8 @@ export async function permanentlyDeleteTrashItem(
     } else if (type === 'ai') {
         const { error } = await supabase.from('ai_responses').delete().eq('id', id);
         if (error) throw error;
+    } else if (type === 'feedback') {
+        await permanentlyDeleteComment(supabase, id);
     } else {
         // assets (characters, ideas, etc.)
         const table = (typeLabel?.toLowerCase() + 's') as any;

@@ -15,6 +15,7 @@ export default async function RecoveryPage({ params }: { params: Promise<{ id: s
         { data: deletedLocations },
         { data: deletedObjects },
         { data: deletedResponses },
+        { data: deletedComments },
         { data: allNodes },
         { data: historyEntries },
         { data: snapshots }
@@ -25,6 +26,7 @@ export default async function RecoveryPage({ params }: { params: Promise<{ id: s
         supabase.from('locations').select('*').eq('project_id', projectId).not('deleted_at', 'is', null).order('deleted_at', { ascending: false }),
         supabase.from('objects').select('*').eq('project_id', projectId).not('deleted_at', 'is', null).order('deleted_at', { ascending: false }),
         supabase.from('ai_responses').select('*').eq('project_id', projectId).not('deleted_at', 'is', null).order('deleted_at', { ascending: false }),
+        supabase.rpc('get_deleted_project_comments', { project_id_arg: projectId }),
         supabase.from('structure_nodes').select('*').eq('project_id', projectId), // Need full list for tree/descendant calculations
         supabase.from('scene_versions').select(`
             *,
@@ -48,6 +50,7 @@ export default async function RecoveryPage({ params }: { params: Promise<{ id: s
             deletedLocations={deletedLocations || []}
             deletedObjects={deletedObjects || []}
             deletedResponses={deletedResponses || []}
+            deletedComments={deletedComments || []}
             allNodes={allNodes || []}
             historyEntries={historyEntries || []}
             snapshots={snapshots || []}

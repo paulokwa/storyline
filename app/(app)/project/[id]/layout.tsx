@@ -7,7 +7,14 @@ import { requireVerifiedUser } from '@/lib/supabase/auth'
 
 type ProjectRole = Database['public']['Enums']['project_role']
 type ProjectLayoutRow = Database['public']['Tables']['projects']['Row'] & {
-    project_members: Array<{ role: ProjectRole }> | null
+    project_members: Array<{
+        role: ProjectRole
+        user_id: string
+        profiles: {
+            display_name: string | null
+            avatar_url: string | null
+        } | null
+    }> | null
 }
 type OwnerProfile = Pick<Database['public']['Tables']['profiles']['Row'], 'display_name' | 'avatar_url'>
 
@@ -24,7 +31,17 @@ export default async function ProjectLayout({
 
     const { data: projectData } = await supabase
         .from('projects')
-        .select('*, project_members!inner(role)')
+        .select(`
+            *,
+            project_members!inner(
+                role,
+                user_id,
+                profiles(
+                    display_name,
+                    avatar_url
+                )
+            )
+        `)
         .eq('id', id)
         .single()
 
@@ -59,6 +76,12 @@ export default async function ProjectLayout({
                     display_name: (ownerProfile as OwnerProfile | null)?.display_name ?? null,
                     avatar_url: (ownerProfile as OwnerProfile | null)?.avatar_url ?? null,
                 }}
+                members={(projectDataWithMembers.project_members ?? []).map((member) => ({
+                    role: member.role,
+                    user_id: member.user_id,
+                    display_name: member.profiles?.display_name ?? null,
+                    avatar_url: member.profiles?.avatar_url ?? null,
+                }))}
             >
                 {children}
             </ProjectShell>

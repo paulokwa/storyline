@@ -812,6 +812,8 @@ export type Database = {
           author_id: string
           content: string
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           id: string
           is_shared: boolean | null
           node_id: string | null
@@ -828,6 +830,8 @@ export type Database = {
           author_id?: string
           content: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           is_shared?: boolean | null
           node_id?: string | null
@@ -844,6 +848,8 @@ export type Database = {
           author_id?: string
           content?: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           is_shared?: boolean | null
           node_id?: string | null
@@ -875,6 +881,51 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_comment_thread_preferences: {
+        Row: {
+          created_at: string
+          hidden_at: string | null
+          id: string
+          project_id: string
+          root_comment_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          hidden_at?: string | null
+          id?: string
+          project_id: string
+          root_comment_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          hidden_at?: string | null
+          id?: string
+          project_id?: string
+          root_comment_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_comment_thread_preferences_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_comment_thread_preferences_root_comment_id_fkey"
+            columns: ["root_comment_id"]
+            isOneToOne: false
+            referencedRelation: "project_comments"
             referencedColumns: ["id"]
           },
         ]
@@ -1499,6 +1550,30 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_deleted_project_comments: {
+        Args: { project_id_arg: string }
+        Returns: {
+          anchor_data: Json
+          author_email: string
+          author_id: string
+          can_permanently_delete: boolean
+          can_restore: boolean
+          content: string
+          created_at: string
+          deleted_at: string
+          deleted_by: string
+          id: string
+          is_shared: boolean
+          node_id: string
+          order_index: number
+          parent_id: string
+          project_id: string
+          resolved_at: string
+          resolved_by: string
+          status: string
+          updated_at: string
+        }[]
+      }
       get_my_project_role: {
         Args: { p_id: string }
         Returns: Database["public"]["Enums"]["project_role"]
@@ -1527,7 +1602,23 @@ export type Database = {
         Args: { p_project_id: string; p_user_id: string }
         Returns: string
       }
+      get_project_members_extended: {
+        Args: { project_id_arg: string }
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          role: string
+          user_id: string
+        }[]
+      }
       normalize_trial_email: { Args: { p_email: string }; Returns: string }
+      permanently_delete_project_comment: {
+        Args: { comment_id_arg: string }
+        Returns: {
+          deleted_id: string
+        }[]
+      }
       record_signup_attempt_signal: {
         Args: {
           p_accept_language: string
@@ -1556,14 +1647,16 @@ export type Database = {
         }
         Returns: Json
       }
-      get_project_members_extended: {
-        Args: { project_id_arg: string }
+      restore_project_comment: {
+        Args: { comment_id_arg: string }
         Returns: {
-          created_at: string
-          email: string
-          id: string
-          role: string
-          user_id: string
+          restored_id: string
+        }[]
+      }
+      soft_delete_project_comment: {
+        Args: { comment_id_arg: string }
+        Returns: {
+          deleted_id: string
         }[]
       }
       is_thread_author: {

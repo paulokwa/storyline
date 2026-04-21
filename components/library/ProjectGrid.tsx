@@ -58,6 +58,15 @@ type Project = Database['public']['Tables']['projects']['Row'] & {
     }>
 }
 
+function getAvatarInitials(name: string | null | undefined, fallback = 'U') {
+    const value = name?.trim()
+    if (!value) return fallback
+
+    return value.includes(' ')
+        ? value.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()
+        : value.slice(0, 2).toUpperCase()
+}
+
 export default function ProjectGrid({ projects, deletedProjects }: { projects: Project[], deletedProjects: Project[] }) {
     const router = useRouter()
     const { theme } = useTheme()
@@ -706,7 +715,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging }: 
                                                     "text-[8px] font-bold uppercase",
                                                     hasCover ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
                                                 )}>
-                                                    {(member.display_name || 'U').slice(0, 2)}
+                                                    {getAvatarInitials(member.display_name)}
                                                 </AvatarFallback>
                                             </Avatar>
                                         </TooltipTrigger>

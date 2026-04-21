@@ -32,6 +32,21 @@ interface ProjectSettingsModalProps {
     onOpenShare?: () => void
 }
 
+function ToggleStatePill({ checked }: { checked: boolean }) {
+    return (
+        <span
+            className={cn(
+                "inline-flex min-w-[5.5rem] items-center justify-center rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em]",
+                checked
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                    : "border-slate-200 bg-slate-100 text-slate-500"
+            )}
+        >
+            {checked ? 'Enabled' : 'Disabled'}
+        </span>
+    )
+}
+
 export default function ProjectSettingsModal({
     open,
     onOpenChange,
@@ -277,21 +292,24 @@ export default function ProjectSettingsModal({
                                         <div className="rounded-2xl border border-border bg-muted/30 p-4">
                                             <div className="flex items-start gap-4">
                                                 <div className="space-y-1 flex-1 min-w-0">
-                                                    <div className="flex items-center justify-between gap-4">
-                                                        <Label htmlFor="allowViewerFeedback" className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                                            <MessageSquare className="h-4 w-4 text-primary" />
-                                                            Allow Viewer Feedback
-                                                        </Label>
-                                                        <div className="flex items-center gap-2 shrink-0">
-                                                            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
-                                                                {allowViewerFeedback ? 'On' : 'Off'}
-                                                            </span>
+                                                        <div className="flex items-center justify-between gap-4">
+                                                            <Label htmlFor="allowViewerFeedback" className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                                                <MessageSquare className="h-4 w-4 text-primary" />
+                                                                Allow Viewer Feedback
+                                                            </Label>
+                                                        <div className="flex items-center gap-3 shrink-0">
+                                                            <ToggleStatePill checked={allowViewerFeedback} />
                                                             <Switch
                                                                 id="allowViewerFeedback"
                                                                 checked={allowViewerFeedback}
                                                                 onCheckedChange={setAllowViewerFeedback}
                                                                 disabled={!canManageProject}
-                                                                className="data-[size=default]:h-6 data-[size=default]:w-11"
+                                                                className={cn(
+                                                                    "data-[size=default]:h-7 data-[size=default]:w-12",
+                                                                    allowViewerFeedback
+                                                                        ? "data-checked:bg-emerald-600"
+                                                                        : "data-unchecked:bg-slate-300"
+                                                                )}
                                                             />
                                                         </div>
                                                     </div>
@@ -310,16 +328,19 @@ export default function ProjectSettingsModal({
                                                                 <Globe className="h-4 w-4 text-primary" />
                                                                 Share Owner Feedback Broadly
                                                             </Label>
-                                                            <div className="flex items-center gap-2 shrink-0">
-                                                                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
-                                                                    {shareOwnerFeedback ? 'On' : 'Off'}
-                                                                </span>
+                                                            <div className="flex items-center gap-3 shrink-0">
+                                                                <ToggleStatePill checked={shareOwnerFeedback} />
                                                                 <Switch
                                                                     id="shareOwnerFeedback"
                                                                     checked={shareOwnerFeedback}
                                                                     onCheckedChange={setShareOwnerFeedback}
                                                                     disabled={!canManageProject}
-                                                                    className="data-[size=default]:h-6 data-[size=default]:w-11"
+                                                                    className={cn(
+                                                                        "data-[size=default]:h-7 data-[size=default]:w-12",
+                                                                        shareOwnerFeedback
+                                                                            ? "data-checked:bg-emerald-600"
+                                                                            : "data-unchecked:bg-slate-300"
+                                                                    )}
                                                                 />
                                                             </div>
                                                         </div>
@@ -351,16 +372,19 @@ export default function ProjectSettingsModal({
                                                             <Globe className="h-4 w-4 text-primary" />
                                                             Allow Collaborator Exports
                                                         </Label>
-                                                        <div className="flex items-center gap-2 shrink-0">
-                                                            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
-                                                                {allowCollaboratorExports ? 'On' : 'Off'}
-                                                            </span>
+                                                        <div className="flex items-center gap-3 shrink-0">
+                                                            <ToggleStatePill checked={allowCollaboratorExports} />
                                                             <Switch
                                                                 id="allowCollaboratorExports"
                                                                 checked={allowCollaboratorExports}
                                                                 onCheckedChange={setAllowCollaboratorExports}
                                                                 disabled={!canManageProject}
-                                                                className="data-[size=default]:h-6 data-[size=default]:w-11"
+                                                                className={cn(
+                                                                    "data-[size=default]:h-7 data-[size=default]:w-12",
+                                                                    allowCollaboratorExports
+                                                                        ? "data-checked:bg-emerald-600"
+                                                                        : "data-unchecked:bg-slate-300"
+                                                                )}
                                                             />
                                                         </div>
                                                     </div>

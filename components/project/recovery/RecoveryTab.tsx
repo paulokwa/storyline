@@ -31,17 +31,19 @@ import { createClient } from '@/lib/supabase/client'
 import { 
     restoreStructureNode, 
     restoreEntity, 
+    restoreDeletedComment,
     captureSceneVersion, 
     createProjectSnapshot,
     restoreProjectSnapshot,
     permanentlyDeleteTrashItem,
-    permanentlyDeleteHistoryVersion
+    permanentlyDeleteHistoryVersion,
+    permanentlyDeleteComment
 } from '@/lib/supabase/recovery'
 import { useRouter } from 'next/navigation'
 import { useProjectActions } from '@/components/project/ProjectContext'
 
 type RecoverySection = 'trash' | 'history' | 'snapshots'
-type TrashFilter = 'all' | 'structure' | 'assets' | 'ai'
+type TrashFilter = 'all' | 'structure' | 'assets' | 'ai' | 'feedback'
 
 interface RecoveryTabProps {
     projectId: string
@@ -51,6 +53,7 @@ interface RecoveryTabProps {
     deletedLocations: any[]
     deletedObjects: any[]
     deletedResponses: any[]
+    deletedComments: any[]
     allNodes: any[]
     historyEntries: any[]
     snapshots: any[]
@@ -64,6 +67,7 @@ export default function RecoveryTab({
     deletedLocations,
     deletedObjects,
     deletedResponses,
+    deletedComments,
     allNodes,
     historyEntries,
     snapshots
@@ -142,6 +146,18 @@ export default function RecoveryTab({
             router.refresh()
         } catch (error) {
             console.error('Error restoring entity:', error)
+        } finally {
+            setIsRestoring(null)
+        }
+    }
+
+    const handleRestoreComment = async (id: string) => {
+        setIsRestoring(id)
+        try {
+            await restoreDeletedComment(supabase as any, id)
+            router.refresh()
+        } catch (error) {
+            console.error('Error restoring comment:', error)
         } finally {
             setIsRestoring(null)
         }
@@ -230,8 +246,8 @@ export default function RecoveryTab({
     }
 
     const handlePermanentlyDeleteTrashItem = async () => {
-        if (isReadOnly) return
         if (!itemToPermanentlyDelete) return
+        if (isReadOnly && !(itemToPermanentlyDelete.trashType === 'feedback' && itemToPermanentlyDelete.can_permanently_delete)) return
         setIsPermanentlyDeleting(true)
         try {
             await permanentlyDeleteTrashItem(
@@ -292,6 +308,14 @@ export default function RecoveryTab({
                 }
             }
 
+            const commentIds = deletedComments
+                .filter(comment => comment.can_permanently_delete)
+                .map(comment => comment.id)
+
+            for (const commentId of commentIds) {
+                await permanentlyDeleteComment(supabase as any, commentId)
+            }
+
             router.refresh()
         } catch (error) {
             console.error('Error clearing trash:', error)
@@ -308,7 +332,16 @@ export default function RecoveryTab({
             ...deletedIdeas.map(i => ({ ...i, trashType: 'assets', icon: Lightbulb, typeLabel: 'Idea' })),
             ...deletedLocations.map(l => ({ ...l, trashType: 'assets', icon: MapPin, typeLabel: 'Location', title: l.name })),
             ...deletedObjects.map(o => ({ ...o, trashType: 'assets', icon: Package, typeLabel: 'Object', title: o.name })),
-            ...deletedResponses.map(r => ({ ...r, trashType: 'ai', icon: Sparkles, typeLabel: 'AI Response', title: r.prompt_summary || 'AI Response' }))
+            ...deletedResponses.map(r => ({ ...r, trashType: 'ai', icon: Sparkles, typeLabel: 'AI Response', title: r.prompt_summary || 'AI Response' })),
+            ...deletedComments.map((comment: any) => ({
+                ...comment,
+                trashType: 'feedback',
+                icon: FileText,
+                typeLabel: comment.parent_id ? 'Feedback Reply' : 'Feedback Thread',
+                title: comment.content === 'Add your feedback...'
+                    ? (comment.anchor_data?.text || 'Feedback comment')
+                    : (comment.content || 'Feedback comment'),
+            }))
         ]
 
         return items
@@ -320,7 +353,7 @@ export default function RecoveryTab({
                     item.typeLabel.toLowerCase().includes(searchQuery.toLowerCase())
                 return matchesFilter && matchesSearch
             })
-    }, [deletedNodes, deletedCharacters, deletedIdeas, deletedLocations, deletedObjects, deletedResponses, trashFilter, searchQuery])
+    }, [deletedNodes, deletedCharacters, deletedIdeas, deletedLocations, deletedObjects, deletedResponses, deletedComments, trashFilter, searchQuery])
 
     // Filter and group history entries
     const filteredHistory = useMemo(() => {
@@ -386,7 +419,7 @@ export default function RecoveryTab({
                         <div className="mb-6 rounded-[2rem] border border-amber-100 bg-amber-50/60 px-6 py-4">
                             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">Viewer Access</p>
                             <p className="mt-2 text-sm italic text-amber-800/80">
-                                Recovery is view-only for viewers. Restore, delete, and snapshot actions are reserved for the owner and editors.
+                                Recovery is view-only for viewers, except for their own deleted feedback items.
                             </p>
                         </div>
                     )}
@@ -400,7 +433,8 @@ export default function RecoveryTab({
                                             { id: 'all', label: 'All Items' },
                                             { id: 'structure', label: 'Story Structure' },
                                             { id: 'assets', label: 'Story Assets' },
-                                            { id: 'ai', label: 'AI Content' }
+                                            { id: 'ai', label: 'AI Content' },
+                                            { id: 'feedback', label: 'Feedback' }
                                         ].map(f => (
                                             <button
                                                 key={f.id}
@@ -476,17 +510,18 @@ export default function RecoveryTab({
                                                         <h3 className="text-base sm:text-lg font-serif italic text-slate-800 truncate">{item.title || item.name || 'Untitled'}</h3>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center justify-end gap-2 shrink-0 border-t sm:border-t-0 border-slate-50 pt-3 sm:pt-0">
-                                                    {!isReadOnly && (
+                                            <div className="flex items-center justify-end gap-2 shrink-0 border-t sm:border-t-0 border-slate-50 pt-3 sm:pt-0">
+                                                    {((!isReadOnly) || (item.trashType === 'feedback' && (item.can_restore || item.can_permanently_delete))) && (
                                                         <>
                                                             <Button
                                                                 variant="outline"
                                                                 size="sm"
                                                                 onClick={() => {
                                                                     if (item.trashType === 'structure') handleRestoreNode(item.id)
+                                                                    else if (item.trashType === 'feedback') handleRestoreComment(item.id)
                                                                     else handleRestoreEntity(item.trashType === 'ai' ? 'ai_responses' : item.typeLabel.toLowerCase() + 's', item.id)
                                                                 }}
-                                                                disabled={isRestoring === item.id}
+                                                                disabled={isRestoring === item.id || (item.trashType === 'feedback' && !item.can_restore)}
                                                                 className="rounded-full bg-white border-slate-100 text-[#546354] hover:bg-[#546354] hover:text-white uppercase tracking-widest text-[9px] font-bold h-8 sm:h-9 px-4 sm:px-6 transition-all"
                                                             >
                                                                 {isRestoring === item.id ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <RotateCcw className="w-3 h-3 mr-2" />}
@@ -494,6 +529,7 @@ export default function RecoveryTab({
                                                             </Button>
                                                             <button 
                                                                 onClick={() => setItemToPermanentlyDelete(item)}
+                                                                disabled={item.trashType === 'feedback' && !item.can_permanently_delete}
                                                                 className="p-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 text-slate-300 rounded-full transition-all"
                                                             >
                                                                 <Trash2 className="w-4 h-4" />

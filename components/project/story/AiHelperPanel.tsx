@@ -113,11 +113,11 @@ function draftsEqual(a: ContextDraft, b: ContextDraft) {
 }
 
 function stripFeedbackPrefix(title: string | null | undefined) {
-    return (title || 'Idea').replace(/^feedback:\s*/i, '')
+    return (title || 'Idea').replace(/^feedback(?:\s+thread)?:\s*/i, '')
 }
 
 function isFeedbackIdea(idea: any) {
-    return idea?.title?.toLowerCase().startsWith('feedback:')
+    return /^feedback(?:\s+thread)?:/i.test(idea?.title || '')
 }
 
 function partitionIdeas(items: any[] = []) {
@@ -1252,7 +1252,11 @@ export default function AiHelperPanel({
             ? `Ideas: ${linkedRegularIdeas.map(i => i.title).join(', ')}. ` 
             : ''
         const feedbackContext = linkedFeedbackItems.length > 0
-            ? `Feedback: ${linkedFeedbackItems.map((item) => stripFeedbackPrefix(item.title)).join(', ')}. `
+            ? `Feedback:\n${linkedFeedbackItems.map((item) => {
+                const title = stripFeedbackPrefix(item.title)
+                const content = typeof item.content === 'string' ? item.content.trim() : ''
+                return `- ${title}${content ? `\n  ${content.slice(0, 2500).replace(/\n/g, '\n  ')}` : ''}`
+            }).join('\n\n')}\n`
             : ''
         const locationsContext = linkedLocations.length > 0 
             ? `Locations: ${linkedLocations.map(l => l.name).join(', ')}. ` 

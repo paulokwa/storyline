@@ -71,6 +71,12 @@ type ProjectOwner = {
     display_name: string | null
     avatar_url: string | null
 }
+type ProjectMemberSummary = {
+    role: Database['public']['Enums']['project_role']
+    user_id: string
+    display_name: string | null
+    avatar_url: string | null
+}
 
 const TABS = [
     { slug: 'story', label: 'Story', icon: BookOpen },
@@ -89,12 +95,14 @@ export default function ProjectShell({
     project: initialProject,
     currentUserId,
     owner,
+    members,
     role = 'owner',
     children,
 }: {
     project: Project
     currentUserId: string
     owner: ProjectOwner
+    members: ProjectMemberSummary[]
     role?: 'owner' | 'editor' | 'viewer'
     children: React.ReactNode
 }) {
@@ -142,6 +150,25 @@ export default function ProjectShell({
         return () => clearTimeout(timer)
     }, [pathname])
 
+    useEffect(() => {
+        const supabase = createClient()
+        const channel = supabase
+            .channel(`project-members:${project.id}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'project_members',
+                filter: `project_id=eq.${project.id}`,
+            }, () => {
+                router.refresh()
+            })
+            .subscribe()
+
+        return () => {
+            channel.unsubscribe()
+        }
+    }, [project.id, router])
+
     const { activeNodeId } = useProjectActions()
 
     return (
@@ -151,6 +178,7 @@ export default function ProjectShell({
                     <ProjectShellInner 
                         project={project} 
                         owner={owner}
+                        members={members}
                         currentUserId={currentUserId}
                         editingTitle={editingTitle} 
                         setEditingTitle={setEditingTitle} 
@@ -236,6 +264,7 @@ export default function ProjectShell({
 function ProjectShellInner({ 
     project, 
     owner,
+    members,
     currentUserId,
     editingTitle, 
     setEditingTitle, 
@@ -503,7 +532,7 @@ function ProjectShellInner({
                         </div>
 
                         <div className="flex items-center gap-4">
-                            <AvatarPortal owner={owner} currentUserId={currentUserId} role={role} />
+                            <AvatarPortal owner={owner} members={members} currentUserId={currentUserId} role={role} />
                             
                             {isStoryTab && (
                                 <div className="hidden lg:flex xl:hidden items-center gap-1.5 p-1 bg-violet-50/50 rounded-2xl border border-violet-100/50">
@@ -743,32 +772,61 @@ function ProjectShellInner({
     )
 }
 
-function AvatarPortal({ owner, currentUserId, role }: { owner: ProjectOwner, currentUserId: string, role: 'owner' | 'editor' | 'viewer' }) {
+function AvatarPortal({
+    owner,
+    members,
+    currentUserId,
+    role,
+}: {
+    owner: ProjectOwner
+    members: ProjectMemberSummary[]
+    currentUserId: string
+    role: 'owner' | 'editor' | 'viewer'
+}) {
     const [mounted, setMounted] = useState(false)
     useEffect(() => setMounted(true), [])
     if (!mounted) return null
     
+    const avatarProps = { owner, members, currentUserId, role }
     const target = document.getElementById('app-nav-portal')
-    if (!target) return <CollaborativeAvatars owner={owner} currentUserId={currentUserId} role={role} />
+    if (!target) return <CollaborativeAvatars {...avatarProps} />
     
-    return createPortal(<CollaborativeAvatars owner={owner} currentUserId={currentUserId} role={role} />, target)
+    return createPortal(<CollaborativeAvatars {...avatarProps} />, target)
 }
 
-function CollaborativeAvatars({ owner, currentUserId, role }: { owner: ProjectOwner, currentUserId: string, role: 'owner' | 'editor' | 'viewer' }) {
+function CollaborativeAvatars({
+    owner,
+    members,
+    currentUserId,
+    role,
+}: {
+    owner: ProjectOwner
+    members: ProjectMemberSummary[]
+    currentUserId: string
+    role: 'owner' | 'editor' | 'viewer'
+}) {
     const { presenceUsers, currentUser } = usePresence()
     const MAX_VISIBLE = 4
     const showOwnerBadge = role !== 'owner' && owner.user_id !== currentUserId
     const ownerPresence = presenceUsers.find(user => user.user_id === owner.user_id)
-    
-    // Filter out the current user to avoid "Two Circles" for the same person
-    const filteredUsers = presenceUsers.filter(u => {
-        if (u.user_id === currentUser?.id) return false
-        if (showOwnerBadge && u.user_id === owner.user_id) return false
-        return true
-    })
-    
-    const visibleUsers = filteredUsers.slice(0, MAX_VISIBLE)
-    const remainingCount = filteredUsers.length - MAX_VISIBLE
+    const memberUsers = members.filter(member => member.user_id !== owner.user_id)
+    const usersToRender = role === 'owner'
+        ? memberUsers
+        : presenceUsers
+            .filter(user => {
+                if (user.user_id === currentUser?.id) return false
+                if (showOwnerBadge && user.user_id === owner.user_id) return false
+                return true
+            })
+            .map(user => ({
+                role: 'viewer' as Database['public']['Enums']['project_role'],
+                user_id: user.user_id,
+                display_name: user.display_name,
+                avatar_url: null,
+            }))
+
+    const visibleUsers = usersToRender.slice(0, MAX_VISIBLE)
+    const remainingCount = usersToRender.length - MAX_VISIBLE
     const ownerName = owner.display_name || 'Project owner'
     const ownerInitials = ownerName.includes(' ')
         ? ownerName.split(' ').map((part: string) => part[0]).join('').slice(0, 2).toUpperCase()
@@ -803,30 +861,41 @@ function CollaborativeAvatars({ owner, currentUserId, role }: { owner: ProjectOw
                 </Tooltip>
             )}
             {visibleUsers.map((user) => {
-                const statusLabel = user.status === 'editing' ? 'writing' : 'reading'
-                const userColor = getUserColor(user.email)
+                const activePresence = presenceUsers.find((presenceUser) => presenceUser.user_id === user.user_id)
+                const statusLabel = activePresence?.status === 'editing' ? 'writing' : 'reading'
+                const collaboratorName = user.display_name || 'Collaborator'
+                const collaboratorInitials = collaboratorName.includes(' ')
+                    ? collaboratorName.split(' ').map((part: string) => part[0]).join('').slice(0, 2).toUpperCase()
+                    : collaboratorName.slice(0, 2).toUpperCase()
+                const colorSeed = activePresence?.email || collaboratorName || user.user_id
+                const userColor = getUserColor(colorSeed)
+                const roleLabel = user.role === 'editor' ? 'Editor' : 'Viewer'
                 
                 return (
                     <Tooltip key={user.user_id}>
                         <TooltipTrigger>
-                            <Avatar className={cn(
-                                "w-8 h-8 ring-2 ring-white transition-all cursor-default",
-                                userColor
-                            )}>
-                                <AvatarFallback className="text-[10px] font-bold bg-transparent">
-                                    {(() => {
-                                        const name = user.display_name || user.email.split('@')[0]
-                                        return name.includes(' ')
-                                            ? name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
-                                            : name.slice(0, 2).toUpperCase()
-                                    })()}
-                                </AvatarFallback>
-                            </Avatar>
+                            <div className="relative">
+                                <Avatar className={cn(
+                                    "w-8 h-8 ring-2 ring-white transition-all cursor-default",
+                                    userColor
+                                )}>
+                                    <AvatarImage src={user.avatar_url || undefined} alt={collaboratorName} />
+                                    <AvatarFallback className="text-[10px] font-bold bg-transparent">
+                                        {collaboratorInitials}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <span className={cn(
+                                    "absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white",
+                                    activePresence ? "bg-emerald-500" : "bg-slate-300"
+                                )} />
+                            </div>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" className="flex flex-col gap-0.5 px-3 py-2 rounded-xl shadow-xl border-slate-200">
-                            <p className="text-xs font-bold text-slate-900">{user.email}</p>
+                            <p className="text-xs font-bold text-slate-900">{collaboratorName}</p>
                             <p className="text-[10px] text-slate-500 font-medium">
-                                Currently <span className="text-primary/70">{statusLabel}</span> {user.scene_id ? 'this scene' : 'the project'}
+                                {activePresence
+                                    ? <>{roleLabel} access • active in {activePresence.scene_id ? 'this scene' : 'project'}</>
+                                    : <>{roleLabel} access • currently offline</>}
                             </p>
                         </TooltipContent>
                     </Tooltip>

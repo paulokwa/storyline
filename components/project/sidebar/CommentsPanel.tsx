@@ -22,7 +22,9 @@ import {
     Check,
     Loader2,
     Globe,
-    Lock
+    Lock,
+    Eye,
+    EyeOff
 } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { Button } from '@/components/ui/button'
@@ -32,6 +34,40 @@ import { cn, getUserColor } from '@/lib/utils'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+
+function getAiLinkMode(link: any): 'single' | 'thread' {
+    return link?.mode === 'thread' ? 'thread' : 'single'
+}
+
+function buildFeedbackIdeaContent({
+    rootComment,
+    threadComments,
+    mode,
+}: {
+    rootComment: any
+    threadComments: any[]
+    mode: 'single' | 'thread'
+}) {
+    const referenceText = rootComment.anchor_data?.text
+
+    if (mode === 'single') {
+        return rootComment.content
+    }
+
+    const transcript = threadComments
+        .map((item, index) => {
+            const author = item.author_email || 'Collaborator'
+            const label = index === 0 ? 'Original Feedback' : `Reply ${index}`
+            return `${label} (${author}):\n${item.content}`
+        })
+        .join('\n\n')
+
+    return [
+        referenceText ? `Original Reference Text:\n${referenceText}` : null,
+        'Feedback Thread Discussion:',
+        transcript,
+    ].filter(Boolean).join('\n\n')
+}
 
 export default function CommentsPanel({ 
     projectId, 
@@ -80,15 +116,18 @@ export default function CommentsPanel({
     
     const [filterByNode, setFilterByNode] = useState(true)
     const [showResolved, setShowResolved] = useState(false)
-    const [authorFilter, setAuthorFilter] = useState<'all' | 'mine' | 'collaborators'>('all')
+    const [authorFilter, setAuthorFilter] = useState<'new' | 'all' | 'mine' | 'collaborators' | 'hidden'>('all')
     const [newCommentText, setNewCommentText] = useState('')
     const [replyToId, setReplyToId] = useState<string | null>(null)
     const [replyText, setReplyText] = useState('')
     const [editingId, setEditingId] = useState<string | null>(null)
     const [editText, setEditText] = useState('')
     const [addingIdeaId, setAddingIdeaId] = useState<string | null>(null)
+    const [addingThreadIdeaId, setAddingThreadIdeaId] = useState<string | null>(null)
     const [removingIdeaId, setRemovingIdeaId] = useState<string | null>(null)
     const [linkedAiIdeaIds, setLinkedAiIdeaIds] = useState<Set<string>>(new Set())
+    const [hiddenThreadIds, setHiddenThreadIds] = useState<Set<string>>(new Set())
+    const sessionStartedAtRef = useRef(new Date())
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
     useEffect(() => {
@@ -122,6 +161,35 @@ export default function CommentsPanel({
         }
     }, [activeSceneId, supabase])
 
+    useEffect(() => {
+        let cancelled = false
+
+        async function loadThreadPreferences() {
+            if (!currentUserId) return
+
+            const { data, error } = await (supabase as any)
+                .from('project_comment_thread_preferences')
+                .select('root_comment_id, hidden_at')
+                .eq('project_id', projectId)
+                .eq('user_id', currentUserId)
+                .not('hidden_at', 'is', null)
+
+            if (cancelled) return
+            if (error) {
+                console.error('Failed to load comment thread preferences:', error)
+                return
+            }
+
+            setHiddenThreadIds(new Set((data ?? []).map((row: any) => row.root_comment_id)))
+        }
+
+        loadThreadPreferences()
+
+        return () => {
+            cancelled = true
+        }
+    }, [currentUserId, projectId, supabase])
+
     const addedCommentIds = useMemo(() => {
         if (!activeSceneId || linkedAiIdeaIds.size === 0) return new Set<string>()
 
@@ -129,7 +197,29 @@ export default function CommentsPanel({
             comments
                 .filter(comment => {
                     const links = Array.isArray(comment.anchor_data?.aiLinkedIdeas) ? comment.anchor_data.aiLinkedIdeas : []
-                    return links.some((link: any) => link?.sceneId === activeSceneId && linkedAiIdeaIds.has(link?.ideaId))
+                    return links.some((link: any) =>
+                        link?.sceneId === activeSceneId &&
+                        linkedAiIdeaIds.has(link?.ideaId) &&
+                        getAiLinkMode(link) === 'single'
+                    )
+                })
+                .map(comment => comment.id)
+        )
+    }, [comments, activeSceneId, linkedAiIdeaIds])
+
+    const addedThreadCommentIds = useMemo(() => {
+        if (!activeSceneId || linkedAiIdeaIds.size === 0) return new Set<string>()
+
+        return new Set(
+            comments
+                .filter(comment => !comment.parent_id)
+                .filter(comment => {
+                    const links = Array.isArray(comment.anchor_data?.aiLinkedIdeas) ? comment.anchor_data.aiLinkedIdeas : []
+                    return links.some((link: any) =>
+                        link?.sceneId === activeSceneId &&
+                        linkedAiIdeaIds.has(link?.ideaId) &&
+                        getAiLinkMode(link) === 'thread'
+                    )
                 })
                 .map(comment => comment.id)
         )
@@ -146,19 +236,38 @@ export default function CommentsPanel({
         }, 3000)
     }
 
-    const handleAddAsIdea = async (comment: any) => {
+    const handleAddAsIdea = async (comment: any, mode: 'single' | 'thread' = 'single') => {
         if (!projectId || !comment.content) return
-        if (addedCommentIds.has(comment.id)) return
-        setAddingIdeaId(comment.id)
+        if (mode === 'single' && addedCommentIds.has(comment.id)) return
+        if (mode === 'thread' && addedThreadCommentIds.has(comment.id)) return
+
+        if (mode === 'thread') {
+            setAddingThreadIdeaId(comment.id)
+        } else {
+            setAddingIdeaId(comment.id)
+        }
         
         try {
+            const threadComments = mode === 'thread'
+                ? [
+                    comment,
+                    ...comments
+                        .filter(reply => reply.parent_id === comment.id)
+                        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+                ]
+                : [comment]
+
             // 1. Create the idea
-            const content = comment.content
+            const content = buildFeedbackIdeaContent({
+                rootComment: comment,
+                threadComments,
+                mode,
+            })
             const referenceText = comment.anchor_data?.text
             
             // If it's inline feedback and content is just the placeholder, use the reference text for the title
-            let titleSource = content
-            if (referenceText && (content === 'Add your feedback...' || !content)) {
+            let titleSource = comment.content
+            if (referenceText && (comment.content === 'Add your feedback...' || !comment.content)) {
                 titleSource = referenceText
             }
 
@@ -167,7 +276,7 @@ export default function CommentsPanel({
                 .from('ideas')
                 .insert({
                     project_id: projectId,
-                    title: `Feedback: ${truncated}`,
+                    title: mode === 'thread' ? `Feedback Thread: ${truncated}` : `Feedback: ${truncated}`,
                     content: content,
                     order_index: 0
                 })
@@ -197,7 +306,7 @@ export default function CommentsPanel({
                 ...(comment.anchor_data && typeof comment.anchor_data === 'object' ? comment.anchor_data : {}),
                 aiLinkedIdeas: [
                     ...existingLinks,
-                    { ideaId: idea.id, sceneId: activeSceneId ?? null }
+                    { ideaId: idea.id, sceneId: activeSceneId ?? null, mode }
                 ]
             }
 
@@ -218,7 +327,9 @@ export default function CommentsPanel({
 
             toast.success('Added as Project Idea', {
                 description: activeSceneId 
-                    ? 'This feedback is now linked to the AI Assistant context.' 
+                    ? mode === 'thread'
+                        ? 'This feedback thread is now linked to the AI Assistant context.'
+                        : 'This feedback is now linked to the AI Assistant context.'
                     : 'This feedback was saved as a project idea.'
             })
             if (idea?.id) {
@@ -229,17 +340,25 @@ export default function CommentsPanel({
             console.error('Failed to add comment as idea:', err)
             toast.error('Failed to link to extension')
         } finally {
-            setAddingIdeaId(null)
+            if (mode === 'thread') {
+                setAddingThreadIdeaId(null)
+            } else {
+                setAddingIdeaId(null)
+            }
         }
     }
 
-    const handleRemoveFromAssistant = async (comment: any) => {
+    const handleRemoveFromAssistant = async (comment: any, mode: 'single' | 'thread' = 'single') => {
         if (!activeSceneId) return
 
         const existingLinks = Array.isArray(comment.anchor_data?.aiLinkedIdeas)
             ? comment.anchor_data.aiLinkedIdeas
             : []
-        const linksForCurrentScene = existingLinks.filter((link: any) => link?.sceneId === activeSceneId && link?.ideaId)
+        const linksForCurrentScene = existingLinks.filter((link: any) =>
+            link?.sceneId === activeSceneId &&
+            link?.ideaId &&
+            getAiLinkMode(link) === mode
+        )
 
         if (linksForCurrentScene.length === 0) return
 
@@ -258,7 +377,9 @@ export default function CommentsPanel({
 
             const nextAnchorData = {
                 ...(comment.anchor_data && typeof comment.anchor_data === 'object' ? comment.anchor_data : {}),
-                aiLinkedIdeas: existingLinks.filter((link: any) => link?.sceneId !== activeSceneId),
+                aiLinkedIdeas: existingLinks.filter((link: any) =>
+                    !(link?.sceneId === activeSceneId && link?.ideaId && getAiLinkMode(link) === mode)
+                ),
             }
 
             const { error: commentUpdateError } = await supabase
@@ -281,7 +402,9 @@ export default function CommentsPanel({
             })
 
             toast.success('Removed from AI Context', {
-                description: 'This feedback is no longer linked to the AI Assistant context.'
+                description: mode === 'thread'
+                    ? 'This feedback thread is no longer linked to the AI Assistant context.'
+                    : 'This feedback is no longer linked to the AI Assistant context.'
             })
             router.refresh()
         } catch (err: any) {
@@ -315,30 +438,105 @@ export default function CommentsPanel({
         }
     }
 
+    const canReorderComments = role !== 'viewer'
+
     const canViewerLeaveFeedback = role !== 'viewer' || allowViewerFeedback
-    const canViewerSeeComment = useMemo(() => {
-        return (comment: any) => {
-            if (role !== 'viewer') return true
+    const commentById = useMemo(() => {
+        const map = new Map<string, any>()
+        comments.forEach(comment => map.set(comment.id, comment))
+        return map
+    }, [comments])
+
+    const rootCommentIdByCommentId = useMemo(() => {
+        const map = new Map<string, string>()
+
+        const resolveRootId = (comment: any): string => {
+            const cached = map.get(comment.id)
+            if (cached) return cached
+            if (!comment.parent_id) {
+                map.set(comment.id, comment.id)
+                return comment.id
+            }
+
+            const parentComment = commentById.get(comment.parent_id)
+            const rootId = parentComment ? resolveRootId(parentComment) : comment.id
+            map.set(comment.id, rootId)
+            return rootId
+        }
+
+        comments.forEach(comment => {
+            resolveRootId(comment)
+        })
+
+        return map
+    }, [commentById, comments])
+
+    const canUserSeeComment = useMemo(() => {
+        const canSeeRecursive = (comment: any): boolean => {
             if (comment.author_id === currentUserId) return true
             if (comment.is_shared) return true
             if (shareOwnerFeedback && comment.author_id === projectOwnerId) return true
+            if (comment.parent_id) {
+                const parentComment = commentById.get(comment.parent_id)
+                if (parentComment) {
+                    return canSeeRecursive(parentComment)
+                }
+            }
             return false
         }
-    }, [currentUserId, projectOwnerId, role, shareOwnerFeedback])
-    const canFilterByAuthor = role === 'owner' || role === 'editor'
+
+        return canSeeRecursive
+    }, [commentById, currentUserId, projectOwnerId, shareOwnerFeedback])
+    const canFilterByAuthor = !!currentUserId
 
     const getVisibleReplies = useMemo(() => {
         return (parentId: string) => comments.filter(c => {
             if (c.parent_id !== parentId) return false
-            return canViewerSeeComment(c)
+            return canUserSeeComment(c)
         })
-    }, [canViewerSeeComment, comments])
+    }, [canUserSeeComment, comments])
+
+    const visibleTopLevelComments = useMemo(() => {
+        return comments.filter(comment => !comment.parent_id && canUserSeeComment(comment))
+    }, [canUserSeeComment, comments])
+
+    const visibleCommentsByHiddenState = useMemo(() => {
+        const visible = visibleTopLevelComments.filter(comment => !hiddenThreadIds.has(comment.id))
+        const hidden = visibleTopLevelComments.filter(comment => hiddenThreadIds.has(comment.id))
+        return { visible, hidden }
+    }, [hiddenThreadIds, visibleTopLevelComments])
+
+    const sessionNewCommentIds = useMemo(() => {
+        if (!currentUserId) return new Set<string>()
+
+        const sessionStart = sessionStartedAtRef.current.getTime()
+        const activeThreadIds = new Set<string>()
+
+        comments.forEach(comment => {
+            if (!canUserSeeComment(comment)) return
+            if (comment.author_id === currentUserId) return
+
+            const rootId = rootCommentIdByCommentId.get(comment.id)
+            if (!rootId || hiddenThreadIds.has(rootId)) return
+
+            const createdAt = new Date(comment.created_at).getTime()
+            const updatedAt = new Date(comment.updated_at).getTime()
+
+            if (Math.max(createdAt, updatedAt) >= sessionStart) {
+                activeThreadIds.add(rootId)
+            }
+        })
+
+        return activeThreadIds
+    }, [canUserSeeComment, comments, currentUserId, hiddenThreadIds, rootCommentIdByCommentId])
 
     const filteredComments = useMemo(() => {
-        let list = comments.filter(c => !c.parent_id)
-        
-        if (role === 'viewer') {
-            list = list.filter(c => canViewerSeeComment(c))
+        let list = authorFilter === 'hidden'
+            ? [...visibleCommentsByHiddenState.hidden]
+            : [...visibleCommentsByHiddenState.visible]
+
+        if (authorFilter === 'new') {
+            list = list.filter(c => sessionNewCommentIds.has(c.id))
         }
 
         if (authorFilter === 'mine' && currentUserId) {
@@ -364,32 +562,70 @@ export default function CommentsPanel({
             }
             return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         })
-    }, [authorFilter, canViewerSeeComment, comments, activeNodeId, currentUserId, filterByNode, role, showResolved])
+    }, [authorFilter, visibleCommentsByHiddenState, sessionNewCommentIds, activeNodeId, currentUserId, filterByNode, showResolved])
 
     // Meta-counts for UI feedback
-    const resolvedCount = useMemo(() => 
-        comments.filter(c => !c.parent_id && c.status === 'resolved').length, 
-    [comments])
+    const resolvedCount = useMemo(() =>
+        visibleCommentsByHiddenState.visible.filter(c => c.status === 'resolved').length,
+    [visibleCommentsByHiddenState.visible])
     
     const allProjectCount = useMemo(() => 
-        comments.filter(c => !c.parent_id).length, 
-    [comments])
+        visibleCommentsByHiddenState.visible.length,
+    [visibleCommentsByHiddenState.visible])
 
     const currentSceneCount = useMemo(() => 
-        comments.filter(c => !c.parent_id && c.node_id === activeNodeId).length, 
-    [comments, activeNodeId])
+        visibleCommentsByHiddenState.visible.filter(c => c.node_id === activeNodeId).length,
+    [visibleCommentsByHiddenState.visible, activeNodeId])
 
     const mineCount = useMemo(() => {
         if (!currentUserId) return 0
 
-        return comments.filter(c => !c.parent_id && c.author_id === currentUserId).length
-    }, [comments, currentUserId])
+        return visibleCommentsByHiddenState.visible.filter(c => c.author_id === currentUserId).length
+    }, [visibleCommentsByHiddenState.visible, currentUserId])
 
     const collaboratorCount = useMemo(() => {
         if (!currentUserId) return 0
 
-        return comments.filter(c => !c.parent_id && c.author_id !== currentUserId).length
-    }, [comments, currentUserId])
+        return visibleCommentsByHiddenState.visible.filter(c => c.author_id !== currentUserId).length
+    }, [visibleCommentsByHiddenState.visible, currentUserId])
+
+    const hiddenCount = useMemo(() =>
+        visibleCommentsByHiddenState.hidden.length,
+    [visibleCommentsByHiddenState.hidden])
+
+    const newCount = useMemo(() =>
+        visibleCommentsByHiddenState.visible.filter(comment => sessionNewCommentIds.has(comment.id)).length,
+    [sessionNewCommentIds, visibleCommentsByHiddenState.visible])
+
+    async function handleSetThreadHidden(rootCommentId: string, hidden: boolean) {
+        if (!currentUserId) return
+
+        const nextHiddenIds = new Set(hiddenThreadIds)
+        if (hidden) {
+            nextHiddenIds.add(rootCommentId)
+        } else {
+            nextHiddenIds.delete(rootCommentId)
+        }
+        setHiddenThreadIds(nextHiddenIds)
+
+        const payload = {
+            project_id: projectId,
+            root_comment_id: rootCommentId,
+            user_id: currentUserId,
+            hidden_at: hidden ? new Date().toISOString() : null,
+            updated_at: new Date().toISOString(),
+        }
+
+        const { error } = await (supabase as any)
+            .from('project_comment_thread_preferences')
+            .upsert(payload, { onConflict: 'root_comment_id,user_id' })
+
+        if (error) {
+            console.error('Failed to update hidden thread state:', error)
+            setHiddenThreadIds(new Set(hiddenThreadIds))
+            toast.error('Failed to update hidden feedback')
+        }
+    }
 
     async function handleAddComment() {
         if (!canViewerLeaveFeedback) return
@@ -416,12 +652,13 @@ export default function CommentsPanel({
         if (role === 'viewer') return
         if (!replyText.trim()) return
         try {
+            const parentComment = comments.find(comment => comment.id === parentId)
             await addComment({
                 project_id: projectId,
                 node_id: activeNodeId || undefined,
                 content: replyText.trim(),
                 parent_id: parentId,
-                is_shared: false,
+                is_shared: parentComment?.is_shared ?? false,
             })
             setReplyText('')
             setReplyToId(null)
@@ -508,6 +745,18 @@ export default function CommentsPanel({
                     <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         <button
                             type="button"
+                            onClick={() => setAuthorFilter('new')}
+                            className={cn(
+                                "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
+                                authorFilter === 'new'
+                                    ? "bg-slate-900 text-white"
+                                    : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                            )}
+                        >
+                            New {newCount}
+                        </button>
+                        <button
+                            type="button"
                             onClick={() => setAuthorFilter('all')}
                             className={cn(
                                 "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
@@ -541,6 +790,18 @@ export default function CommentsPanel({
                             )}
                         >
                             Collaborators {collaboratorCount}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setAuthorFilter('hidden')}
+                            className={cn(
+                                "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
+                                authorFilter === 'hidden'
+                                    ? "bg-slate-900 text-white"
+                                    : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                            )}
+                        >
+                            Hidden {hiddenCount}
                         </button>
                     </div>
                 </div>
@@ -585,54 +846,109 @@ export default function CommentsPanel({
                                     className="space-y-6 pb-20"
                                 >
                                     {filteredComments.map((comment, index) => (
-                                        <Draggable key={comment.id} draggableId={comment.id} index={index}>
-                                            {(provided) => (
-                                                <div
-                                                    ref={provided.innerRef}
-                                                    {...provided.draggableProps}
-                                                >
-                                                    <CommentThread 
-                                                        comment={comment}
-                                                        replies={getVisibleReplies(comment.id)}
-                                                        onReply={(id: string) => { setReplyToId(id); setReplyText('') }}
-                                                        isReplying={replyToId === comment.id}
-                                                        replyText={replyText}
-                                                        setReplyText={setReplyText}
-                                                        onAddReply={() => handleAddReply(comment.id)}
-                                                        onCancelReply={() => setReplyToId(null)}
-                                                        editingId={editingId}
-                                                        onEdit={(id: string, text: string) => { setEditingId(id); setEditText(text) }}
-                                                        editText={editText}
-                                                        setEditText={setEditText}
-                                                        onUpdate={handleUpdate}
-                                                        onCancelEdit={() => setEditingId(null)}
-                                                        onDelete={handleDeleteComment}
-                                                        onResolve={resolveComment}
-                                                        onToggleShare={setCommentSharing}
-                                                        onSelectNode={onSelectNode}
-                                                        onJumpTo={() => {
-                                                            if (comment.node_id) onSelectNode?.(comment.node_id)
-                                                            jumpToComment(comment.id)
-                                                        }}
-                                                        role={role}
-                                                        isActive={activeCommentId === comment.id}
-                                                        onActivate={() => setActiveCommentId(comment.id)}
-                                                        typingUsers={typingUsers.filter(u => u.threadId === comment.id)}
-                                                        onTypingChange={(isTyping: boolean) => sendTypingIndicator(isTyping ? comment.id : null)}
-                                                        dragHandleProps={role !== 'viewer' ? provided.dragHandleProps : null}
-                                                        onAddToAssistant={handleAddAsIdea}
-                                                        onRemoveFromAssistant={handleRemoveFromAssistant}
-                                                        addingIdeaId={addingIdeaId}
-                                                        removingIdeaId={removingIdeaId}
-                                                        addedCommentIds={addedCommentIds}
-                                                        activeSceneId={activeSceneId}
-                                                        canReply={role !== 'viewer'}
-                                                        canShareWithGroup={true}
-                                                        canAddToAssistant={role !== 'viewer'}
-                                                    />
-                                                </div>
-                                            )}
-                                        </Draggable>
+                                        canReorderComments ? (
+                                            <Draggable key={comment.id} draggableId={comment.id} index={index}>
+                                                {(provided) => (
+                                                    <div
+                                                        ref={provided.innerRef}
+                                                        {...provided.draggableProps}
+                                                    >
+                                                        <CommentThread 
+                                                            comment={comment}
+                                                            replies={getVisibleReplies(comment.id)}
+                                                            onReply={(id: string) => { setReplyToId(id); setReplyText('') }}
+                                                            isReplying={replyToId === comment.id}
+                                                            replyText={replyText}
+                                                            setReplyText={setReplyText}
+                                                            onAddReply={() => handleAddReply(comment.id)}
+                                                            onCancelReply={() => setReplyToId(null)}
+                                                            editingId={editingId}
+                                                            onEdit={(id: string, text: string) => { setEditingId(id); setEditText(text) }}
+                                                            editText={editText}
+                                                            setEditText={setEditText}
+                                                            onUpdate={handleUpdate}
+                                                            onCancelEdit={() => setEditingId(null)}
+                                                            onDelete={handleDeleteComment}
+                                                            onResolve={resolveComment}
+                                                            onToggleShare={setCommentSharing}
+                                                            onSelectNode={onSelectNode}
+                                                            onJumpTo={() => {
+                                                                if (comment.node_id) onSelectNode?.(comment.node_id)
+                                                                jumpToComment(comment.id)
+                                                            }}
+                                                            role={role}
+                                                            isActive={activeCommentId === comment.id}
+                                                            onActivate={() => setActiveCommentId(comment.id)}
+                                                            typingUsers={typingUsers.filter(u => u.threadId === comment.id)}
+                                                            onTypingChange={(isTyping: boolean) => sendTypingIndicator(isTyping ? comment.id : null)}
+                                                            dragHandleProps={provided.dragHandleProps}
+                                                            onAddToAssistant={handleAddAsIdea}
+                                                            onAddThreadToAssistant={handleAddAsIdea}
+                                                            onRemoveFromAssistant={handleRemoveFromAssistant}
+                                                            onSetHidden={handleSetThreadHidden}
+                                                            addingIdeaId={addingIdeaId}
+                                                            addingThreadIdeaId={addingThreadIdeaId}
+                                                            removingIdeaId={removingIdeaId}
+                                                            addedCommentIds={addedCommentIds}
+                                                            addedThreadCommentIds={addedThreadCommentIds}
+                                                            activeSceneId={activeSceneId}
+                                                            isHidden={hiddenThreadIds.has(comment.id)}
+                                                            canHideThread={comment.author_id !== currentUserId}
+                                                            canReply={role !== 'viewer'}
+                                                            canShareWithGroup={true}
+                                                            canAddToAssistant={role !== 'viewer'}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </Draggable>
+                                        ) : (
+                                            <CommentThread 
+                                                key={comment.id}
+                                                comment={comment}
+                                                replies={getVisibleReplies(comment.id)}
+                                                onReply={(id: string) => { setReplyToId(id); setReplyText('') }}
+                                                isReplying={replyToId === comment.id}
+                                                replyText={replyText}
+                                                setReplyText={setReplyText}
+                                                onAddReply={() => handleAddReply(comment.id)}
+                                                onCancelReply={() => setReplyToId(null)}
+                                                editingId={editingId}
+                                                onEdit={(id: string, text: string) => { setEditingId(id); setEditText(text) }}
+                                                editText={editText}
+                                                setEditText={setEditText}
+                                                onUpdate={handleUpdate}
+                                                onCancelEdit={() => setEditingId(null)}
+                                                onDelete={handleDeleteComment}
+                                                onResolve={resolveComment}
+                                                onToggleShare={setCommentSharing}
+                                                onSelectNode={onSelectNode}
+                                                onJumpTo={() => {
+                                                    if (comment.node_id) onSelectNode?.(comment.node_id)
+                                                    jumpToComment(comment.id)
+                                                }}
+                                                role={role}
+                                                isActive={activeCommentId === comment.id}
+                                                onActivate={() => setActiveCommentId(comment.id)}
+                                                typingUsers={typingUsers.filter(u => u.threadId === comment.id)}
+                                                onTypingChange={(isTyping: boolean) => sendTypingIndicator(isTyping ? comment.id : null)}
+                                                dragHandleProps={null}
+                                                onAddToAssistant={handleAddAsIdea}
+                                                onAddThreadToAssistant={handleAddAsIdea}
+                                                onRemoveFromAssistant={handleRemoveFromAssistant}
+                                                onSetHidden={handleSetThreadHidden}
+                                                addingIdeaId={addingIdeaId}
+                                                addingThreadIdeaId={addingThreadIdeaId}
+                                                removingIdeaId={removingIdeaId}
+                                                addedCommentIds={addedCommentIds}
+                                                addedThreadCommentIds={addedThreadCommentIds}
+                                                activeSceneId={activeSceneId}
+                                                isHidden={hiddenThreadIds.has(comment.id)}
+                                                canHideThread={comment.author_id !== currentUserId}
+                                                canReply={role !== 'viewer'}
+                                                canShareWithGroup={true}
+                                                canAddToAssistant={role !== 'viewer'}
+                                            />
+                                        )
                                     ))}
                                     {provided.placeholder}
                                 </div>
@@ -708,11 +1024,17 @@ function CommentThread({
     dragHandleProps,
     isDetached,
     onAddToAssistant,
+    onAddThreadToAssistant,
     onRemoveFromAssistant,
+    onSetHidden,
     addingIdeaId,
+    addingThreadIdeaId,
     removingIdeaId,
     addedCommentIds,
+    addedThreadCommentIds,
     activeSceneId,
+    isHidden,
+    canHideThread,
     canReply,
     canShareWithGroup,
     canAddToAssistant
@@ -749,13 +1071,20 @@ function CommentThread({
                     isActive={isActive}
                     onActivate={onActivate}
                     isDetached={isDetached}
+                    replies={replies}
                     dragHandleProps={dragHandleProps}
                     onAddToAssistant={onAddToAssistant}
+                    onAddThreadToAssistant={onAddThreadToAssistant}
                     onRemoveFromAssistant={onRemoveFromAssistant}
+                    onSetHidden={onSetHidden}
                     addingIdeaId={addingIdeaId}
+                    addingThreadIdeaId={addingThreadIdeaId}
                     removingIdeaId={removingIdeaId}
                     addedCommentIds={addedCommentIds}
+                    addedThreadCommentIds={addedThreadCommentIds}
                     activeSceneId={activeSceneId}
+                    isHidden={isHidden}
+                    canHideThread={canHideThread}
                     canShareWithGroup={canShareWithGroup}
                     canAddToAssistant={canAddToAssistant}
                 />
@@ -778,10 +1107,13 @@ function CommentThread({
                                 isReply
                                 onToggleShare={(isShared: boolean) => onToggleShare(reply.id, isShared)}
                                 onAddToAssistant={onAddToAssistant}
+                                onAddThreadToAssistant={onAddThreadToAssistant}
                                 onRemoveFromAssistant={onRemoveFromAssistant}
                                 addingIdeaId={addingIdeaId}
+                                addingThreadIdeaId={addingThreadIdeaId}
                                 removingIdeaId={removingIdeaId}
                                 addedCommentIds={addedCommentIds}
+                                addedThreadCommentIds={addedThreadCommentIds}
                                 activeSceneId={activeSceneId}
                                 canShareWithGroup={canShareWithGroup}
                                 canAddToAssistant={canAddToAssistant}
@@ -846,15 +1178,22 @@ function CommentItem({
     isActive,
     onActivate,
     isDetached,
+    replies = [],
     dragHandleProps,
     isReply,
     role,
     onAddToAssistant,
+    onAddThreadToAssistant,
     onRemoveFromAssistant,
+    onSetHidden,
     addingIdeaId,
+    addingThreadIdeaId,
     removingIdeaId,
     addedCommentIds,
+    addedThreadCommentIds,
     activeSceneId,
+    isHidden,
+    canHideThread,
     canShareWithGroup,
     canAddToAssistant
 }: any) {
@@ -989,7 +1328,7 @@ function CommentItem({
                                     <Reply className="w-4 h-4" />
                                 </Button>
                             )}
-                            {isAuthor && canShareWithGroup && (
+                            {isAuthor && canShareWithGroup && !isReply && (
                                 <Tooltip>
                                     <TooltipTrigger>
                                         <Button
@@ -1010,7 +1349,7 @@ function CommentItem({
                                         </Button>
                                     </TooltipTrigger>
                                     <TooltipContent side="top">
-                                        {comment.is_shared ? 'Shared with the group' : 'Private to you, owner, and editors'}
+                                        {comment.is_shared ? 'Shared with collaborators who can access this thread' : 'Private to you only'}
                                     </TooltipContent>
                                 </Tooltip>
                             )}
@@ -1044,7 +1383,27 @@ function CommentItem({
                                     <TooltipContent side="top">Edit</TooltipContent>
                                 </Tooltip>
                             )}
-                            {(isAuthor || role === 'owner') && (
+                            {!isReply && canHideThread && (
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                onSetHidden?.(comment.id, !isHidden)
+                                            }}
+                                        >
+                                            {isHidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">
+                                        {isHidden ? 'Show this thread again' : 'Hide this thread for you'}
+                                    </TooltipContent>
+                                </Tooltip>
+                            )}
+                            {isAuthor && (
                                 <Tooltip>
                                     <TooltipTrigger>
                                         <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-slate-400 hover:text-destructive hover:bg-destructive/5" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
@@ -1067,7 +1426,7 @@ function CommentItem({
                                                     className="h-7 rounded-lg bg-emerald-50 px-2 py-1 text-[8px] font-bold uppercase tracking-widest text-emerald-600 hover:bg-emerald-100"
                                                     onClick={(e) => {
                                                         e.stopPropagation()
-                                                        onRemoveFromAssistant(comment)
+                                                        onRemoveFromAssistant(comment, 'single')
                                                     }}
                                                     disabled={removingIdeaId !== null}
                                                 >
@@ -1088,8 +1447,8 @@ function CommentItem({
                                                     variant="ghost" 
                                                     size="icon" 
                                                     className="h-7 w-7 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-slate-50 transition-all group/brain" 
-                                                    onClick={(e) => { e.stopPropagation(); onAddToAssistant(comment); }}
-                                                    disabled={addingIdeaId !== null}
+                                                    onClick={(e) => { e.stopPropagation(); onAddToAssistant(comment, 'single'); }}
+                                                    disabled={addingIdeaId !== null || addingThreadIdeaId !== null}
                                                 >
                                                     {addingIdeaId === comment.id ? (
                                                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1100,6 +1459,55 @@ function CommentItem({
                                             </TooltipTrigger>
                                             <TooltipContent side="top">Add to AI Assistant</TooltipContent>
                                         </Tooltip>
+                                    )}
+                                    {!isReply && replies.length > 0 && (
+                                        addedThreadCommentIds.has(comment.id) ? (
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-7 rounded-lg bg-indigo-50 px-2 py-1 text-[8px] font-bold uppercase tracking-widest text-indigo-600 hover:bg-indigo-100"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            onRemoveFromAssistant(comment, 'thread')
+                                                        }}
+                                                        disabled={removingIdeaId !== null}
+                                                    >
+                                                        {removingIdeaId === comment.id ? (
+                                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                                        ) : (
+                                                            <Check className="w-3 h-3" />
+                                                        )}
+                                                        Thread
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top">Remove thread from AI Assistant</TooltipContent>
+                                            </Tooltip>
+                                        ) : (
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-7 rounded-lg px-2 py-1 text-[8px] font-bold uppercase tracking-widest text-slate-400 hover:text-indigo-600 hover:bg-slate-50 transition-all"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            onAddThreadToAssistant(comment, 'thread')
+                                                        }}
+                                                        disabled={addingIdeaId !== null || addingThreadIdeaId !== null}
+                                                    >
+                                                        {addingThreadIdeaId === comment.id ? (
+                                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                                        ) : (
+                                                            <MessageCircle className="w-3 h-3" />
+                                                        )}
+                                                        Thread
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top">Add thread to AI Assistant</TooltipContent>
+                                            </Tooltip>
+                                        )
                                     )}
                                 </>
                             )}
