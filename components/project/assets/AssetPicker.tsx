@@ -24,9 +24,10 @@ interface AssetPickerProps {
     entityId: string
     entityType: 'character' | 'location' | 'object' | 'idea'
     className?: string
+    disabled?: boolean
 }
 
-export default function AssetPicker({ projectId, entityId, entityType, className }: AssetPickerProps) {
+export default function AssetPicker({ projectId, entityId, entityType, className, disabled = false }: AssetPickerProps) {
     const [selectedAsset, setSelectedAsset] = useState<ProjectAsset | null>(null)
     const [loading, setLoading] = useState(true)
     const [isSelecting, setIsSelecting] = useState(false)
@@ -60,6 +61,7 @@ export default function AssetPicker({ projectId, entityId, entityType, className
     }
 
     async function openSelector() {
+        if (disabled) return
         setIsSelecting(true)
         setFetchingAssets(true)
         try {
@@ -81,6 +83,7 @@ export default function AssetPicker({ projectId, entityId, entityType, className
     }
 
     async function attachAsset(assetId: string) {
+        if (disabled) return
         try {
             // 1. Unset any existing primary
             await supabase
@@ -111,6 +114,7 @@ export default function AssetPicker({ projectId, entityId, entityType, className
     }
 
     async function handleDeleteProjectAsset(e: React.MouseEvent, asset: ProjectAsset) {
+        if (disabled) return
         e.stopPropagation()
         setIsDeletingAsset(true)
 
@@ -132,6 +136,7 @@ export default function AssetPicker({ projectId, entityId, entityType, className
     }
 
     async function removeAsset() {
+        if (disabled) return
         try {
             const { error } = await supabase
                 .from('entity_assets')
@@ -165,34 +170,39 @@ export default function AssetPicker({ projectId, entityId, entityType, className
                         alt={selectedAsset.file_name}
                         className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                        <Button 
-                            variant="secondary" 
-                            size="icon" 
-                            className="w-8 h-8 rounded-full"
-                            onClick={openSelector}
-                        >
-                            <Plus className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                            variant="destructive" 
-                            size="icon" 
-                            className="w-8 h-8 rounded-full"
-                            onClick={removeAsset}
-                        >
-                            <X className="w-4 h-4" />
-                        </Button>
-                    </div>
+                    {!disabled && (
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <Button 
+                                variant="secondary" 
+                                size="icon" 
+                                className="w-8 h-8 rounded-full"
+                                onClick={openSelector}
+                            >
+                                <Plus className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                                variant="destructive" 
+                                size="icon" 
+                                className="w-8 h-8 rounded-full"
+                                onClick={removeAsset}
+                            >
+                                <X className="w-4 h-4" />
+                            </Button>
+                        </div>
+                    )}
                 </div>
             ) : (
                 <button 
                     onClick={openSelector}
+                    disabled={disabled}
                     className="w-32 h-32 sm:w-40 sm:h-40 rounded-[2.5rem] bg-white border-2 border-dashed border-stone-200 flex flex-col items-center justify-center gap-2 hover:border-[#546354]/40 hover:bg-[#fbf9f5] transition-all group/btn"
                 >
                     <div className="w-10 h-10 rounded-full bg-stone-50 flex items-center justify-center group-hover/btn:scale-110 transition-transform">
                         <ImageIcon className="w-5 h-5 text-stone-300 group-hover/btn:text-[#546354]/40" />
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-stone-300">Add Image</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-stone-300">
+                        {disabled ? 'No Image' : 'Add Image'}
+                    </span>
                 </button>
             )}
 

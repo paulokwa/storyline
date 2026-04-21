@@ -25,12 +25,14 @@ export default function RelationshipManager({
     projectId, 
     charId, 
     charName,
-    availableEntities 
+    availableEntities,
+    disabled = false,
 }: { 
     projectId: string; 
     charId: string; 
     charName: string;
-    availableEntities: Entity[] 
+    availableEntities: Entity[]
+    disabled?: boolean
 }) {
     const [relationships, setRelationships] = useState<EntityRelationship[]>([])
     const [isLoading, setIsLoading] = useState(true)
@@ -69,6 +71,7 @@ export default function RelationshipManager({
     }, [fetchRelationships])
 
     async function handleAddRelationship() {
+        if (disabled) return
         if (!targetId || !label.trim()) return
         const normalizedLabel = label.trim().replace(/\s+/g, ' ')
         
@@ -116,6 +119,7 @@ export default function RelationshipManager({
     }
 
     async function handleDelete(id: string) {
+        if (disabled) return
         const supabase = createClient()
         const { error } = await supabase.from('entity_relationships').delete().eq('id', id)
         if (!error) {
@@ -171,9 +175,11 @@ export default function RelationshipManager({
                         )}
                     </p>
                 </div>
-                <button onClick={() => handleDelete(rel.id)} className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-2 text-slate-300 hover:text-red-400 rounded-full transition-all">
-                    <Trash2 className="w-4 h-4" />
-                </button>
+                {!disabled && (
+                    <button onClick={() => handleDelete(rel.id)} className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-2 text-slate-300 hover:text-red-400 rounded-full transition-all">
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                )}
             </div>
         )
     }
@@ -189,56 +195,67 @@ export default function RelationshipManager({
             {/* Add Relationship UI */}
             <div className="character-ties-panel bg-[#fcfbf9]/60 rounded-[3rem] p-8 ring-1 ring-[#546354]/5 border border-dashed border-[#546354]/10">
                 <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-[9px] uppercase tracking-widest font-bold text-slate-400 ml-2">Target Entity</label>
-                            <select 
-                                value={targetId} 
-                                onChange={e => setTargetId(e.target.value)}
-                                className="character-ties-input w-full bg-white rounded-2xl px-4 py-3 text-sm border-none shadow-sm ring-1 ring-slate-100 outline-none focus:ring-[#546354]/20"
-                            >
-                                <option value="">Select someone or something...</option>
-                                {availableEntities
-                                    .filter(e => e.id !== charId)
-                                    .map(e => (
-                                    <option key={e.id} value={e.id}>
-                                        {e.type.charAt(0).toUpperCase() + e.type.slice(1)}: {e.name}
-                                    </option>
-                                ))}
-                            </select>
+                    {disabled ? (
+                        <div className="rounded-[2rem] bg-white/80 ring-1 ring-stone-100 px-6 py-5 text-center">
+                            <p className="text-[10px] uppercase tracking-[0.25em] text-stone-300 font-bold">Viewer Access</p>
+                            <p className="mt-3 text-sm text-slate-500 italic">
+                                Viewers can read character ties, but only the owner or an editor can create or remove them.
+                            </p>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-[9px] uppercase tracking-widest font-bold text-slate-400 ml-2">Nature of Connection</label>
-                            <StableInput 
-                                value={label}
-                                onValueChange={setLabel}
-                                placeholder="Mentor of, Friend, Nemesis, Owner of..."
-                                className="character-ties-input w-full bg-white rounded-2xl px-4 py-3 text-sm border-none shadow-sm ring-1 ring-slate-100 outline-none focus:ring-[#546354]/20 h-[46px]"
-                            />
-                        </div>
-                    </div>
+                    ) : (
+                        <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[9px] uppercase tracking-widest font-bold text-slate-400 ml-2">Target Entity</label>
+                                    <select 
+                                        value={targetId} 
+                                        onChange={e => setTargetId(e.target.value)}
+                                        className="character-ties-input w-full bg-white rounded-2xl px-4 py-3 text-sm border-none shadow-sm ring-1 ring-slate-100 outline-none focus:ring-[#546354]/20"
+                                    >
+                                        <option value="">Select someone or something...</option>
+                                        {availableEntities
+                                            .filter(e => e.id !== charId)
+                                            .map(e => (
+                                            <option key={e.id} value={e.id}>
+                                                {e.type.charAt(0).toUpperCase() + e.type.slice(1)}: {e.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[9px] uppercase tracking-widest font-bold text-slate-400 ml-2">Nature of Connection</label>
+                                    <StableInput 
+                                        value={label}
+                                        onValueChange={setLabel}
+                                        placeholder="Mentor of, Friend, Nemesis, Owner of..."
+                                        className="character-ties-input w-full bg-white rounded-2xl px-4 py-3 text-sm border-none shadow-sm ring-1 ring-slate-100 outline-none focus:ring-[#546354]/20 h-[46px]"
+                                    />
+                                </div>
+                            </div>
 
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3 ml-2">
-                            <input 
-                                type="checkbox" 
-                                id="is_symmetrical" 
-                                checked={isSymmetrical} 
-                                onChange={e => setIsSymmetrical(e.target.checked)}
-                                className="w-4 h-4 rounded border-slate-300 text-[#546354] focus:ring-[#546354]/20"
-                            />
-                            <label htmlFor="is_symmetrical" className="text-[10px] text-slate-400 font-medium cursor-pointer">This tie is symmetrical (both share the label)</label>
-                        </div>
-                        
-                        <Button 
-                            onClick={handleAddRelationship} 
-                            disabled={isSaving || !targetId || !label.trim()}
-                            className="rounded-full bg-[#546354] hover:bg-[#435243] text-white px-8 uppercase tracking-widest text-[9px] font-bold h-10"
-                        >
-                            {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5 mr-2" />}
-                            Bind Connection
-                        </Button>
-                    </div>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="flex items-center gap-3 ml-2">
+                                    <input 
+                                        type="checkbox" 
+                                        id="is_symmetrical" 
+                                        checked={isSymmetrical} 
+                                        onChange={e => setIsSymmetrical(e.target.checked)}
+                                        className="w-4 h-4 rounded border-slate-300 text-[#546354] focus:ring-[#546354]/20"
+                                    />
+                                    <label htmlFor="is_symmetrical" className="text-[10px] text-slate-400 font-medium cursor-pointer">This tie is symmetrical (both share the label)</label>
+                                </div>
+                                
+                                <Button 
+                                    onClick={handleAddRelationship} 
+                                    disabled={isSaving || !targetId || !label.trim()}
+                                    className="rounded-full bg-[#546354] hover:bg-[#435243] text-white px-8 uppercase tracking-widest text-[9px] font-bold h-10"
+                                >
+                                    {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5 mr-2" />}
+                                    Bind Connection
+                                </Button>
+                            </div>
+                        </>
+                    )}
 
                     {error && (
                         <div className="flex items-center gap-2 bg-red-50 text-red-500 text-[10px] px-3 py-2 rounded-lg animate-in fade-in">

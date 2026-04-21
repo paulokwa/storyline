@@ -715,6 +715,7 @@ export type Database = {
         Row: {
           ai_onboarding_completed: boolean
           avatar_url: string | null
+          bio: string | null
           created_at: string | null
           display_name: string | null
           id: string
@@ -725,6 +726,7 @@ export type Database = {
         Insert: {
           ai_onboarding_completed?: boolean
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string | null
           display_name?: string | null
           id: string
@@ -735,6 +737,7 @@ export type Database = {
         Update: {
           ai_onboarding_completed?: boolean
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string | null
           display_name?: string | null
           id?: string
@@ -810,6 +813,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          is_shared: boolean | null
           node_id: string | null
           order_index: number | null
           parent_id: string | null
@@ -825,6 +829,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          is_shared?: boolean | null
           node_id?: string | null
           order_index?: number | null
           parent_id?: string | null
@@ -840,6 +845,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          is_shared?: boolean | null
           node_id?: string | null
           order_index?: number | null
           parent_id?: string | null
@@ -953,6 +959,7 @@ export type Database = {
       projects: {
         Row: {
           allow_collaborator_exports: boolean | null
+          allow_viewer_feedback: boolean | null
           cover_url: string | null
           created_at: string | null
           deleted_at: string | null
@@ -973,6 +980,7 @@ export type Database = {
         }
         Insert: {
           allow_collaborator_exports?: boolean | null
+          allow_viewer_feedback?: boolean | null
           cover_url?: string | null
           created_at?: string | null
           deleted_at?: string | null
@@ -993,6 +1001,7 @@ export type Database = {
         }
         Update: {
           allow_collaborator_exports?: boolean | null
+          allow_viewer_feedback?: boolean | null
           cover_url?: string | null
           created_at?: string | null
           deleted_at?: string | null
@@ -1479,6 +1488,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          is_shared: boolean
           node_id: string
           order_index: number
           parent_id: string
@@ -1502,6 +1512,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          is_shared: boolean
           node_id: string
           order_index: number
           parent_id: string

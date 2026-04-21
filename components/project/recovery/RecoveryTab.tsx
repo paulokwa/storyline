@@ -38,6 +38,7 @@ import {
     permanentlyDeleteHistoryVersion
 } from '@/lib/supabase/recovery'
 import { useRouter } from 'next/navigation'
+import { useProjectActions } from '@/components/project/ProjectContext'
 
 type RecoverySection = 'trash' | 'history' | 'snapshots'
 type TrashFilter = 'all' | 'structure' | 'assets' | 'ai'
@@ -67,6 +68,8 @@ export default function RecoveryTab({
     historyEntries,
     snapshots
 }: RecoveryTabProps) {
+    const { role } = useProjectActions()
+    const isReadOnly = role === 'viewer'
     const router = useRouter()
     const [activeSection, setActiveSection] = useState<RecoverySection>('trash')
     const [trashFilter, setTrashFilter] = useState<TrashFilter>('all')
@@ -118,6 +121,7 @@ export default function RecoveryTab({
     }
 
     const handleRestoreNode = async (nodeId: string) => {
+        if (isReadOnly) return
         setIsRestoring(nodeId)
         try {
             const descendants = getDescendants(nodeId)
@@ -131,6 +135,7 @@ export default function RecoveryTab({
     }
 
     const handleRestoreEntity = async (table: any, id: string) => {
+        if (isReadOnly) return
         setIsRestoring(id)
         try {
             await restoreEntity(supabase, table, id)
@@ -143,6 +148,7 @@ export default function RecoveryTab({
     }
 
     const handleRestoreVersion = async (version: any) => {
+        if (isReadOnly) return
         setIsRestoring(version.id)
         try {
             const { data: currentScene } = await supabase
@@ -174,6 +180,7 @@ export default function RecoveryTab({
     }
 
     const handleCreateSnapshot = async () => {
+        if (isReadOnly) return
         if (!snapshotName.trim()) return
         setIsCreatingSnapshot(true)
         try {
@@ -190,6 +197,7 @@ export default function RecoveryTab({
     }
 
     const handleRestoreSnapshot = async () => {
+        if (isReadOnly) return
         if (!snapshotToRestore) return
         setIsRestoringSnapshot(true)
         try {
@@ -206,6 +214,7 @@ export default function RecoveryTab({
     }
 
     const handleDeleteSnapshot = async () => {
+        if (isReadOnly) return
         if (!snapshotToDelete) return
         setIsDeletingSnapshot(true)
         try {
@@ -221,6 +230,7 @@ export default function RecoveryTab({
     }
 
     const handlePermanentlyDeleteTrashItem = async () => {
+        if (isReadOnly) return
         if (!itemToPermanentlyDelete) return
         setIsPermanentlyDeleting(true)
         try {
@@ -240,6 +250,7 @@ export default function RecoveryTab({
     }
 
     const handlePermanentlyDeleteHistoryVersion = async () => {
+        if (isReadOnly) return
         if (!versionToDelete) return
         setIsDeletingVersion(true)
         try {
@@ -254,6 +265,7 @@ export default function RecoveryTab({
     }
 
     const handleClearTrash = async () => {
+        if (isReadOnly) return
         if (!confirm('Are you sure you want to permanently clear all items in the trash? This cannot be undone.')) return
         setIsPermanentlyDeleting(true)
         try {
@@ -370,6 +382,14 @@ export default function RecoveryTab({
             {/* Content Area */}
             <div className="recovery-tab-body flex-1 overflow-y-auto w-full custom-scrollbar">
                 <div className="max-w-5xl mx-auto px-8 py-10">
+                    {isReadOnly && (
+                        <div className="mb-6 rounded-[2rem] border border-amber-100 bg-amber-50/60 px-6 py-4">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">Viewer Access</p>
+                            <p className="mt-2 text-sm italic text-amber-800/80">
+                                Recovery is view-only for viewers. Restore, delete, and snapshot actions are reserved for the owner and editors.
+                            </p>
+                        </div>
+                    )}
                     {activeSection === 'trash' ? (
                         <div className="space-y-8 animate-in fade-in duration-500">
                             {/* Trash Filters and Search */}
@@ -396,7 +416,7 @@ export default function RecoveryTab({
                                             </button>
                                         ))}
                                     </div>
-                                    {trashItems.length > 0 && (
+                                    {trashItems.length > 0 && !isReadOnly && (
                                         <Button 
                                             variant="ghost" 
                                             size="sm" 
@@ -457,25 +477,29 @@ export default function RecoveryTab({
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center justify-end gap-2 shrink-0 border-t sm:border-t-0 border-slate-50 pt-3 sm:pt-0">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            if (item.trashType === 'structure') handleRestoreNode(item.id)
-                                                            else handleRestoreEntity(item.trashType === 'ai' ? 'ai_responses' : item.typeLabel.toLowerCase() + 's', item.id)
-                                                        }}
-                                                        disabled={isRestoring === item.id}
-                                                        className="rounded-full bg-white border-slate-100 text-[#546354] hover:bg-[#546354] hover:text-white uppercase tracking-widest text-[9px] font-bold h-8 sm:h-9 px-4 sm:px-6 transition-all"
-                                                    >
-                                                        {isRestoring === item.id ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <RotateCcw className="w-3 h-3 mr-2" />}
-                                                        Restore
-                                                    </Button>
-                                                    <button 
-                                                        onClick={() => setItemToPermanentlyDelete(item)}
-                                                        className="p-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 text-slate-300 rounded-full transition-all"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
+                                                    {!isReadOnly && (
+                                                        <>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    if (item.trashType === 'structure') handleRestoreNode(item.id)
+                                                                    else handleRestoreEntity(item.trashType === 'ai' ? 'ai_responses' : item.typeLabel.toLowerCase() + 's', item.id)
+                                                                }}
+                                                                disabled={isRestoring === item.id}
+                                                                className="rounded-full bg-white border-slate-100 text-[#546354] hover:bg-[#546354] hover:text-white uppercase tracking-widest text-[9px] font-bold h-8 sm:h-9 px-4 sm:px-6 transition-all"
+                                                            >
+                                                                {isRestoring === item.id ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <RotateCcw className="w-3 h-3 mr-2" />}
+                                                                Restore
+                                                            </Button>
+                                                            <button 
+                                                                onClick={() => setItemToPermanentlyDelete(item)}
+                                                                className="p-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 text-slate-300 rounded-full transition-all"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -535,16 +559,20 @@ export default function RecoveryTab({
                                                      <Eye className="w-3.5 h-3.5 sm:mr-2" />
                                                      <span className="hidden sm:inline">Preview</span>
                                                  </Button>
-                                                 <Button variant="outline" size="sm" onClick={() => handleRestoreVersion(version)} disabled={isRestoring === version.id} className="rounded-full bg-white border-slate-100 text-[#546354] uppercase tracking-widest text-[9px] font-bold h-8 sm:h-9 px-4 sm:px-6 shadow-sm">
-                                                     {isRestoring === version.id ? <Loader2 className="w-3 h-3 animate-spin sm:mr-2" /> : <RotateCcw className="w-3 h-3 sm:mr-2" />}
-                                                     Restore
-                                                 </Button>
-                                                 <button 
-                                                     onClick={() => setVersionToDelete(version)}
-                                                     className="p-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 text-slate-300 rounded-full transition-all"
-                                                  >
-                                                     <Trash2 className="w-4 h-4" />
-                                                 </button>
+                                                 {!isReadOnly && (
+                                                     <>
+                                                         <Button variant="outline" size="sm" onClick={() => handleRestoreVersion(version)} disabled={isRestoring === version.id} className="rounded-full bg-white border-slate-100 text-[#546354] uppercase tracking-widest text-[9px] font-bold h-8 sm:h-9 px-4 sm:px-6 shadow-sm">
+                                                             {isRestoring === version.id ? <Loader2 className="w-3 h-3 animate-spin sm:mr-2" /> : <RotateCcw className="w-3 h-3 sm:mr-2" />}
+                                                             Restore
+                                                         </Button>
+                                                         <button 
+                                                             onClick={() => setVersionToDelete(version)}
+                                                             className="p-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 text-slate-300 rounded-full transition-all"
+                                                          >
+                                                             <Trash2 className="w-4 h-4" />
+                                                         </button>
+                                                     </>
+                                                 )}
                                              </div>
                                          </div>
                                      </div>
@@ -559,14 +587,16 @@ export default function RecoveryTab({
                                     <h2 className="text-xl font-serif italic text-slate-800">Project Snapshots</h2>
                                     <p className="text-xs text-slate-400">Manual restore points for major milestones.</p>
                                 </div>
-                                <Button
-                                    onClick={() => setShowCreateModal(true)}
-                                    disabled={snapshots.length >= 5}
-                                    className="rounded-xl bg-[#546354] hover:bg-[#435243] text-white h-10 px-6 uppercase tracking-widest text-[10px] font-bold"
-                                >
-                                    <Layers className="w-3.5 h-3.5 mr-2" />
-                                    Create Snapshot
-                                </Button>
+                                {!isReadOnly && (
+                                    <Button
+                                        onClick={() => setShowCreateModal(true)}
+                                        disabled={snapshots.length >= 5}
+                                        className="rounded-xl bg-[#546354] hover:bg-[#435243] text-white h-10 px-6 uppercase tracking-widest text-[10px] font-bold"
+                                    >
+                                        <Layers className="w-3.5 h-3.5 mr-2" />
+                                        Create Snapshot
+                                    </Button>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-20">
@@ -584,9 +614,11 @@ export default function RecoveryTab({
                                                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{new Date(snapshot.created_at).toLocaleDateString()}</p>
                                                         </div>
                                                     </div>
-                                                    <button onClick={() => setSnapshotToDelete(snapshot)} className="p-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 text-slate-300 rounded-full transition-all">
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
+                                                    {!isReadOnly && (
+                                                        <button onClick={() => setSnapshotToDelete(snapshot)} className="p-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 text-slate-300 rounded-full transition-all">
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                                 <h3 className="text-xl font-serif italic text-slate-800 mb-2 truncate">{snapshot.name}</h3>
                                                 {snapshot.description && <p className="text-slate-500 text-xs mb-6 line-clamp-2 italic">{snapshot.description}</p>}
@@ -604,9 +636,11 @@ export default function RecoveryTab({
                                                     </div>
                                                 )}
                                             </div>
-                                            <Button variant="outline" onClick={() => setSnapshotToRestore(snapshot)} className="w-full rounded-2xl bg-white border-slate-100 text-[#546354] hover:bg-[#546354] hover:text-white uppercase tracking-widest text-[10px] font-bold h-12 transition-all">
-                                                <RotateCcw className="w-4 h-4 mr-2" /> Restore Project
-                                            </Button>
+                                            {!isReadOnly && (
+                                                <Button variant="outline" onClick={() => setSnapshotToRestore(snapshot)} className="w-full rounded-2xl bg-white border-slate-100 text-[#546354] hover:bg-[#546354] hover:text-white uppercase tracking-widest text-[10px] font-bold h-12 transition-all">
+                                                    <RotateCcw className="w-4 h-4 mr-2" /> Restore Project
+                                                </Button>
+                                            )}
                                         </div>
                                     )
                                 })}

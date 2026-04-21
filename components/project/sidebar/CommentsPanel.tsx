@@ -20,7 +20,9 @@ import {
     Target,
     BrainCircuit,
     Check,
-    Loader2
+    Loader2,
+    Globe,
+    Lock
 } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { Button } from '@/components/ui/button'
@@ -35,6 +37,7 @@ export default function CommentsPanel({
     projectId, 
     projectOwnerId,
     shareOwnerFeedback = false,
+    allowViewerFeedback = false,
     activeNodeId, 
     activeSceneId,
     onSelectNode,
@@ -43,6 +46,7 @@ export default function CommentsPanel({
     projectId: string, 
     projectOwnerId: string,
     shareOwnerFeedback?: boolean,
+    allowViewerFeedback?: boolean,
     activeNodeId: string | null,
     activeSceneId?: string,
     onSelectNode?: (id: string) => void,
@@ -57,6 +61,7 @@ export default function CommentsPanel({
         updateComment, 
         deleteComment, 
         resolveComment,
+        setCommentSharing,
         activeCommentId,
         setActiveCommentId,
         typingUsers,
@@ -310,28 +315,30 @@ export default function CommentsPanel({
         }
     }
 
-    const shouldHideOwnerFeedback = role === 'viewer' && !shareOwnerFeedback
+    const canViewerLeaveFeedback = role !== 'viewer' || allowViewerFeedback
+    const canViewerSeeComment = useMemo(() => {
+        return (comment: any) => {
+            if (role !== 'viewer') return true
+            if (comment.author_id === currentUserId) return true
+            if (comment.is_shared) return true
+            if (shareOwnerFeedback && comment.author_id === projectOwnerId) return true
+            return false
+        }
+    }, [currentUserId, projectOwnerId, role, shareOwnerFeedback])
     const canFilterByAuthor = role === 'owner' || role === 'editor'
 
     const getVisibleReplies = useMemo(() => {
         return (parentId: string) => comments.filter(c => {
             if (c.parent_id !== parentId) return false
-            if (shouldHideOwnerFeedback && c.author_id === projectOwnerId) return false
-            return true
+            return canViewerSeeComment(c)
         })
-    }, [comments, projectOwnerId, shouldHideOwnerFeedback])
+    }, [canViewerSeeComment, comments])
 
     const filteredComments = useMemo(() => {
         let list = comments.filter(c => !c.parent_id)
         
-        // Rule: Viewers can only see their own threads 
-        // (threads they started)
         if (role === 'viewer') {
-            list = list.filter(c => c.author_id === currentUserId)
-        }
-
-        if (shouldHideOwnerFeedback) {
-            list = list.filter(c => c.author_id !== projectOwnerId)
+            list = list.filter(c => canViewerSeeComment(c))
         }
 
         if (authorFilter === 'mine' && currentUserId) {
@@ -357,7 +364,7 @@ export default function CommentsPanel({
             }
             return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         })
-    }, [authorFilter, comments, activeNodeId, currentUserId, filterByNode, projectOwnerId, role, shouldHideOwnerFeedback, showResolved])
+    }, [authorFilter, canViewerSeeComment, comments, activeNodeId, currentUserId, filterByNode, role, showResolved])
 
     // Meta-counts for UI feedback
     const resolvedCount = useMemo(() => 
@@ -385,12 +392,14 @@ export default function CommentsPanel({
     }, [comments, currentUserId])
 
     async function handleAddComment() {
+        if (!canViewerLeaveFeedback) return
         if (!newCommentText.trim()) return
         try {
             await addComment({
                 project_id: projectId,
                 node_id: activeNodeId || undefined,
-                content: newCommentText.trim()
+                content: newCommentText.trim(),
+                is_shared: false,
             })
             setNewCommentText('')
         } catch (e: any) {
@@ -404,13 +413,15 @@ export default function CommentsPanel({
     }
 
     async function handleAddReply(parentId: string) {
+        if (role === 'viewer') return
         if (!replyText.trim()) return
         try {
             await addComment({
                 project_id: projectId,
                 node_id: activeNodeId || undefined,
                 content: replyText.trim(),
-                parent_id: parentId
+                parent_id: parentId,
+                is_shared: false,
             })
             setReplyText('')
             setReplyToId(null)
@@ -597,6 +608,7 @@ export default function CommentsPanel({
                                                         onCancelEdit={() => setEditingId(null)}
                                                         onDelete={handleDeleteComment}
                                                         onResolve={resolveComment}
+                                                        onToggleShare={setCommentSharing}
                                                         onSelectNode={onSelectNode}
                                                         onJumpTo={() => {
                                                             if (comment.node_id) onSelectNode?.(comment.node_id)
@@ -614,6 +626,9 @@ export default function CommentsPanel({
                                                         removingIdeaId={removingIdeaId}
                                                         addedCommentIds={addedCommentIds}
                                                         activeSceneId={activeSceneId}
+                                                        canReply={role !== 'viewer'}
+                                                        canShareWithGroup={true}
+                                                        canAddToAssistant={role !== 'viewer'}
                                                     />
                                                 </div>
                                             )}
@@ -631,12 +646,13 @@ export default function CommentsPanel({
             <div className="p-4 pb-24 md:pb-4 border-t border-slate-100 bg-slate-50/50">
                 <div className="relative" suppressHydrationWarning>
                     <textarea
-                        placeholder="Add a thought..."
+                        placeholder={canViewerLeaveFeedback ? "Add a thought..." : "The owner has not enabled viewer feedback for this project."}
                         value={newCommentText}
                         onChange={(e) => {
                             setNewCommentText(e.target.value)
                             handleTyping(null)
                         }}
+                        disabled={!canViewerLeaveFeedback}
                         className="w-full bg-white border border-slate-200 rounded-2xl p-4 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[100px] resize-none font-sans"
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -648,12 +664,17 @@ export default function CommentsPanel({
                     <Button 
                         size="icon" 
                         onClick={handleAddComment}
-                        disabled={!newCommentText.trim()}
+                        disabled={!canViewerLeaveFeedback || !newCommentText.trim()}
                         className="absolute right-3 bottom-3 h-8 w-8 rounded-xl sanctuary-btn-primary shadow-lg"
                     >
                         <Send className="w-4 h-4" />
                     </Button>
                 </div>
+                {!canViewerLeaveFeedback && role === 'viewer' && (
+                    <p className="mt-3 text-[10px] uppercase tracking-[0.18em] text-slate-400 font-bold">
+                        Viewer feedback is currently disabled by the owner.
+                    </p>
+                )}
             </div>
         </div>
     )
@@ -676,6 +697,7 @@ function CommentThread({
     onCancelEdit,
     onDelete,
     onResolve,
+    onToggleShare,
     onSelectNode,
     role,
     isActive,
@@ -690,7 +712,10 @@ function CommentThread({
     addingIdeaId,
     removingIdeaId,
     addedCommentIds,
-    activeSceneId
+    activeSceneId,
+    canReply,
+    canShareWithGroup,
+    canAddToAssistant
 }: any) {
     const isOwnerOrEditor = role === 'owner' || role === 'editor'
     const isResolved = comment.status === 'resolved'
@@ -709,7 +734,7 @@ function CommentThread({
                     comment={comment} 
                     isOwnerOrEditor={isOwnerOrEditor}
                     role={role}
-                    onReply={() => onReply(comment.id)}
+                    onReply={canReply ? (() => onReply(comment.id)) : undefined}
                     isEditing={editingId === comment.id}
                     onEdit={() => onEdit(comment.id, comment.content)}
                     editText={editText}
@@ -718,6 +743,7 @@ function CommentThread({
                     onCancelEdit={onCancelEdit}
                     onDelete={() => onDelete(comment.id)}
                     onResolve={() => onResolve(comment.id, comment.status === 'open')}
+                    onToggleShare={(isShared: boolean) => onToggleShare(comment.id, isShared)}
                     onSelectNode={onSelectNode}
                     onJumpTo={onJumpTo}
                     isActive={isActive}
@@ -730,6 +756,8 @@ function CommentThread({
                     removingIdeaId={removingIdeaId}
                     addedCommentIds={addedCommentIds}
                     activeSceneId={activeSceneId}
+                    canShareWithGroup={canShareWithGroup}
+                    canAddToAssistant={canAddToAssistant}
                 />
                 
                 {replies.length > 0 && (
@@ -748,18 +776,21 @@ function CommentThread({
                                 onCancelEdit={onCancelEdit}
                                 onDelete={() => onDelete(reply.id)}
                                 isReply
+                                onToggleShare={(isShared: boolean) => onToggleShare(reply.id, isShared)}
                                 onAddToAssistant={onAddToAssistant}
                                 onRemoveFromAssistant={onRemoveFromAssistant}
                                 addingIdeaId={addingIdeaId}
                                 removingIdeaId={removingIdeaId}
                                 addedCommentIds={addedCommentIds}
                                 activeSceneId={activeSceneId}
+                                canShareWithGroup={canShareWithGroup}
+                                canAddToAssistant={canAddToAssistant}
                             />
                         ))}
                     </div>
                 )}
 
-                {isReplying && (
+                {isReplying && canReply && (
                     <div className="ml-4 sm:ml-7 border-l-2 border-slate-100/80 pl-3 sm:pl-4">
                         <div className="relative">
                             <textarea
@@ -809,6 +840,7 @@ function CommentItem({
     onCancelEdit,
     onDelete,
     onResolve,
+    onToggleShare,
     onSelectNode,
     onJumpTo,
     isActive,
@@ -822,7 +854,9 @@ function CommentItem({
     addingIdeaId,
     removingIdeaId,
     addedCommentIds,
-    activeSceneId
+    activeSceneId,
+    canShareWithGroup,
+    canAddToAssistant
 }: any) {
     const supabase = createClient()
     const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -955,6 +989,31 @@ function CommentItem({
                                     <Reply className="w-4 h-4" />
                                 </Button>
                             )}
+                            {isAuthor && canShareWithGroup && (
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className={cn(
+                                                "h-7 w-7 rounded-lg transition-all",
+                                                comment.is_shared
+                                                    ? "text-sky-600 bg-sky-50 hover:bg-sky-100"
+                                                    : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                                            )}
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                onToggleShare?.(!comment.is_shared)
+                                            }}
+                                        >
+                                            {comment.is_shared ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">
+                                        {comment.is_shared ? 'Shared with the group' : 'Private to you, owner, and editors'}
+                                    </TooltipContent>
+                                </Tooltip>
+                            )}
                             {!isReply && onResolve && isOwnerOrEditor && (
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -996,7 +1055,7 @@ function CommentItem({
                                 </Tooltip>
                             )}
 
-                            {activeSceneId && (
+                            {activeSceneId && canAddToAssistant && (
                                 <>
                                     <div className="w-[1px] h-3 bg-slate-200/50 mx-1" />
                                     {addedCommentIds.has(comment.id) ? (

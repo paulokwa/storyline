@@ -18,6 +18,7 @@ export interface Comment {
     resolved_by: string | null
     author_email?: string
     order_index: number
+    is_shared?: boolean
 }
 
 interface TypingState {
@@ -30,10 +31,11 @@ interface CommentsContextType {
     setComments: React.Dispatch<React.SetStateAction<Comment[]>>
     isLoading: boolean
     fetchComments: (projectId: string) => Promise<void>
-    addComment: (data: { project_id: string; node_id?: string; content: string; parent_id?: string, anchor_data?: any }) => Promise<Comment>
+    addComment: (data: { project_id: string; node_id?: string; content: string; parent_id?: string, anchor_data?: any, is_shared?: boolean }) => Promise<Comment>
     updateComment: (id: string, content: string) => Promise<void>
     deleteComment: (id: string) => Promise<void>
     resolveComment: (id: string, resolved: boolean) => Promise<void>
+    setCommentSharing: (id: string, isShared: boolean) => Promise<void>
     commentsPanelOpen: boolean
     setCommentsPanelOpen: (open: boolean) => void
     activeCommentId: string | null
@@ -275,7 +277,7 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
         })
     }, [])
 
-    const addComment = async ({ project_id, node_id, content, parent_id, anchor_data }: any) => {
+    const addComment = async ({ project_id, node_id, content, parent_id, anchor_data, is_shared = false }: any) => {
         const { data, error } = await supabase
             .from('project_comments')
             .insert({
@@ -285,19 +287,27 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
                 parent_id,
                 anchor_data,
                 status: 'open',
-                order_index: comments.length > 0 ? Math.min(...comments.map(c => c.order_index || 0)) - 1 : 1
+                order_index: comments.length > 0 ? Math.min(...comments.map(c => c.order_index || 0)) - 1 : 1,
+                is_shared,
             })
             .select()
             .single()
         
         if (error) {
-            console.error('Supabase AddComment Error:', error)
+            console.error('Supabase AddComment Error:', {
+                message: (error as any)?.message,
+                details: (error as any)?.details,
+                hint: (error as any)?.hint,
+                code: (error as any)?.code,
+                raw: error,
+            })
             throw error
         }
         
         const newComment = {
             ...data,
-            author_email: currentUser?.email
+            author_email: currentUser?.email,
+            is_shared,
         } as Comment
 
         // Optimistic UI update: Add to list immediately
@@ -418,6 +428,23 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
         }
     }
 
+    const setCommentSharing = async (id: string, isShared: boolean) => {
+        setComments(prev => prev.map(c =>
+            c.id === id ? { ...c, is_shared: isShared } : c
+        ))
+
+        const { error } = await supabase
+            .from('project_comments')
+            .update({ is_shared: isShared, updated_at: new Date().toISOString() })
+            .eq('id', id)
+
+        if (error) {
+            console.error('Error updating comment sharing:', error)
+            fetchComments(projectId)
+            throw error
+        }
+    }
+
     return (
         <CommentsContext.Provider value={{ 
             comments, 
@@ -428,6 +455,7 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
             updateComment, 
             deleteComment, 
             resolveComment,
+            setCommentSharing,
             commentsPanelOpen,
             setCommentsPanelOpen,
             activeCommentId,

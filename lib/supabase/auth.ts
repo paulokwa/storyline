@@ -2,17 +2,21 @@ import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { createClient } from './server'
+import { getUserWithTimeout } from './auth-timeout'
 
 export const getVerifiedUser = cache(async (): Promise<User | null> => {
     const supabase = await createClient()
-    const { data, error } = await supabase.auth.getUser()
+    const { user, error, timedOut } = await getUserWithTimeout(supabase)
 
     if (error) {
-        console.error('Failed to verify auth user:', error)
+        const isMissingSession = error.name === 'AuthSessionMissingError'
+        if (!isMissingSession) {
+            console.error(timedOut ? 'Supabase auth timed out while verifying user:' : 'Failed to verify auth user:', error)
+        }
         return null
     }
 
-    return data.user
+    return user
 })
 
 export async function requireVerifiedUser(): Promise<User> {

@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -20,6 +21,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useProjectActionsStore } from '@/lib/store/projectActionsStore'
 import { useTheme } from '@/components/providers/ThemeProvider'
 import NotificationBell from '@/components/notifications/NotificationBell'
+import { cn } from '@/lib/utils'
 
 export default function AppNav({ user }: { user: User }) {
     const router = useRouter()
@@ -28,6 +30,26 @@ export default function AppNav({ user }: { user: User }) {
     const canAccessAdmin = isAdminEmail(user.email)
     const { theme } = useTheme()
     const isMidnight = theme === 'midnight'
+    const [hasCollaboratorCluster, setHasCollaboratorCluster] = useState(false)
+
+    useEffect(() => {
+        const target = document.getElementById('app-nav-portal')
+        if (!target) return
+
+        const updateState = () => {
+            setHasCollaboratorCluster(target.childElementCount > 0)
+        }
+
+        updateState()
+
+        const observer = new MutationObserver(() => {
+            updateState()
+        })
+
+        observer.observe(target, { childList: true, subtree: true })
+
+        return () => observer.disconnect()
+    }, [pathname])
 
     async function handleSignOut() {
         const supabase = createClient()
@@ -67,9 +89,17 @@ export default function AppNav({ user }: { user: User }) {
                 </Link>
 
                 <div className="flex items-center gap-2 sm:gap-4">
-                    <div id="app-nav-portal" className="flex items-center" />
-
                     <NotificationBell />
+
+                    <div
+                        id="app-nav-portal"
+                        className={hasCollaboratorCluster ? cn(
+                            "flex items-center rounded-full px-1.5 py-1",
+                            isMidnight
+                                ? "bg-white/6 border border-white/8"
+                                : "bg-slate-50/90 border border-slate-200/80"
+                        ) : "flex items-center"}
+                    />
 
                     <DropdownMenu>
                         <DropdownMenuTrigger>

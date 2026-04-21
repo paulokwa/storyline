@@ -20,6 +20,12 @@ export default async function SettingsPage() {
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle()
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name, avatar_url, bio')
+        .eq('id', user.id)
+        .maybeSingle()
         
     const maskedApiKey = maskApiKey(aiSettings?.api_key)
 
@@ -27,6 +33,11 @@ export default async function SettingsPage() {
         <div className="settings-page-shell flex-1 overflow-y-auto min-h-0 bg-slate-50/50">
             <SettingsView 
                 user={user} 
+                profile={{
+                    display_name: profile?.display_name ?? null,
+                    avatar_url: profile?.avatar_url ?? null,
+                    bio: profile?.bio ?? null,
+                }}
                 maskedApiKey={maskedApiKey} 
                 aiSettings={{
                     ai_enabled: aiSettings?.ai_enabled ?? true,

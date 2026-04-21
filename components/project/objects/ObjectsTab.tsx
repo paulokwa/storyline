@@ -12,6 +12,7 @@ import type { Database } from '@/lib/supabase/types'
 import { softDeleteEntity } from '@/lib/supabase/recovery'
 import AssetPicker from '@/components/project/assets/AssetPicker'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useProjectActions } from '@/components/project/ProjectContext'
 
 type StoryObject = any // Flexibility for custom schema
 
@@ -22,6 +23,8 @@ export default function ObjectsTab({
     projectId: string
     objects?: any[]
 }) {
+    const { role } = useProjectActions()
+    const isReadOnly = role === 'viewer'
     const [localObjects, setLocalObjects] = useState<any[]>(initialObjects)
     const [selectedId, setSelectedId] = useState<string | null>(initialObjects[0]?.id ?? null)
 
@@ -76,6 +79,7 @@ export default function ObjectsTab({
     }, [])
 
     const handleFieldChange = (id: string, field: string, value: string) => {
+        if (isReadOnly) return
         // Update local state immediately for name shown in sidebar
         setLocalObjects((prev: any[]) => prev.map(o => o.id === id ? { ...o, [field]: value } : o))
         if (saveTimer.current) clearTimeout(saveTimer.current)
@@ -88,6 +92,7 @@ export default function ObjectsTab({
     // For PremiumEditor (multiline) fields: skip local state update to prevent
     // parent re-renders that interrupt Android IME composition mid-keystroke.
     const handleTextEditorChange = (id: string, field: string, value: string) => {
+        if (isReadOnly) return
         if (saveTimer.current) clearTimeout(saveTimer.current)
         setIsSaving(true)
         saveTimer.current = setTimeout(() => {
@@ -96,6 +101,7 @@ export default function ObjectsTab({
     }
 
     async function handleDeleteObject(id: string) {
+        if (isReadOnly) return
         setIsSaving(true)
         const supabase = createClient()
         try {
@@ -120,6 +126,7 @@ export default function ObjectsTab({
     }
 
     async function handleCreateObject() {
+        if (isReadOnly) return
         setIsCreating(true)
         const supabase = createClient()
         const nextOrderIndex = Math.max(0, ...localObjects.map((o: any) => o.order_index)) + 1
@@ -162,6 +169,10 @@ export default function ObjectsTab({
 
     function commitRename(id: string) {
         const trimmed = renameValue.trim()
+        if (isReadOnly) {
+            setRenamingId(null)
+            return
+        }
         if (trimmed && trimmed !== localObjects.find(o => o.id === id)?.name) {
             handleFieldChange(id, 'name', trimmed)
         }
@@ -169,6 +180,7 @@ export default function ObjectsTab({
     }
 
     async function handleReorder(result: DropResult) {
+        if (isReadOnly) return
         if (!result.destination) return
         const items = reorder(localObjects, result.source.index, result.destination.index)
         setLocalObjects(items)
@@ -183,7 +195,7 @@ export default function ObjectsTab({
     }
 
     if (localObjects.length === 0) {
-        return <EmptyState onCreate={handleCreateObject} isCreating={isCreating} />
+        return <EmptyState onCreate={handleCreateObject} isCreating={isCreating} isReadOnly={isReadOnly} />
     }
 
     return (
@@ -195,7 +207,7 @@ export default function ObjectsTab({
                         <Package className="w-4 h-4 text-[#546354]/60" />
                         <h2 className="text-[11px] font-sans tracking-[0.2em] uppercase text-[#546354]/60 font-medium">Items & Artefacts</h2>
                     </div>
-                    <Tooltip>
+                    {!isReadOnly && <Tooltip>
                         <TooltipTrigger>
                             <button 
                                 onClick={handleCreateObject}
@@ -206,7 +218,7 @@ export default function ObjectsTab({
                             </button>
                         </TooltipTrigger>
                         <TooltipContent side="top">Add object</TooltipContent>
-                    </Tooltip>
+                    </Tooltip>}
                 </div>
 
                 <DragDropContext onDragEnd={handleReorder}>
@@ -218,7 +230,7 @@ export default function ObjectsTab({
                                 className="flex-1 overflow-y-auto px-4 pb-10 space-y-1"
                             >
                                 {localObjects.map((obj: any, index: number) => (
-                                    <Draggable key={obj.id} draggableId={obj.id} index={index}>
+                                    <Draggable key={obj.id} draggableId={obj.id} index={index} isDragDisabled={isReadOnly}>
                                         {(provided, snapshot) => (
                                             <div
                                                 ref={provided.innerRef}
@@ -230,9 +242,11 @@ export default function ObjectsTab({
                                                     snapshot.isDragging && "shadow-2xl ring-2 ring-[#546354]/20 z-50 bg-white"
                                                 )}
                                             >
-                                                <div {...provided.dragHandleProps} className="p-1 -ml-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab text-slate-300">
-                                                    <GripVertical className="w-3.5 h-3.5" />
-                                                </div>
+                                                {!isReadOnly && (
+                                                    <div {...provided.dragHandleProps} className="p-1 -ml-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab text-slate-300">
+                                                        <GripVertical className="w-3.5 h-3.5" />
+                                                    </div>
+                                                )}
                                                 <div className={cn("w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center", selectedId === obj.id ? "bg-[#fbf9f5]" : "bg-white border border-slate-100")}>
                                                     <Package className={cn("w-4.5 h-4.5", selectedId === obj.id ? "text-[#546354]" : "text-stone-300")} />
                                                 </div>
@@ -265,7 +279,7 @@ export default function ObjectsTab({
                                                         </div>
                                                     ) : (
                                                         <>
-                                                            <div className={cn(
+                                                            {!isReadOnly && <div className={cn(
                                                                 "flex items-center gap-0.5 transition-opacity",
                                                                 selectedId === obj.id ? "opacity-100" : "opacity-100 md:opacity-0 md:group-hover:opacity-100"
                                                             )}>
@@ -294,7 +308,7 @@ export default function ObjectsTab({
                                                                     </TooltipTrigger>
                                                                     <TooltipContent side="top">Delete</TooltipContent>
                                                                 </Tooltip>
-                                                            </div>
+                                                            </div>}
                                                             {selectedId === obj.id && renamingId === null && confirmDeleteId === null && (
                                                                 <div className="w-1.5 h-1.5 rounded-full bg-[#546354]/40 flex-shrink-0 group-hover:hidden" />
                                                             )}
@@ -332,11 +346,14 @@ export default function ObjectsTab({
                                         projectId={projectId}
                                         entityId={selectedObject.id}
                                         entityType="object"
+                                        disabled={isReadOnly}
                                     />
                                     <StableInput
                                         type="text"
                                         value={selectedObject.name}
                                         onValueChange={(val) => handleFieldChange(selectedObject.id, 'name', val)}
+                                        disabled={isReadOnly}
+                                        readOnly={isReadOnly}
                                         className="w-full sm:flex-1 bg-transparent text-4xl sm:text-6xl font-serif italic text-slate-800 tracking-tight leading-tight outline-none border-none placeholder:text-slate-200 text-left min-w-0"
                                         placeholder="Object Name"
                                     />
@@ -354,6 +371,7 @@ export default function ObjectsTab({
                                     <PremiumEditor 
                                         value={selectedObject.significance || ''} 
                                         onValueChange={(val) => handleTextEditorChange(selectedObject.id, 'significance', val)} 
+                                        editable={!isReadOnly}
                                         className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-lg sm:text-xl italic placeholder:text-stone-200" 
                                         editorClassName="italic"
                                         placeholder="Why does this item matter? Narrative functions, stakes, or origins..." 
@@ -373,6 +391,7 @@ export default function ObjectsTab({
                                     <PremiumEditor 
                                         value={selectedObject.description || ''} 
                                         onValueChange={(val) => handleTextEditorChange(selectedObject.id, 'description', val)} 
+                                        editable={!isReadOnly}
                                         className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-lg sm:text-xl italic placeholder:text-stone-200" 
                                         placeholder="Physical properties, weight, textures, or hidden secrets..." 
                                         minHeight="150px"
@@ -409,18 +428,22 @@ export default function ObjectsTab({
     )
 }
 
-function EmptyState({ onCreate, isCreating }: { onCreate: () => void, isCreating: boolean }) {
+function EmptyState({ onCreate, isCreating, isReadOnly = false }: { onCreate: () => void, isCreating: boolean, isReadOnly?: boolean }) {
     return (
         <div className="objects-tab-empty flex-1 w-full min-h-full bg-[#fbf9f5] flex flex-col items-center sm:justify-center py-12 p-6 text-center animate-in fade-in duration-700 overflow-y-auto">
             <div className="max-w-2xl w-full py-12 sm:py-20 px-6 sm:px-10 rounded-[3rem] bg-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.04)] ring-1 ring-slate-100 flex flex-col items-center">
                 <div className="w-24 h-24 bg-stone-50 rounded-[30%] flex items-center justify-center mb-8 rotate-3 shadow-inner"><Package className="w-12 h-12 text-stone-200" /></div>
                 <h2 className="text-4xl font-serif italic text-slate-800 mb-4 tracking-tight">The Armoury is Silent</h2>
                 <p className="text-[11px] font-sans tracking-[0.4em] uppercase text-stone-300 mb-10 font-bold">Project Artefact Catalogue Empty</p>
-                <p className="text-slate-500 font-medium leading-relaxed italic text-lg mb-12 max-w-md">"Treasures, weapons, and secrets are yet to be unearthed in this story world."</p>
-                <Button variant="outline" onClick={onCreate} disabled={isCreating} className="rounded-full px-10 py-7 h-auto border-stone-100 text-stone-500 hover:bg-stone-50 uppercase tracking-widest text-[10px] font-bold">
-                    {isCreating ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Plus className="w-3.5 h-3.5 mr-2" />}
-                    Catalogue First Item
-                </Button>
+                <p className="text-slate-500 font-medium leading-relaxed italic text-lg mb-12 max-w-md">
+                    {isReadOnly ? 'Viewers can browse artefacts after an owner or editor has catalogued them.' : '"Treasures, weapons, and secrets are yet to be unearthed in this story world."'}
+                </p>
+                {!isReadOnly && (
+                    <Button variant="outline" onClick={onCreate} disabled={isCreating} className="rounded-full px-10 py-7 h-auto border-stone-100 text-stone-500 hover:bg-stone-50 uppercase tracking-widest text-[10px] font-bold">
+                        {isCreating ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Plus className="w-3.5 h-3.5 mr-2" />}
+                        Catalogue First Item
+                    </Button>
+                )}
             </div>
         </div>
     )

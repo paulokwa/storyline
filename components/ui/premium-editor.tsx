@@ -15,6 +15,7 @@ interface PremiumEditorProps {
   editorClassName?: string
   minHeight?: string
   maxHeight?: string
+  editable?: boolean
 }
 
 /**
@@ -45,6 +46,7 @@ export function PremiumEditor({
   editorClassName,
   minHeight = '150px',
   maxHeight,
+  editable = true,
 }: PremiumEditorProps) {
   // We store the initial value so we can detect when the parent genuinely
   // switches to a *different* entity (e.g. user clicks a different character).
@@ -80,6 +82,7 @@ export function PremiumEditor({
       },
     },
     onUpdate: ({ editor }) => {
+      if (!editable) return
       // Mark that the user is actively typing so we suppress external syncs.
       isUserTypingRef.current = true
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current)
@@ -108,6 +111,11 @@ export function PremiumEditor({
     }
   }, [value, editor])
 
+  useEffect(() => {
+    if (!editor) return
+    editor.setEditable(editable)
+  }, [editor, editable])
+
   // Cleanup
   useEffect(() => {
     return () => {
@@ -120,10 +128,13 @@ export function PremiumEditor({
     <div
       className={cn(
         'cursor-text premium-editor-container',
+        !editable && 'cursor-default',
         className
       )}
       style={{ minHeight, maxHeight }}
-      onClick={() => editor?.commands.focus()}
+      onClick={() => {
+        if (editable) editor?.commands.focus()
+      }}
     >
       <EditorContent editor={editor} />
       <style jsx global>{`

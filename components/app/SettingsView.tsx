@@ -1,13 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
-import { ChevronLeft, Palette, Moon, Trees, Check, HelpCircle, Shield } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ChevronLeft, Palette, Moon, Trees, Check, HelpCircle, Shield, Upload, UserRound, ImageMinus } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import { THEMES, useTheme } from '@/components/providers/ThemeProvider'
 import { cn } from '@/lib/utils'
@@ -15,9 +17,15 @@ import AiSetupGuide from '@/components/app/AiSetupGuide'
 import { getAiProviderLabel } from '@/lib/ai/providers'
 import { getBillingModeLabel } from '@/lib/ai/modes'
 import { formatMicrosAsUsd, getTrialStatusMessage, isLowTrialBalance } from '@/lib/ai/trial'
+import { uploadUserAvatar } from '@/lib/supabase/user-avatars'
 
-export default function SettingsView({ user, maskedApiKey, aiSettings }: { 
+export default function SettingsView({ user, profile, maskedApiKey, aiSettings }: { 
     user: User, 
+    profile: {
+        display_name: string | null
+        avatar_url: string | null
+        bio: string | null
+    },
     maskedApiKey: string | null,
     aiSettings: {
         ai_enabled: boolean,
@@ -42,10 +50,15 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
     const [loading, setLoading] = useState(false)
     const [successMessage, setSuccessMessage] = useState<string | null>(null)
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
+    const avatarInputRef = useRef<HTMLInputElement | null>(null)
 
     // Form state
+    const [displayName, setDisplayName] = useState(profile.display_name || (user.user_metadata?.display_name as string) || user.email?.split('@')[0] || '')
+    const [bio, setBio] = useState(profile.bio || '')
+    const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || (user.user_metadata?.avatar_url as string) || '')
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [confirmPassword, setConfirmPassword] = useState('')
     const [apiKey, setApiKey] = useState('')
     
     // AI Settings State
@@ -62,6 +75,9 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
     // Deletion states
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [deleteConfirmText, setDeleteConfirmText] = useState('')
+    const [uploadingAvatar, setUploadingAvatar] = useState(false)
+    const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null)
+    const [pendingAvatarPreviewUrl, setPendingAvatarPreviewUrl] = useState<string | null>(null)
 
     // Connection testing state
     const [testingConnection, setTestingConnection] = useState(false)
@@ -87,6 +103,14 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
         : 0
     const lowTrialBalance = isLowTrialBalance(trial?.remaining_micros)
 
+    useEffect(() => {
+        return () => {
+            if (pendingAvatarPreviewUrl) {
+                URL.revokeObjectURL(pendingAvatarPreviewUrl)
+            }
+        }
+    }, [pendingAvatarPreviewUrl])
+
     const handleUpdateEmail = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
@@ -108,6 +132,18 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
         setLoading(true)
         setSuccessMessage(null)
         setErrorMessage(null)
+
+        if (password.length < 8) {
+            setErrorMessage('Password must be at least 8 characters long.')
+            setLoading(false)
+            return
+        }
+
+        if (password !== confirmPassword) {
+            setErrorMessage('Password confirmation does not match.')
+            setLoading(false)
+            return
+        }
         
         const { error } = await supabase.auth.updateUser({ password })
         if (error) {
@@ -115,8 +151,116 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
         } else {
             setSuccessMessage('Password updated successfully.')
             setPassword('')
+            setConfirmPassword('')
         }
         setLoading(false)
+    }
+
+    const handleSaveProfile = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setLoading(true)
+        setSuccessMessage(null)
+        setErrorMessage(null)
+
+        const trimmedName = displayName.trim()
+        const trimmedBio = bio.trim()
+
+        if (!trimmedName) {
+            setErrorMessage('Display name is required.')
+            setLoading(false)
+            return
+        }
+
+        let nextAvatarUrl = avatarUrl
+
+        if (pendingAvatarFile) {
+            try {
+                const { publicUrl } = await uploadUserAvatar(supabase, user.id, pendingAvatarFile)
+                nextAvatarUrl = publicUrl
+                setAvatarUrl(publicUrl)
+            } catch (error: any) {
+                setErrorMessage(error.message || 'Unable to upload avatar.')
+                setLoading(false)
+                return
+            }
+        }
+
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .update({
+                display_name: trimmedName,
+                avatar_url: nextAvatarUrl || null,
+                bio: trimmedBio || null,
+            })
+            .eq('id', user.id)
+
+        if (profileError) {
+            setErrorMessage(profileError.message)
+            setLoading(false)
+            return
+        }
+
+        const { error: authError } = await supabase.auth.updateUser({
+            data: {
+                display_name: trimmedName,
+                avatar_url: nextAvatarUrl || null,
+            }
+        })
+
+        if (authError) {
+            setErrorMessage(authError.message)
+            setLoading(false)
+            return
+        }
+
+        setSuccessMessage('Profile updated successfully.')
+        if (pendingAvatarPreviewUrl) {
+            URL.revokeObjectURL(pendingAvatarPreviewUrl)
+        }
+        setPendingAvatarFile(null)
+        setPendingAvatarPreviewUrl(null)
+        router.refresh()
+        setLoading(false)
+    }
+
+    const handleAvatarSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        setSuccessMessage(null)
+        setErrorMessage(null)
+        if (pendingAvatarPreviewUrl) {
+            URL.revokeObjectURL(pendingAvatarPreviewUrl)
+        }
+
+        setPendingAvatarFile(file)
+        setPendingAvatarPreviewUrl(URL.createObjectURL(file))
+        setSuccessMessage('Avatar preview ready. Save profile to upload and apply it everywhere.')
+
+        if (avatarInputRef.current) {
+            avatarInputRef.current.value = ''
+        }
+    }
+
+    const handleRemoveAvatar = () => {
+        if (pendingAvatarPreviewUrl) {
+            URL.revokeObjectURL(pendingAvatarPreviewUrl)
+        }
+        setAvatarUrl('')
+        setPendingAvatarFile(null)
+        setPendingAvatarPreviewUrl(null)
+        setSuccessMessage('Avatar removed. Save profile to apply the change.')
+        setErrorMessage(null)
+    }
+
+    const handleCancelAvatarPreview = () => {
+        if (pendingAvatarPreviewUrl) {
+            URL.revokeObjectURL(pendingAvatarPreviewUrl)
+        }
+        setPendingAvatarFile(null)
+        setPendingAvatarPreviewUrl(null)
+        setSuccessMessage(null)
+        setErrorMessage(null)
     }
 
     const handleSaveAiSettings = async (e: React.FormEvent) => {
@@ -350,7 +494,7 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-800">Settings</h1>
-                    <p className="text-slate-500 mt-2">Manage your account and app preferences.</p>
+                    <p className="text-slate-500 mt-2">Manage your profile, account security, and app preferences.</p>
                 </div>
                 <Button 
                     variant="ghost" 
@@ -756,8 +900,109 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
 
                 {/* Profile Settings */}
                 <Card className="p-6">
-                    <h2 className="text-xl font-semibold mb-4">Account Profile</h2>
-                    
+                    <div className="mb-6">
+                        <div className="mb-2 inline-flex rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Profile</div>
+                        <h2 className="text-xl font-semibold mb-2">Account Profile</h2>
+                        <p className="text-sm text-slate-500">Update your public-facing details here, then manage email and password in the security section below.</p>
+                    </div>
+
+                    <form onSubmit={handleSaveProfile} className="space-y-5">
+                        <div className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-5 md:flex-row md:items-start">
+                            <div className="flex flex-col items-center gap-3">
+                                <Avatar className="h-24 w-24 border-2 border-white shadow-md">
+                                    <AvatarImage src={pendingAvatarPreviewUrl || avatarUrl || undefined} alt={displayName || 'Profile avatar'} />
+                                    <AvatarFallback className="bg-[#546354] text-white text-2xl font-bold uppercase">
+                                        {(displayName || user.email?.split('@')[0] || 'U').split(' ').map((part: string) => part[0]).join('').slice(0, 2)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <input
+                                    ref={avatarInputRef}
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/webp,image/gif"
+                                    onChange={handleAvatarSelected}
+                                    className="hidden"
+                                />
+                                <div className="flex flex-wrap justify-center gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => avatarInputRef.current?.click()}
+                                        disabled={uploadingAvatar}
+                                        className="gap-2"
+                                    >
+                                        <Upload className="h-3.5 w-3.5" />
+                                        Choose Avatar
+                                    </Button>
+                                    {pendingAvatarPreviewUrl && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleCancelAvatarPreview}
+                                            className="gap-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+                                        >
+                                            Cancel Preview
+                                        </Button>
+                                    )}
+                                    {avatarUrl && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleRemoveAvatar}
+                                            className="gap-2 text-slate-500 hover:text-red-600 hover:bg-red-50"
+                                        >
+                                            <ImageMinus className="h-3.5 w-3.5" />
+                                            Remove
+                                        </Button>
+                                    )}
+                                </div>
+                                <p className="max-w-[180px] text-center text-xs text-slate-500">
+                                    {pendingAvatarPreviewUrl
+                                        ? 'Previewing your next avatar. Save profile to upload it.'
+                                        : 'Images are shown inside a circular frame, so the preview reflects the final crop.'}
+                                </p>
+                            </div>
+
+                            <div className="flex-1 space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="displayName">Display Name</Label>
+                                    <Input
+                                        id="displayName"
+                                        value={displayName}
+                                        onChange={(e) => setDisplayName(e.target.value)}
+                                        placeholder="Your name"
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="bio">Bio</Label>
+                                    <Textarea
+                                        id="bio"
+                                        value={bio}
+                                        onChange={(e) => setBio(e.target.value)}
+                                        placeholder="A short note about yourself as a writer."
+                                        maxLength={280}
+                                        className="min-h-24 bg-white"
+                                    />
+                                    <p className="text-xs text-slate-500">{bio.length}/280</p>
+                                </div>
+                                <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+                                    <div className="flex items-center gap-2 font-medium text-slate-800">
+                                        <UserRound className="h-4 w-4 text-primary" />
+                                        Public profile preview
+                                    </div>
+                                    <p className="mt-2"><span className="font-semibold">Name:</span> {displayName || 'Unnamed user'}</p>
+                                    <p className="mt-1 text-slate-500">{bio || 'No bio yet.'}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <Button type="submit" disabled={loading || uploadingAvatar}>Save Profile</Button>
+                    </form>
+
+                    <div className="h-px bg-slate-200 my-6" />
+
                     <form onSubmit={handleUpdateEmail} className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="email">Change Email Address</Label>
@@ -775,6 +1020,10 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
 
                     <div className="h-px bg-slate-200 my-6" />
 
+                    <div className="mb-4">
+                        <div className="mb-2 inline-flex rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Security</div>
+                    </div>
+
                     <form onSubmit={handleUpdatePassword} className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="password">Change Password</Label>
@@ -786,8 +1035,20 @@ export default function SettingsView({ user, maskedApiKey, aiSettings }: {
                                 placeholder="New password"
                                 required
                             />
+                            <p className="text-xs text-slate-500">Use at least 8 characters.</p>
                         </div>
-                        <Button type="submit" disabled={loading || !password}>Update Password</Button>
+                        <div className="space-y-2">
+                            <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                            <Input
+                                id="confirmPassword"
+                                type="password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                placeholder="Repeat new password"
+                                required
+                            />
+                        </div>
+                        <Button type="submit" disabled={loading || !password || !confirmPassword}>Update Password</Button>
                     </form>
 
                     <div className="h-px bg-slate-200 my-6" />

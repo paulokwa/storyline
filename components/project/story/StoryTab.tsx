@@ -12,7 +12,7 @@ import SceneAssetsPanel from './SceneAssetsPanel'
 import LinkedContext from './LinkedContext'
 import SceneAnalysisPanel from './SceneAnalysisPanel'
 
-import { PanelLeftOpen, BookOpen, Sparkles, X, Wand2, BarChart3, Clapperboard, Book, Download } from 'lucide-react'
+import { PanelLeftOpen, BookOpen, Sparkles, X, Wand2, BarChart3, Clapperboard, Book, Download, Square } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { Database, WritingMode } from '@/lib/supabase/types'
@@ -85,7 +85,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         sceneAssetsOpen, setSceneAssetsOpen,
         currentSceneText, setCurrentSceneText,
         setCurrentChapterText,
-        analyzeScene, isAnalyzing,
+        analyzeScene, stopAnalysis, isAnalyzing,
         analysisResult, setAnalysisResult,
         activeNodeId, setActiveNodeId,
         activeCharacters, setActiveCharacters,
@@ -529,17 +529,17 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    onClick={handleAnalyzeTrigger}
-                                                    disabled={isAnalyzing || !currentSceneText}
+                                                    onClick={isAnalyzing ? stopAnalysis : handleAnalyzeTrigger}
+                                                    disabled={!isAnalyzing && !currentSceneText}
                                                     className={cn(
                                                         "rounded-xl transition-all h-9 w-9 p-0",
-                                                        isAnalyzing ? "bg-white text-violet-600 shadow-sm animate-pulse font-bold" : "text-slate-500 hover:bg-white hover:text-violet-600"
+                                                        isAnalyzing ? "bg-white text-violet-600 shadow-sm animate-pulse font-bold ring-2 ring-violet-200/70" : "text-slate-500 hover:bg-white hover:text-violet-600"
                                                     )}
                                                 >
-                                                    <Wand2 className="w-4 h-4" />
+                                                    {isAnalyzing ? <Square className="w-3.5 h-3.5 fill-current" /> : <Wand2 className="w-4 h-4" />}
                                                 </Button>
                                             </TooltipTrigger>
-                                            <TooltipContent side="bottom" sideOffset={7}>Analyze this scene with AI</TooltipContent>
+                                            <TooltipContent side="bottom" sideOffset={7}>{isAnalyzing ? 'Stop analysis' : 'Analyze this scene with AI'}</TooltipContent>
                                         </Tooltip>
 
                                         <Tooltip>
@@ -635,6 +635,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                 projectLocations={projectLocations}
                                 projectObjects={projectObjects}
                                 aiSettings={aiSettings}
+                                allowViewerFeedback={project.allow_viewer_feedback ?? false}
                             />
                         ) : activeNodeId ? (
                             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center space-y-4 animate-in fade-in duration-500">
@@ -732,6 +733,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                             projectPremise={project.premise}
                             projectTone={project.tone}
                             aiSettings={aiSettings}
+                            allowViewerFeedback={project.allow_viewer_feedback ?? false}
                             activeNodeId={activeNodeId}
                             activeSceneId={activeScene?.id}
                             onClose={() => setAiPanelOpen(false)}
@@ -775,6 +777,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                         projectId={project.id}
                         projectOwnerId={project.user_id}
                         shareOwnerFeedback={project.share_owner_feedback ?? false}
+                        allowViewerFeedback={project.allow_viewer_feedback ?? false}
                         activeNodeId={activeNodeId}
                         activeSceneId={activeScene?.id}
                         onSelectNode={handleSceneSelect}

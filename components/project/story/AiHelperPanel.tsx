@@ -6,7 +6,7 @@ import { useCompletion } from '@ai-sdk/react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Package, Bookmark, Database, Maximize2, MessageSquarePlus, Users, Lightbulb, MapPin, Box, HelpCircle, Layout } from 'lucide-react'
+import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Package, Bookmark, Database, Maximize2, MessageSquarePlus, Users, Lightbulb, MapPin, Box, HelpCircle, Layout, Square } from 'lucide-react'
 import { useDragScroll } from '@/hooks/useDragScroll'
 import { PremiumEditor } from '@/components/ui/premium-editor'
 import { Button } from '@/components/ui/button'
@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
 import { AI_TOUR_COMPLETE_KEY, AI_TOUR_PENDING_KEY, AI_TOUR_START_EVENT, AI_TOUR_STARTED_KEY } from '@/lib/ai/tour'
 import { useProjectActions } from '@/components/project/ProjectContext'
+import { useComments } from '@/components/project/CommentsContext'
 import { analyzeContextSize, ContextSizingResult, SAFEGUARD_THRESHOLDS } from '@/lib/ai/config'
 import { getAiProviderLabel } from '@/lib/ai/providers'
 import { getBillingModeLabel } from '@/lib/ai/modes'
@@ -56,6 +57,7 @@ interface AiHelperPanelProps {
     projectTone?: string | null
     isFullCanvas?: boolean
     onReturnToSidebar?: () => void
+    allowViewerFeedback?: boolean
     aiSettings: {
         ai_enabled: boolean
         billing_mode: string
@@ -116,6 +118,21 @@ function stripFeedbackPrefix(title: string | null | undefined) {
 
 function isFeedbackIdea(idea: any) {
     return idea?.title?.toLowerCase().startsWith('feedback:')
+}
+
+function partitionIdeas(items: any[] = []) {
+    const feedback: any[] = []
+    const regular: any[] = []
+
+    items.forEach((item) => {
+        if (isFeedbackIdea(item)) {
+            feedback.push(item)
+        } else {
+            regular.push(item)
+        }
+    })
+
+    return { feedback, regular }
 }
 
 function extractTextFromJson(content: any): string {
@@ -374,7 +391,8 @@ export default function AiHelperPanel({
     activeNodeId, activeSceneId,
     isFullCanvas = false,
     onReturnToSidebar,
-    onClose
+    onClose,
+    allowViewerFeedback = false,
 }: AiHelperPanelProps) {
     const label = getProjectTypeLabel(projectType)
     const isNovel = projectType === 'novel'
@@ -387,6 +405,7 @@ export default function AiHelperPanel({
 
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'
+    const { addComment } = useComments()
 
     const [prompt, setPrompt] = useState('')
     const [lastPrompt, setLastPrompt] = useState('')
@@ -425,9 +444,14 @@ export default function AiHelperPanel({
     const supabase = createClient()
     const [saveModalOpen, setSaveModalOpen] = useState(false)
     const [saveSuccess, setSaveSuccess] = useState(false)
+    const [isSavingToFeedback, setIsSavingToFeedback] = useState(false)
     const [tourOpen, setTourOpen] = useState(false)
     const [contextManagerOpen, setContextManagerOpen] = useState(false)
     const [isApplyingContext, setIsApplyingContext] = useState(false)
+    const [requestNotice, setRequestNotice] = useState<string | null>(null)
+    const ollamaAbortRef = useRef<AbortController | null>(null)
+    const cancelledRequestRef = useRef(false)
+    const lastSubmittedPromptRef = useRef('')
     const { scrollRef, isDragging, onMouseDown, onMouseLeave, onMouseUp, onMouseMove } = useDragScroll()
     const modeScroll = useDragScroll()
     const aiAccessIssue = useMemo(() => getAiAccessIssue(aiSettings), [aiSettings])
@@ -637,14 +661,24 @@ export default function AiHelperPanel({
         return labels.join(', ')
     }, [selectedNodes, allNodes])
 
+    const { feedback: linkedFeedbackItems, regular: linkedRegularIdeas } = useMemo(
+        () => partitionIdeas(linkedIdeas),
+        [linkedIdeas]
+    )
     const charactersLabel = useMemo(() => linkedCharacters.length === 1 ? (linkedCharacters[0].name || 'Character') : `${linkedCharacters.length} Characters`, [linkedCharacters])
     const ideasLabel = useMemo(() => {
-        if (linkedIdeas.length === 1) {
-            const title = linkedIdeas[0].title || 'Idea'
-            return title.replace(/^feedback:\s*/i, '')
+        if (linkedRegularIdeas.length === 1) {
+            return linkedRegularIdeas[0].title || 'Idea'
         }
-        return `${linkedIdeas.length} Ideas`
-    }, [linkedIdeas])
+        return `${linkedRegularIdeas.length} Ideas`
+    }, [linkedRegularIdeas])
+    const feedbackLabel = useMemo(() => {
+        if (linkedFeedbackItems.length === 1) {
+            const title = linkedFeedbackItems[0].title || 'Feedback'
+            return stripFeedbackPrefix(title)
+        }
+        return `${linkedFeedbackItems.length} Feedback`
+    }, [linkedFeedbackItems])
     const locationsLabel = useMemo(() => linkedLocations.length === 1 ? (linkedLocations[0].name || 'Location') : `${linkedLocations.length} Locations`, [linkedLocations])
     const objectsLabel = useMemo(() => linkedObjects.length === 1 ? (linkedObjects[0].name || 'Object') : `${linkedObjects.length} Objects`, [linkedObjects])
 
@@ -656,10 +690,13 @@ export default function AiHelperPanel({
                 mergedIdeas.push(linkedIdea)
             }
         })
+        const { feedback: mergedFeedbackItems, regular: mergedRegularIdeas } = partitionIdeas(mergedIdeas)
 
         return [
             {
                 key: 'characters' as const,
+                draftKey: 'characters' as const,
+                canNavigateToAdd: true,
                 title: 'Characters',
                 singularLabel: 'character',
                 icon: Users,
@@ -669,17 +706,32 @@ export default function AiHelperPanel({
             },
             {
                 key: 'ideas' as const,
+                draftKey: 'ideas' as const,
+                canNavigateToAdd: true,
                 title: 'Ideas',
                 singularLabel: 'idea',
                 icon: Lightbulb,
                 iconClassName: 'text-indigo-600',
                 emptyLabel: 'No ideas yet',
-                items: mergedIdeas
-                    .filter((item) => !isFeedbackIdea(item) || contextDraft.ideas.includes(item.id))
+                items: mergedRegularIdeas.map((item) => ({ id: item.id, label: item.title || 'Idea' })),
+            },
+            {
+                key: 'feedback' as const,
+                draftKey: 'ideas' as const,
+                canNavigateToAdd: false,
+                title: 'Feedback',
+                singularLabel: 'feedback item',
+                icon: MessageSquare,
+                iconClassName: 'text-amber-600',
+                emptyLabel: 'No feedback linked yet',
+                items: mergedFeedbackItems
+                    .filter((item) => contextDraft.ideas.includes(item.id))
                     .map((item) => ({ id: item.id, label: stripFeedbackPrefix(item.title) })),
             },
             {
                 key: 'locations' as const,
+                draftKey: 'locations' as const,
+                canNavigateToAdd: true,
                 title: 'Locations',
                 singularLabel: 'location',
                 icon: MapPin,
@@ -689,6 +741,8 @@ export default function AiHelperPanel({
             },
             {
                 key: 'objects' as const,
+                draftKey: 'objects' as const,
+                canNavigateToAdd: true,
                 title: 'Objects',
                 singularLabel: 'object',
                 icon: Box,
@@ -706,7 +760,7 @@ export default function AiHelperPanel({
                 title: group.title,
                 icon: group.icon,
                 iconClassName: group.iconClassName,
-                count: contextDraft[group.key].length,
+                count: group.items.filter((item) => contextDraft[group.draftKey].includes(item.id)).length,
             }))
             .filter((group) => group.count > 0)
     }, [contextDraft, contextEntityGroups])
@@ -719,12 +773,13 @@ export default function AiHelperPanel({
             if (node) parts.push(`${node.type === 'scene' ? 'Scene' : 'Chapter'}: ${node.title}`)
         }
         if (linkedCharacters.length > 0) parts.push(charactersLabel)
-        if (linkedIdeas.length > 0) parts.push(ideasLabel)
+        if (linkedRegularIdeas.length > 0) parts.push(ideasLabel)
+        if (linkedFeedbackItems.length > 0) parts.push(feedbackLabel)
         if (linkedLocations.length > 0) parts.push(locationsLabel)
         if (linkedObjects.length > 0) parts.push(objectsLabel)
         if (selectedNodes.length > 0) parts.push(storySelectionLabel)
         return parts.join(' | ')
-    }, [resolvedProjectTitle, activeNodeId, allNodes, linkedCharacters, linkedIdeas, linkedLocations, linkedObjects, selectedNodes, charactersLabel, ideasLabel, locationsLabel, objectsLabel, storySelectionLabel])
+    }, [resolvedProjectTitle, activeNodeId, allNodes, linkedCharacters, linkedRegularIdeas, linkedFeedbackItems, linkedLocations, linkedObjects, selectedNodes, charactersLabel, ideasLabel, feedbackLabel, locationsLabel, objectsLabel, storySelectionLabel])
 
     const sourceLabel = useMemo(() => {
         if (activeNodeId) {
@@ -834,12 +889,12 @@ export default function AiHelperPanel({
                         {group.items.length > 0 ? (
                             <div className="space-y-1">
                                 {group.items.map((item) => {
-                                    const isSelected = contextDraft[group.key].includes(item.id)
+                                    const isSelected = contextDraft[group.draftKey].includes(item.id)
                                     return (
                                         <button
                                             key={item.id}
                                             type="button"
-                                            onClick={() => toggleContextDraftItem(group.key, item.id)}
+                                            onClick={() => toggleContextDraftItem(group.draftKey, item.id)}
                                             className={cn(
                                                 "flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left transition-all",
                                                 isSelected
@@ -870,12 +925,23 @@ export default function AiHelperPanel({
                         ) : (
                             <button
                                 type="button"
-                                onClick={() => navigateToContextTab(group.key)}
-                                className="w-full rounded-2xl border border-dashed border-slate-200 bg-white/70 px-3 py-2 text-left transition-all hover:border-slate-300 hover:bg-white"
+                                onClick={() => {
+                                    if (group.canNavigateToAdd) {
+                                        void navigateToContextTab(group.draftKey)
+                                    }
+                                }}
+                                className={cn(
+                                    "w-full rounded-2xl border border-dashed border-slate-200 bg-white/70 px-3 py-2 text-left transition-all",
+                                    group.canNavigateToAdd
+                                        ? "hover:border-slate-300 hover:bg-white"
+                                        : "cursor-default"
+                                )}
                             >
                                 <span className="block text-[11px] italic text-slate-400">{group.emptyLabel}</span>
                                 <span className="mt-1 block text-[10px] font-medium uppercase tracking-[0.18em] text-slate-400">
-                                    Click here to add a {group.singularLabel}
+                                    {group.canNavigateToAdd
+                                        ? `Click here to add a ${group.singularLabel}`
+                                        : 'Link a feedback comment from the feedback panel'}
                                 </span>
                             </button>
                         )}
@@ -988,11 +1054,12 @@ export default function AiHelperPanel({
         setContextManagerOpen(true)
     }
 
-    const { completion, complete, isLoading, error, setCompletion } = useCompletion({
+    const { completion, complete, isLoading, error, setCompletion, stop } = useCompletion({
         api: '/api/ai',
         streamProtocol: 'text',
         body: useMemo(() => ({ action: 'helper', projectId }), [projectId]),
         onError: (err) => {
+            if (cancelledRequestRef.current) return
             console.error('AI Error:', err)
             const friendlyError = getFriendlyAiError(err.message)
             toast.error(friendlyError?.title || 'AI request failed', {
@@ -1006,6 +1073,25 @@ export default function AiHelperPanel({
     const displayedCompletion = completion || (actualLoading ? previousCompletion : '')
     const isShowingPrevious = actualLoading && !completion && !!previousCompletion
     const friendlyError = getFriendlyAiError(error?.message)
+
+    const handleCancelRequest = () => {
+        if (!actualLoading) return
+
+        cancelledRequestRef.current = true
+        ollamaAbortRef.current?.abort()
+        ollamaAbortRef.current = null
+        stop()
+        setCompletion('')
+        setPreviousCompletion('')
+        setPendingRequest(null)
+        setPreflight(null)
+        setContextWarning(null)
+        setRequestNotice('Request canceled. Your prompt is restored below so you can edit and retry.')
+
+        if (!prompt.trim() && lastSubmittedPromptRef.current) {
+            setPrompt(lastSubmittedPromptRef.current)
+        }
+    }
 
 
 
@@ -1056,6 +1142,34 @@ export default function AiHelperPanel({
 
     const handleTemplate = (value: string) => {
         setPrompt(value)
+    }
+
+    const handleSaveToFeedback = async () => {
+        if (!displayedCompletion || !isReadOnly || !allowViewerFeedback) return
+
+        setIsSavingToFeedback(true)
+        try {
+            const feedbackPrompt = lastPrompt.trim() || prompt.trim() || 'AI discussion'
+            await addComment({
+                project_id: projectId,
+                node_id: activeNodeId || undefined,
+                content: `AI Prompt: ${feedbackPrompt}\n\nAI Response:\n${displayedCompletion}`,
+                is_shared: false,
+                anchor_data: {
+                    type: 'ai-feedback',
+                    prompt: feedbackPrompt,
+                    mode: promptMode,
+                    source_scene_id: activeSceneId ?? null,
+                    source_node_id: activeNodeId ?? null,
+                },
+            })
+            toast.success('Saved to feedback')
+        } catch (saveError) {
+            console.error('Failed to save AI response to feedback:', saveError)
+            toast.error('Failed to save to feedback')
+        } finally {
+            setIsSavingToFeedback(false)
+        }
     }
 
     // --- Provider Orchestration ---
@@ -1134,8 +1248,11 @@ export default function AiHelperPanel({
             ? `\n\nRELEVANT ARCHIVED RESPONSES:\n${archiveContextString}\n\n`
             : ''
         
-        const ideasContext = linkedIdeas.length > 0 
-            ? `Ideas: ${linkedIdeas.map(i => i.title).join(', ')}. ` 
+        const ideasContext = linkedRegularIdeas.length > 0 
+            ? `Ideas: ${linkedRegularIdeas.map(i => i.title).join(', ')}. ` 
+            : ''
+        const feedbackContext = linkedFeedbackItems.length > 0
+            ? `Feedback: ${linkedFeedbackItems.map((item) => stripFeedbackPrefix(item.title)).join(', ')}. `
             : ''
         const locationsContext = linkedLocations.length > 0 
             ? `Locations: ${linkedLocations.map(l => l.name).join(', ')}. ` 
@@ -1145,7 +1262,7 @@ export default function AiHelperPanel({
             ? `STORY CONTEXT:\n${storySelectionContext.map(s => `[${s.title}]\n${s.content.slice(0, 5000)}`).join('\n\n')}\n\n`
             : ''
         
-        const fullInternalPrompt = `${projectContext}${charactersContext}${ideasContext}${locationsContext}\n\n${storyContextString}SCENE:\n${contextText}\n\nUSER REQUEST: ${finalPrompt}`
+        const fullInternalPrompt = `${projectContext}${charactersContext}${ideasContext}${feedbackContext}${locationsContext}\n\n${storyContextString}SCENE:\n${contextText}\n\nUSER REQUEST: ${finalPrompt}`
 
         console.log(`--- AI DEBUG: runLocalOllama [Mode: ${strategy}] ---`)
         console.log('Active Scene ID:', activeSceneId)
@@ -1154,6 +1271,7 @@ export default function AiHelperPanel({
 
         setIsOllamaLoading(true)
         const abortController = new AbortController()
+        ollamaAbortRef.current = abortController
         
         try {
             const response = await fetch(`${aiSettings.ollama_url.replace(/\/$/, '')}/api/generate`, {
@@ -1218,6 +1336,23 @@ export default function AiHelperPanel({
                 }),
             }).catch(() => {})
         } catch (err: any) {
+            if (err?.name === 'AbortError' || cancelledRequestRef.current) {
+                await fetch('/api/ai/local-usage', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        requestId,
+                        endpoint: 'ai_helper',
+                        status: 'cancelled',
+                        inputChars: fullInternalPrompt.length,
+                        outputChars: 0,
+                        errorCode: 'cancelled',
+                        deviceFingerprint,
+                    }),
+                }).catch(() => {})
+                return
+            }
+
             await fetch('/api/ai/local-usage', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1239,6 +1374,9 @@ export default function AiHelperPanel({
                 throw err
             }
         } finally {
+            if (ollamaAbortRef.current === abortController) {
+                ollamaAbortRef.current = null
+            }
             setIsOllamaLoading(false)
         }
     }
@@ -1260,6 +1398,7 @@ export default function AiHelperPanel({
         setLastPrompt('')
         setCopied(false)
         setPreflight(null)
+        setRequestNotice(null)
     }
 
     const handleBlockedAiSubmit = () => {
@@ -1273,9 +1412,11 @@ export default function AiHelperPanel({
     }
 
     const executeAiRequest = async (finalPrompt: string, contextText: string, strategy: ContextStrategy) => {
+        cancelledRequestRef.current = false
         setCompletion('') // Clear for new run
         setLastUsedProvider(null)
         setContextWarning(null)
+        setRequestNotice(null)
         
         if (displayedCompletion) setPreviousCompletion(displayedCompletion)
 
@@ -1295,8 +1436,11 @@ export default function AiHelperPanel({
                 await runCloudProvider(finalPrompt, contextText, strategy)
             }
         } catch (err: any) {
-            console.error('AI Processing Error:', err)
+            if (!(cancelledRequestRef.current || err?.name === 'AbortError')) {
+                console.error('AI Processing Error:', err)
+            }
         } finally {
+            ollamaAbortRef.current = null
             setPreviousCompletion('')
             setPendingRequest(null)
         }
@@ -1350,9 +1494,11 @@ export default function AiHelperPanel({
         }
 
         setLastPrompt(currentPrompt || promptMode)
+        lastSubmittedPromptRef.current = currentPrompt
         setPrompt('')
         setCopied(false)
         setContextWarning(null)
+        setRequestNotice(null)
         
         // Select strategy and prepare context
         const strategy = getContextStrategy(promptMode)
@@ -1492,6 +1638,9 @@ export default function AiHelperPanel({
             ? 'text-slate-400'
             : 'text-red-500'
     const headerStatusLabel = !aiSettings.ai_enabled ? 'disabled' : headerStatus
+    const modeOptions = isNovel
+        ? ['Review / Chat', 'Continue Writing', 'Improve Scene', 'Add Conflict', 'Rewrite with Emotion']
+        : ['Review / Chat', 'Write as Script Scene', 'Continue Writing', 'Improve Scene', 'Add Conflict', 'Rewrite with Emotion']
 
     return (
         <div className="ai-helper-panel flex flex-col h-full min-h-0 overflow-hidden border-l border-[#d8ddcf] bg-[linear-gradient(180deg,#f5f4ef_0%,#fbf9f5_52%,#f8f6f1_100%)] shadow-[inset_1px_0_0_rgba(255,255,255,0.45),-18px_0_40px_rgba(84,99,84,0.04)]">
@@ -1546,7 +1695,7 @@ export default function AiHelperPanel({
                     <div className="flex items-center gap-0.5 md:gap-1.5 shrink-0">
                         {!isFullCanvas && utilityIcons}
 
-                        {(completion || previousCompletion) && !isLoading && (
+                        {(completion || previousCompletion) && !actualLoading && (
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger className="shrink-0 ml-1">
@@ -1566,17 +1715,17 @@ export default function AiHelperPanel({
 
                 {/* Mode Buttons Row */}
                 <div className={cn(
-                    "mt-2 flex items-center gap-2 border-t border-white/70 pt-2",
+                    "mt-2 flex items-start gap-2 border-t border-white/70 pt-2",
                     isFullCanvas && "md:mt-0 md:pt-0 md:border-t-0"
                 )}>
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <div className="flex min-w-0 flex-1 items-start gap-3">
                         <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-indigo-200/70 bg-white/80 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.22em] text-indigo-600 shadow-sm">
                             <MessageSquarePlus className="w-3 h-3" />
                             <span className="hidden sm:inline">Mode</span>
                         </div>
                         <div
                             data-tour="ai-mode-selector"
-                            className="flex-1 relative min-w-0 h-8"
+                            className="relative min-w-0 flex-1"
                         >
                             <div 
                                 ref={modeScroll.scrollRef}
@@ -1585,16 +1734,16 @@ export default function AiHelperPanel({
                                 onMouseUp={modeScroll.onMouseUp}
                                 onMouseMove={modeScroll.onMouseMove}
                                 className={cn(
-                                    "flex items-center gap-1.5 overflow-x-auto no-scrollbar absolute inset-0 pb-0.5 pr-8 [mask-image:linear-gradient(to_right,black_calc(100%-40px),transparent_100%)] overscroll-x-contain pointer-events-auto",
+                                    "flex min-h-9 items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 pr-8 [mask-image:linear-gradient(to_right,black_calc(100%-40px),transparent_100%)] overscroll-x-contain pointer-events-auto",
                                     modeScroll.isDragging ? "cursor-grabbing" : "cursor-grab"
                                 )}
                             >
-                            {['Review / Chat', 'Continue Writing', 'Improve Scene', 'Add Conflict', 'Rewrite with Emotion', ...(!isNovel ? ['Write as Script Scene'] : [])].map(mode => (
+                            {modeOptions.map(mode => (
                                 <button
                                     key={mode}
                                     onClick={() => setPromptMode(mode)}
                                     className={cn(
-                                        "rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.18em] transition-all",
+                                        "shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.18em] transition-all",
                                         promptMode === mode 
                                             ? "border-indigo-200 bg-indigo-50 text-indigo-700 shadow-sm" 
                                             : "border-slate-200/70 bg-white/72 text-slate-500 hover:border-slate-300 hover:bg-white hover:text-slate-700"
@@ -1755,7 +1904,7 @@ export default function AiHelperPanel({
                 )}
 
                 {/* Empty state */}
-                {!displayedCompletion && !isLoading && !error && aiAccessIssue && (
+                {!displayedCompletion && !actualLoading && !error && aiAccessIssue && (
                     <div className={cn(
                         "mx-auto flex w-full max-w-md flex-col items-center rounded-3xl p-6 text-center shadow-sm animate-in fade-in slide-in-from-top-2",
                         isMidnight
@@ -1793,7 +1942,21 @@ export default function AiHelperPanel({
                     </div>
                 )}
 
-                {!displayedCompletion && !isLoading && !error && !aiAccessIssue && (
+                {!displayedCompletion && !actualLoading && !error && requestNotice && (
+                    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 text-center space-y-3 animate-in fade-in slide-in-from-top-2">
+                        <div className="bg-white w-9 h-9 rounded-full flex items-center justify-center mx-auto shadow-sm">
+                            <Square className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-sm font-semibold text-amber-900">Request canceled</p>
+                            <p className="text-xs text-amber-700 leading-relaxed font-serif italic">
+                                {requestNotice}
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {!displayedCompletion && !actualLoading && !error && !requestNotice && !aiAccessIssue && (
                     <div className="flex flex-col items-center justify-center h-full text-center space-y-5 opacity-60">
                         <div className="flex h-14 w-14 items-center justify-center rounded-[1.6rem] border border-slate-200/70 bg-white/85 shadow-sm">
                             <MessageSquare className="w-5 h-5 text-indigo-300" />
@@ -1810,7 +1973,7 @@ export default function AiHelperPanel({
                 )}
 
                 {/* Loading skeleton — only when truly no content to show yet */}
-                {isLoading && !displayedCompletion && (
+                {actualLoading && !displayedCompletion && (
                     <div className="space-y-2 animate-in fade-in duration-300">
                         <div className="h-3 bg-slate-100 rounded-full w-3/4 animate-pulse" />
                         <div className="h-3 bg-slate-100 rounded-full w-full animate-pulse" />
@@ -1819,7 +1982,7 @@ export default function AiHelperPanel({
                 )}
 
                 {/* Error state */}
-                {error && !isLoading && (
+                {error && !actualLoading && !cancelledRequestRef.current && (
                     <div className="bg-red-50 border border-red-100 rounded-2xl p-5 text-center space-y-3 animate-in fade-in slide-in-from-top-2">
                         <div className="bg-white w-9 h-9 rounded-full flex items-center justify-center mx-auto shadow-sm">
                             <AlertCircle className="w-4 h-4 text-red-400" />
@@ -1917,7 +2080,7 @@ export default function AiHelperPanel({
                                     onClick={() => lastPrompt && handleSubmit({ preventDefault: () => {} } as any)}
                                     variant="outline"
                                     size="sm"
-                                    disabled={!lastPrompt || isLoading}
+                                    disabled={!lastPrompt || actualLoading}
                                     className="w-full bg-white border-red-200 text-red-700 hover:bg-red-50 rounded-xl gap-2 text-xs"
                                 >
                                     <RefreshCcw className="w-3 h-3" />
@@ -1937,7 +2100,7 @@ export default function AiHelperPanel({
                                     onClick={() => lastPrompt && handleSubmit({ preventDefault: () => {} } as any)}
                                     variant="outline"
                                     size="sm"
-                                    disabled={!lastPrompt || isLoading}
+                                    disabled={!lastPrompt || actualLoading}
                                     className="w-full bg-white border-red-200 text-red-700 hover:bg-red-50 rounded-xl gap-2 text-xs"
                                 >
                                     <RefreshCcw className="w-3 h-3" />
@@ -1978,7 +2141,7 @@ export default function AiHelperPanel({
                             isShowingPrevious && "opacity-40"
                         )}>
                             {displayedCompletion}
-                            {isLoading && completion && (
+                            {actualLoading && completion && (
                                 <span className="inline-block w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse ml-1 align-middle" />
                             )}
                         </div>
@@ -1991,7 +2154,7 @@ export default function AiHelperPanel({
                         )}
 
                         {/* Action buttons — only when complete */}
-                        {!isLoading && completion && (
+                        {!actualLoading && completion && (
                             <div className="flex items-center gap-2">
                                 {saveSuccess && (
                                     <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider animate-in fade-in slide-in-from-right-2 duration-500 flex items-center gap-1 mr-1">
@@ -2025,6 +2188,23 @@ export default function AiHelperPanel({
                                             <TooltipContent side="top">Save to database</TooltipContent>
                                         </Tooltip>
                                     </>
+                                )}
+                                {isReadOnly && allowViewerFeedback && (
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <Button
+                                                onClick={handleSaveToFeedback}
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={isSavingToFeedback}
+                                                className="flex-1 rounded-xl gap-1.5 h-9 px-3 transition-all active:scale-95 border-slate-200 text-slate-500 hover:border-rose-200 hover:text-rose-600 hover:bg-rose-50"
+                                            >
+                                                {isSavingToFeedback ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageSquare className="w-3.5 h-3.5" />}
+                                                Save to Feedback
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">Save this AI exchange as feedback</TooltipContent>
+                                    </Tooltip>
                                 )}
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -2159,14 +2339,28 @@ export default function AiHelperPanel({
                                 </div>
                             )}
 
-                            {linkedIdeas.length > 0 && (
+                            {linkedRegularIdeas.length > 0 && (
                                 <div>
                                     <div className="font-bold text-slate-400 mb-1">IDEAS:</div>
                                     <ul className="list-disc pl-4 space-y-1 bg-white p-2 border border-slate-100 rounded-lg">
-                                        {linkedIdeas.map(i => (
+                                        {linkedRegularIdeas.map(i => (
                                             <li key={i.id}>
                                                 <span className="font-bold">{i.title}</span>
                                                 {i.content && <span className="text-slate-400"> - {i.content.length > 50 ? i.content.slice(0, 50) + '...' : i.content}</span>}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {linkedFeedbackItems.length > 0 && (
+                                <div>
+                                    <div className="font-bold text-slate-400 mb-1">FEEDBACK:</div>
+                                    <ul className="list-disc pl-4 space-y-1 bg-white p-2 border border-slate-100 rounded-lg">
+                                        {linkedFeedbackItems.map((item) => (
+                                            <li key={item.id}>
+                                                <span className="font-bold">{stripFeedbackPrefix(item.title)}</span>
+                                                {item.content && <span className="text-slate-400"> - {item.content.length > 50 ? item.content.slice(0, 50) + '...' : item.content}</span>}
                                             </li>
                                         ))}
                                     </ul>
@@ -2385,17 +2579,21 @@ export default function AiHelperPanel({
                                 maxHeight="min(32vh, 240px)"
                             />
                             <button
-                                type="submit"
-                                disabled={actualLoading || (!prompt.trim() && promptMode !== 'Review / Chat')}
+                                type={actualLoading ? 'button' : 'submit'}
+                                onClick={actualLoading ? handleCancelRequest : undefined}
+                                disabled={!actualLoading && (!prompt.trim() && promptMode !== 'Review / Chat')}
                                 className={cn(
                                     "absolute bottom-3.5 right-3.5 p-2 rounded-xl transition-all active:scale-95 flex items-center justify-center min-w-[34px] min-h-[34px]",
-                                    !actualLoading && (prompt.trim() || promptMode === 'Review / Chat')
+                                    actualLoading
+                                        ? "bg-rose-500 text-white hover:bg-rose-600 shadow-lg shadow-rose-100 animate-pulse"
+                                        : (prompt.trim() || promptMode === 'Review / Chat')
                                         ? "bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-100"
                                         : "bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200"
                                 )}
+                                aria-label={actualLoading ? 'Stop AI request' : 'Send prompt to AI'}
                             >
                                 {actualLoading ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <Square className="w-4 h-4 fill-current" />
                                 ) : (
                                     <Send className="w-4 h-4" />
                                 )}

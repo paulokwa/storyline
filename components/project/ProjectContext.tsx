@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useRef, useState } from 'react'
 import { getDeviceFingerprint } from '@/lib/client/device-fingerprint'
 
 interface ProjectContextType {
@@ -21,6 +21,7 @@ interface ProjectContextType {
     analysisResult: any | null
     setAnalysisResult: (val: any | null) => void
     analyzeScene: () => Promise<void>
+    stopAnalysis: () => void
     activeNodeId: string | null
     setActiveNodeId: (val: string | null) => void
     sceneAssetsOpen: boolean
@@ -65,6 +66,7 @@ export function ProjectProvider({
     // Analysis
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [analysisResult, setAnalysisResult] = useState<any | null>(null)
+    const analysisAbortRef = useRef<AbortController | null>(null)
     const [activeNodeId, setActiveNodeId] = useState<string | null>(null)
     const [isDictating, setIsDictating] = useState(false)
     const [dictationRequest, setDictationRequest] = useState(0)
@@ -80,6 +82,9 @@ export function ProjectProvider({
 
     const analyzeScene = async () => {
         if (!currentSceneText.trim()) return
+        analysisAbortRef.current?.abort()
+        const controller = new AbortController()
+        analysisAbortRef.current = controller
         setIsAnalyzing(true)
         setAnalysisResult(null)
         try {
@@ -87,6 +92,7 @@ export function ProjectProvider({
             const res = await fetch('/api/ai/analyze-scene', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                signal: controller.signal,
                 body: JSON.stringify({
                     sceneText: currentSceneText,
                     requestId: crypto.randomUUID(),
@@ -99,10 +105,21 @@ export function ProjectProvider({
                 setAiPanelOpen(false) // Close AI Partner when showing analysis
             }
         } catch (e) {
-            console.error('Analysis failed', e)
+            if (!(e instanceof DOMException && e.name === 'AbortError')) {
+                console.error('Analysis failed', e)
+            }
         } finally {
+            if (analysisAbortRef.current === controller) {
+                analysisAbortRef.current = null
+            }
             setIsAnalyzing(false)
         }
+    }
+
+    const stopAnalysis = () => {
+        analysisAbortRef.current?.abort()
+        analysisAbortRef.current = null
+        setIsAnalyzing(false)
     }
 
     return (
@@ -123,6 +140,7 @@ export function ProjectProvider({
             analysisResult,
             setAnalysisResult,
             analyzeScene,
+            stopAnalysis,
             activeNodeId,
             setActiveNodeId,
             sceneAssetsOpen,

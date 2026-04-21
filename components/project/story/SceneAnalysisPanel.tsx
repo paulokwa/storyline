@@ -269,25 +269,18 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
                                                     Linked to AI
                                                 </div>
                                             ) : (
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <button 
-                                                            onClick={() => handleAddAsIdea(result[key], key, label)}
-                                                            disabled={addingIdeaIdx !== null}
-                                                            className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-[#546354]/40 hover:text-indigo-600 transition-all group/btn"
-                                                        >
-                                                            {addingIdeaIdx === key ? (
-                                                                <Loader2 className="w-3 h-3 animate-spin" />
-                                                            ) : (
-                                                                <BrainCircuit className="w-3 h-3 group-hover/btn:scale-110 transition-transform" />
-                                                            )}
-                                                            Add to Assistant
-                                                        </button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent side="top">
-                                                        Link this insight to the AI Assistant context
-                                                    </TooltipContent>
-                                                </Tooltip>
+                                                <button 
+                                                    onClick={() => handleAddAsIdea(result[key], key, label)}
+                                                    disabled={addingIdeaIdx !== null}
+                                                    className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-[#546354]/40 hover:text-indigo-600 transition-all group/btn"
+                                                >
+                                                    {addingIdeaIdx === key ? (
+                                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                                    ) : (
+                                                        <BrainCircuit className="w-3 h-3 group-hover/btn:scale-110 transition-transform" />
+                                                    )}
+                                                    Add to Assistant
+                                                </button>
                                             )}
                                         </div>
                                     </div>
@@ -318,25 +311,18 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
                                                                 Linked to AI
                                                             </div>
                                                         ) : (
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <button 
-                                                                        onClick={() => handleAddAsIdea(s, i)}
-                                                                        disabled={addingIdeaIdx !== null}
-                                                                        className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-[#546354]/40 hover:text-indigo-600 transition-all group/btn"
-                                                                    >
-                                                                        {addingIdeaIdx === i ? (
-                                                                            <Loader2 className="w-3 h-3 animate-spin" />
-                                                                        ) : (
-                                                                            <BrainCircuit className="w-3 h-3 group-hover/btn:scale-110 transition-transform" />
-                                                                        )}
-                                                                        Add to Assistant
-                                                                    </button>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent side="top">
-                                                                    Link this feedback to the AI Assistant context
-                                                                </TooltipContent>
-                                                            </Tooltip>
+                                                            <button 
+                                                                onClick={() => handleAddAsIdea(s, i)}
+                                                                disabled={addingIdeaIdx !== null}
+                                                                className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-[#546354]/40 hover:text-indigo-600 transition-all group/btn"
+                                                            >
+                                                                {addingIdeaIdx === i ? (
+                                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                                ) : (
+                                                                    <BrainCircuit className="w-3 h-3 group-hover/btn:scale-110 transition-transform" />
+                                                                )}
+                                                                Add to Assistant
+                                                            </button>
                                                         )}
                                                     </div>
                                                 </div>

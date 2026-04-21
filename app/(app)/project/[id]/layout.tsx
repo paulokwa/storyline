@@ -9,6 +9,7 @@ type ProjectRole = Database['public']['Enums']['project_role']
 type ProjectLayoutRow = Database['public']['Tables']['projects']['Row'] & {
     project_members: Array<{ role: ProjectRole }> | null
 }
+type OwnerProfile = Pick<Database['public']['Tables']['profiles']['Row'], 'display_name' | 'avatar_url'>
 
 export default async function ProjectLayout({
     children,
@@ -31,6 +32,12 @@ export default async function ProjectLayout({
 
     const projectDataWithMembers = projectData as ProjectLayoutRow
 
+    const { data: ownerProfile } = await supabase
+        .from('profiles')
+        .select('display_name, avatar_url')
+        .eq('id', projectData.user_id)
+        .maybeSingle()
+
     const project = {
         ...projectData,
         role: projectDataWithMembers.project_members?.[0]?.role ?? 'viewer'
@@ -43,7 +50,16 @@ export default async function ProjectLayout({
 
     return (
         <ProjectProvider role={project.role}>
-            <ProjectShell project={project} currentUserId={user.id} role={project.role}>
+            <ProjectShell
+                project={project}
+                currentUserId={user.id}
+                role={project.role}
+                owner={{
+                    user_id: projectData.user_id,
+                    display_name: (ownerProfile as OwnerProfile | null)?.display_name ?? null,
+                    avatar_url: (ownerProfile as OwnerProfile | null)?.avatar_url ?? null,
+                }}
+            >
                 {children}
             </ProjectShell>
         </ProjectProvider>

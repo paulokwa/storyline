@@ -70,15 +70,51 @@ export default async function LibraryPage() {
         console.error('Error fetching projects:', error)
     }
 
+    const allProjectRows = [
+        ...((projectsData as ProjectWithMembers[] | null) ?? []),
+        ...((deletedData as ProjectWithMembers[] | null) ?? []),
+    ]
+
+    const ownerIds = Array.from(new Set(allProjectRows.map((project) => project.user_id).filter(Boolean)))
+    const ownerProfilesById = new Map<string, MemberProfile>()
+
+    if (ownerIds.length > 0) {
+        const { data: ownerProfiles } = await supabase
+            .from('profiles')
+            .select('id, display_name, avatar_url')
+            .in('id', ownerIds)
+
+        ownerProfiles?.forEach((profile) => {
+            ownerProfilesById.set(profile.id, {
+                display_name: profile.display_name,
+                avatar_url: profile.avatar_url,
+            })
+        })
+    }
+
     const mapProject = (p: ProjectWithMembers) => ({
         ...p,
         role: p.project_members?.find((m) => m.user_id === user.id)?.role || ('viewer' as ProjectMemberRole),
-        members: p.project_members?.map((m) => ({
-            role: m.role,
-            user_id: m.user_id,
-            display_name: m.profiles?.display_name ?? null,
-            avatar_url: m.profiles?.avatar_url ?? null
-        })) || []
+        members: (() => {
+            const members = p.project_members?.map((m) => ({
+                role: m.role,
+                user_id: m.user_id,
+                display_name: m.profiles?.display_name ?? null,
+                avatar_url: m.profiles?.avatar_url ?? null
+            })) || []
+
+            if (!members.some((member) => member.user_id === p.user_id)) {
+                const ownerProfile = ownerProfilesById.get(p.user_id)
+                members.unshift({
+                    role: 'owner',
+                    user_id: p.user_id,
+                    display_name: ownerProfile?.display_name ?? null,
+                    avatar_url: ownerProfile?.avatar_url ?? null,
+                })
+            }
+
+            return members
+        })()
     })
 
     const projects = (projectsData as ProjectWithMembers[] | null)?.map(mapProject) || []

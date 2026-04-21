@@ -12,13 +12,21 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { 
     UserPlus, 
     Trash2, 
     ShieldCheck, 
     Loader2,
     Mail,
-    AlertCircle
+    AlertCircle,
+    ChevronDown,
+    Check
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -39,9 +47,9 @@ interface Member {
 }
 
 const COLLABORATOR_ROLES = ['editor', 'viewer'] as const
-
-function isCollaboratorRole(value: string): value is (typeof COLLABORATOR_ROLES)[number] {
-    return COLLABORATOR_ROLES.includes(value as (typeof COLLABORATOR_ROLES)[number])
+const COLLABORATOR_ROLE_LABELS: Record<(typeof COLLABORATOR_ROLES)[number], string> = {
+    editor: 'Editor',
+    viewer: 'Viewer',
 }
 
 export default function ShareModal({
@@ -193,28 +201,38 @@ export default function ShareModal({
                                     onKeyDown={(e) => e.key === 'Enter' && handleAddMember()}
                                 />
                             </div>
-                            <div className="flex flex-col sm:flex-row gap-2">
-                                <div className="relative">
-                                    <select 
-                                        value={inviteRole} 
-                                        onChange={(e) => {
-                                            if (isCollaboratorRole(e.target.value)) {
-                                                setInviteRole(e.target.value)
-                                            }
-                                        }}
-                                        className="h-12 w-full px-4 pr-10 rounded-2xl border border-border bg-muted/50 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm appearance-none min-w-[110px] sm:w-auto"
+                            <div className="mx-auto grid w-full max-w-[28rem] grid-cols-[1fr_1.1fr] gap-3">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger
+                                        className="flex h-12 w-full items-center justify-between rounded-full border border-slate-200 bg-white/80 px-5 text-base font-medium text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-primary/15"
+                                        aria-label="Select collaborator role"
                                     >
-                                        <option value="editor">Editor</option>
-                                        <option value="viewer">Viewer</option>
-                                    </select>
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                                    </div>
-                                </div>
+                                        <span>{COLLABORATOR_ROLE_LABELS[inviteRole]}</span>
+                                        <ChevronDown className="h-4 w-4 text-slate-400" />
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                        className="w-[var(--anchor-width)] min-w-[12rem] rounded-[1.5rem] border-slate-200 bg-white/95 p-2 shadow-[0_20px_45px_rgba(15,23,42,0.16)] backdrop-blur-sm"
+                                        sideOffset={8}
+                                    >
+                                        {COLLABORATOR_ROLES.map((roleOption) => (
+                                            <DropdownMenuItem
+                                                key={roleOption}
+                                                onClick={() => setInviteRole(roleOption)}
+                                                className="h-11 rounded-[1rem] px-4 text-base font-medium text-slate-700 hover:bg-slate-100"
+                                            >
+                                                <span className="flex-1">{COLLABORATOR_ROLE_LABELS[roleOption]}</span>
+                                                <Check className={cn(
+                                                    "h-4 w-4 text-primary transition-opacity",
+                                                    inviteRole === roleOption ? "opacity-100" : "opacity-0"
+                                                )} />
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                                 <Button 
                                     onClick={handleAddMember} 
                                     disabled={isInviting || !inviteEmail.trim()}
-                                    className="h-12 rounded-2xl sanctuary-btn-primary px-6 transition-all active:scale-95 shadow-lg shadow-primary/20 sm:min-w-[120px]"
+                                    className="h-12 w-full rounded-2xl sanctuary-btn-primary px-6 transition-all active:scale-95 shadow-lg shadow-primary/20"
                                 >
                                     {isInviting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Invite'}
                                 </Button>
@@ -263,24 +281,34 @@ export default function ShareModal({
                                                 </Badge>
                                             ) : (
                                                 <>
-                                                    <div className="relative">
-                                                        <select
-                                                            value={member.role}
-                                                            onChange={(e) => {
-                                                                if (isCollaboratorRole(e.target.value)) {
-                                                                    handleUpdateRole(member.user_id, e.target.value)
-                                                                }
-                                                            }}
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger
                                                             disabled={!canManageMembers}
-                                                            className="h-8 w-full min-w-[110px] px-3 pr-8 rounded-xl border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-[11px] font-bold uppercase tracking-tight appearance-none disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                                                            className="flex h-8 min-w-[110px] items-center justify-between rounded-xl border border-border bg-card px-3 text-[11px] font-bold uppercase tracking-tight text-foreground transition-all hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+                                                            aria-label={`Change ${member.email} role`}
                                                         >
-                                                            <option value="editor">Editor</option>
-                                                            <option value="viewer">Viewer</option>
-                                                        </select>
-                                                        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                                                        </div>
-                                                    </div>
+                                                            <span>{COLLABORATOR_ROLE_LABELS[member.role]}</span>
+                                                            <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent
+                                                            className="min-w-[9rem] rounded-[1rem] border-border bg-popover/95 p-1.5 shadow-xl backdrop-blur-sm"
+                                                            sideOffset={6}
+                                                        >
+                                                            {COLLABORATOR_ROLES.map((roleOption) => (
+                                                                <DropdownMenuItem
+                                                                    key={roleOption}
+                                                                    onClick={() => void handleUpdateRole(member.user_id, roleOption)}
+                                                                    className="h-9 rounded-xl px-3 text-[11px] font-bold uppercase tracking-tight text-foreground hover:bg-muted"
+                                                                >
+                                                                    <span className="flex-1">{COLLABORATOR_ROLE_LABELS[roleOption]}</span>
+                                                                    <Check className={cn(
+                                                                        "h-3.5 w-3.5 text-primary transition-opacity",
+                                                                        member.role === roleOption ? "opacity-100" : "opacity-0"
+                                                                    )} />
+                                                                </DropdownMenuItem>
+                                                            ))}
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
                                                     {canManageMembers && (
                                                         <Tooltip>
                                                             <TooltipTrigger>

@@ -28,7 +28,8 @@ import {
     Mic,
     MicOff,
     HelpCircle,
-    PenLine
+    PenLine,
+    Square
 } from 'lucide-react'
 import { ShortcutsLegend } from './ShortcutsLegend'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
@@ -59,12 +60,17 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { Avatar, AvatarFallback } from "../ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import OnboardingTour from './OnboardingTour'
 import { queueAiTourStart } from '@/lib/ai/tour'
 import { WORKSPACE_TOUR_PENDING_KEY } from '@/lib/project/tour'
 
 type Project = Database['public']['Tables']['projects']['Row']
+type ProjectOwner = {
+    user_id: string
+    display_name: string | null
+    avatar_url: string | null
+}
 
 const TABS = [
     { slug: 'story', label: 'Story', icon: BookOpen },
@@ -82,11 +88,13 @@ const TABS = [
 export default function ProjectShell({
     project: initialProject,
     currentUserId,
+    owner,
     role = 'owner',
     children,
 }: {
     project: Project
     currentUserId: string
+    owner: ProjectOwner
     role?: 'owner' | 'editor' | 'viewer'
     children: React.ReactNode
 }) {
@@ -142,6 +150,8 @@ export default function ProjectShell({
                 <ReaderProvider>
                     <ProjectShellInner 
                         project={project} 
+                        owner={owner}
+                        currentUserId={currentUserId}
                         editingTitle={editingTitle} 
                         setEditingTitle={setEditingTitle} 
                         titleDraft={titleDraft} 
@@ -194,6 +204,10 @@ export default function ProjectShell({
                             onOpenChange={setSettingsModalOpen} 
                             project={project} 
                             role={role}
+                            onOpenShare={() => {
+                                setSettingsModalOpen(false)
+                                setShareModalOpen(true)
+                            }}
                         />
 
                         <ShareModal
@@ -221,6 +235,8 @@ export default function ProjectShell({
 
 function ProjectShellInner({ 
     project, 
+    owner,
+    currentUserId,
     editingTitle, 
     setEditingTitle, 
     titleDraft, 
@@ -245,7 +261,7 @@ function ProjectShellInner({
         currentSceneText, 
         currentSelectionText,
         currentChapterText,
-        analyzeScene, isAnalyzing,
+        analyzeScene, stopAnalysis, isAnalyzing,
         setAnalysisResult,
         sceneAssetsOpen, setSceneAssetsOpen,
         isDictating, requestDictation,
@@ -487,7 +503,7 @@ function ProjectShellInner({
                         </div>
 
                         <div className="flex items-center gap-4">
-                            <AvatarPortal />
+                            <AvatarPortal owner={owner} currentUserId={currentUserId} role={role} />
                             
                             {isStoryTab && (
                                 <div className="hidden lg:flex xl:hidden items-center gap-1.5 p-1 bg-violet-50/50 rounded-2xl border border-violet-100/50">
@@ -496,17 +512,17 @@ function ProjectShellInner({
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => analyzeScene()}
-                                                disabled={isAnalyzing || !currentSceneText}
+                                                onClick={() => (isAnalyzing ? stopAnalysis() : analyzeScene())}
+                                                disabled={!isAnalyzing && !currentSceneText}
                                                 className={cn(
                                                     "rounded-xl transition-all h-9 w-9 p-0",
-                                                    isAnalyzing ? "bg-white text-violet-600 shadow-sm animate-pulse" : "text-slate-500 hover:bg-white hover:text-violet-600"
+                                                    isAnalyzing ? "bg-white text-violet-600 shadow-sm animate-pulse ring-2 ring-violet-200/70" : "text-slate-500 hover:bg-white hover:text-violet-600"
                                                 )}
                                             >
-                                                <Wand2 className="w-4 h-4" />
+                                                {isAnalyzing ? <Square className="w-3.5 h-3.5 fill-current" /> : <Wand2 className="w-4 h-4" />}
                                             </Button>
                                         </TooltipTrigger>
-                                        <TooltipContent side="bottom" sideOffset={7}>Analyze this scene with AI</TooltipContent>
+                                        <TooltipContent side="bottom" sideOffset={7}>{isAnalyzing ? 'Stop analysis' : 'Analyze this scene with AI'}</TooltipContent>
                                     </Tooltip>
 
                                     <Tooltip>
@@ -561,18 +577,18 @@ function ProjectShellInner({
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    onClick={() => analyzeScene()}
-                                                    disabled={isAnalyzing || !currentSceneText}
+                                                    onClick={() => (isAnalyzing ? stopAnalysis() : analyzeScene())}
+                                                    disabled={!isAnalyzing && !currentSceneText}
                                                     className={cn(
                                                         "story-mobile-ai-button rounded-xl transition-all h-9 px-3 gap-2",
-                                                        isAnalyzing ? "story-mobile-ai-button-active bg-white text-violet-600 shadow-sm animate-pulse font-bold" : "text-slate-500 hover:bg-white"
+                                                        isAnalyzing ? "story-mobile-ai-button-active bg-white text-violet-600 shadow-sm animate-pulse font-bold ring-2 ring-violet-200/70" : "text-slate-500 hover:bg-white"
                                                     )}
                                                 >
-                                                    <Wand2 className="w-4 h-4" />
-                                                    <span className="text-xs font-medium">Analyze</span>
+                                                    {isAnalyzing ? <Square className="w-3.5 h-3.5 fill-current" /> : <Wand2 className="w-4 h-4" />}
+                                                    <span className="text-xs font-medium">{isAnalyzing ? 'Stop' : 'Analyze'}</span>
                                                 </Button>
                                             </TooltipTrigger>
-                                            <TooltipContent side="bottom" sideOffset={7}>Analyze this scene with AI</TooltipContent>
+                                            <TooltipContent side="bottom" sideOffset={7}>{isAnalyzing ? 'Stop analysis' : 'Analyze this scene with AI'}</TooltipContent>
                                         </Tooltip>
 
                                         <Tooltip>
@@ -727,29 +743,65 @@ function ProjectShellInner({
     )
 }
 
-function AvatarPortal() {
+function AvatarPortal({ owner, currentUserId, role }: { owner: ProjectOwner, currentUserId: string, role: 'owner' | 'editor' | 'viewer' }) {
     const [mounted, setMounted] = useState(false)
     useEffect(() => setMounted(true), [])
     if (!mounted) return null
     
     const target = document.getElementById('app-nav-portal')
-    if (!target) return <CollaborativeAvatars />
+    if (!target) return <CollaborativeAvatars owner={owner} currentUserId={currentUserId} role={role} />
     
-    return createPortal(<CollaborativeAvatars />, target)
+    return createPortal(<CollaborativeAvatars owner={owner} currentUserId={currentUserId} role={role} />, target)
 }
 
-function CollaborativeAvatars() {
+function CollaborativeAvatars({ owner, currentUserId, role }: { owner: ProjectOwner, currentUserId: string, role: 'owner' | 'editor' | 'viewer' }) {
     const { presenceUsers, currentUser } = usePresence()
     const MAX_VISIBLE = 4
+    const showOwnerBadge = role !== 'owner' && owner.user_id !== currentUserId
+    const ownerPresence = presenceUsers.find(user => user.user_id === owner.user_id)
     
     // Filter out the current user to avoid "Two Circles" for the same person
-    const filteredUsers = presenceUsers.filter(u => u.user_id !== currentUser?.id)
+    const filteredUsers = presenceUsers.filter(u => {
+        if (u.user_id === currentUser?.id) return false
+        if (showOwnerBadge && u.user_id === owner.user_id) return false
+        return true
+    })
     
     const visibleUsers = filteredUsers.slice(0, MAX_VISIBLE)
     const remainingCount = filteredUsers.length - MAX_VISIBLE
+    const ownerName = owner.display_name || 'Project owner'
+    const ownerInitials = ownerName.includes(' ')
+        ? ownerName.split(' ').map((part: string) => part[0]).join('').slice(0, 2).toUpperCase()
+        : ownerName.slice(0, 2).toUpperCase()
     
     return (
         <div className="flex items-center -space-x-1.5 hover:-space-x-1 transition-all duration-300">
+            {showOwnerBadge && (
+                <Tooltip>
+                    <TooltipTrigger>
+                        <div className="relative">
+                            <Avatar className="w-8 h-8 ring-2 ring-amber-200 bg-white transition-all cursor-default">
+                                <AvatarImage src={owner.avatar_url || undefined} alt={ownerName} />
+                                <AvatarFallback className="text-[10px] font-bold bg-amber-50 text-amber-700">
+                                    {ownerInitials}
+                                </AvatarFallback>
+                            </Avatar>
+                            <span className={cn(
+                                "absolute -bottom-0.5 -right-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full border border-white px-1 text-[7px] font-bold uppercase tracking-wide",
+                                ownerPresence ? "bg-emerald-500 text-white" : "bg-amber-500 text-white"
+                            )}>
+                                O
+                            </span>
+                        </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="flex flex-col gap-0.5 px-3 py-2 rounded-xl shadow-xl border-slate-200">
+                        <p className="text-xs font-bold text-slate-900">{ownerName}</p>
+                        <p className="text-[10px] text-slate-500 font-medium">
+                            Project owner{ownerPresence ? ' currently in the project' : ''}
+                        </p>
+                    </TooltipContent>
+                </Tooltip>
+            )}
             {visibleUsers.map((user) => {
                 const statusLabel = user.status === 'editing' ? 'writing' : 'reading'
                 const userColor = getUserColor(user.email)

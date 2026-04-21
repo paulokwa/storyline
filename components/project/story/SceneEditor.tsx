@@ -121,6 +121,7 @@ interface SceneEditorProps {
     projectLocations: any[]
     projectObjects: any[]
     aiSettings: any
+    allowViewerFeedback?: boolean
 }
 
 export interface SceneEditorRef {
@@ -182,7 +183,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     projectIdeas,
     projectLocations,
     projectObjects,
-    aiSettings
+    aiSettings,
+    allowViewerFeedback = false,
 }, ref) => {
     const router = useRouter()
 
@@ -946,6 +948,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
     async function handleAddInlineComment() {
         if (!editor) return
+        if (role === 'viewer' && !allowViewerFeedback) return
         
         // 1. Give immediate feedback by opening the panel
         setCommentsPanelOpen(true)
@@ -965,6 +968,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 project_id: scene.project_id,
                 node_id: scene.node_id,
                 content: 'Add your feedback...', // Initial placeholder
+                is_shared: false,
                 anchor_data: {
                     type: 'inline',
                     text,
@@ -1497,9 +1501,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                         : "mx-auto w-full transition-[max-width] duration-500 ease-in-out"
                 )}
             >
-                {editor && !isReadOnly && !isAndroid && (
-                    <BubbleMenu 
-                        editor={editor} 
+                {editor && (!isReadOnly || (role === 'viewer' && allowViewerFeedback)) && !isAndroid && (
+                    <BubbleMenu
+                        editor={editor}
                         updateDelay={0}
                         getReferencedVirtualElement={() => selectionVirtualElementRef.current}
                         shouldShow={({ from, to }) => selectionVirtualElementRef.current !== null && from !== to}
@@ -1519,7 +1523,14 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                         }}
                         className="scene-editor-bubble flex items-center gap-0.5 bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl p-1 animate-in fade-in zoom-in duration-200 z-[100] max-w-[calc(100vw-2rem)] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [scroll-snap-type:x_proximity] [scroll-padding-left:0.25rem] pr-6 cursor-default"
                     >
-                        {writingMode === 'screenplay' ? (
+                        {isReadOnly ? (
+                            <ToolbarButton
+                                onClick={handleAddInlineComment}
+                                active={false}
+                                icon={MessageSquarePlus}
+                                tooltip="Add Feedback"
+                            />
+                        ) : writingMode === 'screenplay' ? (
                             <>
                                 <ToolbarButton
                                     onClick={() => editor.chain().focus().setNode('screenplaySceneHeading').run()}
@@ -1654,7 +1665,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                         )}
                     </BubbleMenu>
                 )}
-                {editor && !isReadOnly && isAndroid && writingMode === 'screenplay' && androidToolbarPosition && (
+                {editor && ((!isReadOnly && writingMode === 'screenplay') || (isReadOnly && role === 'viewer' && allowViewerFeedback)) && isAndroid && androidToolbarPosition && (
                     <div
                         ref={androidToolbarRef}
                         className="fixed z-[100] flex items-center gap-0.5 bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl p-1 max-w-[calc(100vw-2rem)] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [scroll-snap-type:x_proximity] [scroll-padding-left:0.25rem] pr-6 cursor-default"
@@ -1667,53 +1678,53 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                         }}
                     >
                         <ToolbarButton
-                            onClick={() => editor.chain().focus().setNode('screenplaySceneHeading').run()}
-                            active={editor.isActive('screenplaySceneHeading')}
-                            icon={Clapperboard}
-                            tooltip="Scene Heading"
-                        />
-                        <ToolbarButton
-                            onClick={() => editor.chain().focus().setNode('screenplayAction').run()}
-                            active={editor.isActive('screenplayAction')}
-                            icon={TypeIcon}
-                            tooltip="Action"
-                        />
-                        <ToolbarButton
-                            onClick={() => editor.chain().focus().setNode('screenplayCharacter').run()}
-                            active={editor.isActive('screenplayCharacter')}
-                            icon={User}
-                            tooltip="Character"
-                        />
-                        <ToolbarButton
-                            onClick={() => editor.chain().focus().setNode('screenplayParenthetical').run()}
-                            active={editor.isActive('screenplayParenthetical')}
-                            icon={() => <span className="text-[10px] font-bold">( )</span>}
-                            tooltip="Parenthetical"
-                        />
-
-                        <div className="w-px h-4 bg-slate-200 mx-1" />
-
-                        <ToolbarButton
-                            onClick={() => editor.chain().focus().setNode('screenplayDialogue').run()}
-                            active={editor.isActive('screenplayDialogue')}
-                            icon={MessageCircle}
-                            tooltip="Dialogue"
-                        />
-                        <ToolbarButton
-                            onClick={() => editor.chain().focus().setNode('screenplayTransition').run()}
-                            active={editor.isActive('screenplayTransition')}
-                            icon={ArrowRight}
-                            tooltip="Transition"
-                        />
-
-                        <div className="w-px h-4 bg-slate-200 mx-1" />
-
-                        <ToolbarButton
                             onClick={handleAddInlineComment}
                             active={false}
                             icon={MessageSquarePlus}
                             tooltip="Add Feedback"
                         />
+                        {!isReadOnly && writingMode === 'screenplay' && (
+                            <>
+                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().setNode('screenplaySceneHeading').run()}
+                                    active={editor.isActive('screenplaySceneHeading')}
+                                    icon={Clapperboard}
+                                    tooltip="Scene Heading"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().setNode('screenplayAction').run()}
+                                    active={editor.isActive('screenplayAction')}
+                                    icon={TypeIcon}
+                                    tooltip="Action"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().setNode('screenplayCharacter').run()}
+                                    active={editor.isActive('screenplayCharacter')}
+                                    icon={User}
+                                    tooltip="Character"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().setNode('screenplayParenthetical').run()}
+                                    active={editor.isActive('screenplayParenthetical')}
+                                    icon={() => <span className="text-[10px] font-bold">( )</span>}
+                                    tooltip="Parenthetical"
+                                />
+                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().setNode('screenplayDialogue').run()}
+                                    active={editor.isActive('screenplayDialogue')}
+                                    icon={MessageCircle}
+                                    tooltip="Dialogue"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().setNode('screenplayTransition').run()}
+                                    active={editor.isActive('screenplayTransition')}
+                                    icon={ArrowRight}
+                                    tooltip="Transition"
+                                />
+                            </>
+                        )}
                     </div>
                 )}
                 <EditorContent editor={editor} />

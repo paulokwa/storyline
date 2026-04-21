@@ -12,6 +12,7 @@ import type { Database } from '@/lib/supabase/types'
 import { softDeleteEntity } from '@/lib/supabase/recovery'
 import AssetPicker from '@/components/project/assets/AssetPicker'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useProjectActions } from '@/components/project/ProjectContext'
 
 type Location = any // Flexibility for custom schema
 
@@ -22,6 +23,8 @@ export default function LocationsTab({
     projectId: string
     locations?: any[]
 }) {
+    const { role } = useProjectActions()
+    const isReadOnly = role === 'viewer'
     const [localLocations, setLocalLocations] = useState<any[]>(initialLocations)
     const [selectedId, setSelectedId] = useState<string | null>(initialLocations[0]?.id ?? null)
 
@@ -76,6 +79,7 @@ export default function LocationsTab({
     }, [])
 
     const handleFieldChange = (id: string, field: string, value: string) => {
+        if (isReadOnly) return
         // For single-line StableInput fields (name, etc.) we update local state
         // immediately so the sidebar list reflects the new name in real time.
         setLocalLocations((prev: any[]) => prev.map(l => l.id === id ? { ...l, [field]: value } : l))
@@ -92,6 +96,7 @@ export default function LocationsTab({
     // prop → editor.commands.setContent() → interrupts Android IME composition
     // → text flickers/disappears. We only debounce-save to the DB.
     const handleTextEditorChange = (id: string, field: string, value: string) => {
+        if (isReadOnly) return
         if (saveTimer.current) clearTimeout(saveTimer.current)
         setIsSaving(true)
         saveTimer.current = setTimeout(() => {
@@ -100,6 +105,7 @@ export default function LocationsTab({
     }
 
     async function handleDeleteLocation(id: string) {
+        if (isReadOnly) return
         setIsSaving(true)
         const supabase = createClient()
         try {
@@ -124,6 +130,7 @@ export default function LocationsTab({
     }
 
     async function handleCreateLocation() {
+        if (isReadOnly) return
         setIsCreating(true)
         const supabase = createClient()
         const nextOrderIndex = Math.max(0, ...localLocations.map((l: any) => l.order_index)) + 1
@@ -166,6 +173,10 @@ export default function LocationsTab({
 
     function commitRename(id: string) {
         const trimmed = renameValue.trim()
+        if (isReadOnly) {
+            setRenamingId(null)
+            return
+        }
         if (trimmed && trimmed !== localLocations.find(l => l.id === id)?.name) {
             handleFieldChange(id, 'name', trimmed)
         }
@@ -173,6 +184,7 @@ export default function LocationsTab({
     }
 
     async function handleReorder(result: DropResult) {
+        if (isReadOnly) return
         if (!result.destination) return
         const items = reorder(localLocations, result.source.index, result.destination.index)
         setLocalLocations(items)
@@ -187,7 +199,7 @@ export default function LocationsTab({
     }
 
     if (localLocations.length === 0) {
-        return <EmptyState onCreate={handleCreateLocation} isCreating={isCreating} />
+        return <EmptyState onCreate={handleCreateLocation} isCreating={isCreating} isReadOnly={isReadOnly} />
     }
 
     return (
@@ -199,7 +211,7 @@ export default function LocationsTab({
                         <MapPin className="w-4 h-4 text-[#546354]/60" />
                         <h2 className="text-[11px] font-sans tracking-[0.2em] uppercase text-[#546354]/60 font-medium">World Locations</h2>
                     </div>
-                    <Tooltip>
+                    {!isReadOnly && <Tooltip>
                         <TooltipTrigger>
                             <button 
                                 onClick={handleCreateLocation}
@@ -210,7 +222,7 @@ export default function LocationsTab({
                             </button>
                         </TooltipTrigger>
                         <TooltipContent side="top">Add location</TooltipContent>
-                    </Tooltip>
+                    </Tooltip>}
                 </div>
 
                 <DragDropContext onDragEnd={handleReorder}>
@@ -222,7 +234,7 @@ export default function LocationsTab({
                                 className="flex-1 overflow-y-auto px-4 pb-10 space-y-1"
                             >
                                 {localLocations.map((loc: any, index: number) => (
-                                    <Draggable key={loc.id} draggableId={loc.id} index={index}>
+                                    <Draggable key={loc.id} draggableId={loc.id} index={index} isDragDisabled={isReadOnly}>
                                         {(provided, snapshot) => (
                                             <div
                                                 ref={provided.innerRef}
@@ -234,9 +246,11 @@ export default function LocationsTab({
                                                     snapshot.isDragging && "shadow-2xl ring-2 ring-[#546354]/20 z-50 bg-white"
                                                 )}
                                             >
-                                                <div {...provided.dragHandleProps} className="p-1 -ml-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab text-slate-300">
-                                                    <GripVertical className="w-3.5 h-3.5" />
-                                                </div>
+                                                {!isReadOnly && (
+                                                    <div {...provided.dragHandleProps} className="p-1 -ml-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab text-slate-300">
+                                                        <GripVertical className="w-3.5 h-3.5" />
+                                                    </div>
+                                                )}
                                                 <div className={cn("w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center", selectedId === loc.id ? "bg-[#fbf9f5]" : "bg-white border border-slate-100")}>
                                                     <MapPin className={cn("w-4.5 h-4.5", selectedId === loc.id ? "text-[#546354]" : "text-stone-300")} />
                                                 </div>
@@ -269,7 +283,7 @@ export default function LocationsTab({
                                                         </div>
                                                     ) : (
                                                         <>
-                                                            <div className={cn(
+                                                            {!isReadOnly && <div className={cn(
                                                                 "flex items-center gap-0.5 transition-opacity",
                                                                 selectedId === loc.id ? "opacity-100" : "opacity-100 md:opacity-0 md:group-hover:opacity-100"
                                                             )}>
@@ -298,7 +312,7 @@ export default function LocationsTab({
                                                                     </TooltipTrigger>
                                                                     <TooltipContent side="top">Delete</TooltipContent>
                                                                 </Tooltip>
-                                                            </div>
+                                                            </div>}
                                                             {selectedId === loc.id && renamingId === null && confirmDeleteId === null && (
                                                                 <div className="w-1.5 h-1.5 rounded-full bg-[#546354]/40 flex-shrink-0 group-hover:hidden" />
                                                             )}
@@ -339,11 +353,14 @@ export default function LocationsTab({
                                         projectId={projectId}
                                         entityId={selectedLocation.id}
                                         entityType="location"
+                                        disabled={isReadOnly}
                                     />
                                     <StableInput
                                         type="text"
                                         value={selectedLocation.name}
                                         onValueChange={(val) => handleFieldChange(selectedLocation.id, 'name', val)}
+                                        disabled={isReadOnly}
+                                        readOnly={isReadOnly}
                                         className="w-full sm:flex-1 bg-transparent text-4xl sm:text-6xl font-serif italic text-slate-800 tracking-tight leading-tight outline-none border-none placeholder:text-slate-200 text-left min-w-0"
                                         placeholder="Location Name"
                                     />
@@ -361,6 +378,7 @@ export default function LocationsTab({
                                     <PremiumEditor 
                                         value={selectedLocation.atmosphere || ''} 
                                         onValueChange={(val) => handleTextEditorChange(selectedLocation.id, 'atmosphere', val)} 
+                                        editable={!isReadOnly}
                                         className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-lg sm:text-xl italic placeholder:text-stone-200" 
                                         editorClassName="italic"
                                         placeholder="Describe the vibe, lighting, sounds, and overall mood..." 
@@ -380,6 +398,7 @@ export default function LocationsTab({
                                     <PremiumEditor 
                                         value={selectedLocation.description || ''} 
                                         onValueChange={(val) => handleTextEditorChange(selectedLocation.id, 'description', val)} 
+                                        editable={!isReadOnly}
                                         className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-lg sm:text-xl italic placeholder:text-stone-200" 
                                         placeholder="Layout, architectural details, key landmarks..." 
                                         minHeight="200px"
@@ -416,18 +435,22 @@ export default function LocationsTab({
     )
 }
 
-function EmptyState({ onCreate, isCreating }: { onCreate: () => void, isCreating: boolean }) {
+function EmptyState({ onCreate, isCreating, isReadOnly = false }: { onCreate: () => void, isCreating: boolean, isReadOnly?: boolean }) {
     return (
         <div className="locations-tab-empty locations-tab-shell flex-1 w-full min-h-full bg-[#fbf9f5] flex flex-col items-center sm:justify-center py-12 p-6 text-center animate-in fade-in duration-700 overflow-y-auto">
             <div className="max-w-2xl w-full py-12 sm:py-20 px-6 sm:px-10 rounded-[3rem] bg-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.04)] ring-1 ring-slate-100 flex flex-col items-center">
                 <div className="w-24 h-24 bg-stone-50 rounded-[30%] flex items-center justify-center mb-8 rotate-3 shadow-inner"><MapPin className="w-12 h-12 text-stone-200" /></div>
                 <h2 className="text-4xl font-serif italic text-slate-800 mb-4 tracking-tight">An Unmapped World</h2>
                 <p className="text-[11px] font-sans tracking-[0.4em] uppercase text-stone-300 mb-10 font-bold">World Locations Atlas Empty</p>
-                <p className="text-slate-500 font-medium leading-relaxed italic text-lg mb-12 max-w-md">Add a location to start building your world.</p>
-                <Button variant="outline" onClick={onCreate} disabled={isCreating} className="rounded-full px-10 py-7 h-auto border-stone-100 text-stone-500 hover:bg-stone-50 uppercase tracking-widest text-[10px] font-bold">
-                    {isCreating ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Plus className="w-3.5 h-3.5 mr-2" />}
-                    Chart First Location
-                </Button>
+                <p className="text-slate-500 font-medium leading-relaxed italic text-lg mb-12 max-w-md">
+                    {isReadOnly ? 'Viewers can explore locations once they are added by an owner or editor.' : 'Add a location to start building your world.'}
+                </p>
+                {!isReadOnly && (
+                    <Button variant="outline" onClick={onCreate} disabled={isCreating} className="rounded-full px-10 py-7 h-auto border-stone-100 text-stone-500 hover:bg-stone-50 uppercase tracking-widest text-[10px] font-bold">
+                        {isCreating ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Plus className="w-3.5 h-3.5 mr-2" />}
+                        Chart First Location
+                    </Button>
+                )}
             </div>
         </div>
     )

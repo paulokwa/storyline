@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { getUserWithTimeout } from '@/lib/supabase/auth-timeout'
 
 export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl
@@ -41,9 +42,11 @@ export async function proxy(request: NextRequest) {
         }
     )
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    const { user, error, timedOut } = await getUserWithTimeout(supabase)
+
+    if (error && error.name !== 'AuthSessionMissingError') {
+        console.error(timedOut ? 'Supabase auth timed out in proxy:' : 'Supabase auth failed in proxy:', error)
+    }
 
     if (!user && !isAuthRoute) {
         const url = request.nextUrl.clone()

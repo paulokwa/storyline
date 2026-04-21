@@ -7,7 +7,6 @@ import {
     Dialog,
     DialogContent,
     DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
@@ -16,7 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { Trash2, AlertTriangle, Save, Globe, Info, Tag, Hash, Copyright, Book, Type, MessageSquare, LogOut } from 'lucide-react'
+import { Trash2, AlertTriangle, Save, Globe, Info, Tag, Hash, Copyright, Book, Type, MessageSquare, LogOut, Users, ArrowUpRight } from 'lucide-react'
 import type { Database } from '@/lib/supabase/types'
 import type { ExportMetadata } from '@/lib/export/buildExportPayload'
 import { cn } from '@/lib/utils'
@@ -30,6 +29,7 @@ interface ProjectSettingsModalProps {
     onOpenChange: (open: boolean) => void
     project: Project
     role?: 'owner' | 'editor' | 'viewer'
+    onOpenShare?: () => void
 }
 
 export default function ProjectSettingsModal({
@@ -37,6 +37,7 @@ export default function ProjectSettingsModal({
     onOpenChange,
     project,
     role = 'owner',
+    onOpenShare,
 }: ProjectSettingsModalProps) {
     const { theme } = useTheme()
     const isMidnight = theme === 'midnight'
@@ -52,6 +53,7 @@ export default function ProjectSettingsModal({
     const [tone, setTone] = useState(project.tone || '')
     const [writingMode, setWritingMode] = useState(project.writing_mode || 'simple')
     const [shareOwnerFeedback, setShareOwnerFeedback] = useState(project.share_owner_feedback ?? false)
+    const [allowViewerFeedback, setAllowViewerFeedback] = useState(project.allow_viewer_feedback ?? false)
     const [allowCollaboratorExports, setAllowCollaboratorExports] = useState(project.allow_collaborator_exports ?? false)
     const [metadata, setMetadata] = useState<ExportMetadata>((project.export_metadata as any) || {})
 
@@ -72,6 +74,7 @@ export default function ProjectSettingsModal({
                 tone: tone.trim() || null,
                 writing_mode: writingMode,
                 share_owner_feedback: shareOwnerFeedback,
+                allow_viewer_feedback: allowViewerFeedback,
                 allow_collaborator_exports: allowCollaboratorExports,
                 export_metadata: metadata as any,
             })
@@ -172,7 +175,7 @@ export default function ProjectSettingsModal({
                             </button>
                         </div>
 
-                        <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto px-5 pb-0 pt-5 font-sans sm:px-8 sm:pt-6">
+                        <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-5 font-sans sm:px-8 sm:pb-10 sm:pt-6">
                             {activeTab === 'general' ? (
                                 <div className="space-y-5 sm:space-y-6">
                                     <div className="space-y-2.5">
@@ -271,39 +274,101 @@ export default function ProjectSettingsModal({
                                     </div>
 
                                     <div className="space-y-3">
-                                        <div className="flex items-start justify-between gap-4 rounded-2xl border border-border bg-muted/30 p-4">
-                                            <div className="space-y-1">
-                                                <Label htmlFor="shareOwnerFeedback" className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                                    <MessageSquare className="h-4 w-4 text-primary" />
-                                                    Share Owner Feedback
-                                                </Label>
-                                                <p className="text-xs leading-relaxed text-slate-500">
-                                                    When off, collaborators can leave feedback but cannot see feedback authored by the owner.
-                                                </p>
+                                        <div className="rounded-2xl border border-border bg-muted/30 p-4">
+                                            <div className="flex items-start gap-4">
+                                                <div className="space-y-1 flex-1 min-w-0">
+                                                    <div className="flex items-center justify-between gap-4">
+                                                        <Label htmlFor="allowViewerFeedback" className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                                            <MessageSquare className="h-4 w-4 text-primary" />
+                                                            Allow Viewer Feedback
+                                                        </Label>
+                                                        <div className="flex items-center gap-2 shrink-0">
+                                                            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                                                                {allowViewerFeedback ? 'On' : 'Off'}
+                                                            </span>
+                                                            <Switch
+                                                                id="allowViewerFeedback"
+                                                                checked={allowViewerFeedback}
+                                                                onCheckedChange={setAllowViewerFeedback}
+                                                                disabled={!canManageProject}
+                                                                className="data-[size=default]:h-6 data-[size=default]:w-11"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-xs leading-relaxed text-slate-500">
+                                                        When on, viewers can highlight passages, leave feedback, and save AI conversations into feedback threads. They still cannot edit the project itself.
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <Switch
-                                                id="shareOwnerFeedback"
-                                                checked={shareOwnerFeedback}
-                                                onCheckedChange={setShareOwnerFeedback}
-                                                disabled={!canManageProject}
-                                            />
                                         </div>
-                                        <div className="flex items-start justify-between gap-4 rounded-2xl border border-border bg-muted/30 p-4">
-                                            <div className="space-y-1">
-                                                <Label htmlFor="allowCollaboratorExports" className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                                    <Globe className="h-4 w-4 text-primary" />
-                                                    Allow Collaborator Exports
-                                                </Label>
-                                                <p className="text-xs leading-relaxed text-slate-500">
-                                                    When off, collaborators can still read the shared {getProjectTypeLabel(project.type).toLowerCase()} but cannot export it. The owner can always export.
-                                                </p>
+                                        <div className="rounded-2xl border border-border bg-muted/30 p-4">
+                                            <div className="space-y-3">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="space-y-1 flex-1 min-w-0">
+                                                        <div className="flex items-center justify-between gap-4">
+                                                            <Label htmlFor="shareOwnerFeedback" className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                                                <Globe className="h-4 w-4 text-primary" />
+                                                                Share Owner Feedback Broadly
+                                                            </Label>
+                                                            <div className="flex items-center gap-2 shrink-0">
+                                                                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                                                                    {shareOwnerFeedback ? 'On' : 'Off'}
+                                                                </span>
+                                                                <Switch
+                                                                    id="shareOwnerFeedback"
+                                                                    checked={shareOwnerFeedback}
+                                                                    onCheckedChange={setShareOwnerFeedback}
+                                                                    disabled={!canManageProject}
+                                                                    className="data-[size=default]:h-6 data-[size=default]:w-11"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-xs leading-relaxed text-slate-500">
+                                                            Legacy project-wide visibility for owner feedback. Per-comment sharing is available directly from each feedback item and is recommended for finer privacy control.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                {onOpenShare && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={onOpenShare}
+                                                        className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-left transition-colors hover:bg-white"
+                                                    >
+                                                        <span className="flex items-center gap-2 text-[11px] font-semibold text-slate-600">
+                                                            <Users className="h-3.5 w-3.5 text-slate-400" />
+                                                            Manage collaborators and sharing in Share Project
+                                                        </span>
+                                                        <ArrowUpRight className="h-3.5 w-3.5 text-slate-400" />
+                                                    </button>
+                                                )}
                                             </div>
-                                            <Switch
-                                                id="allowCollaboratorExports"
-                                                checked={allowCollaboratorExports}
-                                                onCheckedChange={setAllowCollaboratorExports}
-                                                disabled={!canManageProject}
-                                            />
+                                        </div>
+                                        <div className="rounded-2xl border border-border bg-muted/30 p-4">
+                                            <div className="flex items-start gap-4">
+                                                <div className="space-y-1 flex-1 min-w-0">
+                                                    <div className="flex items-center justify-between gap-4">
+                                                        <Label htmlFor="allowCollaboratorExports" className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                                            <Globe className="h-4 w-4 text-primary" />
+                                                            Allow Collaborator Exports
+                                                        </Label>
+                                                        <div className="flex items-center gap-2 shrink-0">
+                                                            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                                                                {allowCollaboratorExports ? 'On' : 'Off'}
+                                                            </span>
+                                                            <Switch
+                                                                id="allowCollaboratorExports"
+                                                                checked={allowCollaboratorExports}
+                                                                onCheckedChange={setAllowCollaboratorExports}
+                                                                disabled={!canManageProject}
+                                                                className="data-[size=default]:h-6 data-[size=default]:w-11"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-xs leading-relaxed text-slate-500">
+                                                        When off, collaborators can still read the shared {getProjectTypeLabel(project.type).toLowerCase()} but cannot export it. The owner can always export.
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </div>
                                         {!canManageProject && (
                                             <p className="px-1 text-[10px] italic text-slate-400">
@@ -445,48 +510,55 @@ export default function ProjectSettingsModal({
                             )}
                         </div>
 
-                        <DialogFooter className={cn(
-                            "shrink-0 gap-3 p-5 sm:flex-row sm:p-6",
+                        <div className={cn(
+                            "shrink-0 border-t px-5 py-4 sm:px-6 sm:py-5",
                             isMidnight ? "bg-[#182239]/88 border-slate-700/60" : "bg-white border-[#f0eee9]"
                         )}>
-                            {canManageProject ? (
-                                <Button
-                                    variant="ghost"
-                                    onClick={() => setShowDeleteConfirm(true)}
-                                    className="sm:mr-auto rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50"
-                                >
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                    Delete Project
-                                </Button>
-                            ) : (
-                                <Button
-                                    variant="ghost"
-                                    onClick={handleLeaveCollaboration}
-                                    disabled={loading}
-                                    className="sm:mr-auto rounded-full text-slate-400 hover:text-amber-600 hover:bg-amber-50"
-                                >
-                                    <LogOut className="w-4 h-4 mr-2" />
-                                    Leave Collaboration
-                                </Button>
-                            )}
-                            <Button
-                                variant="outline"
-                                onClick={() => onOpenChange(false)}
-                                className="rounded-full px-6 h-11 border-border"
-                            >
-                                Cancel
-                            </Button>
-                            {canManageProject && (
-                                <Button
-                                    onClick={handleSave}
-                                    disabled={loading || !title.trim()}
-                                    className="sanctuary-btn-primary rounded-full px-8 h-11 transition-all active:scale-95"
-                                >
-                                    <Save className="w-4 h-4 mr-2" />
-                                    Save Changes
-                                </Button>
-                            )}
-                        </DialogFooter>
+                            <div className="flex flex-col gap-3 sm:gap-4">
+                                <div className="flex justify-center">
+                                    {canManageProject ? (
+                                        <Button
+                                            variant="ghost"
+                                            onClick={() => setShowDeleteConfirm(true)}
+                                            className="h-9 rounded-full px-5 text-slate-400 hover:text-red-500 hover:bg-red-50"
+                                        >
+                                            <Trash2 className="w-4 h-4 mr-2" />
+                                            Delete Project
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            variant="ghost"
+                                            onClick={handleLeaveCollaboration}
+                                            disabled={loading}
+                                            className="h-9 rounded-full px-5 text-slate-400 hover:text-amber-600 hover:bg-amber-50"
+                                        >
+                                            <LogOut className="w-4 h-4 mr-2" />
+                                            Leave Collaboration
+                                        </Button>
+                                    )}
+                                </div>
+
+                                <div className="mx-auto grid w-full max-w-[36rem] grid-cols-[0.92fr_1.58fr] gap-3">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => onOpenChange(false)}
+                                        className="h-11 w-full rounded-full border-border px-6"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    {canManageProject && (
+                                        <Button
+                                            onClick={handleSave}
+                                            disabled={loading || !title.trim()}
+                                            className="sanctuary-btn-primary h-11 w-full rounded-full px-8 transition-all active:scale-95"
+                                        >
+                                            <Save className="w-4 h-4 mr-2" />
+                                            Save Changes
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </>
                 ) : (
                     <div className="py-6 space-y-6">

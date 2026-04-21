@@ -15,6 +15,7 @@ import { softDeleteEntity } from '@/lib/supabase/recovery'
 import RelationshipManager from './RelationshipManager'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import AssetPicker from '@/components/project/assets/AssetPicker'
+import { useProjectActions } from '@/components/project/ProjectContext'
 
 type Character = Database['public']['Tables']['characters']['Row']
 
@@ -29,6 +30,8 @@ export default function CharactersTab({
     characters?: Character[]
     availableEntities?: { id: string; name: string; type: 'character' | 'location' | 'object' }[]
 }) {
+    const { role } = useProjectActions()
+    const isReadOnly = role === 'viewer'
     const [localCharacters, setLocalCharacters] = useState<Character[]>(initialCharacters)
     const [selectedId, setSelectedId] = useState<string | null>(initialCharacters[0]?.id ?? null)
 
@@ -88,6 +91,7 @@ export default function CharactersTab({
     }, [])
 
     const handleFieldChange = (id: string, field: keyof Character, value: string) => {
+        if (isReadOnly) return
         // Update local state immediately for responsiveness (name shown in sidebar)
         setLocalCharacters((prev: Character[]) => prev.map(c => c.id === id ? { ...c, [field]: value } : c))
         
@@ -102,6 +106,7 @@ export default function CharactersTab({
     // For PremiumEditor (multiline) fields: skip local state update to prevent
     // parent re-renders that interrupt Android IME composition mid-keystroke.
     const handleTextEditorChange = (id: string, field: keyof Character, value: string) => {
+        if (isReadOnly) return
         if (saveTimer.current) clearTimeout(saveTimer.current)
         setIsSaving(true)
         saveTimer.current = setTimeout(() => {
@@ -110,6 +115,7 @@ export default function CharactersTab({
     }
 
     async function handleDeleteCharacter(id: string) {
+        if (isReadOnly) return
         setIsSaving(true)
         const supabase = createClient()
         try {
@@ -134,6 +140,7 @@ export default function CharactersTab({
     }
 
     async function handleCreateCharacter() {
+        if (isReadOnly) return
         setIsCreating(true)
         const supabase = createClient() as any
         
@@ -161,7 +168,12 @@ export default function CharactersTab({
                 setRenameValue(newName)
             }
         } else if (error) {
-            console.error('Error creating character:', error)
+            console.error('Error creating character:', {
+                message: error.message,
+                details: error.details,
+                hint: error.hint,
+                code: error.code,
+            })
         }
         
         setIsCreating(false)
@@ -179,6 +191,10 @@ export default function CharactersTab({
 
     function commitRename(id: string) {
         const trimmed = renameValue.trim()
+        if (isReadOnly) {
+            setRenamingId(null)
+            return
+        }
         if (trimmed && trimmed !== localCharacters.find(c => c.id === id)?.name) {
             handleFieldChange(id, 'name', trimmed)
         }
@@ -191,7 +207,7 @@ export default function CharactersTab({
     }
 
     async function handleReorder(result: DropResult) {
-        if (!result.destination) return
+        if (isReadOnly || !result.destination) return
 
         const items = reorder(
             localCharacters,
@@ -226,7 +242,7 @@ export default function CharactersTab({
     }
 
     if (localCharacters.length === 0) {
-        return <EmptyCharactersState onCreate={handleCreateCharacter} isCreating={isCreating} projectType={projectType} />
+        return <EmptyCharactersState onCreate={handleCreateCharacter} isCreating={isCreating} projectType={projectType} isReadOnly={isReadOnly} />
     }
 
     return (
@@ -244,18 +260,20 @@ export default function CharactersTab({
                         </h2>
                     </div>
                     {/* Add button */}
-                    <Tooltip>
-                        <TooltipTrigger>
-                            <button 
-                                onClick={handleCreateCharacter}
-                                disabled={isCreating}
-                                className="w-8 h-8 rounded-full bg-white/40 ring-1 ring-white/60 flex items-center justify-center hover:bg-white transition-all active:scale-95 disabled:opacity-50"
-                            >
-                                {isCreating ? <Loader2 className="w-3.5 h-3.5 text-stone-400 animate-spin" /> : <Plus className="w-4 h-4 text-stone-400" />}
-                            </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top">Add character</TooltipContent>
-                    </Tooltip>
+                    {!isReadOnly && (
+                        <Tooltip>
+                            <TooltipTrigger>
+                                <button 
+                                    onClick={handleCreateCharacter}
+                                    disabled={isCreating}
+                                    className="w-8 h-8 rounded-full bg-white/40 ring-1 ring-white/60 flex items-center justify-center hover:bg-white transition-all active:scale-95 disabled:opacity-50"
+                                >
+                                    {isCreating ? <Loader2 className="w-3.5 h-3.5 text-stone-400 animate-spin" /> : <Plus className="w-4 h-4 text-stone-400" />}
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">Add character</TooltipContent>
+                        </Tooltip>
+                    )}
                 </div>
 
                 <DragDropContext onDragEnd={handleReorder}>
@@ -267,7 +285,7 @@ export default function CharactersTab({
                                 className="flex-1 overflow-y-auto px-4 pb-10 space-y-1 custom-scrollbar"
                             >
                                 {localCharacters.map((char: Character, index: number) => (
-                                    <Draggable key={char.id} draggableId={char.id} index={index}>
+                                    <Draggable key={char.id} draggableId={char.id} index={index} isDragDisabled={isReadOnly}>
                                         {(provided, snapshot) => (
                                             <div
                                                 ref={provided.innerRef}
@@ -289,12 +307,14 @@ export default function CharactersTab({
                                                     snapshot.isDragging && "shadow-2xl ring-2 ring-[#546354]/20 z-50 bg-white"
                                                 )}
                                             >
-                                                <div 
-                                                    {...provided.dragHandleProps}
-                                                    className="p-1 -ml-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-400"
-                                                >
-                                                    <GripVertical className="w-3.5 h-3.5" />
-                                                </div>
+                                                {!isReadOnly && (
+                                                    <div 
+                                                        {...provided.dragHandleProps}
+                                                        className="p-1 -ml-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-400"
+                                                    >
+                                                        <GripVertical className="w-3.5 h-3.5" />
+                                                    </div>
+                                                )}
                                                 <div className={cn(
                                                     "w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center transition-all duration-500",
                                                     selectedId === char.id ? "bg-[#fbf9f5] scale-105" : "bg-white border border-slate-100"
@@ -346,36 +366,38 @@ export default function CharactersTab({
                                                         </div>
                                                     ) : (
                                                         <>
-                                                             <div className={cn(
-                                                                "flex items-center gap-0.5 transition-opacity",
-                                                                selectedId === char.id ? "opacity-100" : "opacity-100 md:opacity-0 md:group-hover:opacity-100"
-                                                            )}>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <button
-                                                                            onClick={e => startRename(char, e)}
-                                                                            className="p-1 rounded-lg hover:bg-slate-50 text-stone-300 hover:text-[#546354] transition-all duration-200 flex-shrink-0"
-                                                                        >
-                                                                            <Pencil className="w-3 h-3" />
-                                                                        </button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent side="top">Rename</TooltipContent>
-                                                                </Tooltip>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <button
-                                                                            onClick={e => {
-                                                                                e.stopPropagation()
-                                                                                setConfirmDeleteId(char.id)
-                                                                            }}
-                                                                            className="p-1 rounded-lg hover:bg-red-50 text-stone-300 hover:text-red-500 transition-all duration-200 flex-shrink-0"
-                                                                        >
-                                                                            <Trash2 className="w-3 h-3" />
-                                                                        </button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent side="top">Delete</TooltipContent>
-                                                                </Tooltip>
-                                                            </div>
+                                                            {!isReadOnly && (
+                                                                <div className={cn(
+                                                                    "flex items-center gap-0.5 transition-opacity",
+                                                                    selectedId === char.id ? "opacity-100" : "opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                                                                )}>
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger>
+                                                                            <button
+                                                                                onClick={e => startRename(char, e)}
+                                                                                className="p-1 rounded-lg hover:bg-slate-50 text-stone-300 hover:text-[#546354] transition-all duration-200 flex-shrink-0"
+                                                                            >
+                                                                                <Pencil className="w-3 h-3" />
+                                                                            </button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent side="top">Rename</TooltipContent>
+                                                                    </Tooltip>
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger>
+                                                                            <button
+                                                                                onClick={e => {
+                                                                                    e.stopPropagation()
+                                                                                    setConfirmDeleteId(char.id)
+                                                                                }}
+                                                                                className="p-1 rounded-lg hover:bg-red-50 text-stone-300 hover:text-red-500 transition-all duration-200 flex-shrink-0"
+                                                                            >
+                                                                                <Trash2 className="w-3 h-3" />
+                                                                            </button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent side="top">Delete</TooltipContent>
+                                                                    </Tooltip>
+                                                                </div>
+                                                            )}
                                                             {selectedId === char.id && renamingId === null && confirmDeleteId === null && (
                                                                 <div className="w-1.5 h-1.5 rounded-full bg-[#546354]/40 flex-shrink-0 group-hover:hidden" />
                                                             )}
@@ -430,11 +452,14 @@ export default function CharactersTab({
                                         projectId={projectId}
                                         entityId={selectedCharacter.id}
                                         entityType="character"
+                                        disabled={isReadOnly}
                                     />
                                     <StableInput
                                         type="text"
                                         value={selectedCharacter.name}
                                         onValueChange={(val) => handleFieldChange(selectedCharacter.id, 'name', val)}
+                                        disabled={isReadOnly}
+                                        readOnly={isReadOnly}
                                         className="w-full sm:flex-1 bg-transparent text-4xl sm:text-6xl font-serif italic text-slate-800 tracking-tight leading-tight outline-none border-none placeholder:text-slate-200 text-left min-w-0"
                                         placeholder="Character Name"
                                     />
@@ -457,6 +482,7 @@ export default function CharactersTab({
                                         <PremiumEditor
                                             value={selectedCharacter.description || ''}
                                             onValueChange={(val) => handleTextEditorChange(selectedCharacter.id, 'description', val)}
+                                            editable={!isReadOnly}
                                             className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-lg sm:text-xl italic placeholder:text-stone-200"
                                             editorClassName="italic"
                                             placeholder={projectType === 'novel' 
@@ -483,6 +509,7 @@ export default function CharactersTab({
                                     <PremiumEditor
                                         value={selectedCharacter.notes || ''}
                                         onValueChange={(val) => handleTextEditorChange(selectedCharacter.id, 'notes', val)}
+                                        editable={!isReadOnly}
                                         className="w-full bg-transparent text-slate-600 leading-relaxed font-serif text-lg sm:text-xl italic placeholder:text-stone-200"
                                         editorClassName="italic"
                                         placeholder="Add internal motivations, personal goals, and narrative arcs..."
@@ -497,6 +524,7 @@ export default function CharactersTab({
                                 charId={selectedCharacter.id}
                                 charName={selectedCharacter.name}
                                 availableEntities={availableEntities}
+                                disabled={isReadOnly}
                             />
 
                             {/* Stats/Metatadata section */}
@@ -546,7 +574,17 @@ export default function CharactersTab({
     )
 }
 
-function EmptyCharactersState({ onCreate, isCreating, projectType }: { onCreate: () => void, isCreating: boolean, projectType: string }) {
+function EmptyCharactersState({
+    onCreate,
+    isCreating,
+    projectType,
+    isReadOnly = false,
+}: {
+    onCreate: () => void
+    isCreating: boolean
+    projectType: string
+    isReadOnly?: boolean
+}) {
     return (
         <div className="characters-tab-empty characters-tab-shell flex-1 w-full min-h-full bg-[#fbf9f5] flex flex-col items-center sm:justify-center py-12 p-6 text-center animate-in fade-in duration-700 overflow-y-auto">
             <div className="max-w-2xl w-full py-12 sm:py-20 px-6 sm:px-10 rounded-[3rem] bg-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.04)] ring-1 ring-slate-100 flex flex-col items-center">
@@ -561,25 +599,29 @@ function EmptyCharactersState({ onCreate, isCreating, projectType }: { onCreate:
 
                 <div className="space-y-8 max-w-md">
                     <p className="text-slate-500 font-medium leading-relaxed italic text-lg">
-                        Start your story by adding a character.
+                        {isReadOnly ? 'This archive has no visible characters yet.' : 'Start your story by adding a character.'}
                     </p>
                     <div className="h-px w-16 bg-stone-100 mx-auto" />
                     <p className="text-stone-400 text-sm leading-relaxed px-6">
-                        No characters have been registered yet. Create one to start building your world and populating your Narrative Archive.
+                        {isReadOnly
+                            ? 'Viewers can explore shared characters once they have been added by the owner or an editor.'
+                            : 'No characters have been registered yet. Create one to start building your world and populating your Narrative Archive.'}
                     </p>
                 </div>
 
-                <div className="mt-12">
-                    <Button 
-                        variant="outline" 
-                        onClick={onCreate}
-                        disabled={isCreating}
-                        className="rounded-full px-10 py-7 h-auto border-stone-100 text-stone-500 hover:text-stone-800 hover:bg-stone-50 bg-white shadow-sm ring-1 ring-stone-100 uppercase tracking-[0.2em] text-[10px] font-bold transition-all active:scale-95 disabled:opacity-50"
-                    >
-                        {isCreating ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Plus className="w-3.5 h-3.5 mr-2" />}
-                        Create First Character
-                    </Button>
-                </div>
+                {!isReadOnly && (
+                    <div className="mt-12">
+                        <Button 
+                            variant="outline" 
+                            onClick={onCreate}
+                            disabled={isCreating}
+                            className="rounded-full px-10 py-7 h-auto border-stone-100 text-stone-500 hover:text-stone-800 hover:bg-stone-50 bg-white shadow-sm ring-1 ring-stone-100 uppercase tracking-[0.2em] text-[10px] font-bold transition-all active:scale-95 disabled:opacity-50"
+                        >
+                            {isCreating ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Plus className="w-3.5 h-3.5 mr-2" />}
+                            Create First Character
+                        </Button>
+                    </div>
+                )}
             </div>
         </div>
     )

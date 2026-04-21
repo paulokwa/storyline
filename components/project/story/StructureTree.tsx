@@ -379,8 +379,10 @@ const NodeItem = React.memo(({
         setEditing(false)
     }
 
+    const isDragDisabled = isReadOnly || editing || confirmingDeleteId === node.id
+
     return (
-        <Draggable draggableId={node.id} index={index}>
+        <Draggable draggableId={node.id} index={index} isDragDisabled={isDragDisabled}>
             {(provided, snapshot) => (
                 <div ref={provided.innerRef} {...provided.draggableProps}>
                     <div
@@ -405,18 +407,22 @@ const NodeItem = React.memo(({
                             <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#546354] rounded-full shadow-[0_0_12px_rgba(84,99,84,0.3)]" />
                         )}
 
-                        {!isReadOnly && (
-                            <div 
-                                {...provided.dragHandleProps}
-                                className={cn(
-                                    "p-1 -ml-1 opacity-0 transition-opacity cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-400 shrink-0",
-                                    "group-hover:opacity-100",
-                                    isActive && "opacity-100"
-                                )}
-                            >
-                                <GripVertical className="w-3.5 h-3.5" />
-                            </div>
-                        )}
+                        <button
+                            type="button"
+                            {...(!isDragDisabled ? provided.dragHandleProps : {})}
+                            className={cn(
+                                "shrink-0 rounded-md p-1 -ml-1 text-slate-300 transition-opacity hover:text-slate-400",
+                                isDragDisabled
+                                    ? "cursor-default opacity-0 pointer-events-none"
+                                    : "cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100",
+                                isActive && !isDragDisabled && "opacity-100"
+                            )}
+                            onClick={(e) => e.stopPropagation()}
+                            aria-label={isDragDisabled ? undefined : `Drag ${node.title}`}
+                            tabIndex={isDragDisabled ? -1 : 0}
+                        >
+                            <GripVertical className="w-3.5 h-3.5" />
+                        </button>
 
                         {openCommentCount > 0 && (
                             <div className="flex items-center justify-center bg-[#546354]/10 text-[#546354] rounded-full min-w-[18px] h-[18px] px-1 shadow-sm border border-[#546354]/10 shrink-0">
