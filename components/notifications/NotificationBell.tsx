@@ -5,7 +5,16 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Bell, CheckCheck, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { NotificationRecord } from '@/lib/notifications'
-import { getNotificationActionLabel, getNotificationPreview, NOTIFICATION_ICONS } from '@/lib/notifications'
+import {
+    getProjectIdFromPathname,
+    getNotificationActionLabel,
+    getNotificationDisplayTitle,
+    getNotificationNodeId,
+    getNotificationPreview,
+    getNotificationTargetHref,
+    isProjectWorkspacePath,
+    NOTIFICATION_ICONS,
+} from '@/lib/notifications'
 import { formatDistanceToNow } from '@/lib/time'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/components/providers/ThemeProvider'
@@ -31,6 +40,10 @@ export default function NotificationBell() {
     const [notifications, setNotifications] = useState<NotificationRecord[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isMarkingAll, setIsMarkingAll] = useState(false)
+    const [resolvedLocationLabels, setResolvedLocationLabels] = useState<Record<string, string>>({})
+
+    const currentProjectId = useMemo(() => getProjectIdFromPathname(pathname), [pathname])
+    const isInProjectWorkspace = useMemo(() => isProjectWorkspacePath(pathname), [pathname])
 
     const fetchNotifications = useCallback(async (targetUserId?: string | null) => {
         const resolvedUserId = targetUserId ?? userId
@@ -100,6 +113,106 @@ export default function NotificationBell() {
         }
     }, [fetchNotifications, supabase, userId])
 
+    useEffect(() => {
+        if (!currentProjectId) {
+            setResolvedLocationLabels({})
+            return
+        }
+
+        const relevantNotifications = notifications.filter((notification) =>
+            notification.type === 'collaborator_feedback' &&
+            notification.project_id === currentProjectId
+        )
+
+        const nodeIds = [...new Set(
+            relevantNotifications
+                .map(getNotificationNodeId)
+                .filter((nodeId): nodeId is string => !!nodeId)
+        )]
+
+        if (nodeIds.length === 0) {
+            setResolvedLocationLabels({})
+            return
+        }
+
+        let cancelled = false
+
+        async function loadLocationLabels() {
+            const { data, error } = await supabase
+                .from('structure_nodes')
+                .select('id, title, type, parent_id')
+                .in('id', nodeIds)
+
+            if (cancelled) return
+            if (error) {
+                console.error('Failed to resolve notification structure labels:', error)
+                return
+            }
+
+            const parentIds = [...new Set(
+                (data ?? [])
+                    .map((node: any) => node.parent_id)
+                    .filter((parentId: unknown): parentId is string => typeof parentId === 'string' && parentId.length > 0)
+            )]
+
+            let parentRows: any[] = []
+
+            if (parentIds.length > 0) {
+                const { data: parentData, error: parentError } = await supabase
+                    .from('structure_nodes')
+                    .select('id, title, type')
+                    .in('id', parentIds)
+
+                if (cancelled) return
+                if (parentError) {
+                    console.error('Failed to resolve notification parent labels:', parentError)
+                } else {
+                    parentRows = parentData ?? []
+                }
+            }
+
+            const parentById = new Map(parentRows.map((row: any) => [row.id, row]))
+            const labelByNodeId = new Map<string, string>()
+
+            for (const node of data ?? []) {
+                const title = typeof node.title === 'string' ? node.title.trim() : ''
+                const parent = node.parent_id ? parentById.get(node.parent_id) : null
+                const parentTitle = typeof parent?.title === 'string' ? parent.title.trim() : ''
+
+                let label: string | null = null
+
+                if (node.type === 'scene' && (parent?.type === 'chapter' || parent?.type === 'act')) {
+                    label = `${parent.type === 'chapter' ? 'Chapter' : 'Act'}${parentTitle ? `: ${parentTitle}` : ''} / Scene${title ? `: ${title}` : ''}`
+                } else if (node.type === 'scene') {
+                    label = `Scene${title ? `: ${title}` : ''}`
+                } else if (node.type === 'chapter' || node.type === 'act') {
+                    label = `${node.type === 'chapter' ? 'Chapter' : 'Act'}${title ? `: ${title}` : ''}`
+                }
+
+                if (label) {
+                    labelByNodeId.set(node.id, label)
+                }
+            }
+
+            setResolvedLocationLabels(
+                relevantNotifications.reduce<Record<string, string>>((acc, notification) => {
+                    const nodeId = getNotificationNodeId(notification)
+                    const label = nodeId ? labelByNodeId.get(nodeId) : null
+                    if (label) {
+                        acc[notification.id] = label
+                    }
+                    return acc
+                }, {})
+            )
+        }
+
+        void loadLocationLabels()
+
+        return () => {
+            cancelled = true
+        }
+    }, [currentProjectId, notifications, supabase])
+
     const unreadCount = notifications.filter((notification) => !notification.read_at).length
     const currentPath = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : '')
 
@@ -154,8 +267,21 @@ export default function NotificationBell() {
             void markAsRead(notification.id)
         }
 
-        router.push(`/notifications/${notification.id}?returnTo=${encodeURIComponent(currentPath)}`)
-    }, [currentPath, markAsRead, router])
+        const targetHref = getNotificationTargetHref(notification, pathname)
+        const isInSameProjectWorkspace = (
+            isInProjectWorkspace &&
+            notification.type === 'collaborator_feedback' &&
+            !!notification.project_id &&
+            currentProjectId === notification.project_id
+        )
+
+        if (isInSameProjectWorkspace && targetHref) {
+            router.push(targetHref)
+            return
+        }
+
+        router.push(`/notifications/${notification.id}?returnTo=${encodeURIComponent(currentPath)}${targetHref ? `&target=${encodeURIComponent(targetHref)}` : ''}`)
+    }, [currentPath, currentProjectId, markAsRead, pathname, router])
 
     return (
         <DropdownMenu>
@@ -249,7 +375,7 @@ export default function NotificationBell() {
                                                     'text-sm font-semibold leading-5',
                                                     !notification.read_at && (isMidnight ? 'text-white' : 'text-slate-900')
                                                 )}>
-                                                    {notification.title}
+                                                    {getNotificationDisplayTitle(notification, pathname, resolvedLocationLabels[notification.id])}
                                                 </p>
                                                 <span className={cn('shrink-0 text-[11px]', isMidnight ? 'text-slate-500' : 'text-slate-400')}>
                                                     {formatDistanceToNow(notification.created_at)}
@@ -266,7 +392,7 @@ export default function NotificationBell() {
                                             )}
 
                                             <p className={cn('mt-2 text-[11px] font-semibold uppercase tracking-[0.14em]', isMidnight ? 'text-slate-500' : 'text-slate-400')}>
-                                                {getNotificationActionLabel(notification)}
+                                                {getNotificationActionLabel(notification, pathname)}
                                             </p>
                                         </div>
                                     </button>

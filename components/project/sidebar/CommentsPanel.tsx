@@ -127,6 +127,7 @@ export default function CommentsPanel({
     const [removingIdeaId, setRemovingIdeaId] = useState<string | null>(null)
     const [linkedAiIdeaIds, setLinkedAiIdeaIds] = useState<Set<string>>(new Set())
     const [hiddenThreadIds, setHiddenThreadIds] = useState<Set<string>>(new Set())
+    const [unreadNotificationCommentIds, setUnreadNotificationCommentIds] = useState<Set<string>>(new Set())
     const sessionStartedAtRef = useRef(new Date())
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -187,6 +188,58 @@ export default function CommentsPanel({
 
         return () => {
             cancelled = true
+        }
+    }, [currentUserId, projectId, supabase])
+
+    useEffect(() => {
+        if (!currentUserId) {
+            setUnreadNotificationCommentIds(new Set())
+            return
+        }
+
+        const userId = currentUserId
+        let cancelled = false
+
+        async function loadUnreadFeedbackNotifications() {
+            const { data, error } = await supabase
+                .from('notifications')
+                .select('comment_id')
+                .eq('user_id', userId)
+                .eq('project_id', projectId)
+                .eq('type', 'collaborator_feedback')
+                .is('read_at', null)
+                .not('comment_id', 'is', null)
+
+            if (cancelled) return
+            if (error) {
+                console.error('Failed to load unread feedback notifications:', error)
+                return
+            }
+
+            setUnreadNotificationCommentIds(new Set(
+                (data ?? [])
+                    .map((row: any) => row.comment_id)
+                    .filter((commentId: unknown): commentId is string => typeof commentId === 'string' && commentId.length > 0)
+            ))
+        }
+
+        void loadUnreadFeedbackNotifications()
+
+        const channel = supabase
+            .channel(`comment-notifications:${projectId}:${userId}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'notifications',
+                filter: `user_id=eq.${userId}`,
+            }, () => {
+                void loadUnreadFeedbackNotifications()
+            })
+            .subscribe()
+
+        return () => {
+            cancelled = true
+            void channel.unsubscribe()
         }
     }, [currentUserId, projectId, supabase])
 
@@ -441,6 +494,8 @@ export default function CommentsPanel({
     const canReorderComments = role !== 'viewer'
 
     const canViewerLeaveFeedback = role !== 'viewer' || allowViewerFeedback
+    const canReplyToComments = role === 'owner' || role === 'editor'
+    const canAddFeedbackToAssistant = role === 'owner' || role === 'editor'
     const commentById = useMemo(() => {
         const map = new Map<string, any>()
         comments.forEach(comment => map.set(comment.id, comment))
@@ -530,13 +585,31 @@ export default function CommentsPanel({
         return activeThreadIds
     }, [canUserSeeComment, comments, currentUserId, hiddenThreadIds, rootCommentIdByCommentId])
 
+    const unreadNotificationThreadIds = useMemo(() => {
+        const threadIds = new Set<string>()
+
+        unreadNotificationCommentIds.forEach(commentId => {
+            const rootId = rootCommentIdByCommentId.get(commentId)
+            if (!rootId || hiddenThreadIds.has(rootId)) return
+            threadIds.add(rootId)
+        })
+
+        return threadIds
+    }, [hiddenThreadIds, rootCommentIdByCommentId, unreadNotificationCommentIds])
+
+    const newThreadIds = useMemo(() => {
+        const threadIds = new Set<string>(sessionNewCommentIds)
+        unreadNotificationThreadIds.forEach(threadId => threadIds.add(threadId))
+        return threadIds
+    }, [sessionNewCommentIds, unreadNotificationThreadIds])
+
     const filteredComments = useMemo(() => {
         let list = authorFilter === 'hidden'
             ? [...visibleCommentsByHiddenState.hidden]
             : [...visibleCommentsByHiddenState.visible]
 
         if (authorFilter === 'new') {
-            list = list.filter(c => sessionNewCommentIds.has(c.id))
+            list = list.filter(c => newThreadIds.has(c.id))
         }
 
         if (authorFilter === 'mine' && currentUserId) {
@@ -562,7 +635,7 @@ export default function CommentsPanel({
             }
             return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         })
-    }, [authorFilter, visibleCommentsByHiddenState, sessionNewCommentIds, activeNodeId, currentUserId, filterByNode, showResolved])
+    }, [authorFilter, visibleCommentsByHiddenState, newThreadIds, activeNodeId, currentUserId, filterByNode, showResolved])
 
     // Meta-counts for UI feedback
     const resolvedCount = useMemo(() =>
@@ -594,8 +667,8 @@ export default function CommentsPanel({
     [visibleCommentsByHiddenState.hidden])
 
     const newCount = useMemo(() =>
-        visibleCommentsByHiddenState.visible.filter(comment => sessionNewCommentIds.has(comment.id)).length,
-    [sessionNewCommentIds, visibleCommentsByHiddenState.visible])
+        visibleCommentsByHiddenState.visible.filter(comment => newThreadIds.has(comment.id)).length,
+    [newThreadIds, visibleCommentsByHiddenState.visible])
 
     async function handleSetThreadHidden(rootCommentId: string, hidden: boolean) {
         if (!currentUserId) return
@@ -894,9 +967,9 @@ export default function CommentsPanel({
                                                             activeSceneId={activeSceneId}
                                                             isHidden={hiddenThreadIds.has(comment.id)}
                                                             canHideThread={comment.author_id !== currentUserId}
-                                                            canReply={role !== 'viewer'}
+                                                            canReply={canReplyToComments}
                                                             canShareWithGroup={true}
-                                                            canAddToAssistant={role !== 'viewer'}
+                                                            canAddToAssistant={canAddFeedbackToAssistant}
                                                         />
                                                     </div>
                                                 )}
@@ -944,9 +1017,9 @@ export default function CommentsPanel({
                                                 activeSceneId={activeSceneId}
                                                 isHidden={hiddenThreadIds.has(comment.id)}
                                                 canHideThread={comment.author_id !== currentUserId}
-                                                canReply={role !== 'viewer'}
+                                                canReply={canReplyToComments}
                                                 canShareWithGroup={true}
-                                                canAddToAssistant={role !== 'viewer'}
+                                                canAddToAssistant={canAddFeedbackToAssistant}
                                             />
                                         )
                                     ))}

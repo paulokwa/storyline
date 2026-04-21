@@ -96,7 +96,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         setShowStructureHint
     } = useProjectActions()
     const { exportAction, statsAction, canExport } = useProjectActionsStore()
-    const { commentsPanelOpen, setCommentsPanelOpen, fetchComments } = useComments()
+    const { commentsPanelOpen, setCommentsPanelOpen, fetchComments, setActiveCommentId } = useComments()
     
     const [nodes, setNodes] = useState(initialNodes)
     const [scenes, setScenes] = useState(initialScenes)
@@ -162,6 +162,17 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
 
         setActiveNodeId(null)
     }, [firstSceneNodeId, project.id, sceneNodeIds, searchParams, setActiveNodeId])
+
+    useEffect(() => {
+        if (searchParams.get('feedback') !== '1') return
+
+        setCommentsPanelOpen(true)
+
+        const commentId = searchParams.get('commentId')
+        if (commentId) {
+            setActiveCommentId(commentId)
+        }
+    }, [searchParams, setActiveCommentId, setCommentsPanelOpen])
 
     useEffect(() => {
         if (!activeScene) {

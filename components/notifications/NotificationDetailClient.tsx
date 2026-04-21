@@ -1,11 +1,16 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, Bell } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { NotificationRecord } from '@/lib/notifications'
-import { getNotificationActionLabel, NOTIFICATION_ICONS } from '@/lib/notifications'
+import {
+    getNotificationActionLabel,
+    getNotificationDisplayTitle,
+    getNotificationTargetHref,
+    NOTIFICATION_ICONS,
+} from '@/lib/notifications'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/components/providers/ThemeProvider'
@@ -18,8 +23,11 @@ export default function NotificationDetailClient({
     returnTo: string | null
 }) {
     const router = useRouter()
+    const pathname = usePathname()
+    const searchParams = useSearchParams()
     const { theme } = useTheme()
     const isMidnight = theme === 'midnight'
+    const targetHref = searchParams?.get('target') || getNotificationTargetHref(notification, pathname)
 
     useEffect(() => {
         if (notification.read_at) return
@@ -40,7 +48,7 @@ export default function NotificationDetailClient({
             return
         }
 
-        router.push(returnTo || notification.link_href || '/library')
+        router.push(returnTo || targetHref || notification.link_href || '/library')
     }
 
     return (
@@ -51,9 +59,9 @@ export default function NotificationDetailClient({
                     Back
                 </Button>
 
-                {notification.link_href && (
-                    <Button onClick={() => router.push(notification.link_href!)} className="rounded-full px-5">
-                        {getNotificationActionLabel(notification)}
+                {targetHref && (
+                    <Button onClick={() => router.push(targetHref)} className="rounded-full px-5">
+                        {getNotificationActionLabel(notification, pathname)}
                     </Button>
                 )}
             </div>
@@ -79,7 +87,7 @@ export default function NotificationDetailClient({
                             <p className={cn('text-xs font-bold uppercase tracking-[0.18em]', isMidnight ? 'text-slate-500' : 'text-slate-400')}>
                                 Notification
                             </p>
-                            <h1 className="mt-2 font-serif text-3xl leading-tight">{notification.title}</h1>
+                            <h1 className="mt-2 font-serif text-3xl leading-tight">{getNotificationDisplayTitle(notification, pathname)}</h1>
                         </div>
 
                         {notification.summary && (

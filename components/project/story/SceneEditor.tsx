@@ -135,37 +135,49 @@ const ToolbarButton = ({
     active, 
     icon: Icon, 
     tooltip,
+    showTooltip = true,
     disabled 
 }: { 
     onClick: (e: React.MouseEvent) => void, 
     active?: boolean, 
     icon: any, 
     tooltip: string,
+    showTooltip?: boolean,
     disabled?: boolean 
-}) => (
-    <Tooltip>
-        <TooltipTrigger>
-            <button
-                type="button"
-                disabled={disabled}
-                onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    onClick(e)
-                }}
-                className={cn(
-                    "scene-editor-toolbar-button p-1.5 sm:p-2 rounded-lg transition-all duration-200 shrink-0",
-                    active 
-                        ? "bg-slate-800 text-white shadow-md scale-105" 
-                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-                )}
-            >
-                <Icon className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-            </button>
-        </TooltipTrigger>
-        <TooltipContent side="top" sideOffset={8}>{tooltip}</TooltipContent>
-    </Tooltip>
-)
+}) => {
+    const button = (
+        <button
+            type="button"
+            disabled={disabled}
+            onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onClick(e)
+            }}
+            className={cn(
+                "scene-editor-toolbar-button p-1.5 sm:p-2 rounded-lg transition-all duration-200 shrink-0",
+                active 
+                    ? "bg-slate-800 text-white shadow-md scale-105" 
+                    : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+            )}
+        >
+            <Icon className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+        </button>
+    )
+
+    if (!showTooltip) {
+        return button
+    }
+
+    return (
+        <Tooltip>
+            <TooltipTrigger>
+                {button}
+            </TooltipTrigger>
+            <TooltipContent side="top" sideOffset={8}>{tooltip}</TooltipContent>
+        </Tooltip>
+    )
+}
 
 const TOP_ACTION_PILL_BASE =
     "scene-editor-top-action hidden h-8 rounded-full px-3 text-[10px] font-bold uppercase tracking-widest transition-all border border-slate-200/70 bg-white/70 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
@@ -1588,30 +1600,35 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     active={editor.isActive('bold')}
                                     icon={Bold}
                                     tooltip="Bold"
+                                    showTooltip={false}
                                 />
                                 <ToolbarButton
                                     onClick={() => editor.chain().focus().toggleItalic().run()}
                                     active={editor.isActive('italic')}
                                     icon={Italic}
                                     tooltip="Italic"
+                                    showTooltip={false}
                                 />
                                 <ToolbarButton
                                     onClick={() => editor.chain().focus().toggleUnderline().run()}
                                     active={editor.isActive('underline')}
                                     icon={UnderlineIcon}
                                     tooltip="Underline"
+                                    showTooltip={false}
                                 />
                                 <ToolbarButton
                                     onClick={() => editor.chain().focus().toggleStrike().run()}
                                     active={editor.isActive('strike')}
                                     icon={Strikethrough}
                                     tooltip="Strikethrough"
+                                    showTooltip={false}
                                 />
                                 <ToolbarButton
                                     onClick={() => editor.chain().focus().toggleHighlight().run()}
                                     active={editor.isActive('highlight')}
                                     icon={Highlighter}
                                     tooltip="Highlight"
+                                    showTooltip={false}
                                 />
                                 <div className="w-px h-4 bg-slate-200 mx-1" />
                                 <ToolbarButton
@@ -1619,12 +1636,14 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     active={editor.isActive('heading', { level: 1 })}
                                     icon={Heading1}
                                     tooltip="Heading 1"
+                                    showTooltip={false}
                                 />
                                 <ToolbarButton
                                     onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
                                     active={editor.isActive('heading', { level: 2 })}
                                     icon={Heading2}
                                     tooltip="Heading 2"
+                                    showTooltip={false}
                                 />
                                 <div className="w-px h-4 bg-slate-200 mx-1" />
                                 <ToolbarButton
@@ -1632,18 +1651,21 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     active={editor.isActive('bulletList')}
                                     icon={List}
                                     tooltip="Bullet List"
+                                    showTooltip={false}
                                 />
                                 <ToolbarButton
                                     onClick={() => editor.chain().focus().toggleOrderedList().run()}
                                     active={editor.isActive('orderedList')}
                                     icon={ListOrdered}
                                     tooltip="Numbered List"
+                                    showTooltip={false}
                                 />
                                 <ToolbarButton
                                     onClick={() => editor.chain().focus().toggleBlockquote().run()}
                                     active={editor.isActive('blockquote')}
                                     icon={Quote}
                                     tooltip="Blockquote"
+                                    showTooltip={false}
                                 />
 
                                 <div className="w-px h-4 bg-slate-200 mx-1" />
@@ -1653,6 +1675,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     active={false}
                                     icon={MessageSquarePlus}
                                     tooltip="Add Feedback"
+                                    showTooltip={false}
                                 />
                                 <div className="w-px h-4 bg-slate-200 mx-1" />
                                 <ToolbarButton
@@ -1660,6 +1683,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     active={false}
                                     icon={ImageIcon}
                                     tooltip="Insert Illustration"
+                                    showTooltip={false}
                                 />
                             </>
                         )}
