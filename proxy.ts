@@ -11,7 +11,7 @@ export async function proxy(request: NextRequest) {
     }
 
     const authRoutes = ['/login', '/signup']
-    const unauthenticatedPublicRoutes = ['/', '/forgot-password', '/reset-password', '/terms', '/privacy', '/ai-disclaimer']
+    const unauthenticatedPublicRoutes = ['/', '/dev/showcase', '/forgot-password', '/reset-password', '/terms', '/privacy', '/ai-disclaimer']
     const isAuthRoute = authRoutes.some((r) => pathname === r || pathname.startsWith(r + '/'))
     const isUnauthenticatedPublicRoute = unauthenticatedPublicRoutes.some((r) => pathname === r || pathname.startsWith(r + '/'))
 
