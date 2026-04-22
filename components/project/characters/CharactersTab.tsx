@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { User, Users, Plus, Search, ChevronRight, PenTool, Hash, Loader2, Trash2, Pencil, GripVertical } from 'lucide-react'
 import { getProjectTypeLabel } from '@/lib/constants'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
-import { cn, reorder, getNextAvailableName } from '@/lib/utils'
+import { cn, reorder, getNextAvailableName, formatStableDate } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { StableInput } from '@/components/ui/stable-input'
@@ -13,9 +13,10 @@ import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
 import { softDeleteEntity } from '@/lib/supabase/recovery'
 import RelationshipManager from './RelationshipManager'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import AssetPicker from '@/components/project/assets/AssetPicker'
 import { useProjectActions } from '@/components/project/ProjectContext'
+import { ItemRowActionButton } from '@/components/project/ItemRowActionButton'
 
 type Character = Database['public']['Tables']['characters']['Row']
 
@@ -368,34 +369,24 @@ export default function CharactersTab({
                                                         <>
                                                             {!isReadOnly && (
                                                                 <div className={cn(
-                                                                    "flex items-center gap-0.5 transition-opacity",
+                                                                    "flex items-center gap-1 rounded-2xl border border-stone-200/70 bg-white/90 p-1 shadow-sm backdrop-blur-sm transition-opacity",
                                                                     selectedId === char.id ? "opacity-100" : "opacity-100 md:opacity-0 md:group-hover:opacity-100"
                                                                 )}>
-                                                                    <Tooltip>
-                                                                        <TooltipTrigger>
-                                                                            <button
-                                                                                onClick={e => startRename(char, e)}
-                                                                                className="p-1 rounded-lg hover:bg-slate-50 text-stone-300 hover:text-[#546354] transition-all duration-200 flex-shrink-0"
-                                                                            >
-                                                                                <Pencil className="w-3 h-3" />
-                                                                            </button>
-                                                                        </TooltipTrigger>
-                                                                        <TooltipContent side="top">Rename</TooltipContent>
-                                                                    </Tooltip>
-                                                                    <Tooltip>
-                                                                        <TooltipTrigger>
-                                                                            <button
-                                                                                onClick={e => {
-                                                                                    e.stopPropagation()
-                                                                                    setConfirmDeleteId(char.id)
-                                                                                }}
-                                                                                className="p-1 rounded-lg hover:bg-red-50 text-stone-300 hover:text-red-500 transition-all duration-200 flex-shrink-0"
-                                                                            >
-                                                                                <Trash2 className="w-3 h-3" />
-                                                                            </button>
-                                                                        </TooltipTrigger>
-                                                                        <TooltipContent side="top">Delete</TooltipContent>
-                                                                    </Tooltip>
+                                                                    <ItemRowActionButton
+                                                                        label="Rename"
+                                                                        icon={Pencil}
+                                                                        onClick={e => startRename(char, e)}
+                                                                        className="hover:border-[#546354]/20 hover:bg-[#546354]/5 hover:text-[#546354]"
+                                                                    />
+                                                                    <ItemRowActionButton
+                                                                        label="Delete"
+                                                                        icon={Trash2}
+                                                                        onClick={e => {
+                                                                            e.stopPropagation()
+                                                                            setConfirmDeleteId(char.id)
+                                                                        }}
+                                                                        className="hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                                                                    />
                                                                 </div>
                                                             )}
                                                             {selectedId === char.id && renamingId === null && confirmDeleteId === null && (
@@ -533,7 +524,7 @@ export default function CharactersTab({
                                 <div className="flex items-center gap-6">
                                     <div className="flex flex-col gap-1">
                                         <span className="text-[9px] uppercase tracking-widest text-slate-300 font-bold">Registration</span>
-                                        <span className="text-[10px] font-serif italic text-slate-400">{new Date(selectedCharacter.created_at || new Date().toISOString()).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                        <span className="text-[10px] font-serif italic text-slate-400">{formatStableDate(selectedCharacter.created_at)}</span>
                                     </div>
                                     <div className="w-px h-8 bg-stone-100" />
                                     <div className="flex flex-col gap-1">

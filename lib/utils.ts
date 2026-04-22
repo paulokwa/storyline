@@ -1,6 +1,13 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
+const stableUsDateFormatter = new Intl.DateTimeFormat('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  timeZone: 'UTC',
+})
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
@@ -42,4 +49,21 @@ export function getNextAvailableName(baseName: string, existingNames: string[]) 
     counter++
   }
   return `${baseName} ${counter}`
+}
+
+export function formatStableDate(
+  value: string | Date | null | undefined,
+  fallback = '—'
+) {
+  if (!value) {
+    return fallback
+  }
+
+  const date = value instanceof Date ? value : new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return fallback
+  }
+
+  return stableUsDateFormatter.format(date)
 }

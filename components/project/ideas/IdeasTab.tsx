@@ -3,15 +3,16 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { Lightbulb, Plus, Hash, Loader2, Sparkles, PenTool, Trash2, Pencil, ChevronRight, GripVertical, MessageSquare } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
-import { cn, reorder, getNextAvailableName } from '@/lib/utils'
+import { cn, reorder, getNextAvailableName, formatStableDate } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { StableInput } from '@/components/ui/stable-input'
 import { PremiumEditor } from '@/components/ui/premium-editor'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
 import { softDeleteEntity } from '@/lib/supabase/recovery'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useProjectActions } from '@/components/project/ProjectContext'
+import { ItemRowActionButton } from '@/components/project/ItemRowActionButton'
 
 type Idea = Database['public']['Tables']['ideas']['Row']
 
@@ -326,34 +327,24 @@ export default function IdeasTab({
                                                         <>
                                                             {!isReadOnly && (
                                                                 <div className={cn(
-                                                                    "flex items-center gap-0.5 transition-opacity",
+                                                                    "flex items-center gap-1 rounded-2xl border border-stone-200/70 bg-white/90 p-1 shadow-sm backdrop-blur-sm transition-opacity",
                                                                     selectedId === idea.id ? "opacity-100" : "opacity-100 md:opacity-0 md:group-hover:opacity-100"
                                                                 )}>
-                                                                    <Tooltip>
-                                                                        <TooltipTrigger>
-                                                                            <button
-                                                                                onClick={e => startRename(idea, e)}
-                                                                                className="p-1 rounded-lg hover:bg-blue-50 text-stone-300 hover:text-blue-500 transition-all duration-200 flex-shrink-0"
-                                                                            >
-                                                                                <Pencil className="w-3 h-3" />
-                                                                            </button>
-                                                                        </TooltipTrigger>
-                                                                        <TooltipContent side="top">Rename</TooltipContent>
-                                                                    </Tooltip>
-                                                                    <Tooltip>
-                                                                        <TooltipTrigger>
-                                                                            <button
-                                                                                onClick={e => {
-                                                                                    e.stopPropagation()
-                                                                                    setConfirmDeleteId(idea.id)
-                                                                                }}
-                                                                                className="p-1 rounded-lg hover:bg-red-50 text-stone-300 hover:text-red-500 transition-all duration-200 flex-shrink-0"
-                                                                            >
-                                                                                <Trash2 className="w-3 h-3" />
-                                                                            </button>
-                                                                        </TooltipTrigger>
-                                                                        <TooltipContent side="top">Delete</TooltipContent>
-                                                                    </Tooltip>
+                                                                    <ItemRowActionButton
+                                                                        label="Rename"
+                                                                        icon={Pencil}
+                                                                        onClick={e => startRename(idea, e)}
+                                                                        className="hover:border-blue-200 hover:bg-blue-50 hover:text-blue-500"
+                                                                    />
+                                                                    <ItemRowActionButton
+                                                                        label="Delete"
+                                                                        icon={Trash2}
+                                                                        onClick={e => {
+                                                                            e.stopPropagation()
+                                                                            setConfirmDeleteId(idea.id)
+                                                                        }}
+                                                                        className="hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                                                                    />
                                                                 </div>
                                                             )}
                                                             {selectedId === idea.id && renamingId === null && confirmDeleteId === null && (
@@ -443,7 +434,7 @@ export default function IdeasTab({
                                 <div className="flex items-center gap-6">
                                     <div className="flex flex-col gap-1">
                                         <span className="text-[9px] uppercase tracking-widest text-slate-300 font-bold">Captured</span>
-                                        <span className="text-[10px] font-serif italic text-slate-400">{new Date(selectedIdea.created_at || new Date().toISOString()).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                        <span className="text-[10px] font-serif italic text-slate-400">{formatStableDate(selectedIdea.created_at)}</span>
                                     </div>
                                     <div className="w-px h-8 bg-stone-100" />
                                     <div className="flex flex-col gap-1">

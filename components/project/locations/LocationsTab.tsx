@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { MapPin, Plus, Search, ChevronRight, PenTool, Hash, Loader2, Trash2, Pencil, GripVertical } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
-import { cn, reorder, getNextAvailableName } from '@/lib/utils'
+import { cn, reorder, getNextAvailableName, formatStableDate } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { StableInput } from '@/components/ui/stable-input'
 import { PremiumEditor } from '@/components/ui/premium-editor'
@@ -13,6 +13,7 @@ import { softDeleteEntity } from '@/lib/supabase/recovery'
 import AssetPicker from '@/components/project/assets/AssetPicker'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useProjectActions } from '@/components/project/ProjectContext'
+import { ItemRowActionButton } from '@/components/project/ItemRowActionButton'
 
 type Location = any // Flexibility for custom schema
 
@@ -284,34 +285,24 @@ export default function LocationsTab({
                                                     ) : (
                                                         <>
                                                             {!isReadOnly && <div className={cn(
-                                                                "flex items-center gap-0.5 transition-opacity",
+                                                                "flex items-center gap-1 rounded-2xl border border-stone-200/70 bg-white/90 p-1 shadow-sm backdrop-blur-sm transition-opacity",
                                                                 selectedId === loc.id ? "opacity-100" : "opacity-100 md:opacity-0 md:group-hover:opacity-100"
                                                             )}>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <button
-                                                                            onClick={e => startRename(loc, e)}
-                                                                            className="p-1 rounded-lg hover:bg-blue-50 text-stone-300 hover:text-blue-500 transition-all duration-200 flex-shrink-0"
-                                                                        >
-                                                                            <Pencil className="w-3 h-3" />
-                                                                        </button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent side="top">Rename</TooltipContent>
-                                                                </Tooltip>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <button
-                                                                            onClick={e => {
-                                                                                e.stopPropagation()
-                                                                                setConfirmDeleteId(loc.id)
-                                                                            }}
-                                                                            className="p-1 rounded-lg hover:bg-red-50 text-stone-300 hover:text-red-500 transition-all duration-200 flex-shrink-0"
-                                                                        >
-                                                                            <Trash2 className="w-3 h-3" />
-                                                                        </button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent side="top">Delete</TooltipContent>
-                                                                </Tooltip>
+                                                                <ItemRowActionButton
+                                                                    label="Rename"
+                                                                    icon={Pencil}
+                                                                    onClick={e => startRename(loc, e)}
+                                                                    className="hover:border-blue-200 hover:bg-blue-50 hover:text-blue-500"
+                                                                />
+                                                                <ItemRowActionButton
+                                                                    label="Delete"
+                                                                    icon={Trash2}
+                                                                    onClick={e => {
+                                                                        e.stopPropagation()
+                                                                        setConfirmDeleteId(loc.id)
+                                                                    }}
+                                                                    className="hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                                                                />
                                                             </div>}
                                                             {selectedId === loc.id && renamingId === null && confirmDeleteId === null && (
                                                                 <div className="w-1.5 h-1.5 rounded-full bg-[#546354]/40 flex-shrink-0 group-hover:hidden" />
@@ -408,7 +399,7 @@ export default function LocationsTab({
 
                             <div className="pt-16 flex items-center justify-between border-t border-stone-50">
                                 <div className="flex items-center gap-6">
-                                    <div className="flex flex-col gap-1 text-slate-300 font-bold uppercase text-[9px] tracking-widest"><span>Discovery</span><span className="text-[10px] font-serif italic text-slate-400 normal-case font-normal">{new Date(selectedLocation.created_at || new Date().toISOString()).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span></div>
+                                    <div className="flex flex-col gap-1 text-slate-300 font-bold uppercase text-[9px] tracking-widest"><span>Discovery</span><span className="text-[10px] font-serif italic text-slate-400 normal-case font-normal">{formatStableDate(selectedLocation.created_at)}</span></div>
                                     <div className="w-px h-8 bg-stone-100" />
                                     <div className="flex flex-col gap-1 text-slate-300 font-bold uppercase text-[9px] tracking-widest"><span>Ref Reference</span><span className="text-[10px] font-mono text-slate-400 opacity-60 uppercase">{selectedLocation.id.slice(0, 8)}</span></div>
                                 </div>
