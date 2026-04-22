@@ -215,6 +215,7 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
           <StatCard title="Blocked / Review" value={dashboard.trial.overview.blockedUsers + dashboard.trial.overview.abuseReviewUsers} />
           <StatCard title="Sponsored Usage" value={formatMicrosUsd(dashboard.trial.overview.sponsoredUsageMicros)} />
           <StatCard title="Remaining Trial Balance" value={formatMicrosUsd(dashboard.trial.overview.totalRemainingMicros)} />
+          <StatCard title="Reserved Trial Budget" value={formatMicrosUsd(dashboard.trial.overview.totalReservedMicros)} />
           <StatCard title="Suspicious Users" value={dashboard.trial.overview.suspiciousUsers} />
         </section>
 
@@ -318,6 +319,8 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
                     <div key="balance" className="flex flex-col gap-1">
                       <span className="font-medium text-slate-900">{formatMicrosUsd(entry.remainingMicros)} left</span>
                       <span className="text-xs text-slate-400">Used {formatMicrosUsd(entry.consumedMicros)} / {formatMicrosUsd(entry.grantedMicros)}</span>
+                      <span className="text-xs text-slate-400">Reserved {formatMicrosUsd(entry.reservedMicros)}</span>
+                      <span className="text-xs text-slate-400">Pending requests: {entry.requestCounts.reserved}</span>
                       <span className="text-xs text-slate-400">Grant count: {entry.grantCount}</span>
                     </div>,
                     <div key="mode" className="flex flex-col gap-1">

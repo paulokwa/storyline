@@ -23,6 +23,7 @@ type TrialAccountRow = Pick<
   | 'user_id'
   | 'status'
   | 'remaining_micros'
+  | 'reserved_micros'
   | 'consumed_micros'
   | 'granted_micros'
   | 'grant_count'
@@ -151,10 +152,12 @@ type TrialUserSummary = {
   blockedReason: string | null
   requestCounts: {
     total: number
+    reserved: number
     completed: number
     failed: number
     blocked: number
   }
+  reservedMicros: number
   modeCounts: Record<string, number>
   providerCounts: Record<string, number>
   endpointCounts: Record<string, number>
@@ -231,6 +234,7 @@ export type AdminDashboardData =
           abuseReviewUsers: number
           sponsoredUsageMicros: number
           totalRemainingMicros: number
+          totalReservedMicros: number
           appManagedCompletedRequests: number
           appManagedFailedRequests: number
           suspiciousUsers: number
@@ -478,7 +482,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     supabase.from('ai_responses').select('created_at,project_id').is('deleted_at', null),
     supabase.from('project_assets').select('file_size'),
     supabase.from('profiles').select('id,plan_type,is_early_user'),
-    supabase.from('ai_trial_accounts').select('user_id,status,remaining_micros,consumed_micros,granted_micros,grant_count,granted_at,exhausted_at,blocked_reason,signup_risk_score,signup_ip,signup_device_fingerprint,normalized_email,raw_email,email_domain,suspicious_flags,last_activity_at,last_request_ip,last_device_fingerprint'),
+    supabase.from('ai_trial_accounts').select('user_id,status,remaining_micros,reserved_micros,consumed_micros,granted_micros,grant_count,granted_at,exhausted_at,blocked_reason,signup_risk_score,signup_ip,signup_device_fingerprint,normalized_email,raw_email,email_domain,suspicious_flags,last_activity_at,last_request_ip,last_device_fingerprint'),
     supabase.from('ai_usage_events').select('id,user_id,request_key,endpoint,billing_mode,provider,model,status,final_micros,reserved_micros,refunded_micros,input_chars,output_chars,error_code,http_status,created_at,completed_at,ip_address,device_fingerprint,normalized_email,metadata'),
     supabase.from('ai_abuse_signals').select('id,user_id,signal_type,risk_score,risk_flags,created_at,ip_address,device_fingerprint,normalized_email,raw_email,email_domain,billing_mode,provider,endpoint,metadata'),
     supabase.from('ai_trial_ledger').select('id,user_id,admin_user_id,created_at,entry_type,delta_micros,balance_after_micros,note,metadata'),
@@ -586,8 +590,9 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   }
 
   for (const event of usageEvents) {
-    const requestCounts = usageByUserId.get(event.user_id) ?? { total: 0, completed: 0, failed: 0, blocked: 0 }
+    const requestCounts = usageByUserId.get(event.user_id) ?? { total: 0, reserved: 0, completed: 0, failed: 0, blocked: 0 }
     requestCounts.total += 1
+    if (event.status === 'reserved') requestCounts.reserved += 1
     if (event.status === 'completed') requestCounts.completed += 1
     if (event.status === 'failed') requestCounts.failed += 1
     if (event.status === 'blocked') requestCounts.blocked += 1
@@ -627,6 +632,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
         aiEnabled: settings?.ai_enabled ?? true,
         status: account.status,
         remainingMicros: account.remaining_micros,
+        reservedMicros: account.reserved_micros,
         consumedMicros: account.consumed_micros,
         grantedMicros: account.granted_micros,
         grantCount: account.grant_count,
@@ -638,7 +644,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
         lastActivityAt: account.last_activity_at,
         exhaustedAt: account.exhausted_at,
         blockedReason: account.blocked_reason,
-        requestCounts: usageByUserId.get(account.user_id) ?? { total: 0, completed: 0, failed: 0, blocked: 0 },
+        requestCounts: usageByUserId.get(account.user_id) ?? { total: 0, reserved: 0, completed: 0, failed: 0, blocked: 0 },
         modeCounts: modeCountsByUserId.get(account.user_id) ?? {},
         providerCounts: providerCountsByUserId.get(account.user_id) ?? {},
         endpointCounts: endpointCountsByUserId.get(account.user_id) ?? {},
@@ -659,6 +665,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     abuseReviewUsers: trialAccounts.filter((account) => account.status === 'abuse_review').length,
     sponsoredUsageMicros: trialAccounts.reduce((total, account) => total + (account.consumed_micros ?? 0), 0),
     totalRemainingMicros: trialAccounts.reduce((total, account) => total + (account.remaining_micros ?? 0), 0),
+    totalReservedMicros: trialAccounts.reduce((total, account) => total + (account.reserved_micros ?? 0), 0),
     appManagedCompletedRequests: appManagedEvents.filter((event) => event.status === 'completed').length,
     appManagedFailedRequests: appManagedEvents.filter((event) => event.status === 'failed' || event.status === 'blocked').length,
     suspiciousUsers: trialUsers.filter((user) => user.suspiciousFlags.length > 0 || user.status === 'blocked' || user.status === 'abuse_review' || user.signupRiskScore >= 50).length,

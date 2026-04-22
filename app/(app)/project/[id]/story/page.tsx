@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import StoryTab from '@/components/project/story/StoryTab'
 import type { Database } from '@/lib/supabase/types'
 import { requireVerifiedUser } from '@/lib/supabase/auth'
+import { getAiRuntimeState } from '@/lib/ai/runtime'
 
 type SceneWithLinks = Database['public']['Tables']['scenes']['Row'] & {
     scene_characters: { characters: Database['public']['Tables']['characters']['Row'] | null }[]
@@ -47,17 +48,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
         supabase.from('entity_relationships').select('*').eq('project_id', id)
     ])
 
-    const { data: aiSettings } = await supabase
-        .from('user_api_keys')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
-
-    const { data: trialAccount } = await supabase
-        .from('ai_trial_accounts')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle()
+    const runtime = await getAiRuntimeState(supabase, user.id)
 
     return (
         <StoryTab
@@ -70,14 +61,14 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
             projectObjects={projectObjects ?? []}
             projectRelationships={projectRelationships ?? []}
             aiSettings={{
-                ai_enabled: aiSettings?.ai_enabled ?? true,
-                billing_mode: aiSettings?.billing_mode ?? 'app_managed_trial',
-                ai_provider: aiSettings?.ai_provider ?? 'openai',
-                ai_fallback_enabled: aiSettings?.ai_fallback_enabled ?? false,
-                ollama_model: aiSettings?.ollama_model ?? '',
-                ollama_url: aiSettings?.ollama_url ?? '',
-                api_key: aiSettings?.api_key ?? null,
-                trial: trialAccount ?? null,
+                ai_enabled: runtime.aiSettings?.ai_enabled ?? true,
+                billing_mode: runtime.aiSettings?.billing_mode ?? 'app_managed_trial',
+                ai_provider: runtime.aiSettings?.ai_provider ?? 'openai',
+                ai_fallback_enabled: runtime.aiSettings?.ai_fallback_enabled ?? false,
+                ollama_model: runtime.aiSettings?.ollama_model ?? '',
+                ollama_url: runtime.aiSettings?.ollama_url ?? '',
+                api_key: runtime.aiSettings?.api_key ?? null,
+                trial: runtime.trialAccount,
             }}
         />
     )

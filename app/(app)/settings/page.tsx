@@ -2,24 +2,14 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import SettingsView from '@/components/app/SettingsView'
 import { maskApiKey } from '@/lib/ai/providers'
+import { getAiRuntimeState } from '@/lib/ai/runtime'
 
 export default async function SettingsPage() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) redirect('/login')
-
-    const { data: aiSettings } = (await supabase
-        .from('user_api_keys')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()) as { data: any | null }
-
-    const { data: trialAccount } = await supabase
-        .from('ai_trial_accounts')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle()
+    const runtime = await getAiRuntimeState(supabase, user.id)
 
     const { data: profile } = await supabase
         .from('profiles')
@@ -27,7 +17,7 @@ export default async function SettingsPage() {
         .eq('id', user.id)
         .maybeSingle()
         
-    const maskedApiKey = maskApiKey(aiSettings?.api_key)
+    const maskedApiKey = maskApiKey(runtime.aiSettings?.api_key)
 
     return (
         <div className="settings-page-shell flex-1 overflow-y-auto min-h-0 bg-slate-50/50">
@@ -40,13 +30,13 @@ export default async function SettingsPage() {
                 }}
                 maskedApiKey={maskedApiKey} 
                 aiSettings={{
-                    ai_enabled: aiSettings?.ai_enabled ?? true,
-                    billing_mode: aiSettings?.billing_mode ?? 'app_managed_trial',
-                    ai_provider: aiSettings?.ai_provider ?? 'gemini',
-                    ai_fallback_enabled: aiSettings?.ai_fallback_enabled ?? false,
-                    ollama_model: aiSettings?.ollama_model ?? 'llama3',
-                    ollama_url: aiSettings?.ollama_url ?? 'http://127.0.0.1:11434',
-                    trial: trialAccount ?? null,
+                    ai_enabled: runtime.aiSettings?.ai_enabled ?? true,
+                    billing_mode: runtime.aiSettings?.billing_mode ?? 'app_managed_trial',
+                    ai_provider: runtime.aiSettings?.ai_provider ?? 'gemini',
+                    ai_fallback_enabled: runtime.aiSettings?.ai_fallback_enabled ?? false,
+                    ollama_model: runtime.aiSettings?.ollama_model ?? 'llama3',
+                    ollama_url: runtime.aiSettings?.ollama_url ?? 'http://127.0.0.1:11434',
+                    trial: runtime.trialAccount,
                 }} 
             />
         </div>

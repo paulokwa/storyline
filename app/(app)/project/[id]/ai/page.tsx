@@ -1,6 +1,7 @@
 import AiFullCanvas from '@/components/project/ai/AiFullCanvas'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getAiRuntimeState } from '@/lib/ai/runtime'
 
 export default async function AIPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
@@ -40,32 +41,22 @@ export default async function AIPage({ params }: { params: Promise<{ id: string 
         supabase.from('entity_relationships').select('*').eq('project_id', id)
     ])
 
-    const { data: aiSettings } = (await supabase
-        .from('user_api_keys')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()) as { data: any | null }
-
-    const { data: trialAccount } = await supabase
-        .from('ai_trial_accounts')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle()
+    const runtime = await getAiRuntimeState(supabase, user.id)
 
     return (
         <AiFullCanvas 
             projectId={id}
             project={project!}
             allNodes={nodes ?? []}
-            allScenes={allScenes as any ?? []}
+            allScenes={allScenes ?? []}
             projectCharacters={projectCharacters ?? []}
             projectIdeas={projectIdeas ?? []}
             projectLocations={projectLocations ?? []}
             projectObjects={projectObjects ?? []}
             projectRelationships={projectRelationships ?? []}
             aiSettings={{
-                ...(aiSettings ?? { ai_enabled: true, billing_mode: 'app_managed_trial', ai_provider: 'openai' }),
-                trial: trialAccount ?? null,
+                ...(runtime.aiSettings ?? { ai_enabled: true, billing_mode: 'app_managed_trial', ai_provider: 'openai' }),
+                trial: runtime.trialAccount,
             }}
         />
     )

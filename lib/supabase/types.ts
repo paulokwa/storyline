@@ -1619,6 +1619,10 @@ export type Database = {
           deleted_id: string
         }[]
       }
+      reconcile_ai_trial_account: {
+        Args: { p_stale_after_minutes?: number; p_user_id: string }
+        Returns: Json
+      }
       record_signup_attempt_signal: {
         Args: {
           p_accept_language: string

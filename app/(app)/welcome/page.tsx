@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import FirstRunAiSetup from '@/components/app/FirstRunAiSetup'
+import { getAiRuntimeState } from '@/lib/ai/runtime'
 
 type WelcomePageProps = {
     searchParams: Promise<{ preview?: string | string[] }>
@@ -17,22 +18,13 @@ export default async function WelcomePage({ searchParams }: WelcomePageProps) {
     const previewValue = Array.isArray(previewParam) ? previewParam[0] : previewParam
     const isPreviewMode = process.env.NODE_ENV === 'development' && previewValue === '1'
 
-    const [{ data: profile }, { data: aiSettings }, { data: trialAccount }] = await Promise.all([
+    const [{ data: profile }, runtime] = await Promise.all([
         supabase
             .from('profiles')
             .select('display_name, ai_onboarding_completed')
             .eq('id', user.id)
             .maybeSingle(),
-        supabase
-            .from('user_api_keys')
-            .select('ai_enabled, billing_mode, ai_provider, ollama_model, ollama_url')
-            .eq('user_id', user.id)
-            .maybeSingle(),
-        supabase
-            .from('ai_trial_accounts')
-            .select('status')
-            .eq('user_id', user.id)
-            .maybeSingle(),
+        getAiRuntimeState(supabase, user.id),
     ])
 
     if (profile?.ai_onboarding_completed && !isPreviewMode) {
@@ -44,13 +36,13 @@ export default async function WelcomePage({ searchParams }: WelcomePageProps) {
             <FirstRunAiSetup
                 displayName={profile?.display_name ?? ''}
                 initialAiSettings={{
-                    ai_enabled: aiSettings?.ai_enabled ?? true,
-                    billing_mode: aiSettings?.billing_mode ?? 'app_managed_trial',
-                    ai_provider: aiSettings?.ai_provider ?? 'openai',
-                    ollama_model: aiSettings?.ollama_model ?? 'llama3',
-                    ollama_url: aiSettings?.ollama_url ?? 'http://127.0.0.1:11434',
+                    ai_enabled: runtime.aiSettings?.ai_enabled ?? true,
+                    billing_mode: runtime.aiSettings?.billing_mode ?? 'app_managed_trial',
+                    ai_provider: runtime.aiSettings?.ai_provider ?? 'openai',
+                    ollama_model: runtime.aiSettings?.ollama_model ?? 'llama3',
+                    ollama_url: runtime.aiSettings?.ollama_url ?? 'http://127.0.0.1:11434',
                 }}
-                trialStatus={trialAccount?.status ?? 'active'}
+                trialStatus={runtime.trialAccount?.status ?? 'active'}
             />
         </div>
     )

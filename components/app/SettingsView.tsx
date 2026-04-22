@@ -97,7 +97,7 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
     const existingApiKey = maskedApiKey
     const trial = aiSettings.trial
     const trialStatusMessage = getTrialStatusMessage(trial)
-    const trialUsedMicros = Math.max((trial?.granted_micros ?? 0) - (trial?.remaining_micros ?? 0), 0)
+    const trialUsedMicros = Math.max(trial?.consumed_micros ?? 0, 0)
     const trialProgress = trial?.granted_micros
         ? Math.min(100, Math.round((trialUsedMicros / trial.granted_micros) * 100))
         : 0

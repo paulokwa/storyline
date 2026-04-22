@@ -21,7 +21,7 @@ export async function getAiRuntimeState(
     supabase: SupabaseClient<Database>,
     userId: string
 ): Promise<AiRuntimeState> {
-    const [{ data: aiSettings }, { data: trialAccount }] = await Promise.all([
+    const [{ data: aiSettings }, { data: initialTrialAccount }] = await Promise.all([
         supabase
             .from('user_api_keys')
             .select('*')
@@ -35,6 +35,28 @@ export async function getAiRuntimeState(
     ])
 
     const billingMode = resolveBillingModeFromSettings(aiSettings)
+    let trialAccount = initialTrialAccount ?? null
+
+    if (
+        billingMode === 'app_managed_trial' &&
+        trialAccount &&
+        (trialAccount.status === 'exhausted' || trialAccount.reserved_micros > 0)
+    ) {
+        const { error } = await supabase.rpc('reconcile_ai_trial_account', {
+            p_user_id: userId,
+        })
+
+        if (!error) {
+            const { data: refreshedTrialAccount } = await supabase
+                .from('ai_trial_accounts')
+                .select('*')
+                .eq('user_id', userId)
+                .maybeSingle()
+
+            trialAccount = refreshedTrialAccount ?? null
+        }
+    }
+
     const provider =
         billingMode === 'app_managed_trial'
             ? 'openai'
@@ -49,7 +71,7 @@ export async function getAiRuntimeState(
 
     return {
         aiSettings: aiSettings ?? null,
-        trialAccount: trialAccount ?? null,
+        trialAccount,
         billingMode,
         provider,
         model: provider === 'gemini' ? DEFAULT_GEMINI_MODEL : APP_MANAGED_OPENAI_MODEL,
