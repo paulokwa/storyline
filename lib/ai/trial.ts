@@ -13,23 +13,27 @@ type EndpointCostProfile = {
     maxOutputTokens: number
 }
 
+// GPT-4.1 mini API pricing is currently $0.40 / 1M input tokens and
+// $1.60 / 1M output tokens. We keep a modest conservative buffer in the
+// per-endpoint floors, but the token math itself should stay proportional
+// to real token counts rather than rounding every request up to a full 1K.
 const ENDPOINT_COST_PROFILES: Record<TrialEndpoint, EndpointCostProfile> = {
     ai_helper: {
-        inputMicrosPer1kTokens: 3_000,
-        outputMicrosPer1kTokens: 12_000,
-        minMicros: 25_000,
+        inputMicrosPer1kTokens: 400,
+        outputMicrosPer1kTokens: 1_600,
+        minMicros: 1_500,
         maxOutputTokens: 1_000,
     },
     analyze_scene: {
-        inputMicrosPer1kTokens: 2_500,
-        outputMicrosPer1kTokens: 9_000,
-        minMicros: 18_000,
+        inputMicrosPer1kTokens: 400,
+        outputMicrosPer1kTokens: 1_600,
+        minMicros: 1_250,
         maxOutputTokens: 1_200,
     },
     import_ai_detect: {
-        inputMicrosPer1kTokens: 15_000,
-        outputMicrosPer1kTokens: 30_000,
-        minMicros: 250_000,
+        inputMicrosPer1kTokens: 400,
+        outputMicrosPer1kTokens: 1_600,
+        minMicros: 5_000,
         maxOutputTokens: 4_096,
     },
 }
@@ -66,8 +70,8 @@ export function estimateTrialReserveMicros(params: {
             ? estimateTokensFromChars(params.outputChars)
             : (params.outputTokensCap ?? profile.maxOutputTokens)
 
-    const inputMicros = Math.ceil(inputTokens / 1000) * profile.inputMicrosPer1kTokens
-    const outputMicros = Math.ceil(outputTokens / 1000) * profile.outputMicrosPer1kTokens
+    const inputMicros = Math.ceil((inputTokens * profile.inputMicrosPer1kTokens) / 1000)
+    const outputMicros = Math.ceil((outputTokens * profile.outputMicrosPer1kTokens) / 1000)
 
     return Math.max(profile.minMicros, inputMicros + outputMicros)
 }

@@ -1497,6 +1497,14 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_recalculate_ai_trial_usage: {
+        Args: {
+          p_admin_user_id: string
+          p_note?: string | null
+          p_target_user_id: string
+        }
+        Returns: Json
+      }
       delete_user: { Args: never; Returns: undefined }
       evaluate_and_grant_ai_trial: {
         Args: {
@@ -1508,6 +1516,15 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      estimate_ai_trial_cost_micros: {
+        Args: {
+          p_endpoint: string
+          p_input_chars: number
+          p_output_chars?: number | null
+          p_output_tokens_cap?: number | null
+        }
+        Returns: number
       }
       fail_ai_trial_usage: {
         Args: {

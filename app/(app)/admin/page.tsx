@@ -214,7 +214,7 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
           <StatCard title="Exhausted Trial Users" value={dashboard.trial.overview.exhaustedTrialUsers} />
           <StatCard title="Blocked / Review" value={dashboard.trial.overview.blockedUsers + dashboard.trial.overview.abuseReviewUsers} />
           <StatCard title="Sponsored Usage" value={formatMicrosUsd(dashboard.trial.overview.sponsoredUsageMicros)} />
-          <StatCard title="Remaining Trial Balance" value={formatMicrosUsd(dashboard.trial.overview.totalRemainingMicros)} />
+          <StatCard title="Total Remaining Trial Balance" value={formatMicrosUsd(dashboard.trial.overview.totalRemainingMicros)} />
           <StatCard title="Reserved Trial Budget" value={formatMicrosUsd(dashboard.trial.overview.totalReservedMicros)} />
           <StatCard title="Suspicious Users" value={dashboard.trial.overview.suspiciousUsers} />
         </section>
