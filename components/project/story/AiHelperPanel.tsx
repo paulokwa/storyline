@@ -1426,7 +1426,7 @@ export default function AiHelperPanel({
                     body: JSON.stringify({
                         requestId,
                         endpoint: 'ai_helper',
-                        status: 'cancelled',
+                        status: 'failed',
                         inputChars: fullInternalPrompt.length,
                         outputChars: 0,
                         errorCode: 'cancelled',
@@ -1452,7 +1452,7 @@ export default function AiHelperPanel({
 
             if (aiSettings.ai_fallback_enabled && aiSettings.api_key) {
                 console.warn('Ollama failed, falling back to Gemini:', err.message)
-                await runCloudProvider(finalPrompt, contextText, strategy)
+                await runCloudProvider(finalPrompt, contextText, strategy, requestToken)
             } else {
                 throw err
             }

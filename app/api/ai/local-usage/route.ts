@@ -39,7 +39,7 @@ export async function POST(request: Request) {
         inputChars: body.inputChars ?? 0,
         outputChars: body.outputChars ?? 0,
         errorCode: body.errorCode ?? null,
-        httpStatus: body.status === 'completed' ? 200 : 502,
+        httpStatus: body.errorCode === 'cancelled' ? 499 : (body.status === 'completed' ? 200 : 502),
         ipAddress: context.ipAddress,
         deviceFingerprint: context.deviceFingerprint,
         normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
