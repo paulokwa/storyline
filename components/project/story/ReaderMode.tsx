@@ -18,6 +18,8 @@ export function ReaderControls({
     getSelection,
     getScene,
     getChapter,
+    getSceneChunks,
+    getChapterChunks,
     mode = 'full',
     align = 'right',
     side = 'bottom'
@@ -25,11 +27,13 @@ export function ReaderControls({
     getSelection: () => string,
     getScene: () => string,
     getChapter: () => string,
+    getSceneChunks?: () => string[],
+    getChapterChunks?: () => string[],
     mode?: 'full' | 'settings-only' | 'icon-only',
     align?: 'left' | 'right',
     side?: 'top' | 'bottom'
 }) {
-    const { supported, speechState, pause, resume, stop, voices, selectedVoice, setVoice, rate, changeRate, speak } = useSpeech()
+    const { supported, speechState, pause, resume, stop, voices, selectedVoice, setVoice, rate, changeRate, speak, speakSegments } = useSpeech()
     const { theme } = useTheme()
     const isMidnight = theme === 'midnight'
     const [open, setOpen] = useState(false)
@@ -89,6 +93,12 @@ export function ReaderControls({
         if (selection.trim().length > 0) {
             speak(selection, 'Selection')
         } else {
+            const sceneChunks = getSceneChunks?.() ?? []
+            if (sceneChunks.length > 0) {
+                speakSegments(sceneChunks, 'Scene')
+                return
+            }
+
             speak(getScene(), 'Scene')
         }
     }
@@ -201,7 +211,15 @@ export function ReaderControls({
                         {hasSelection && <span className="text-[10px] text-indigo-500 font-bold uppercase tracking-wider">Active</span>}
                     </button>
                     <button 
-                        onClick={() => { speak(getScene(), 'Scene'); setOpen(false) }}
+                        onClick={() => {
+                            const sceneChunks = getSceneChunks?.() ?? []
+                            if (sceneChunks.length > 0) {
+                                speakSegments(sceneChunks, 'Scene')
+                            } else {
+                                speak(getScene(), 'Scene')
+                            }
+                            setOpen(false)
+                        }}
                         className={cn(
                             "w-full text-left px-3 py-2 text-sm font-medium rounded-xl transition-colors flex items-center justify-between",
                             isMidnight ? "text-slate-100 hover:bg-slate-800/80" : "text-slate-700 hover:bg-slate-50"
@@ -212,7 +230,15 @@ export function ReaderControls({
                     </button>
                     <button 
                         disabled={!hasChapter}
-                        onClick={() => { speak(getChapter(), 'Chapter'); setOpen(false) }}
+                        onClick={() => {
+                            const chapterChunks = getChapterChunks?.() ?? []
+                            if (chapterChunks.length > 0) {
+                                speakSegments(chapterChunks, 'Chapter')
+                            } else {
+                                speak(getChapter(), 'Chapter')
+                            }
+                            setOpen(false)
+                        }}
                         className={cn(
                             "w-full text-left px-3 py-2 text-sm font-medium rounded-xl disabled:opacity-40 disabled:hover:bg-transparent transition-colors flex items-center gap-2",
                             isMidnight ? "text-slate-100 hover:bg-slate-800/80" : "text-slate-700 hover:bg-slate-50"

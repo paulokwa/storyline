@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getUserSafely } from '@/lib/supabase/client-auth'
 
 export const DEFAULT_THEME = 'sanctuary' as const
 export const THEMES = [DEFAULT_THEME, 'midnight'] as const
@@ -27,7 +28,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const supabase = createClient()
 
         const applyThemeForUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser()
+            const { user } = await getUserSafely(supabase)
             const nextStorageKey = user ? `theme:${user.id}` : null
             const savedTheme = nextStorageKey ? localStorage.getItem(nextStorageKey) : null
             const resolvedTheme = isTheme(savedTheme) ? savedTheme : DEFAULT_THEME
@@ -37,7 +38,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             document.documentElement.setAttribute('data-theme', resolvedTheme)
         }
 
-        applyThemeForUser()
+        void applyThemeForUser()
 
         const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
             const nextStorageKey = session?.user ? `theme:${session.user.id}` : null

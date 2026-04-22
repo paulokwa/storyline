@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getUserSafely } from '@/lib/supabase/client-auth'
 import { toast } from 'sonner'
 
 export interface Comment {
@@ -68,12 +69,20 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
     const channelRef = useRef<any>(null)
 
     useEffect(() => {
-        supabase.auth.getUser().then(({ data }: any) => {
-            if (data.user) {
-                setCurrentUser({ id: data.user.id, email: data.user.email || '' })
-            }
-        })
-    }, [])
+        void getUserSafely(supabase)
+            .then(({ user }) => {
+                if (user) {
+                    setCurrentUser({ id: user.id, email: user.email || '' })
+                    return
+                }
+
+                setCurrentUser(null)
+            })
+            .catch((error) => {
+                console.error('Failed to load comments user:', error)
+                setCurrentUser(null)
+            })
+    }, [supabase])
 
     const fetchSingleExtended = async (id: string) => {
         const { data, error } = await supabase.rpc('get_comment_details', { comment_id_arg: id })
@@ -291,7 +300,7 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
 
     const sendTypingIndicator = useCallback(async (threadId: string | null) => {
         if (!channelRef.current) return
-        const { data: { user } } = await supabase.auth.getUser()
+        const { user } = await getUserSafely(supabase)
         if (!user) return
 
         channelRef.current.send({
@@ -462,7 +471,7 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
             .update({ 
                 status: resolved ? 'resolved' : 'open',
                 resolved_at: timestamp,
-                resolved_by: resolved ? (await supabase.auth.getUser()).data.user?.id : null
+                resolved_by: resolved ? (await getUserSafely(supabase)).user?.id : null
             })
             .eq('id', id)
         

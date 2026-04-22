@@ -33,6 +33,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { cn, getUserColor } from '@/lib/utils'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { createClient } from '@/lib/supabase/client'
+import { getUserSafely } from '@/lib/supabase/client-auth'
 import { toast } from 'sonner'
 
 function getAiLinkMode(link: any): 'single' | 'thread' {
@@ -111,8 +112,13 @@ export default function CommentsPanel({
     const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
     useEffect(() => {
-        supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id || null))
-    }, [])
+        void getUserSafely(supabase)
+            .then(({ user }) => setCurrentUserId(user?.id || null))
+            .catch((error) => {
+                console.error('Failed to load current comment user:', error)
+                setCurrentUserId(null)
+            })
+    }, [supabase])
     
     const [filterByNode, setFilterByNode] = useState(true)
     const [showResolved, setShowResolved] = useState(false)
@@ -528,6 +534,7 @@ export default function CommentsPanel({
 
     const canUserSeeComment = useMemo(() => {
         const canSeeRecursive = (comment: any): boolean => {
+            if (role === 'owner' || role === 'editor') return true
             if (comment.author_id === currentUserId) return true
             if (comment.is_shared) return true
             if (shareOwnerFeedback && comment.author_id === projectOwnerId) return true
@@ -541,7 +548,7 @@ export default function CommentsPanel({
         }
 
         return canSeeRecursive
-    }, [commentById, currentUserId, projectOwnerId, shareOwnerFeedback])
+    }, [commentById, currentUserId, projectOwnerId, role, shareOwnerFeedback])
     const canFilterByAuthor = !!currentUserId
 
     const getVisibleReplies = useMemo(() => {
@@ -1274,8 +1281,13 @@ function CommentItem({
     const [currentUserId, setCurrentUserId] = useState<string | null>(null)
     
     useEffect(() => {
-        supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id || null))
-    }, [])
+        void getUserSafely(supabase)
+            .then(({ user }) => setCurrentUserId(user?.id || null))
+            .catch((error) => {
+                console.error('Failed to load comment item user:', error)
+                setCurrentUserId(null)
+            })
+    }, [supabase])
 
     const isAuthor = currentUserId === comment.author_id
 

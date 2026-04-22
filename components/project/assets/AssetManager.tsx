@@ -19,6 +19,7 @@ import {
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { getUserSafely } from '@/lib/supabase/client-auth'
 
 import { Tables } from '@/lib/supabase/types'
 
@@ -86,7 +87,7 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
 
         try {
             // 0. Quota Check (Phase 5.5)
-            const { data: { user } } = await supabase.auth.getUser()
+            const { user } = await getUserSafely(supabase)
             if (!user) throw new Error('Not authenticated')
 
             const { data: quota, error: quotaError } = await (supabase as any).rpc('check_storage_quota', {
@@ -136,7 +137,7 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
                     file_size: file.size,
                     width: dimensions.width,
                     height: dimensions.height,
-                    uploaded_by: (await supabase.auth.getUser()).data.user?.id,
+                    uploaded_by: user.id,
                     asset_type: 'image'
                 })
 

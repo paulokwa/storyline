@@ -91,6 +91,13 @@ const TABS = [
     { slug: 'recovery', label: 'Recovery', icon: History },
 ] as const
 
+function splitReaderBlocks(text: string): string[] {
+    return text
+        .split(/\n{2,}/)
+        .map((block) => block.replace(/\s+/g, ' ').trim())
+        .filter((block) => block.length > 0)
+}
+
 export default function ProjectShell({
     project: initialProject,
     currentUserId,
@@ -664,6 +671,8 @@ function ProjectShellInner({
                                         getSelection={() => currentSelectionText}
                                         getScene={() => currentSceneText}
                                         getChapter={() => currentChapterText}
+                                        getSceneChunks={() => splitReaderBlocks(currentSceneText)}
+                                        getChapterChunks={() => splitReaderBlocks(currentChapterText)}
                                         mode="icon-only"
                                     />
 

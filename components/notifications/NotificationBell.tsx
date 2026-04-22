@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Bell, CheckCheck, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { getUserSafely } from '@/lib/supabase/client-auth'
 import type { NotificationRecord } from '@/lib/notifications'
 import {
     getProjectIdFromPathname,
@@ -74,19 +75,20 @@ export default function NotificationBell() {
     useEffect(() => {
         let isMounted = true
 
-        supabase.auth.getUser().then(({ data, error }) => {
-            if (!isMounted) return
+        void getUserSafely(supabase)
+            .then(({ user }) => {
+                if (!isMounted) return
 
-            if (error) {
+                const nextUserId = user?.id ?? null
+                setUserId(nextUserId)
+                void fetchNotifications(nextUserId)
+            })
+            .catch((error) => {
+                if (!isMounted) return
+
                 console.error('Failed to load notification user:', error)
                 setIsLoading(false)
-                return
-            }
-
-            const nextUserId = data.user?.id ?? null
-            setUserId(nextUserId)
-            void fetchNotifications(nextUserId)
-        })
+            })
 
         return () => {
             isMounted = false

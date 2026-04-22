@@ -21,6 +21,7 @@ import type { ExportMetadata } from '@/lib/export/buildExportPayload'
 import { cn } from '@/lib/utils'
 import { PROJECT_TYPE_LABELS, getProjectTypeLabel } from '@/lib/constants'
 import { useTheme } from '@/components/providers/ThemeProvider'
+import { getUserSafely } from '@/lib/supabase/client-auth'
 
 type Project = Database['public']['Tables']['projects']['Row']
 
@@ -123,8 +124,8 @@ export default function ProjectSettingsModal({
 
         setLoading(true)
         const supabase = createClient()
-        const { data } = await supabase.auth.getUser()
-        const userId = data.user?.id
+        const { user } = await getUserSafely(supabase)
+        const userId = user?.id
 
         if (!userId) {
             setLoading(false)

@@ -13,9 +13,11 @@ interface ReaderContextValue {
     speechState: SpeechState
     currentMode: SpeechMode | null
     currentChunkText: string | null
+    currentChunkIndex: number | null
     setVoice: (voice: SpeechSynthesisVoice) => void
     changeRate: (rate: number) => void
     speak: (text: string, mode: SpeechMode) => void
+    speakSegments: (segments: string[], mode: SpeechMode) => void
     pause: () => void
     resume: () => void
     stop: () => void
@@ -30,10 +32,11 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
     const [speechState, setSpeechState] = useState<SpeechState>('idle')
     const [currentMode, setCurrentMode] = useState<SpeechMode | null>(null)
     const [currentChunkText, setCurrentChunkText] = useState<string | null>(null)
+    const [currentChunkIndex, setCurrentChunkIndex] = useState<number | null>(null)
     const [supported, setSupported] = useState(true)
 
     const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
-    const queueRef = useRef<{ text: string, mode: SpeechMode }[]>([])
+    const queueRef = useRef<{ text: string, mode: SpeechMode, index: number | null }[]>([])
     const isPlayingRef = useRef(false)
 
     useEffect(() => {
@@ -92,6 +95,7 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
         setSpeechState('idle')
         setCurrentMode(null)
         setCurrentChunkText(null)
+        setCurrentChunkIndex(null)
     }, [supported])
 
     const speakNext = useCallback(function playNext() {
@@ -100,6 +104,7 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
             setSpeechState('idle')
             setCurrentMode(null)
             setCurrentChunkText(null)
+            setCurrentChunkIndex(null)
             return
         }
 
@@ -117,6 +122,7 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
             setSpeechState('speaking')
             setCurrentMode(next.mode)
             setCurrentChunkText(next.text)
+            setCurrentChunkIndex(next.index)
         }
         utterance.onpause = () => setSpeechState('paused')
         utterance.onresume = () => setSpeechState('speaking')
@@ -139,24 +145,32 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
         window.speechSynthesis.speak(utterance)
     }, [supported, selectedVoice, rate])
 
-    const speak = useCallback((text: string, mode: SpeechMode) => {
+    const startQueue = useCallback((segments: { text: string, index: number | null }[], mode: SpeechMode) => {
         if (!supported) return
         stop()
 
+        const validSegments = segments
+            .map(segment => ({ ...segment, text: segment.text.trim() }))
+            .filter(segment => segment.text.length > 0)
+        if (validSegments.length === 0) return
+
+        queueRef.current = validSegments.map(segment => ({ ...segment, mode }))
+        isPlayingRef.current = true
+        speakNext()
+    }, [speakNext, stop, supported])
+
+    const speak = useCallback((text: string, mode: SpeechMode) => {
+        if (!supported) return
         if (!text.trim()) return
 
         // Chunk text to prevent 15-second / length limits in some browsers
         const chunks = text.match(/[^.!?\n]+[.!?\n]*/g) || [text]
-        const validChunks = chunks.map(c => c.trim()).filter(c => c.length > 0)
-        
-        if (validChunks.length === 0) return
+        startQueue(chunks.map((chunk, index) => ({ text: chunk, index })), mode)
+    }, [startQueue, supported])
 
-        queueRef.current = validChunks.map(chunk => ({ text: chunk, mode }))
-        isPlayingRef.current = true
-        
-        // Start playing queue
-        speakNext()
-    }, [stop, supported, speakNext])
+    const speakSegments = useCallback((segments: string[], mode: SpeechMode) => {
+        startQueue(segments.map((segment, index) => ({ text: segment, index })), mode)
+    }, [startQueue])
 
     const pause = useCallback(() => {
         if (!supported) return
@@ -176,8 +190,8 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <ReaderContext.Provider value={{
-            supported, voices, selectedVoice, rate, speechState, currentMode, currentChunkText,
-            setVoice, changeRate, speak, pause, resume, stop
+            supported, voices, selectedVoice, rate, speechState, currentMode, currentChunkText, currentChunkIndex,
+            setVoice, changeRate, speak, speakSegments, pause, resume, stop
         }}>
             {children}
         </ReaderContext.Provider>

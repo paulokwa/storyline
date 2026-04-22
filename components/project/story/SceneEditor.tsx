@@ -19,6 +19,7 @@ import {
 import { StoryImage } from '@/lib/tiptap/story-image'
 import { ScreenplayKeyboard } from '@/lib/tiptap/screenplay-keyboard'
 import { createClient } from '@/lib/supabase/client'
+import { getUserSafely } from '@/lib/supabase/client-auth'
 import type { Database, WritingMode } from '@/lib/supabase/types'
 import { cn, getUserColor } from '@/lib/utils'
 import { getSceneTextForAi } from '@/lib/story/scene-text'
@@ -90,8 +91,6 @@ const VIEW_FONT_STACKS: Record<string, string> = {
 const ANDROID_NATIVE_SELECTION_TOOLBAR_HEIGHT = 52
 const SELECTION_TOOLBAR_HEIGHT = 48
 const SELECTION_TOOLBAR_GAP = 12
-const ACTIVE_READER_BLOCK_CLASS = 'reader-active-block'
-
 type BubbleMenuPlacement = 'top' | 'bottom'
 
 const cloneDOMRect = (rect: DOMRect | DOMRectReadOnly) =>
@@ -101,6 +100,16 @@ const cloneDOMRect = (rect: DOMRect | DOMRectReadOnly) =>
         width: rect.width,
         height: rect.height,
     })
+
+const normalizeReaderText = (value: string) =>
+    value
+        .toLowerCase()
+        .replace(/[\u2018\u2019]/g, "'")
+        .replace(/[\u201C\u201D]/g, '"')
+        .replace(/[\u2013\u2014]/g, '-')
+        .replace(/[^\w\s']/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
 
 type AndroidToolbarPosition = {
     top: number
@@ -283,21 +292,59 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [androidToolbarWidth, setAndroidToolbarWidth] = useState(0)
     const editorPageRef = useRef<HTMLDivElement | null>(null)
     const activeReaderBlockRef = useRef<HTMLElement | null>(null)
+    const [readerHighlightRect, setReaderHighlightRect] = useState<{
+        top: number
+        left: number
+        width: number
+        height: number
+    } | null>(null)
 
     useEffect(() => {
         const supabase = createClient()
-        supabase.auth.getUser().then(({ data }) => {
-            setCurrentUserId(data.user?.id || null)
+        void getUserSafely(supabase)
+            .then(({ user }) => {
+                setCurrentUserId(user?.id || null)
+            })
+            .catch((error) => {
+                console.error('Failed to load current scene user:', error)
+                setCurrentUserId(null)
+            })
+    }, [])
+
+    const { speechState, currentChunkText, currentChunkIndex, currentMode } = useSpeech()
+
+    const syncReaderHighlightRect = useCallback((element: HTMLElement) => {
+        const hostRect = editorPageRef.current?.getBoundingClientRect()
+        const editorRoot = editorPageRef.current?.querySelector('.ProseMirror')
+        const contentRect = editorRoot instanceof HTMLElement ? editorRoot.getBoundingClientRect() : null
+        const blockRect = element.getBoundingClientRect()
+
+        if (!hostRect || !contentRect) {
+            setReaderHighlightRect(null)
+            return
+        }
+
+        const left = Math.max(
+            0,
+            Math.max(blockRect.left - hostRect.left - 14, contentRect.left - hostRect.left)
+        )
+        const right = Math.min(
+            hostRect.width,
+            Math.min(blockRect.right - hostRect.left + 10, contentRect.right - hostRect.left)
+        )
+
+        setReaderHighlightRect({
+            top: blockRect.top - hostRect.top - 4,
+            left,
+            width: Math.max(0, right - left),
+            height: blockRect.height + 8,
         })
     }, [])
 
-    const { speechState, currentChunkText } = useSpeech()
-
     useEffect(() => {
         const clearActiveReaderBlock = () => {
-            if (!activeReaderBlockRef.current) return
-            activeReaderBlockRef.current.classList.remove(ACTIVE_READER_BLOCK_CLASS)
             activeReaderBlockRef.current = null
+            setReaderHighlightRect(null)
         }
 
         if (speechState === 'idle' || !currentChunkText) {
@@ -308,8 +355,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         const editorRoot = editorPageRef.current?.querySelector('.ProseMirror')
         if (!(editorRoot instanceof HTMLElement)) return
 
-        const normalizeText = (value: string) => value.replace(/\s+/g, ' ').trim().toLowerCase()
-        const targetChunk = normalizeText(currentChunkText)
+        const targetChunk = normalizeReaderText(currentChunkText)
 
         if (!targetChunk) {
             clearActiveReaderBlock()
@@ -317,12 +363,47 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         }
 
         const blockNodes = Array.from(editorRoot.children).filter(
-            (node): node is HTMLElement => node instanceof HTMLElement
+            (node): node is HTMLElement =>
+                node instanceof HTMLElement &&
+                normalizeReaderText(node.innerText || node.textContent || '').length > 0
         )
 
+        if (currentMode === 'Scene' && currentChunkIndex !== null) {
+            const indexedBlock = blockNodes[currentChunkIndex]
+
+            if (indexedBlock) {
+                activeReaderBlockRef.current = indexedBlock
+                syncReaderHighlightRect(indexedBlock)
+
+                const rect = indexedBlock.getBoundingClientRect()
+                const viewportTop = 120
+                const viewportBottom = window.innerHeight - 180
+                const isOutsideViewportBand = rect.top < viewportTop || rect.bottom > viewportBottom
+
+                if (isOutsideViewportBand) {
+                    indexedBlock.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                        inline: 'nearest',
+                    })
+                }
+
+                return clearActiveReaderBlock
+            }
+        }
+
+        const targetChunkWords = targetChunk.split(' ').filter(Boolean)
+        const targetChunkPrefix = targetChunkWords.slice(0, Math.min(8, targetChunkWords.length)).join(' ')
+
         const matchingBlock = blockNodes.find((node) => {
-            const blockText = normalizeText(node.innerText || node.textContent || '')
-            return blockText.length > 0 && (blockText.includes(targetChunk) || targetChunk.includes(blockText))
+            const blockText = normalizeReaderText(node.innerText || node.textContent || '')
+
+            if (!blockText) return false
+            if (blockText.includes(targetChunk)) return true
+            if (targetChunk.includes(blockText)) return true
+            if (targetChunkPrefix.length >= 12 && blockText.includes(targetChunkPrefix)) return true
+
+            return false
         })
 
         if (!matchingBlock) {
@@ -330,11 +411,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             return
         }
 
-        if (activeReaderBlockRef.current !== matchingBlock) {
-            clearActiveReaderBlock()
-            matchingBlock.classList.add(ACTIVE_READER_BLOCK_CLASS)
-            activeReaderBlockRef.current = matchingBlock
-        }
+        activeReaderBlockRef.current = matchingBlock
+        syncReaderHighlightRect(matchingBlock)
 
         const rect = matchingBlock.getBoundingClientRect()
         const viewportTop = 120
@@ -350,7 +428,37 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         }
 
         return clearActiveReaderBlock
-    }, [currentChunkText, speechState])
+    }, [currentChunkIndex, currentChunkText, currentMode, speechState, syncReaderHighlightRect])
+
+    useEffect(() => {
+        if (speechState === 'idle' || !activeReaderBlockRef.current) return
+
+        const sync = () => {
+            if (activeReaderBlockRef.current) {
+                syncReaderHighlightRect(activeReaderBlockRef.current)
+            }
+        }
+
+        sync()
+
+        const resizeObserver = typeof ResizeObserver !== 'undefined'
+            ? new ResizeObserver(() => {
+                sync()
+            })
+            : null
+
+        if (resizeObserver) {
+            if (editorPageRef.current) resizeObserver.observe(editorPageRef.current)
+            resizeObserver.observe(activeReaderBlockRef.current)
+        }
+
+        window.addEventListener('resize', sync)
+
+        return () => {
+            resizeObserver?.disconnect()
+            window.removeEventListener('resize', sync)
+        }
+    }, [speechState, syncReaderHighlightRect])
 
 
     const { toggle: toggleDictation, isRecording, supported: speechSupported } = useSpeechToText({
@@ -579,6 +687,20 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             }
         }
     }, [writingMode, scene.id])
+
+    const getSceneReaderBlocks = useCallback(() => {
+        if (!editor) return []
+
+        const blocks: string[] = []
+        editor.state.doc.forEach((node) => {
+            const text = (node.textContent || '').replace(/\s+/g, ' ').trim()
+            if (text.length > 0) {
+                blocks.push(text)
+            }
+        })
+
+        return blocks
+    }, [editor])
 
     const updateSelectionToolbarPosition = useCallback(() => {
         if (!editor) {
@@ -834,7 +956,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
         setSaveStatus('saving')
         const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
+        const { user } = await getUserSafely(supabase)
         
         // 1. Update scene content with version check
         const { error: sceneError, count } = await supabase
@@ -1461,6 +1583,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                 getSelection={() => editor?.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to) || ''}
                                 getScene={() => editor?.getText() || ''}
                                 getChapter={() => currentChapterText}
+                                getSceneChunks={getSceneReaderBlocks}
                             />
                         </div>
                     </div>
@@ -1502,7 +1625,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                     textAlign: viewSettings.textAlign as any,
                 } as React.CSSProperties : {}}
                 className={cn(
-                    "scene-editor-page transition-all duration-700 relative",
+                    "scene-editor-page transition-all duration-700 relative isolate",
                     writingMode === 'screenplay' 
                         ? cn(
                             "scene-editor-screenplay-page max-w-[80ch] mx-auto p-12 sm:p-20 min-h-[11in] border",
@@ -1751,7 +1874,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                         )}
                     </div>
                 )}
-                <EditorContent editor={editor} />
+                <div className="relative z-10">
+                    <EditorContent editor={editor} />
+                </div>
                 
                 {/* Contextual Screenplay Hint */}
                 {showTabHint && writingMode === 'screenplay' && (
@@ -1799,6 +1924,23 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             <span className="text-[10px] font-bold uppercase tracking-widest">Dictation Active</span>
                         </div>
                     </div>
+                )}
+
+                {speechState !== 'idle' && readerHighlightRect && (
+                    <div
+                        className={cn(
+                            "pointer-events-none absolute z-0 rounded-[1.35rem] transition-all duration-200",
+                            isMidnight
+                                ? "bg-[linear-gradient(90deg,rgba(129,140,248,0.18),rgba(129,140,248,0.08)_58%,rgba(129,140,248,0.03))] shadow-[-6px_0_0_0_rgba(165,180,252,0.82),0_0_0_1px_rgba(165,180,252,0.16)]"
+                                : "bg-[linear-gradient(90deg,rgba(99,102,241,0.14),rgba(99,102,241,0.07)_58%,rgba(99,102,241,0.025))] shadow-[-6px_0_0_0_rgba(79,70,229,0.6),0_0_0_1px_rgba(99,102,241,0.12)]"
+                        )}
+                        style={{
+                            top: `${readerHighlightRect.top}px`,
+                            left: `${readerHighlightRect.left}px`,
+                            width: `${readerHighlightRect.width}px`,
+                            height: `${readerHighlightRect.height}px`,
+                        }}
+                    />
                 )}
             </div>
 

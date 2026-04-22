@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { RealtimeChannel } from '@supabase/supabase-js'
+import { getUserSafely } from '@/lib/supabase/client-auth'
 
 export type PresenceStatus = 'viewing' | 'editing'
 
@@ -53,7 +54,12 @@ export function PresenceProvider({
     const [user, setUser] = useState<any>(null)
 
     useEffect(() => {
-        supabase.auth.getUser().then(({ data }) => setUser(data.user))
+        void getUserSafely(supabase)
+            .then(({ user }) => setUser(user))
+            .catch((error) => {
+                console.error('Failed to load presence user:', error)
+                setUser(null)
+            })
     }, [supabase])
 
     useEffect(() => {

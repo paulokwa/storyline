@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { Upload, Sparkles, Loader2, Link as LinkIcon, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { uploadProjectCover } from '@/lib/supabase/project-covers'
+import { getUserSafely } from '@/lib/supabase/client-auth'
 
 interface CoverPickerProps {
     value: string
@@ -63,7 +64,7 @@ export default function CoverPicker({
         try {
             setUploading(true)
             
-            const { data: { user } } = await supabase.auth.getUser()
+            const { user } = await getUserSafely(supabase)
             if (!user) {
                 toast.error("You must be logged in to upload.")
                 e.target.value = ''
