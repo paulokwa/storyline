@@ -287,7 +287,6 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [bubbleMenuPlacement, setBubbleMenuPlacement] = useState<BubbleMenuPlacement>('top')
     const [bubbleMenuOffset, setBubbleMenuOffset] = useState(SELECTION_TOOLBAR_GAP)
     const selectionVirtualElementRef = useRef<VirtualElement | null>(null)
-    const suppressAndroidNativeSelectionUiRef = useRef(false)
     const [androidToolbarPosition, setAndroidToolbarPosition] = useState<AndroidToolbarPosition | null>(null)
     const androidToolbarRef = useRef<HTMLDivElement | null>(null)
     const [androidToolbarWidth, setAndroidToolbarWidth] = useState(0)
@@ -644,7 +643,6 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         onSelectionUpdate: ({ editor }) => {
             const type = editor.state.selection.$from.parent.type.name
             setActiveBlockType(type)
-            suppressAndroidNativeSelectionUiRef.current = false
             setCurrentSelectionText(
                 editor.state.doc.textBetween(
                     editor.state.selection.from,
@@ -718,17 +716,6 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
         const selection = window.getSelection()
         if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
-            if (
-                isAndroid &&
-                shouldUseFloatingSelectionToolbar &&
-                !editor.state.selection.empty &&
-                selectionVirtualElementRef.current &&
-                suppressAndroidNativeSelectionUiRef.current
-            ) {
-                return
-            }
-
-            suppressAndroidNativeSelectionUiRef.current = false
             selectionVirtualElementRef.current = null
             setAndroidToolbarPosition(null)
             if (!isAndroid) {
@@ -816,19 +803,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             top: toolbarTop,
         })
         editor.view.dispatch(editor.state.tr.setMeta('bubbleMenu', 'updatePosition'))
-
-        if (isAndroid && shouldUseFloatingSelectionToolbar && !suppressAndroidNativeSelectionUiRef.current) {
-            suppressAndroidNativeSelectionUiRef.current = true
-            window.requestAnimationFrame(() => {
-                const liveSelection = window.getSelection()
-                if (!liveSelection || liveSelection.rangeCount === 0 || liveSelection.isCollapsed) return
-                liveSelection.removeAllRanges()
-            })
-        }
     }, [editor, isAndroid, shouldUseFloatingSelectionToolbar])
 
     const dismissSelectionToolbar = useCallback(() => {
-        suppressAndroidNativeSelectionUiRef.current = false
         selectionVirtualElementRef.current = null
         setAndroidToolbarPosition(null)
         setCurrentSelectionText('')
