@@ -5,6 +5,7 @@ import { Plus, User, MapPin, Package, Trash2, Loader2, Link as LinkIcon, AlertCi
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { SanctuarySelect } from '@/components/ui/sanctuary-select'
 
 type Entity = { id: string; name: string; type: 'character' | 'location' | 'object' }
 
@@ -269,43 +270,35 @@ export default function RelationshipManager({
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-[9px] uppercase tracking-widest font-bold text-slate-400 ml-2">Target Entity</label>
-                                    <select
+                                    <SanctuarySelect
                                         value={targetId}
-                                        onChange={e => {
-                                            setTargetId(e.target.value)
+                                        onValueChange={(nextValue) => {
+                                            setTargetId(nextValue)
                                             setLabel('')
                                         }}
-                                        className="character-ties-input w-full bg-white rounded-2xl px-4 py-3 text-sm border-none shadow-sm ring-1 ring-slate-100 outline-none focus:ring-[#546354]/20"
-                                    >
-                                        <option value="">Select someone or something...</option>
-                                        {availableEntities
+                                        placeholder="Select someone or something..."
+                                        options={availableEntities
                                             .filter(e => e.id !== charId)
-                                            .map(e => (
-                                            <option key={e.id} value={e.id}>
-                                                {e.type.charAt(0).toUpperCase() + e.type.slice(1)}: {e.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                            .map(e => ({
+                                                value: e.id,
+                                                label: `${e.type.charAt(0).toUpperCase() + e.type.slice(1)}: ${e.name}`
+                                            }))}
+                                        triggerClassName="character-ties-input border-none bg-white px-4 py-3 shadow-sm ring-1 ring-slate-100 hover:bg-white focus-visible:ring-[#546354]/20"
+                                    />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[9px] uppercase tracking-widest font-bold text-slate-400 ml-2">Nature of Connection</label>
-                                    <select
+                                    <SanctuarySelect
                                         value={label}
-                                        onChange={e => {
-                                            setLabel(e.target.value)
-                                        }}
+                                        onValueChange={setLabel}
                                         disabled={!selectedTarget}
-                                        className="character-ties-input w-full bg-white rounded-2xl px-4 py-3 text-sm border-none shadow-sm ring-1 ring-slate-100 outline-none focus:ring-[#546354]/20 h-[46px] disabled:text-slate-300"
-                                    >
-                                        <option value="">
-                                            {selectedTarget ? 'Select a connection...' : 'Choose a target first...'}
-                                        </option>
-                                        {availableLabels.map(option => (
-                                            <option key={option.value} value={option.value}>
-                                                {option.value}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        placeholder={selectedTarget ? 'Select a connection...' : 'Choose a target first...'}
+                                        options={availableLabels.map(option => ({
+                                            value: option.value,
+                                            label: option.value
+                                        }))}
+                                        triggerClassName="character-ties-input h-[46px] border-none bg-white px-4 py-3 shadow-sm ring-1 ring-slate-100 hover:bg-white focus-visible:ring-[#546354]/20"
+                                    />
                                 </div>
                             </div>
 

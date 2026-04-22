@@ -12,6 +12,7 @@ import { useSpeech } from '@/hooks/useSpeech'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { useTheme } from '@/components/providers/ThemeProvider'
+import { SanctuarySelect } from '@/components/ui/sanctuary-select'
 
 
 export function ReaderControls({
@@ -283,26 +284,31 @@ export function ReaderControls({
                             <label className={cn("text-[10px] font-bold tracking-widest uppercase flex items-center gap-1", isMidnight ? "text-slate-400" : "text-slate-400")}>
                                 <Settings2 className="w-3 h-3" /> Voice
                             </label>
-                            <select 
-                                className={cn(
-                                    "w-full rounded-xl text-xs p-2 outline-none cursor-pointer transition-all shadow-sm",
-                                    isMidnight
-                                        ? "bg-slate-900 border border-slate-700 text-slate-100 focus:ring-2 focus:ring-indigo-400/20 hover:border-slate-500"
-                                        : "bg-white border border-slate-200 text-slate-700 focus:ring-2 focus:ring-indigo-100 hover:border-slate-300"
-                                )}
+                            <SanctuarySelect
                                 value={selectedVoice?.voiceURI || ''}
-                                style={{ colorScheme: isMidnight ? 'dark' : 'light' }}
-                                onChange={e => {
-                                    const v = voices.find(voice => voice.voiceURI === e.target.value)
-                                    if (v) setVoice(v)
+                                onValueChange={(nextValue) => {
+                                    const voice = voices.find((option) => option.voiceURI === nextValue)
+                                    if (voice) setVoice(voice)
                                 }}
-                            >
-                                {voices.map(v => (
-                                    <option key={v.voiceURI} value={v.voiceURI}>
-                                        {v.name}
-                                    </option>
-                                ))}
-                            </select>
+                                options={voices.map((voice) => ({
+                                    value: voice.voiceURI,
+                                    label: voice.name
+                                }))}
+                                triggerClassName={cn(
+                                    "h-9 rounded-xl px-3 text-xs",
+                                    isMidnight
+                                        ? "border-slate-700 bg-slate-900 text-slate-100 hover:border-slate-500 hover:bg-slate-900 focus-visible:ring-indigo-400/20"
+                                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 focus-visible:ring-indigo-100"
+                                )}
+                                contentClassName={cn(
+                                    isMidnight && "border-slate-700/80 bg-[#182239]/96 text-slate-100 shadow-[0_18px_48px_rgba(2,6,23,0.3)]"
+                                )}
+                                itemClassName={cn(
+                                    "text-xs",
+                                    isMidnight && "text-slate-300 hover:bg-slate-800/80 hover:text-slate-100 data-[selected]:bg-slate-800/80"
+                                )}
+                                valueClassName="text-xs"
+                            />
                         </div>
                     )}
                 </div>

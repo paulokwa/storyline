@@ -41,6 +41,7 @@ import {
 } from '@/lib/supabase/recovery'
 import { useRouter } from 'next/navigation'
 import { useProjectActions } from '@/components/project/ProjectContext'
+import { SanctuarySelect } from '@/components/ui/sanctuary-select'
 
 type RecoverySection = 'trash' | 'history' | 'snapshots'
 type TrashFilter = 'all' | 'structure' | 'assets' | 'ai' | 'feedback'
@@ -549,14 +550,22 @@ export default function RecoveryTab({
                              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 min-w-0">
                                  <div className="flex items-center gap-2 p-1 bg-white rounded-xl ring-1 ring-slate-100 shadow-sm w-full sm:w-auto overflow-hidden">
                                      <Filter className="w-3 h-3 text-slate-400 ml-3 shrink-0" />
-                                     <select 
+                                     <SanctuarySelect
                                          value={selectedSceneId}
-                                         onChange={(e) => setSelectedSceneId(e.target.value)}
-                                         className="bg-transparent border-none text-[10px] font-bold uppercase tracking-widest text-[#546354] focus:ring-0 outline-none pr-8 cursor-pointer"
-                                     >
-                                         <option value="all">All Scenes</option>
-                                         {uniqueScenes.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
-                                     </select>
+                                         onValueChange={setSelectedSceneId}
+                                         options={[
+                                             { value: 'all', label: 'All Scenes' },
+                                             ...uniqueScenes.map((scene) => ({
+                                                 value: scene.id,
+                                                 label: scene.title
+                                             }))
+                                         ]}
+                                         triggerClassName="h-8 border-none bg-transparent px-0 py-0 text-[10px] font-bold uppercase tracking-widest text-[#546354] shadow-none hover:bg-transparent hover:border-transparent focus-visible:ring-0"
+                                         contentClassName="w-[max(var(--anchor-width),16rem)]"
+                                         itemClassName="text-[11px]"
+                                         valueClassName="text-[10px] font-bold uppercase tracking-widest text-[#546354]"
+                                         iconClassName="h-3.5 w-3.5"
+                                     />
                                  </div>
                                  <div className="relative w-full sm:w-64">
                                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300" />

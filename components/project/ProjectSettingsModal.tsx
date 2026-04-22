@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import { SanctuarySelect } from '@/components/ui/sanctuary-select'
 import { Trash2, AlertTriangle, Save, Globe, Info, Tag, Hash, Copyright, Book, Type, MessageSquare, LogOut, Users, ArrowUpRight } from 'lucide-react'
 import type { Database } from '@/lib/supabase/types'
 import type { ExportMetadata } from '@/lib/export/buildExportPayload'
@@ -208,32 +209,27 @@ export default function ProjectSettingsModal({
 
                                     <div className="space-y-2.5">
                                         <Label htmlFor="type" className="text-sm font-semibold text-slate-700 ml-1">Project Format</Label>
-                                        <div className="relative">
-                                            <select 
-                                                id="type"
-                                                value={type} 
-                                                onChange={(e) => setType(e.target.value as any)}
-                                                disabled={!canManageProject}
-                                                className="w-full rounded-2xl border border-border bg-muted/50 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all h-12 px-4 appearance-none text-sm"
-                                            >
-                                                <option value="novel">{PROJECT_TYPE_LABELS.novel}</option>
-                                                <option value="tv_script">{PROJECT_TYPE_LABELS.tv_script}</option>
-                                            </select>
-                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                                            </div>
-                                        </div>
+                                        <SanctuarySelect
+                                            id="type"
+                                            value={type}
+                                            onValueChange={(nextValue) => setType(nextValue as any)}
+                                            disabled={!canManageProject}
+                                            options={[
+                                                { value: 'novel', label: PROJECT_TYPE_LABELS.novel },
+                                                { value: 'tv_script', label: PROJECT_TYPE_LABELS.tv_script }
+                                            ]}
+                                            triggerClassName="border-border bg-muted/50 focus:bg-card focus-visible:ring-primary/20 text-sm"
+                                        />
                                     </div>
 
                                     <div className="space-y-2.5">
                                         <Label htmlFor="writingMode" className="text-sm font-semibold text-slate-700 ml-1">Editor Mode</Label>
-                                        <div className="relative">
-                                            <select 
-                                                id="writingMode"
-                                                value={writingMode} 
-                                                onChange={(e) => {
+                                        <SanctuarySelect
+                                            id="writingMode"
+                                            value={writingMode}
+                                            onValueChange={(nextValue) => {
                                                     if (!canManageProject) return
-                                                    const newMode = e.target.value as any;
+                                                    const newMode = nextValue as any;
                                                     const isMismatch = (type === 'novel' && newMode === 'screenplay') ||
                                                                      (type === 'tv_script' && newMode === 'simple');
                                                     
@@ -243,16 +239,13 @@ export default function ProjectSettingsModal({
                                                     }
                                                     setWritingMode(newMode);
                                                 }}
-                                                disabled={!canManageProject}
-                                                className="w-full rounded-2xl border border-border bg-muted/50 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all h-12 px-4 appearance-none text-sm"
-                                            >
-                                                <option value="simple">Simple (Prose)</option>
-                                                <option value="screenplay">{getProjectTypeLabel('tv_script')}</option>
-                                            </select>
-                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                                            </div>
-                                        </div>
+                                            disabled={!canManageProject}
+                                            options={[
+                                                { value: 'simple', label: 'Simple (Prose)' },
+                                                { value: 'screenplay', label: getProjectTypeLabel('tv_script') }
+                                            ]}
+                                            triggerClassName="border-border bg-muted/50 focus:bg-card focus-visible:ring-primary/20 text-sm"
+                                        />
                                         <p className="px-1 text-[10px] italic text-slate-400">Controls the behavior and formatting of the editor.</p>
                                     </div>
 

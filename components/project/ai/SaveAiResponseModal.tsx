@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { SanctuarySelect } from '@/components/ui/sanctuary-select'
 import { Bookmark, Loader2, CheckCircle2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -184,21 +185,13 @@ export default function SaveAiResponseModal({
 
                             <div className="space-y-2">
                                 <Label htmlFor="type" className="text-sm font-semibold text-slate-700 ml-1">Archive Category</Label>
-                                <div className="relative">
-                                    <select 
-                                        id="type"
-                                        value={type} 
-                                        onChange={(e) => setType(e.target.value)}
-                                        className="w-full rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all h-12 px-4 appearance-none text-sm font-medium text-slate-700"
-                                    >
-                                        {RESPONSE_TYPES.map(t => (
-                                            <option key={t.value} value={t.value}>{t.label}</option>
-                                        ))}
-                                    </select>
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                                    </div>
-                                </div>
+                                <SanctuarySelect
+                                    id="type"
+                                    value={type}
+                                    onValueChange={setType}
+                                    options={RESPONSE_TYPES}
+                                    triggerClassName="border-slate-100 bg-slate-50 focus:bg-white focus-visible:ring-indigo-100 text-sm font-medium text-slate-700"
+                                />
                             </div>
 
                             {(sourceLabel || model) && (
