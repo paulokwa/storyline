@@ -3,6 +3,7 @@ import {
     createCloudTextStream,
     createPlainTextStreamFromProviderResponse,
     getCloudProviderErrorMessage,
+    isAbortLikeError,
     testCloudProviderKey,
 } from '@/lib/ai/providers'
 import { getAiRuntimeState } from '@/lib/ai/runtime'
@@ -209,12 +210,6 @@ export async function POST(req: Request) {
             return match?.name || 'Unknown'
         }
 
-        console.log('--- AI BACKEND DEBUG ---')
-        console.log('Project ID:', projectId)
-        console.log('Input Length:', input.length)
-        console.log('Characters linked:', (linkedCharacters || []).length)
-        console.log('Ideas linked:', (linkedIdeas || []).length)
-
         let contextBlock = `CURRENT SCENE:\n${input}\n\n`
         
         if (linkedCharacters && linkedCharacters.length > 0) {
@@ -278,8 +273,6 @@ export async function POST(req: Request) {
         }
 
         userMessage = `${contextBlock}USER REQUEST: ${prompt}`
-        console.log('Final userMessage Length:', userMessage.length)
-        console.log('Final userMessage Preview:', userMessage.substring(0, 500))
     }
 
     const requestKey = requestId || crypto.randomUUID()
@@ -348,13 +341,51 @@ export async function POST(req: Request) {
         }
     }
 
-    const providerResponse = await createCloudTextStream({
-        provider: providerName,
-        apiKey,
-        systemPrompt: systemPrompt + projectContext,
-        userMessage,
-        maxOutputTokens: 1000,
-    })
+    let providerResponse: Response
+    try {
+        providerResponse = await createCloudTextStream({
+            provider: providerName,
+            apiKey,
+            systemPrompt: systemPrompt + projectContext,
+            userMessage,
+            maxOutputTokens: 1000,
+            abortSignal: req.signal,
+        })
+    } catch (error) {
+        if (isAbortLikeError(error) || req.signal.aborted) {
+            if (runtime.billingMode === 'app_managed_trial') {
+                await supabase.rpc('fail_ai_trial_usage', {
+                    p_user_id: user.id,
+                    p_request_key: requestKey,
+                    p_error_code: 'cancelled',
+                    p_http_status: 499,
+                    p_metadata: metadata,
+                })
+            } else {
+                await logUsageEvent({
+                    userId: user.id,
+                    requestKey,
+                    endpoint: 'ai_helper',
+                    billingMode: runtime.billingMode,
+                    provider: providerName,
+                    model: runtime.model,
+                    status: 'cancelled',
+                    inputChars: userMessage.length,
+                    errorCode: 'cancelled',
+                    httpStatus: 499,
+                    ipAddress: requestContext.ipAddress,
+                    deviceFingerprint: requestContext.deviceFingerprint,
+                    normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
+                    userAgent: requestContext.userAgent,
+                    metadata,
+                })
+            }
+
+            return new Response(null, { status: 499 })
+        }
+
+        throw error
+    }
 
     if (!providerResponse.ok) {
         if (runtime.billingMode === 'app_managed_trial') {
@@ -419,6 +450,36 @@ export async function POST(req: Request) {
                 inputChars: userMessage.length,
                 outputChars: fullText.length,
                 httpStatus: 200,
+                ipAddress: requestContext.ipAddress,
+                deviceFingerprint: requestContext.deviceFingerprint,
+                normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
+                userAgent: requestContext.userAgent,
+                metadata,
+            })
+        },
+        onAbort: async () => {
+            if (runtime.billingMode === 'app_managed_trial') {
+                await supabase.rpc('fail_ai_trial_usage', {
+                    p_user_id: user.id,
+                    p_request_key: requestKey,
+                    p_error_code: 'cancelled',
+                    p_http_status: 499,
+                    p_metadata: metadata,
+                })
+                return
+            }
+
+            await logUsageEvent({
+                userId: user.id,
+                requestKey,
+                endpoint: 'ai_helper',
+                billingMode: runtime.billingMode,
+                provider: providerName,
+                model: runtime.model,
+                status: 'cancelled',
+                inputChars: userMessage.length,
+                errorCode: 'cancelled',
+                httpStatus: 499,
                 ipAddress: requestContext.ipAddress,
                 deviceFingerprint: requestContext.deviceFingerprint,
                 normalizedEmail: runtime.trialAccount?.normalized_email ?? null,

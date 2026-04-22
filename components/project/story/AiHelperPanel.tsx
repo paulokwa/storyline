@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { getProjectTypeLabel } from '@/lib/constants'
-import { useCompletion } from '@ai-sdk/react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -410,11 +409,15 @@ export default function AiHelperPanel({
     const [prompt, setPrompt] = useState('')
     const [lastPrompt, setLastPrompt] = useState('')
     const [copied, setCopied] = useState(false)
+    const [completion, setCompletion] = useState('')
+    const [completionError, setCompletionError] = useState<Error | undefined>(undefined)
     // Holds the previous response while a new one is loading — avoids blank flash
     const [previousCompletion, setPreviousCompletion] = useState('')
     const [previewOpen, setPreviewOpen] = useState(false)
     const [promptsOpen, setPromptsOpen] = useState(false)
     const [promptMode, setPromptMode] = useState('Review / Chat')
+    const [isPartnerBusy, setIsPartnerBusy] = useState(false)
+    const [isCloudLoading, setIsCloudLoading] = useState(false)
     const [isOllamaLoading, setIsOllamaLoading] = useState(false)
     const [ollamaStatus, setOllamaStatus] = useState<'online' | 'offline' | 'checking'>('online')
     const [cloudStatus, setCloudStatus] = useState<'online' | 'offline' | 'checking'>('online')
@@ -449,8 +452,13 @@ export default function AiHelperPanel({
     const [contextManagerOpen, setContextManagerOpen] = useState(false)
     const [isApplyingContext, setIsApplyingContext] = useState(false)
     const [requestNotice, setRequestNotice] = useState<string | null>(null)
+    const [isRequestCancelled, setIsRequestCancelled] = useState(false)
+    const cloudAbortRef = useRef<AbortController | null>(null)
     const ollamaAbortRef = useRef<AbortController | null>(null)
+    const activeCloudControllersRef = useRef<Set<AbortController>>(new Set())
+    const submitInFlightRef = useRef(false)
     const cancelledRequestRef = useRef(false)
+    const requestTokenRef = useRef(0)
     const lastSubmittedPromptRef = useRef('')
     const { scrollRef, isDragging, onMouseDown, onMouseLeave, onMouseUp, onMouseMove } = useDragScroll()
     const modeScroll = useDragScroll()
@@ -1054,34 +1062,34 @@ export default function AiHelperPanel({
         setContextManagerOpen(true)
     }
 
-    const { completion, complete, isLoading, error, setCompletion, stop } = useCompletion({
-        api: '/api/ai',
-        streamProtocol: 'text',
-        body: useMemo(() => ({ action: 'helper', projectId }), [projectId]),
-        onError: (err) => {
-            if (cancelledRequestRef.current) return
-            console.error('AI Error:', err)
-            const friendlyError = getFriendlyAiError(err.message)
-            toast.error(friendlyError?.title || 'AI request failed', {
-                description: friendlyError?.description || 'The AI partner hit a problem. Please try again.',
-            })
-        }
-    })
-
     // What to display: live completion takes priority; fall back to previous while loading
-    const actualLoading = isLoading || isOllamaLoading
-    const displayedCompletion = completion || (actualLoading ? previousCompletion : '')
+    const actualLoading = isPartnerBusy || isCloudLoading || isOllamaLoading
+    const displayedCompletion = isRequestCancelled
+        ? ''
+        : completion || (actualLoading ? previousCompletion : '')
     const isShowingPrevious = actualLoading && !completion && !!previousCompletion
-    const friendlyError = getFriendlyAiError(error?.message)
+    const friendlyError = getFriendlyAiError(completionError?.message)
 
     const handleCancelRequest = () => {
-        if (!actualLoading) return
+        if (!actualLoading && !submitInFlightRef.current) return
 
+        requestTokenRef.current += 1
         cancelledRequestRef.current = true
+        submitInFlightRef.current = false
+        setIsPartnerBusy(false)
+        setIsRequestCancelled(true)
+        for (const controller of activeCloudControllersRef.current) {
+            controller.abort()
+        }
+        activeCloudControllersRef.current.clear()
+        cloudAbortRef.current?.abort()
+        cloudAbortRef.current = null
         ollamaAbortRef.current?.abort()
         ollamaAbortRef.current = null
-        stop()
+        setIsCloudLoading(false)
+        setIsOllamaLoading(false)
         setCompletion('')
+        setCompletionError(undefined)
         setPreviousCompletion('')
         setPendingRequest(null)
         setPreflight(null)
@@ -1173,7 +1181,7 @@ export default function AiHelperPanel({
     }
 
     // --- Provider Orchestration ---
-    const runCloudProvider = async (finalPrompt: string, contextText: string, strategy: ContextStrategy) => {
+    const runCloudProvider = async (finalPrompt: string, contextText: string, strategy: ContextStrategy, requestToken: number) => {
         const cloudProvider = aiSettings.billing_mode === 'app_managed_trial'
             ? 'openai'
             : aiSettings.ai_provider === 'openai'
@@ -1188,55 +1196,126 @@ export default function AiHelperPanel({
         console.log('Scene Text Length (sent):', contextText.length)
         console.log('Final Prompt prefix:', finalPrompt.substring(0, 200))
         console.log('Scene Text Preview (sent):', contextText.substring(0, 200))
-        
-        await complete(finalPrompt, {
-            body: {
-                action: 'helper',
-                requestId,
-                deviceFingerprint,
-                projectId,
-                sceneId: activeSceneId,
-                input: contextText,
-                archiveContext: archiveContextString,
-                linkedCharacters: linkedCharacters.map((c: any) => ({
-                    id: c.id,
-                    name: c.name,
-                    description: c.description,
-                    notes: c.notes
-                })),
-                linkedIdeas: linkedIdeas.map((i: any) => ({
-                    id: i.id,
-                    title: i.title,
-                    content: i.content
-                })),
-                linkedLocations: linkedLocations.map((l: any) => ({
-                    id: l.id,
-                    name: l.name,
-                    description: l.description,
-                    atmosphere: l.atmosphere
-                })),
-                linkedObjects: linkedObjects.map((o: any) => ({
-                    id: o.id,
-                    name: o.name,
-                    description: o.description,
-                    significance: o.significance
-                })),
-                projectRelationships: projectRelationships.map((r: any) => ({
-                    id: r.id,
-                    source_id: r.source_id,
-                    target_id: r.target_id,
-                    relation_label: r.relation_label,
-                    is_symmetrical: r.is_symmetrical
-                })),
-                storyContext: storySelectionContext.map(s => ({
-                    title: s.title,
-                    content: s.content.slice(0, 10000) // Safety truncation per scene
-                }))
+
+        const abortController = new AbortController()
+        cloudAbortRef.current = abortController
+        activeCloudControllersRef.current.add(abortController)
+        setIsCloudLoading(true)
+
+        try {
+            const response = await fetch('/api/ai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                signal: abortController.signal,
+                body: JSON.stringify({
+                    action: 'helper',
+                    prompt: finalPrompt,
+                    requestId,
+                    deviceFingerprint,
+                    projectId,
+                    sceneId: activeSceneId,
+                    input: contextText,
+                    archiveContext: archiveContextString,
+                    linkedCharacters: linkedCharacters.map((c: any) => ({
+                        id: c.id,
+                        name: c.name,
+                        description: c.description,
+                        notes: c.notes
+                    })),
+                    linkedIdeas: linkedIdeas.map((i: any) => ({
+                        id: i.id,
+                        title: i.title,
+                        content: i.content
+                    })),
+                    linkedLocations: linkedLocations.map((l: any) => ({
+                        id: l.id,
+                        name: l.name,
+                        description: l.description,
+                        atmosphere: l.atmosphere
+                    })),
+                    linkedObjects: linkedObjects.map((o: any) => ({
+                        id: o.id,
+                        name: o.name,
+                        description: o.description,
+                        significance: o.significance
+                    })),
+                    projectRelationships: projectRelationships.map((r: any) => ({
+                        id: r.id,
+                        source_id: r.source_id,
+                        target_id: r.target_id,
+                        relation_label: r.relation_label,
+                        is_symmetrical: r.is_symmetrical
+                    })),
+                    storyContext: storySelectionContext.map((s) => ({
+                        title: s.title,
+                        content: s.content.slice(0, 10000),
+                    })),
+                }),
+            })
+
+            if (!response.ok) {
+                throw new Error((await response.text()) || 'Failed to fetch the AI response.')
             }
-        })
+
+            if (!response.body) {
+                throw new Error('The AI response body was empty.')
+            }
+
+            const reader = response.body.getReader()
+            const decoder = new TextDecoder()
+            let accumulated = ''
+
+            while (true) {
+                const { done, value } = await reader.read()
+                if (
+                    done ||
+                    abortController.signal.aborted ||
+                    cancelledRequestRef.current ||
+                    requestToken !== requestTokenRef.current
+                ) break
+
+                accumulated += decoder.decode(value, { stream: true })
+                if (requestToken === requestTokenRef.current) {
+                    setCompletion(accumulated)
+                }
+            }
+
+            if (
+                !abortController.signal.aborted &&
+                !cancelledRequestRef.current &&
+                requestToken === requestTokenRef.current
+            ) {
+                const trailingChunk = decoder.decode()
+                if (trailingChunk) {
+                    accumulated += trailingChunk
+                    setCompletion(accumulated)
+                }
+            }
+        } catch (err: any) {
+            if (err?.name === 'AbortError' || cancelledRequestRef.current) {
+                return
+            }
+
+            console.error('AI Error:', err)
+            const normalizedError = err instanceof Error ? err : new Error(String(err))
+            setCompletionError(normalizedError)
+            const friendlyCloudError = getFriendlyAiError(normalizedError.message)
+            toast.error(friendlyCloudError?.title || 'AI request failed', {
+                description: friendlyCloudError?.description || 'The AI partner hit a problem. Please try again.',
+            })
+            throw normalizedError
+        } finally {
+            activeCloudControllersRef.current.delete(abortController)
+            if (cloudAbortRef.current === abortController) {
+                cloudAbortRef.current = null
+            }
+            if (requestToken === requestTokenRef.current) {
+                setIsCloudLoading(false)
+            }
+        }
     }
 
-    const runLocalOllama = async (finalPrompt: string, contextText: string, strategy: ContextStrategy) => {
+    const runLocalOllama = async (finalPrompt: string, contextText: string, strategy: ContextStrategy, requestToken: number) => {
         const deviceFingerprint = await getDeviceFingerprint()
         const requestId = crypto.randomUUID()
         // Build the prompt with context
@@ -1317,7 +1396,7 @@ export default function AiHelperPanel({
                     if (!line.trim()) continue
                     try {
                         const json = JSON.parse(line)
-                        if (json.response) {
+                        if (json.response && requestToken === requestTokenRef.current && !cancelledRequestRef.current) {
                             accumulated += json.response
                             setCompletion(accumulated)
                         }
@@ -1381,7 +1460,9 @@ export default function AiHelperPanel({
             if (ollamaAbortRef.current === abortController) {
                 ollamaAbortRef.current = null
             }
-            setIsOllamaLoading(false)
+            if (requestToken === requestTokenRef.current) {
+                setIsOllamaLoading(false)
+            }
         }
     }
 
@@ -1398,6 +1479,7 @@ export default function AiHelperPanel({
 
     const handleClear = () => {
         setCompletion('')
+        setCompletionError(undefined)
         setPreviousCompletion('')
         setLastPrompt('')
         setCopied(false)
@@ -1416,8 +1498,14 @@ export default function AiHelperPanel({
     }
 
     const executeAiRequest = async (finalPrompt: string, contextText: string, strategy: ContextStrategy) => {
+        if (submitInFlightRef.current) return
+        submitInFlightRef.current = true
+        const requestToken = requestTokenRef.current + 1
+        requestTokenRef.current = requestToken
         cancelledRequestRef.current = false
+        setIsRequestCancelled(false)
         setCompletion('') // Clear for new run
+        setCompletionError(undefined)
         setLastUsedProvider(null)
         setContextWarning(null)
         setRequestNotice(null)
@@ -1435,18 +1523,27 @@ export default function AiHelperPanel({
         
         try {
             if (isOllamaMode) {
-                await runLocalOllama(finalPrompt, contextText, strategy)
+                await runLocalOllama(finalPrompt, contextText, strategy, requestToken)
             } else {
-                await runCloudProvider(finalPrompt, contextText, strategy)
+                await runCloudProvider(finalPrompt, contextText, strategy, requestToken)
             }
         } catch (err: any) {
             if (!(cancelledRequestRef.current || err?.name === 'AbortError')) {
+                const normalizedError = err instanceof Error ? err : new Error(String(err))
+                setCompletionError(normalizedError)
                 console.error('AI Processing Error:', err)
             }
         } finally {
-            ollamaAbortRef.current = null
-            setPreviousCompletion('')
-            setPendingRequest(null)
+            if (requestToken === requestTokenRef.current) {
+                submitInFlightRef.current = false
+                setIsPartnerBusy(false)
+            }
+            if (requestToken === requestTokenRef.current) {
+                cloudAbortRef.current = null
+                ollamaAbortRef.current = null
+                setPreviousCompletion('')
+                setPendingRequest(null)
+            }
         }
     }
 
@@ -1454,7 +1551,8 @@ export default function AiHelperPanel({
         e.preventDefault()
         if (handleBlockedAiSubmit()) return
         const currentPrompt = prompt.trim()
-        if (actualLoading) return
+        if (actualLoading || submitInFlightRef.current) return
+        setIsPartnerBusy(true)
 
         const modeRules = projectType === 'tv_script'
             ? `\n\nWrite in professional script format (scene headings, character names in caps, dialogue, etc.).\nDo not give advice, suggestions, or explanations.\nOutput only the script.`
@@ -1699,7 +1797,7 @@ export default function AiHelperPanel({
                     <div className="flex items-center gap-0.5 md:gap-1.5 shrink-0">
                         {!isFullCanvas && utilityIcons}
 
-                        {(completion || previousCompletion) && !actualLoading && (
+                        {(displayedCompletion || previousCompletion) && !actualLoading && (
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger className="shrink-0 ml-1">
@@ -1908,7 +2006,7 @@ export default function AiHelperPanel({
                 )}
 
                 {/* Empty state */}
-                {!displayedCompletion && !actualLoading && !error && aiAccessIssue && (
+                {!displayedCompletion && !actualLoading && !completionError && aiAccessIssue && (
                     <div className={cn(
                         "mx-auto flex w-full max-w-md flex-col items-center rounded-3xl p-6 text-center shadow-sm animate-in fade-in slide-in-from-top-2",
                         isMidnight
@@ -1946,7 +2044,7 @@ export default function AiHelperPanel({
                     </div>
                 )}
 
-                {!displayedCompletion && !actualLoading && !error && requestNotice && (
+                {!displayedCompletion && !actualLoading && !completionError && requestNotice && (
                     <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 text-center space-y-3 animate-in fade-in slide-in-from-top-2">
                         <div className="bg-white w-9 h-9 rounded-full flex items-center justify-center mx-auto shadow-sm">
                             <Square className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
@@ -1960,7 +2058,7 @@ export default function AiHelperPanel({
                     </div>
                 )}
 
-                {!displayedCompletion && !actualLoading && !error && !requestNotice && !aiAccessIssue && (
+                {!displayedCompletion && !actualLoading && !completionError && !requestNotice && !aiAccessIssue && (
                     <div className="flex flex-col items-center justify-center h-full text-center space-y-5 opacity-60">
                         <div className="flex h-14 w-14 items-center justify-center rounded-[1.6rem] border border-slate-200/70 bg-white/85 shadow-sm">
                             <MessageSquare className="w-5 h-5 text-indigo-300" />
@@ -1986,12 +2084,12 @@ export default function AiHelperPanel({
                 )}
 
                 {/* Error state */}
-                {error && !actualLoading && !cancelledRequestRef.current && (
+                {completionError && !actualLoading && !cancelledRequestRef.current && (
                     <div className="bg-red-50 border border-red-100 rounded-2xl p-5 text-center space-y-3 animate-in fade-in slide-in-from-top-2">
                         <div className="bg-white w-9 h-9 rounded-full flex items-center justify-center mx-auto shadow-sm">
                             <AlertCircle className="w-4 h-4 text-red-400" />
                         </div>
-                        {error.message?.includes('APP_MANAGED_AI_UNAVAILABLE') ? (
+                        {completionError.message?.includes('APP_MANAGED_AI_UNAVAILABLE') ? (
                             <>
                                 <div className="space-y-1">
                                     <p className="text-sm font-semibold text-red-900">Free Trial AI Unavailable</p>
@@ -2011,7 +2109,7 @@ export default function AiHelperPanel({
                                     </Link>
                                 </Button>
                             </>
-                        ) : error.message?.includes('NO_API_KEY') ? (
+                        ) : completionError.message?.includes('NO_API_KEY') ? (
                             <>
                                 <div className="space-y-1">
                                     <p className="text-sm font-semibold text-red-900">API Key Missing</p>
@@ -2031,7 +2129,7 @@ export default function AiHelperPanel({
                                     </Link>
                                 </Button>
                             </>
-                        ) : error.message?.includes('TRIAL_EXHAUSTED') ? (
+                        ) : completionError.message?.includes('TRIAL_EXHAUSTED') ? (
                             <>
                                 <div className="space-y-1">
                                     <p className="text-sm font-semibold text-red-900">Free Trial AI Exhausted</p>
@@ -2051,7 +2149,7 @@ export default function AiHelperPanel({
                                     </Link>
                                 </Button>
                             </>
-                        ) : error.message?.includes('TRIAL_UNAVAILABLE') ? (
+                        ) : completionError.message?.includes('TRIAL_UNAVAILABLE') ? (
                             <>
                                 <div className="space-y-1">
                                     <p className="text-sm font-semibold text-red-900">Free Trial AI Unavailable</p>
@@ -2145,7 +2243,7 @@ export default function AiHelperPanel({
                             isShowingPrevious && "opacity-40"
                         )}>
                             {displayedCompletion}
-                            {actualLoading && completion && (
+                            {actualLoading && displayedCompletion && (
                                 <span className="inline-block w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse ml-1 align-middle" />
                             )}
                         </div>
@@ -2158,7 +2256,7 @@ export default function AiHelperPanel({
                         )}
 
                         {/* Action buttons — only when complete */}
-                        {!actualLoading && completion && (
+                        {!actualLoading && displayedCompletion && (
                             <div className="flex items-center gap-2">
                                 {saveSuccess && (
                                     <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider animate-in fade-in slide-in-from-right-2 duration-500 flex items-center gap-1 mr-1">
@@ -2238,7 +2336,7 @@ export default function AiHelperPanel({
                             onOpenChange={setSaveModalOpen}
                             projectId={projectId}
                             prompt={lastPrompt}
-                            response={completion || displayedCompletion}
+                            response={displayedCompletion}
                             sourceSceneId={activeSceneId || undefined}
                             sourceNodeId={activeNodeId || undefined}
                             sourceLabel={sourceLabel}
@@ -2583,8 +2681,8 @@ export default function AiHelperPanel({
                                 maxHeight="min(32vh, 240px)"
                             />
                             <button
-                                type={actualLoading ? 'button' : 'submit'}
-                                onClick={actualLoading ? handleCancelRequest : undefined}
+                                type="button"
+                                onClick={actualLoading ? handleCancelRequest : () => handleSubmit({ preventDefault: () => {} } as any)}
                                 disabled={!actualLoading && (!prompt.trim() && promptMode !== 'Review / Chat')}
                                 className={cn(
                                     "absolute bottom-3.5 right-3.5 p-2 rounded-xl transition-all active:scale-95 flex items-center justify-center min-w-[34px] min-h-[34px]",

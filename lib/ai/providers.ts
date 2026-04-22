@@ -4,6 +4,18 @@ export type SupportedAiProvider = CloudAiProvider | 'ollama'
 export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash'
 export const DEFAULT_OPENAI_MODEL = 'gpt-4.1-mini'
 
+export function isAbortLikeError(error: unknown) {
+    if (!error || typeof error !== 'object') return false
+
+    const maybeError = error as { name?: string, code?: string, message?: string }
+    return (
+        maybeError.name === 'AbortError' ||
+        maybeError.name === 'ResponseAborted' ||
+        maybeError.code === 'ECONNRESET' ||
+        maybeError.message === 'aborted'
+    )
+}
+
 export function getAiProviderLabel(provider: string | null | undefined) {
     switch (provider) {
         case 'gemini':
@@ -96,12 +108,14 @@ export async function createCloudTextStream({
     systemPrompt,
     userMessage,
     maxOutputTokens = 1000,
+    abortSignal,
 }: {
     provider: CloudAiProvider
     apiKey: string
     systemPrompt: string
     userMessage: string
     maxOutputTokens?: number
+    abortSignal?: AbortSignal
 }) {
     if (provider === 'gemini') {
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${DEFAULT_GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`
@@ -109,6 +123,7 @@ export async function createCloudTextStream({
         return fetch(geminiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal: abortSignal,
             body: JSON.stringify({
                 contents: [
                     { role: 'user', parts: [{ text: userMessage }] },
@@ -132,6 +147,7 @@ export async function createCloudTextStream({
             'Content-Type': 'application/json',
             Authorization: `Bearer ${apiKey}`,
         },
+        signal: abortSignal,
         body: JSON.stringify({
             model: DEFAULT_OPENAI_MODEL,
             instructions: systemPrompt,
@@ -148,6 +164,7 @@ export function createPlainTextStreamFromProviderResponse(
     options?: {
         onChunk?: (text: string) => void
         onComplete?: (fullText: string) => void | Promise<void>
+        onAbort?: () => void | Promise<void>
         onError?: (error: unknown) => void | Promise<void>
     }
 ) {
@@ -192,10 +209,18 @@ export function createPlainTextStreamFromProviderResponse(
                     }
                     await options?.onComplete?.(fullText)
                 } catch (error) {
+                    if (isAbortLikeError(error)) {
+                        await options?.onAbort?.()
+                        return
+                    }
                     await options?.onError?.(error)
                     throw error
                 } finally {
-                    controller.close()
+                    try {
+                        controller.close()
+                    } catch {
+                        // Stream may already be closed after an abort.
+                    }
                 }
             },
         })
@@ -245,10 +270,18 @@ export function createPlainTextStreamFromProviderResponse(
                 }
                 await options?.onComplete?.(fullText)
             } catch (error) {
+                if (isAbortLikeError(error)) {
+                    await options?.onAbort?.()
+                    return
+                }
                 await options?.onError?.(error)
                 throw error
             } finally {
-                controller.close()
+                try {
+                    controller.close()
+                } catch {
+                    // Stream may already be closed after an abort.
+                }
             }
         },
     })
