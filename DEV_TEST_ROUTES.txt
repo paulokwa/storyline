@@ -1,8 +1,7 @@
 Development test routes
 
 /dev/showcase
-- Development-only showcase page.
-- Returns 404 outside development.
+- Showcase page available in all environments.
 
 /welcome?preview=1
 - Existing welcome preview flow for testing onboarding/welcome behavior.
