@@ -487,6 +487,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging }: 
     const visibleMembers = activeCollaborators.length > 0 ? members : []
     const isShared = activeCollaborators.length > 0
     const cardDescription = project.premise || (project as any).export_metadata?.description || ''
+    const hasDragHandle = !!dragHandleProps
 
     async function handleDelete(e: React.MouseEvent) {
         e.preventDefault()
@@ -545,27 +546,32 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging }: 
                     "mb-8 flex items-start justify-between gap-4 sm:gap-5",
                     hasCover ? "absolute top-8 left-8 right-8" : ""
                 )}>
-                    <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-                        <div className="flex h-11 w-11 items-center justify-center">
-                            {dragHandleProps && (
+                    <div className={cn(
+                        "flex min-w-0 items-center sm:gap-4",
+                        hasDragHandle ? "gap-2.5" : "gap-3"
+                    )}>
+                        {hasDragHandle && (
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center sm:h-11 sm:w-11">
                                 <div 
                                     {...dragHandleProps}
                                     className={cn(
-                                        "pointer-events-auto rounded-xl p-2.5 transition-all cursor-grab active:cursor-grabbing",
+                                        "pointer-events-auto rounded-xl p-2 transition-all cursor-grab active:cursor-grabbing sm:p-2.5",
                                         hasCover ? "bg-white/10 text-white/40 hover:text-white" : "text-slate-300 hover:text-slate-500"
                                     )}
+                                    aria-label="Reorder project"
                                 >
-                                    <GripVertical className="w-5 h-5" />
+                                    <GripVertical className="h-4 w-4 sm:h-5 sm:w-5" />
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
                         <div className={cn(
-                            "h-14 w-14 shrink-0 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm",
+                            "shrink-0 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm",
+                            hasDragHandle ? "h-12 w-12 sm:h-14 sm:w-14" : "h-14 w-14",
                             hasCover 
                                 ? "bg-white/10 backdrop-blur-md text-white border border-white/20 group-hover:bg-white/20"
                                 : (isTV ? "bg-stone-50 text-stone-600 group-hover:bg-primary/10 group-hover:text-primary" : "bg-stone-50 text-stone-500 group-hover:bg-primary/10 group-hover:text-primary")
                         )}>
-                            {isTV ? <Film className="w-7 h-7" /> : <BookOpen className="w-7 h-7" />}
+                            {isTV ? <Film className="h-6 w-6 sm:h-7 sm:w-7" /> : <BookOpen className="h-6 w-6 sm:h-7 sm:w-7" />}
                         </div>
                     </div>
 
