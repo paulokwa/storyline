@@ -261,7 +261,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const isMidnight = theme === 'midnight'
     
     const isReadOnly = role === 'viewer'
-    const isMobile = useMediaQuery('(max-width: 768px)')
+    const isMobileOrTablet = useMediaQuery('(max-width: 1024px)')
     const isAndroid = useMemo(() => {
         if (typeof navigator === 'undefined') return false
         return /Android/i.test(navigator.userAgent)
@@ -508,6 +508,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             Math.max(androidToolbarHalfWidth + 8, androidViewportWidth - androidToolbarHalfWidth - 8)
         )
         : 0
+    const shouldUseFloatingSelectionToolbar = isAndroid || (writingMode !== 'screenplay' && isMobileOrTablet)
 
 
     useEffect(() => {
@@ -688,6 +689,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         }
     }, [writingMode, scene.id])
 
+    const canShowSelectionToolbar = !!editor && (!isReadOnly || (role === 'viewer' && allowViewerFeedback))
+
     const getSceneReaderBlocks = useCallback(() => {
         if (!editor) return []
 
@@ -764,7 +767,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             }
         }
 
-        if (!isAndroid) {
+        if (!shouldUseFloatingSelectionToolbar) {
             setBubbleMenuPlacement('top')
             setBubbleMenuOffset(SELECTION_TOOLBAR_GAP)
             editor.view.dispatch(editor.state.tr.setMeta('bubbleMenu', 'updatePosition'))
@@ -780,9 +783,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         const spaceAbove = rect.top - safeTop
         const spaceBelow = safeBottom - rect.bottom
         const canFitBelow = spaceBelow >= SELECTION_TOOLBAR_HEIGHT + SELECTION_TOOLBAR_GAP
-        const canFitAboveClearOfNativeMenu = spaceAbove >= (
-            ANDROID_NATIVE_SELECTION_TOOLBAR_HEIGHT + SELECTION_TOOLBAR_HEIGHT + (SELECTION_TOOLBAR_GAP * 2)
-        )
+        const requiredTopSpace = isAndroid
+            ? ANDROID_NATIVE_SELECTION_TOOLBAR_HEIGHT + SELECTION_TOOLBAR_HEIGHT + (SELECTION_TOOLBAR_GAP * 2)
+            : SELECTION_TOOLBAR_HEIGHT + SELECTION_TOOLBAR_GAP
+        const canFitAboveClearOfNativeMenu = spaceAbove >= requiredTopSpace
         const nextPlacement: BubbleMenuPlacement = canFitBelow || !canFitAboveClearOfNativeMenu ? 'bottom' : 'top'
         const nextOffset = nextPlacement === 'bottom'
             ? SELECTION_TOOLBAR_GAP
@@ -799,7 +803,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             top: toolbarTop,
         })
         editor.view.dispatch(editor.state.tr.setMeta('bubbleMenu', 'updatePosition'))
-    }, [editor, isAndroid])
+    }, [editor, isAndroid, shouldUseFloatingSelectionToolbar])
 
     const dismissSelectionToolbar = useCallback(() => {
         selectionVirtualElementRef.current = null
@@ -817,7 +821,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     }, [editor, setCurrentSelectionText])
 
     useEffect(() => {
-        if (!isAndroid || !androidToolbarPosition) return
+        if (!shouldUseFloatingSelectionToolbar || !androidToolbarPosition) return
 
         const measureToolbar = () => {
             const nextWidth = androidToolbarRef.current?.offsetWidth ?? 0
@@ -826,7 +830,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
         measureToolbar()
         window.requestAnimationFrame(measureToolbar)
-    }, [androidToolbarPosition, isAndroid])
+    }, [androidToolbarPosition, shouldUseFloatingSelectionToolbar])
 
     useEffect(() => {
         if (!aiPanelOpen) return
@@ -1636,7 +1640,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                         : "mx-auto w-full transition-[max-width] duration-500 ease-in-out"
                 )}
             >
-                {editor && (!isReadOnly || (role === 'viewer' && allowViewerFeedback)) && !isAndroid && (
+                {canShowSelectionToolbar && !shouldUseFloatingSelectionToolbar && (
                     <BubbleMenu
                         editor={editor}
                         updateDelay={0}
@@ -1812,7 +1816,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                         )}
                     </BubbleMenu>
                 )}
-                {editor && ((!isReadOnly && writingMode === 'screenplay') || (isReadOnly && role === 'viewer' && allowViewerFeedback)) && isAndroid && androidToolbarPosition && (
+                {canShowSelectionToolbar && shouldUseFloatingSelectionToolbar && androidToolbarPosition && (
                     <div
                         ref={androidToolbarRef}
                         className="fixed z-[100] flex items-center gap-0.5 bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl p-1 max-w-[calc(100vw-2rem)] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [scroll-snap-type:x_proximity] [scroll-padding-left:0.25rem] pr-6 cursor-default"
@@ -1824,14 +1828,21 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                 : 'translate(-50%, -100%)',
                         }}
                     >
-                        <ToolbarButton
-                            onClick={handleAddInlineComment}
-                            active={false}
-                            icon={MessageSquarePlus}
-                            tooltip="Add Feedback"
-                        />
-                        {!isReadOnly && writingMode === 'screenplay' && (
+                        {isReadOnly ? (
+                            <ToolbarButton
+                                onClick={handleAddInlineComment}
+                                active={false}
+                                icon={MessageSquarePlus}
+                                tooltip="Add Feedback"
+                            />
+                        ) : writingMode === 'screenplay' ? (
                             <>
+                                <ToolbarButton
+                                    onClick={handleAddInlineComment}
+                                    active={false}
+                                    icon={MessageSquarePlus}
+                                    tooltip="Add Feedback"
+                                />
                                 <div className="w-px h-4 bg-slate-200 mx-1" />
                                 <ToolbarButton
                                     onClick={() => editor.chain().focus().setNode('screenplaySceneHeading').run()}
@@ -1869,6 +1880,85 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     active={editor.isActive('screenplayTransition')}
                                     icon={ArrowRight}
                                     tooltip="Transition"
+                                />
+                            </>
+                        ) : (
+                            <>
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().toggleBold().run()}
+                                    active={editor.isActive('bold')}
+                                    icon={Bold}
+                                    tooltip="Bold"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().toggleItalic().run()}
+                                    active={editor.isActive('italic')}
+                                    icon={Italic}
+                                    tooltip="Italic"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().toggleUnderline().run()}
+                                    active={editor.isActive('underline')}
+                                    icon={UnderlineIcon}
+                                    tooltip="Underline"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().toggleStrike().run()}
+                                    active={editor.isActive('strike')}
+                                    icon={Strikethrough}
+                                    tooltip="Strikethrough"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().toggleHighlight().run()}
+                                    active={editor.isActive('highlight')}
+                                    icon={Highlighter}
+                                    tooltip="Highlight"
+                                />
+                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                                    active={editor.isActive('heading', { level: 1 })}
+                                    icon={Heading1}
+                                    tooltip="Heading 1"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                                    active={editor.isActive('heading', { level: 2 })}
+                                    icon={Heading2}
+                                    tooltip="Heading 2"
+                                />
+                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().toggleBulletList().run()}
+                                    active={editor.isActive('bulletList')}
+                                    icon={List}
+                                    tooltip="Bullet List"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                                    active={editor.isActive('orderedList')}
+                                    icon={ListOrdered}
+                                    tooltip="Numbered List"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                                    active={editor.isActive('blockquote')}
+                                    icon={Quote}
+                                    tooltip="Blockquote"
+                                />
+                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <ToolbarButton
+                                    onClick={handleAddInlineComment}
+                                    active={false}
+                                    icon={MessageSquarePlus}
+                                    tooltip="Add Feedback"
+                                />
+                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <ToolbarButton
+                                    onClick={() => setIsAssetSelectorOpen(true)}
+                                    active={false}
+                                    icon={ImageIcon}
+                                    tooltip="Insert Illustration"
                                 />
                             </>
                         )}
