@@ -520,6 +520,7 @@ export default function CharactersTab({
 
                             {/* Relationships Section */}
                             <RelationshipManager 
+                                key={selectedCharacter.id}
                                 projectId={projectId}
                                 charId={selectedCharacter.id}
                                 charName={selectedCharacter.name}

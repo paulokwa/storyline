@@ -5,9 +5,93 @@ import { Plus, User, MapPin, Package, Trash2, Loader2, Link as LinkIcon, AlertCi
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { StableInput } from '@/components/ui/stable-input'
 
 type Entity = { id: string; name: string; type: 'character' | 'location' | 'object' }
+
+type RelationshipOption = {
+    value: string
+    isSymmetrical?: boolean
+}
+
+const RELATIONSHIP_OPTIONS: Record<Entity['type'], RelationshipOption[]> = {
+    character: [
+        { value: 'friends', isSymmetrical: true },
+        { value: 'siblings', isSymmetrical: true },
+        { value: 'spouses', isSymmetrical: true },
+        { value: 'partners', isSymmetrical: true },
+        { value: 'rivals', isSymmetrical: true },
+        { value: 'enemies', isSymmetrical: true },
+        { value: 'mentor to' },
+        { value: 'student of' },
+        { value: 'parent of' },
+        { value: 'child of' },
+        { value: 'allies', isSymmetrical: true },
+    ],
+    location: [
+        { value: 'lives in' },
+        { value: 'was born in' },
+        { value: 'works in' },
+        { value: 'rules' },
+        { value: 'is hiding in' },
+        { value: 'is from' },
+    ],
+    object: [
+        { value: 'owns' },
+        { value: 'carries' },
+        { value: 'wears' },
+        { value: 'seeks' },
+        { value: 'protects' },
+        { value: 'created' },
+        { value: 'destroyed' },
+    ],
+}
+
+const LEGACY_SHARED_LABELS: Record<string, string> = {
+    friend: 'friends',
+    'sibling of': 'siblings',
+    'spouse of': 'spouses',
+    'partner of': 'partners',
+    'rival of': 'rivals',
+    'enemy of': 'enemies',
+    'works with': 'allies',
+}
+
+function formatRelationshipText({
+    rel,
+    charName,
+    entityName,
+    isSource,
+}: {
+    rel: EntityRelationship
+    charName: string
+    entityName: string
+    isSource: boolean
+}) {
+    const sharedLabel = LEGACY_SHARED_LABELS[rel.relation_label] || rel.relation_label
+
+    if (rel.is_symmetrical) {
+        return (
+            <>
+                <span className="text-slate-800 font-bold">{charName} & {entityName}</span>
+                {' are '}
+                <span className="text-slate-800 font-bold">{sharedLabel}</span>
+            </>
+        )
+    }
+
+    const subject = isSource ? charName : entityName
+    const object = isSource ? entityName : charName
+
+    return (
+        <>
+            <span className="text-slate-800 font-bold">{subject}</span>
+            {' '}
+            <span className="text-slate-700">{rel.relation_label}</span>
+            {' '}
+            <span className="text-slate-800 font-bold">{object}</span>
+        </>
+    )
+}
 
 interface EntityRelationship {
     id: string
@@ -39,8 +123,10 @@ export default function RelationshipManager({
     const [isSaving, setIsSaving] = useState(false)
     const [targetId, setTargetId] = useState('')
     const [label, setLabel] = useState('')
-    const [isSymmetrical, setIsSymmetrical] = useState(false)
     const [error, setError] = useState('')
+    const selectedTarget = availableEntities.find(e => e.id === targetId)
+    const availableLabels = selectedTarget ? RELATIONSHIP_OPTIONS[selectedTarget.type] : []
+    const selectedLabelOption = availableLabels.find(option => option.value === label)
 
     const fetchRelationships = useCallback(async () => {
         if (!charId) return
@@ -63,11 +149,11 @@ export default function RelationshipManager({
     }, [charId])
 
     useEffect(() => {
-        setTargetId('')
-        setLabel('')
-        setIsSymmetrical(false)
-        setError('')
-        fetchRelationships()
+        const timer = setTimeout(() => {
+            void fetchRelationships()
+        }, 0)
+
+        return () => clearTimeout(timer)
     }, [fetchRelationships])
 
     async function handleAddRelationship() {
@@ -100,7 +186,7 @@ export default function RelationshipManager({
                 source_type: 'character',
                 target_type: target.type,
                 relation_label: normalizedLabel,
-                is_symmetrical: isSymmetrical
+                is_symmetrical: !!selectedLabelOption?.isSymmetrical
             })
             .select()
             .single()
@@ -109,7 +195,6 @@ export default function RelationshipManager({
             setRelationships(prev => [data as EntityRelationship, ...prev])
             setTargetId('')
             setLabel('')
-            setIsSymmetrical(false)
             setError('')
         } else {
             console.error('Error adding relationship:', errorInsert)
@@ -136,43 +221,20 @@ export default function RelationshipManager({
         const Icon = entity.type === 'character' ? User : entity.type === 'location' ? MapPin : Package
         const colorClass = entity.type === 'character' ? 'text-slate-400' : entity.type === 'location' ? 'text-emerald-400' : 'text-blue-400'
         const bgClass = entity.type === 'character' ? 'bg-slate-50' : entity.type === 'location' ? 'bg-emerald-50/50' : 'bg-blue-50/50'
-
-        let middleText = 'is'
-        let entityName = entity.name
-        let sourceName = charName
-
         return (
-            <div key={rel.id} className="group flex items-center gap-4 p-4 rounded-2xl bg-white border border-slate-100 hover:shadow-sm transition-all animate-in fade-in slide-in-from-bottom-2">
+            <div key={rel.id} className="group flex items-center gap-4 p-4 sm:p-5 rounded-2xl bg-white border border-slate-100 hover:shadow-sm transition-all animate-in fade-in slide-in-from-bottom-2 min-h-[112px]">
                 <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border border-slate-50", bgClass)}>
                     <Icon className={cn("w-5 h-5", colorClass)} />
                 </div>
                 <div className="flex-1 min-w-0">
                     <p className="text-[10px] uppercase tracking-widest text-slate-300 font-bold mb-0.5">{entity.type}</p>
-                    <p className="text-sm font-medium text-slate-600 truncate italic">
-                        {rel.is_symmetrical ? (
-                            <>
-                                <span className="not-italic text-slate-800 font-bold">{charName} & {entity.name}</span>
-                                {' are '}
-                                <span className="not-italic text-slate-800 font-bold">{rel.relation_label}</span>
-                                {' together'}
-                            </>
-                        ) : isSource ? (
-                            <>
-                                <span className="not-italic text-slate-800 font-bold">{charName}</span>
-                                {' is '}
-                                <span className="not-italic text-slate-800 font-bold">{rel.relation_label}</span>
-                                {' to '}
-                                <span className="not-italic text-slate-800 font-bold">{entity.name}</span>
-                            </>
-                        ) : (
-                            <>
-                                <span className="not-italic text-slate-800 font-bold">{entity.name}</span>
-                                {' is '}
-                                <span className="not-italic text-slate-800 font-bold">{rel.relation_label}</span>
-                                {' to '}
-                                <span className="not-italic text-slate-800 font-bold">{charName}</span>
-                            </>
-                        )}
+                    <p className="text-sm leading-relaxed font-medium text-slate-600 break-words pr-2">
+                        {formatRelationshipText({
+                            rel,
+                            charName,
+                            entityName: entity.name,
+                            isSource,
+                        })}
                     </p>
                 </div>
                 {!disabled && (
@@ -207,9 +269,12 @@ export default function RelationshipManager({
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-[9px] uppercase tracking-widest font-bold text-slate-400 ml-2">Target Entity</label>
-                                    <select 
-                                        value={targetId} 
-                                        onChange={e => setTargetId(e.target.value)}
+                                    <select
+                                        value={targetId}
+                                        onChange={e => {
+                                            setTargetId(e.target.value)
+                                            setLabel('')
+                                        }}
                                         className="character-ties-input w-full bg-white rounded-2xl px-4 py-3 text-sm border-none shadow-sm ring-1 ring-slate-100 outline-none focus:ring-[#546354]/20"
                                     >
                                         <option value="">Select someone or something...</option>
@@ -224,27 +289,27 @@ export default function RelationshipManager({
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[9px] uppercase tracking-widest font-bold text-slate-400 ml-2">Nature of Connection</label>
-                                    <StableInput 
+                                    <select
                                         value={label}
-                                        onValueChange={setLabel}
-                                        placeholder="Mentor of, Friend, Nemesis, Owner of..."
-                                        className="character-ties-input w-full bg-white rounded-2xl px-4 py-3 text-sm border-none shadow-sm ring-1 ring-slate-100 outline-none focus:ring-[#546354]/20 h-[46px]"
-                                    />
+                                        onChange={e => {
+                                            setLabel(e.target.value)
+                                        }}
+                                        disabled={!selectedTarget}
+                                        className="character-ties-input w-full bg-white rounded-2xl px-4 py-3 text-sm border-none shadow-sm ring-1 ring-slate-100 outline-none focus:ring-[#546354]/20 h-[46px] disabled:text-slate-300"
+                                    >
+                                        <option value="">
+                                            {selectedTarget ? 'Select a connection...' : 'Choose a target first...'}
+                                        </option>
+                                        {availableLabels.map(option => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.value}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
 
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                <div className="flex items-center gap-3 ml-2">
-                                    <input 
-                                        type="checkbox" 
-                                        id="is_symmetrical" 
-                                        checked={isSymmetrical} 
-                                        onChange={e => setIsSymmetrical(e.target.checked)}
-                                        className="w-4 h-4 rounded border-slate-300 text-[#546354] focus:ring-[#546354]/20"
-                                    />
-                                    <label htmlFor="is_symmetrical" className="text-[10px] text-slate-400 font-medium cursor-pointer">This tie is symmetrical (both share the label)</label>
-                                </div>
-                                
+                            <div className="flex justify-end">
                                 <Button 
                                     onClick={handleAddRelationship} 
                                     disabled={isSaving || !targetId || !label.trim()}
@@ -272,10 +337,10 @@ export default function RelationshipManager({
                     <div className="flex items-center gap-2 text-slate-300 text-xs italic ml-4"><Loader2 className="w-3 h-3 animate-spin"/> Loading connections...</div>
                 ) : relationships.length === 0 ? (
                     <div className="p-12 text-center border-2 border-dashed border-stone-100 rounded-[3rem] text-slate-300 italic text-sm">
-                        No established connections in this character's world.
+                        No established connections in this character&apos;s world.
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                         {relationships.map(rel => renderRelationship(rel))}
                     </div>
                 )}
