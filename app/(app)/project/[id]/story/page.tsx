@@ -29,6 +29,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
         { data: projectIdeas },
         { data: projectLocations },
         { data: projectObjects },
+        { data: projectAiFeedback },
         { data: allScenes },
         { data: projectRelationships }
     ] = await Promise.all([
@@ -36,6 +37,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
         supabase.from('ideas').select('*').eq('project_id', id).is('deleted_at', null).order('order_index'),
         supabase.from('locations').select('*').eq('project_id', id).is('deleted_at', null).order('order_index'),
         supabase.from('objects').select('*').eq('project_id', id).is('deleted_at', null).order('order_index'),
+        supabase.from('ai_responses').select('*').eq('project_id', id).eq('type', 'analysis_feedback').is('deleted_at', null).order('created_at', { ascending: false }),
         supabase.from('scenes').select(`
             *,
             scene_characters(characters(*)),
@@ -59,6 +61,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
             projectIdeas={projectIdeas ?? []}
             projectLocations={projectLocations ?? []}
             projectObjects={projectObjects ?? []}
+            projectAiFeedback={projectAiFeedback ?? []}
             projectRelationships={projectRelationships ?? []}
             aiSettings={{
                 ai_enabled: runtime.aiSettings?.ai_enabled ?? true,

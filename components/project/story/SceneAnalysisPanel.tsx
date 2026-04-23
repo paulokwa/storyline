@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { getAiProviderLabel } from '@/lib/ai/providers'
+import { useComments } from '@/components/project/CommentsContext'
 
 interface AnalysisResult {
     summary: string
@@ -29,6 +30,7 @@ interface SceneAnalysisPanelProps {
     projectType?: 'tv_script' | 'novel'
     projectId?: string
     sceneId?: string
+    nodeId?: string
 }
 
 const SECTIONS = [
@@ -38,13 +40,16 @@ const SECTIONS = [
     { key: 'dialogue',  label: 'Dialogue',   icon: MessageSquare, color: 'text-violet-500',  bg: 'bg-violet-50/60',border: 'border-violet-100' },
 ] as const
 
-export default function SceneAnalysisPanel({ result, onClose, projectType, projectId, sceneId }: SceneAnalysisPanelProps) {
+export default function SceneAnalysisPanel({ result, onClose, projectType, projectId, sceneId, nodeId }: SceneAnalysisPanelProps) {
     const router = useRouter()
     const label = getProjectTypeLabel(projectType)
     const [isSaving, setIsSaving] = useState(false)
     const [saveSuccess, setSaveSuccess] = useState(false)
-    const [addingIdeaIdx, setAddingIdeaIdx] = useState<string | number | null>(null)
-    const [addedIndices, setAddedIndices] = useState<Set<string | number>>(new Set())
+    const [savingAssistantId, setSavingAssistantId] = useState<string | number | null>(null)
+    const [savedToAssistantIds, setSavedToAssistantIds] = useState<Set<string | number>>(new Set())
+    const [savingFeedbackId, setSavingFeedbackId] = useState<string | number | null>(null)
+    const [savedToFeedbackIds, setSavedToFeedbackIds] = useState<Set<string | number>>(new Set())
+    const { addComment } = useComments()
     const supabase = createClient()
     
     // Close on Escape key
@@ -111,51 +116,74 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
         }
     }
 
-    const handleAddAsIdea = async (content: string, id: string | number, typeLabel?: string) => {
+    const handleAddToAssistant = async (content: string, id: string | number, typeLabel?: string) => {
         if (!projectId || !content) return
-        setAddingIdeaIdx(id)
+        setSavingAssistantId(id)
         
         try {
-            // 1. Create the idea
             const titleInitial = content.length > 30 ? content.slice(0, 27) + '...' : content
-            const ideaTitle = typeLabel ? `Feedback (${typeLabel}): ${titleInitial}` : `Feedback Idea: ${titleInitial}`
-            const { data: idea, error: ideaError } = await (supabase as any)
-                .from('ideas')
+            const feedbackTitle = typeLabel ? `${typeLabel}: ${titleInitial}` : `Suggestion: ${titleInitial}`
+            const { error } = await (supabase as any)
+                .from('ai_responses')
                 .insert({
                     project_id: projectId,
-                    title: `Feedback Idea: ${titleInitial}`,
-                    content: content,
-                    order_index: 0 // Will be handled by DB or can be improved
+                    title: feedbackTitle,
+                    prompt: `${label} Analysis`,
+                    response: content,
+                    type: 'analysis_feedback',
+                    source_label: typeLabel ? `${label} Analysis · ${typeLabel}` : `${label} Analysis · Suggestion`,
+                    source_scene_id: sceneId ?? null,
+                    source_node_id: nodeId ?? null,
+                    model: result?.provider ? `${getAiProviderLabel(result.provider)} (Analysis)` : null,
+                    action: 'analysis_feedback'
                 })
-                .select()
-                .single()
 
-            if (ideaError) throw ideaError
+            if (error) throw error
 
-            // 2. Link to scene if we have a sceneId
-            if (sceneId && idea) {
-                const { error: linkError } = await (supabase as any)
-                    .from('scene_ideas')
-                    .insert({
-                        scene_id: sceneId,
-                        idea_id: idea.id
-                    })
-                
-                if (linkError) {
-                    console.error('Failed to link idea to scene:', linkError)
-                }
-            }
-
-            setAddedIndices(prev => new Set(prev).add(id))
-            toast.success('Added to AI Context', {
-                description: 'This insight will now be available as context for the AI Assistant.'
+            setSavedToAssistantIds(prev => new Set(prev).add(id))
+            toast.success('Added to Assistant', {
+                description: 'This analyzer insight is now available in the AI Partner context drawer.'
             })
             router.refresh()
         } catch (err: any) {
-            console.error('Failed to add suggestion as idea:', err)
-            toast.error('Failed to add idea')
+            console.error('Failed to save analyzer feedback:', err)
+            toast.error('Failed to add to assistant')
         } finally {
-            setAddingIdeaIdx(null)
+            setSavingAssistantId(null)
+        }
+    }
+
+    const handleSaveToFeedback = async (content: string, id: string | number, typeLabel?: string) => {
+        if (!projectId || !content) return
+
+        setSavingFeedbackId(id)
+
+        try {
+            await addComment({
+                project_id: projectId,
+                node_id: nodeId || undefined,
+                content,
+                is_shared: false,
+                anchor_data: {
+                    type: 'ai-analysis',
+                    source: 'analysis',
+                    analysis_label: typeLabel ?? 'Suggestion',
+                    source_scene_id: sceneId ?? null,
+                    source_node_id: nodeId ?? null,
+                    project_type: projectType ?? null,
+                    model: result?.provider ? `${getAiProviderLabel(result.provider)} (Analysis)` : null,
+                },
+            })
+
+            setSavedToFeedbackIds(prev => new Set(prev).add(id))
+            toast.success('Saved to feedback', {
+                description: 'You can find this under the AI filter in Feedback.'
+            })
+        } catch (err: any) {
+            console.error('Failed to save analyzer feedback comment:', err)
+            toast.error('Failed to save to feedback')
+        } finally {
+            setSavingFeedbackId(null)
         }
     }
 
@@ -262,19 +290,38 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
                                         <p className="text-sm text-slate-700 font-serif leading-relaxed">
                                             {result[key]}
                                         </p>
-                                        <div className="mt-3 flex items-center justify-end">
-                                            {addedIndices.has(key) ? (
+                                        <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+                                            {savedToFeedbackIds.has(key) ? (
                                                 <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg">
                                                     <Check className="w-3 h-3" />
-                                                    Linked to AI
+                                                    Saved to Feedback
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleSaveToFeedback(result[key], key, label)}
+                                                    disabled={savingFeedbackId !== null}
+                                                    className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-[#546354]/40 hover:text-amber-600 transition-all group/btn"
+                                                >
+                                                    {savingFeedbackId === key ? (
+                                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                                    ) : (
+                                                        <PlusCircle className="w-3 h-3 group-hover/btn:scale-110 transition-transform" />
+                                                    )}
+                                                    Save to Feedback
+                                                </button>
+                                            )}
+                                            {savedToAssistantIds.has(key) ? (
+                                                <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg">
+                                                    <Check className="w-3 h-3" />
+                                                    Added to Assistant
                                                 </div>
                                             ) : (
                                                 <button 
-                                                    onClick={() => handleAddAsIdea(result[key], key, label)}
-                                                    disabled={addingIdeaIdx !== null}
+                                                    onClick={() => handleAddToAssistant(result[key], key, label)}
+                                                    disabled={savingAssistantId !== null}
                                                     className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-[#546354]/40 hover:text-indigo-600 transition-all group/btn"
                                                 >
-                                                    {addingIdeaIdx === key ? (
+                                                    {savingAssistantId === key ? (
                                                         <Loader2 className="w-3 h-3 animate-spin" />
                                                     ) : (
                                                         <BrainCircuit className="w-3 h-3 group-hover/btn:scale-110 transition-transform" />
@@ -304,19 +351,38 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
                                                 </span>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-sm text-slate-700 font-serif leading-relaxed">{s}</p>
-                                                    <div className="mt-2 flex items-center justify-end">
-                                                        {addedIndices.has(i) ? (
+                                                    <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
+                                                        {savedToFeedbackIds.has(i) ? (
                                                             <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg">
                                                                 <Check className="w-3 h-3" />
-                                                                Linked to AI
+                                                                Saved to Feedback
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleSaveToFeedback(s, i)}
+                                                                disabled={savingFeedbackId !== null}
+                                                                className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-[#546354]/40 hover:text-amber-600 transition-all group/btn"
+                                                            >
+                                                                {savingFeedbackId === i ? (
+                                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                                ) : (
+                                                                    <PlusCircle className="w-3 h-3 group-hover/btn:scale-110 transition-transform" />
+                                                                )}
+                                                                Save to Feedback
+                                                            </button>
+                                                        )}
+                                                        {savedToAssistantIds.has(i) ? (
+                                                            <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg">
+                                                                <Check className="w-3 h-3" />
+                                                                Added to Assistant
                                                             </div>
                                                         ) : (
                                                             <button 
-                                                                onClick={() => handleAddAsIdea(s, i)}
-                                                                disabled={addingIdeaIdx !== null}
+                                                                onClick={() => handleAddToAssistant(s, i)}
+                                                                disabled={savingAssistantId !== null}
                                                                 className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-[#546354]/40 hover:text-indigo-600 transition-all group/btn"
                                                             >
-                                                                {addingIdeaIdx === i ? (
+                                                                {savingAssistantId === i ? (
                                                                     <Loader2 className="w-3 h-3 animate-spin" />
                                                                 ) : (
                                                                     <BrainCircuit className="w-3 h-3 group-hover/btn:scale-110 transition-transform" />

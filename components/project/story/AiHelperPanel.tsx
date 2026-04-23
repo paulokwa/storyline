@@ -38,10 +38,12 @@ interface AiHelperPanelProps {
     linkedIdeas?: any[]
     linkedLocations?: any[]
     linkedObjects?: any[]
+    linkedAiFeedback?: Database['public']['Tables']['ai_responses']['Row'][]
     projectCharacters?: any[]
     projectIdeas?: any[]
     projectLocations?: any[]
     projectObjects?: any[]
+    projectAiFeedback?: Database['public']['Tables']['ai_responses']['Row'][]
     projectRelationships?: any[]
     selectedNodes?: any[]
     allNodes?: any[]
@@ -74,26 +76,31 @@ interface AiHelperPanelProps {
     }
 }
 
-type ContextEntityType = 'characters' | 'ideas' | 'locations' | 'objects'
+type ContextEntityType = 'characters' | 'ideas' | 'locations' | 'objects' | 'aiFeedback'
 
 type ContextDraft = Record<ContextEntityType, string[]>
+
+const EMPTY_ARRAY: any[] = []
 
 function buildContextDraft({
     sceneCharacters = [],
     sceneIdeas = [],
     sceneLocations = [],
     sceneObjects = [],
+    aiFeedbackIds = [],
 }: {
     sceneCharacters?: { characters: any }[]
     sceneIdeas?: { ideas: any }[]
     sceneLocations?: { locations: any }[]
     sceneObjects?: { objects: any }[]
+    aiFeedbackIds?: string[]
 }): ContextDraft {
     return {
         characters: sceneCharacters.map((entry) => entry.characters?.id).filter(Boolean),
         ideas: sceneIdeas.map((entry) => entry.ideas?.id).filter(Boolean),
         locations: sceneLocations.map((entry) => entry.locations?.id).filter(Boolean),
         objects: sceneObjects.map((entry) => entry.objects?.id).filter(Boolean),
+        aiFeedback: aiFeedbackIds.filter(Boolean),
     }
 }
 
@@ -107,7 +114,8 @@ function draftsEqual(a: ContextDraft, b: ContextDraft) {
         arraysEqual(a.characters, b.characters) &&
         arraysEqual(a.ideas, b.ideas) &&
         arraysEqual(a.locations, b.locations) &&
-        arraysEqual(a.objects, b.objects)
+        arraysEqual(a.objects, b.objects) &&
+        arraysEqual(a.aiFeedback, b.aiFeedback)
     )
 }
 
@@ -381,11 +389,11 @@ const PROMPT_TEMPLATES = [
 
 export default function AiHelperPanel({
     projectId, projectTitle, sceneText, onInsert,
-    sceneCharacters = [], sceneIdeas = [], sceneLocations = [], sceneObjects = [],
-    linkedCharacters = [], linkedIdeas = [], linkedLocations = [], linkedObjects = [],
-    projectCharacters = [], projectIdeas = [], projectLocations = [], projectObjects = [],
-    projectRelationships = [],
-    selectedNodes = [], allNodes = [], allScenes = [], onClearSelection, aiSettings, projectType,
+    sceneCharacters = EMPTY_ARRAY, sceneIdeas = EMPTY_ARRAY, sceneLocations = EMPTY_ARRAY, sceneObjects = EMPTY_ARRAY,
+    linkedCharacters = EMPTY_ARRAY, linkedIdeas = EMPTY_ARRAY, linkedLocations = EMPTY_ARRAY, linkedObjects = EMPTY_ARRAY, linkedAiFeedback = EMPTY_ARRAY,
+    projectCharacters = EMPTY_ARRAY, projectIdeas = EMPTY_ARRAY, projectLocations = EMPTY_ARRAY, projectObjects = EMPTY_ARRAY, projectAiFeedback = EMPTY_ARRAY,
+    projectRelationships = EMPTY_ARRAY,
+    selectedNodes = EMPTY_ARRAY, allNodes = EMPTY_ARRAY, allScenes = EMPTY_ARRAY, onClearSelection, aiSettings, projectType,
     projectPremise, projectTone,
     activeNodeId, activeSceneId,
     isFullCanvas = false,
@@ -465,8 +473,14 @@ export default function AiHelperPanel({
     const aiAccessIssue = useMemo(() => getAiAccessIssue(aiSettings), [aiSettings])
 
     const currentContextDraft = useMemo(
-        () => buildContextDraft({ sceneCharacters, sceneIdeas, sceneLocations, sceneObjects }),
-        [sceneCharacters, sceneIdeas, sceneLocations, sceneObjects]
+        () => buildContextDraft({
+            sceneCharacters,
+            sceneIdeas,
+            sceneLocations,
+            sceneObjects,
+            aiFeedbackIds: projectAiFeedback.filter((item) => item.source_scene_id === activeSceneId).map((item) => item.id)
+        }),
+        [sceneCharacters, sceneIdeas, sceneLocations, sceneObjects, projectAiFeedback, activeSceneId]
     )
     const [contextDraft, setContextDraft] = useState<ContextDraft>(currentContextDraft)
 
@@ -481,7 +495,9 @@ export default function AiHelperPanel({
 
     useEffect(() => {
         if (!contextManagerOpen) {
-            setContextDraft(currentContextDraft)
+            setContextDraft((previousDraft) =>
+                draftsEqual(previousDraft, currentContextDraft) ? previousDraft : currentContextDraft
+            )
         }
     }, [currentContextDraft, contextManagerOpen])
 
@@ -547,7 +563,9 @@ export default function AiHelperPanel({
                     .limit(8)
                 
                 if (error) throw error
-                if (data) setArchiveResponses(data)
+                if (data) {
+                    setArchiveResponses(data.filter((item: any) => item.type !== 'analysis_feedback'))
+                }
             } catch (err: any) {
                 console.error('Error loading archive context:', err.message)
             } finally {
@@ -612,11 +630,12 @@ export default function AiHelperPanel({
         return {
             characters: linkedCharacters.map(c => ({ id: c.id, name: c.name })),
             ideas: linkedIdeas.map(i => ({ id: i.id, title: i.title })),
+            aiFeedback: linkedAiFeedback.map(item => ({ id: item.id, title: item.title })),
             locations: linkedLocations.map(l => ({ id: l.id, name: l.name })),
             objects: linkedObjects.map(o => ({ id: o.id, name: o.name })),
             storyContextNodes: selectedNodes.map(n => ({ id: n.id, title: n.title, type: n.type }))
         }
-    }, [linkedCharacters, linkedIdeas, linkedLocations, linkedObjects, selectedNodes])
+    }, [linkedCharacters, linkedIdeas, linkedAiFeedback, linkedLocations, linkedObjects, selectedNodes])
 
     const storySelectionLabel = useMemo(() => {
         if (!selectedNodes.length) return ''
@@ -687,6 +706,12 @@ export default function AiHelperPanel({
         }
         return `${linkedFeedbackItems.length} Feedback`
     }, [linkedFeedbackItems])
+    const aiFeedbackLabel = useMemo(() => {
+        if (linkedAiFeedback.length === 1) {
+            return linkedAiFeedback[0].title || 'AI Feedback'
+        }
+        return `${linkedAiFeedback.length} AI Feedback`
+    }, [linkedAiFeedback])
     const locationsLabel = useMemo(() => linkedLocations.length === 1 ? (linkedLocations[0].name || 'Location') : `${linkedLocations.length} Locations`, [linkedLocations])
     const objectsLabel = useMemo(() => linkedObjects.length === 1 ? (linkedObjects[0].name || 'Object') : `${linkedObjects.length} Objects`, [linkedObjects])
 
@@ -724,6 +749,22 @@ export default function AiHelperPanel({
                 items: mergedRegularIdeas.map((item) => ({ id: item.id, label: item.title || 'Idea' })),
             },
             {
+                key: 'ai-feedback' as const,
+                draftKey: 'aiFeedback' as const,
+                canNavigateToAdd: false,
+                title: 'AI Feedback',
+                singularLabel: 'ai feedback item',
+                icon: Sparkles,
+                iconClassName: 'text-violet-600',
+                emptyLabel: 'No saved AI feedback yet',
+                items: projectAiFeedback.map((item) => ({
+                    id: item.id,
+                    label: item.title || 'AI Feedback',
+                    preview: item.response || item.title || 'AI Feedback'
+                })),
+                emptyActionLabel: 'Use “Add to Assistant” in Book Analysis or Scene Analysis.',
+            },
+            {
                 key: 'feedback' as const,
                 draftKey: 'ideas' as const,
                 canNavigateToAdd: false,
@@ -759,7 +800,7 @@ export default function AiHelperPanel({
                 items: projectObjects.map((item) => ({ id: item.id, label: item.name || 'Object' })),
             },
         ]
-    }, [projectCharacters, projectIdeas, projectLocations, projectObjects, sceneIdeas, contextDraft.ideas])
+    }, [projectCharacters, projectIdeas, projectLocations, projectObjects, projectAiFeedback, sceneIdeas, contextDraft.ideas])
 
     const contextSummaryItems = useMemo(() => {
         return contextEntityGroups
@@ -782,12 +823,13 @@ export default function AiHelperPanel({
         }
         if (linkedCharacters.length > 0) parts.push(charactersLabel)
         if (linkedRegularIdeas.length > 0) parts.push(ideasLabel)
+        if (linkedAiFeedback.length > 0) parts.push(aiFeedbackLabel)
         if (linkedFeedbackItems.length > 0) parts.push(feedbackLabel)
         if (linkedLocations.length > 0) parts.push(locationsLabel)
         if (linkedObjects.length > 0) parts.push(objectsLabel)
         if (selectedNodes.length > 0) parts.push(storySelectionLabel)
         return parts.join(' | ')
-    }, [resolvedProjectTitle, activeNodeId, allNodes, linkedCharacters, linkedRegularIdeas, linkedFeedbackItems, linkedLocations, linkedObjects, selectedNodes, charactersLabel, ideasLabel, feedbackLabel, locationsLabel, objectsLabel, storySelectionLabel])
+    }, [resolvedProjectTitle, activeNodeId, allNodes, linkedCharacters, linkedRegularIdeas, linkedAiFeedback, linkedFeedbackItems, linkedLocations, linkedObjects, selectedNodes, charactersLabel, ideasLabel, aiFeedbackLabel, feedbackLabel, locationsLabel, objectsLabel, storySelectionLabel])
 
     const sourceLabel = useMemo(() => {
         if (activeNodeId) {
@@ -947,9 +989,9 @@ export default function AiHelperPanel({
                             >
                                 <span className="block text-[11px] italic text-slate-400">{group.emptyLabel}</span>
                                 <span className="mt-1 block text-[10px] font-medium uppercase tracking-[0.18em] text-slate-400">
-                                    {group.canNavigateToAdd
+                                    {group.emptyActionLabel ?? (group.canNavigateToAdd
                                         ? `Click here to add a ${group.singularLabel}`
-                                        : 'Link a feedback comment from the feedback panel'}
+                                        : 'Link a feedback comment from the feedback panel')}
                                 </span>
                             </button>
                         )}
@@ -979,6 +1021,8 @@ export default function AiHelperPanel({
         const locationRemovals = currentContextDraft.locations.filter((id) => !contextDraft.locations.includes(id))
         const objectAdds = contextDraft.objects.filter((id) => !currentContextDraft.objects.includes(id))
         const objectRemovals = currentContextDraft.objects.filter((id) => !contextDraft.objects.includes(id))
+        const aiFeedbackAdds = contextDraft.aiFeedback.filter((id) => !currentContextDraft.aiFeedback.includes(id))
+        const aiFeedbackRemovals = currentContextDraft.aiFeedback.filter((id) => !contextDraft.aiFeedback.includes(id))
 
         try {
             setIsApplyingContext(true)
@@ -1035,6 +1079,20 @@ export default function AiHelperPanel({
             if (objectRemovals.length > 0) {
                 operations.push(
                     supabase.from('scene_objects').delete().eq('scene_id', activeSceneId).in('object_id', objectRemovals)
+                )
+            }
+            if (aiFeedbackAdds.length > 0) {
+                operations.push(
+                    (supabase.from('ai_responses' as any) as any)
+                        .update({ source_scene_id: activeSceneId, source_node_id: activeNodeId ?? null })
+                        .in('id', aiFeedbackAdds)
+                )
+            }
+            if (aiFeedbackRemovals.length > 0) {
+                operations.push(
+                    (supabase.from('ai_responses' as any) as any)
+                        .update({ source_scene_id: null, source_node_id: null })
+                        .in('id', aiFeedbackRemovals)
                 )
             }
 
@@ -1227,6 +1285,12 @@ export default function AiHelperPanel({
                         title: i.title,
                         content: i.content
                     })),
+                    linkedAiFeedback: linkedAiFeedback.map((item: any) => ({
+                        id: item.id,
+                        title: item.title,
+                        response: item.response,
+                        source_label: item.source_label
+                    })),
                     linkedLocations: linkedLocations.map((l: any) => ({
                         id: l.id,
                         name: l.name,
@@ -1337,6 +1401,13 @@ export default function AiHelperPanel({
                 return `- ${title}${content ? `\n  ${content.slice(0, 2500).replace(/\n/g, '\n  ')}` : ''}`
             }).join('\n\n')}\n`
             : ''
+        const aiFeedbackContext = linkedAiFeedback.length > 0
+            ? `Saved AI Feedback:\n${linkedAiFeedback.map((item) => {
+                const title = item.title || 'AI Feedback'
+                const response = typeof item.response === 'string' ? item.response.trim() : ''
+                return `- ${title}${response ? `\n  ${response.slice(0, 2500).replace(/\n/g, '\n  ')}` : ''}`
+            }).join('\n\n')}\n`
+            : ''
         const locationsContext = linkedLocations.length > 0 
             ? `Locations: ${linkedLocations.map(l => l.name).join(', ')}. ` 
             : ''
@@ -1345,7 +1416,7 @@ export default function AiHelperPanel({
             ? `STORY CONTEXT:\n${storySelectionContext.map(s => `[${s.title}]\n${s.content.slice(0, 5000)}`).join('\n\n')}\n\n`
             : ''
         
-        const fullInternalPrompt = `${projectContext}${charactersContext}${ideasContext}${feedbackContext}${locationsContext}\n\n${storyContextString}SCENE:\n${contextText}\n\nUSER REQUEST: ${finalPrompt}`
+        const fullInternalPrompt = `${projectContext}${charactersContext}${ideasContext}${feedbackContext}${aiFeedbackContext}${locationsContext}\n\n${storyContextString}SCENE:\n${contextText}\n\nUSER REQUEST: ${finalPrompt}`
 
         console.log(`--- AI DEBUG: runLocalOllama [Mode: ${strategy}] ---`)
         console.log('Active Scene ID:', activeSceneId)
@@ -1817,11 +1888,11 @@ export default function AiHelperPanel({
 
                 {/* Mode Buttons Row */}
                 <div className={cn(
-                    "mt-2 flex items-start gap-2 border-t border-white/70 pt-2",
+                    "mt-2 flex items-center gap-2 border-t border-white/70 pt-2",
                     isFullCanvas && "md:mt-0 md:pt-0 md:border-t-0"
                 )}>
-                    <div className="flex min-w-0 flex-1 items-start gap-3">
-                        <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-indigo-200/70 bg-white/80 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.22em] text-indigo-600 shadow-sm">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                        <div className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-indigo-200/70 bg-white/80 px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] text-indigo-600 shadow-sm">
                             <MessageSquarePlus className="w-3 h-3" />
                             <span className="hidden sm:inline">Mode</span>
                         </div>
@@ -2463,6 +2534,20 @@ export default function AiHelperPanel({
                                             <li key={item.id}>
                                                 <span className="font-bold">{stripFeedbackPrefix(item.title)}</span>
                                                 {item.content && <span className="text-slate-400"> - {item.content.length > 50 ? item.content.slice(0, 50) + '...' : item.content}</span>}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {linkedAiFeedback.length > 0 && (
+                                <div>
+                                    <div className="font-bold text-slate-400 mb-1">AI FEEDBACK:</div>
+                                    <ul className="list-disc pl-4 space-y-1 bg-white p-2 border border-slate-100 rounded-lg">
+                                        {linkedAiFeedback.map((item) => (
+                                            <li key={item.id}>
+                                                <span className="font-bold">{item.title}</span>
+                                                {item.response && <span className="text-slate-400"> - {item.response.length > 50 ? item.response.slice(0, 50) + '...' : item.response}</span>}
                                             </li>
                                         ))}
                                     </ul>

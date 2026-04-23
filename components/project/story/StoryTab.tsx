@@ -57,6 +57,7 @@ interface StoryTabProps {
     projectIdeas: any[]
     projectLocations: any[]
     projectObjects: any[]
+    projectAiFeedback: any[]
     projectRelationships: any[]
     aiSettings: {
         ai_enabled: boolean
@@ -75,7 +76,7 @@ interface StoryTabProps {
     }
 }
 
-export default function StoryTab({ project, initialNodes, initialScenes, projectCharacters, projectIdeas, projectLocations, projectObjects, projectRelationships, aiSettings }: StoryTabProps) {
+export default function StoryTab({ project, initialNodes, initialScenes, projectCharacters, projectIdeas, projectLocations, projectObjects, projectAiFeedback, projectRelationships, aiSettings }: StoryTabProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
     const { theme } = useTheme()
@@ -345,7 +346,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             const targetIds = [nodeId, ...getDescendantIds(nodeId)]
             if (isSelected) {
                 // Deselecting: remove node and all its descendants
-                let newSelected = prev.filter(id => !targetIds.includes(id))
+                const newSelected = prev.filter(id => !targetIds.includes(id))
                 
                 // Recursively check parents. If a parent has NO remaining selected children, deselect the parent too.
                 const removeEmptyParents = (childId: string, currentSel: string[]): string[] => {
@@ -729,10 +730,12 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                             linkedIdeas={projectIdeas.filter(i => activeIdeas[i.id] !== false && activeScene?.scene_ideas?.some((si: any) => si.ideas?.id === i.id))}
                             linkedLocations={projectLocations.filter(l => activeLocations[l.id] !== false && activeScene?.scene_locations?.some((sl: any) => sl.locations?.id === l.id))}
                             linkedObjects={projectObjects.filter(o => activeObjects[o.id] !== false && activeScene?.scene_objects?.some((so: any) => so.objects?.id === o.id))}
+                            linkedAiFeedback={projectAiFeedback.filter(response => response.source_scene_id === activeScene?.id)}
                             projectCharacters={projectCharacters}
                             projectIdeas={projectIdeas}
                             projectLocations={projectLocations}
                             projectObjects={projectObjects}
+                            projectAiFeedback={projectAiFeedback}
                             selectedNodes={[
                                 ...(selectedNodeIds.includes('virtual-root') ? [{ id: 'virtual-root', title: project.title, type: 'root' }] : []),
                                 ...nodes.filter(n => selectedNodeIds.includes(n.id))
@@ -837,6 +840,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 projectType={project.type as any}
                 projectId={project.id}
                 sceneId={activeScene?.id || undefined}
+                nodeId={activeNodeId || undefined}
             />
 
             <AiSafeguardDialogs

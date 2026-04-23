@@ -122,7 +122,7 @@ export default function CommentsPanel({
     
     const [filterByNode, setFilterByNode] = useState(true)
     const [showResolved, setShowResolved] = useState(false)
-    const [authorFilter, setAuthorFilter] = useState<'new' | 'all' | 'mine' | 'collaborators' | 'hidden'>('all')
+    const [authorFilter, setAuthorFilter] = useState<'new' | 'all' | 'mine' | 'collaborators' | 'ai' | 'hidden'>('all')
     const [newCommentText, setNewCommentText] = useState('')
     const [replyToId, setReplyToId] = useState<string | null>(null)
     const [replyText, setReplyText] = useState('')
@@ -626,6 +626,10 @@ export default function CommentsPanel({
         if (authorFilter === 'collaborators' && currentUserId) {
             list = list.filter(c => c.author_id !== currentUserId)
         }
+
+        if (authorFilter === 'ai') {
+            list = list.filter(c => c.anchor_data?.type === 'ai-analysis')
+        }
         
         if (filterByNode && activeNodeId) {
             list = list.filter(c => c.node_id === activeNodeId)
@@ -668,6 +672,10 @@ export default function CommentsPanel({
 
         return visibleCommentsByHiddenState.visible.filter(c => c.author_id !== currentUserId).length
     }, [visibleCommentsByHiddenState.visible, currentUserId])
+
+    const aiCount = useMemo(() =>
+        visibleCommentsByHiddenState.visible.filter(c => c.anchor_data?.type === 'ai-analysis').length,
+    [visibleCommentsByHiddenState.visible])
 
     const hiddenCount = useMemo(() =>
         visibleCommentsByHiddenState.hidden.length,
@@ -873,6 +881,18 @@ export default function CommentsPanel({
                         </button>
                         <button
                             type="button"
+                            onClick={() => setAuthorFilter('ai')}
+                            className={cn(
+                                "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
+                                authorFilter === 'ai'
+                                    ? "bg-slate-900 text-white"
+                                    : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                            )}
+                        >
+                            AI {aiCount}
+                        </button>
+                        <button
+                            type="button"
                             onClick={() => setAuthorFilter('hidden')}
                             className={cn(
                                 "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
@@ -912,7 +932,9 @@ export default function CommentsPanel({
                                 <MessageCircle className="w-6 h-6" />
                             </div>
                             <p className="text-sm font-serif italic text-slate-400">
-                                {filterByNode ? "No feedback for this scene yet." : "No project feedback yet."}
+                                {authorFilter === 'ai'
+                                    ? (filterByNode ? "No AI feedback for this scene yet." : "No AI feedback saved yet.")
+                                    : (filterByNode ? "No feedback for this scene yet." : "No project feedback yet.")}
                             </p>
                         </div>
                     )}
@@ -1326,11 +1348,17 @@ function CommentItem({
                             {!isReply && (
                                 <Badge variant="outline" className={cn(
                                     "px-1.5 h-4 text-[7px] font-bold uppercase tracking-[0.1em] rounded-md",
-                                    comment.anchor_data?.type === 'inline' 
-                                        ? "bg-amber-100/50 text-amber-600 border-amber-200/50" 
-                                        : "bg-blue-100/50 text-blue-600 border-blue-200/50"
+                                    comment.anchor_data?.type === 'inline'
+                                        ? "bg-amber-100/50 text-amber-600 border-amber-200/50"
+                                        : comment.anchor_data?.type === 'ai-analysis'
+                                            ? "bg-violet-100/70 text-violet-600 border-violet-200/70"
+                                            : "bg-blue-100/50 text-blue-600 border-blue-200/50"
                                 )}>
-                                    {comment.anchor_data?.type === 'inline' ? 'Inline' : 'Scene'}
+                                    {comment.anchor_data?.type === 'inline'
+                                        ? 'Inline'
+                                        : comment.anchor_data?.type === 'ai-analysis'
+                                            ? 'AI'
+                                            : 'Scene'}
                                 </Badge>
                             )}
                         </div>

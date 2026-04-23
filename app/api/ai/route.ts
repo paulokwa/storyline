@@ -74,6 +74,7 @@ export async function POST(req: Request) {
         deviceFingerprint,
         linkedCharacters, 
         linkedIdeas, 
+        linkedAiFeedback,
         linkedLocations, 
         linkedObjects, 
         storyContext 
@@ -89,6 +90,7 @@ export async function POST(req: Request) {
         deviceFingerprint?: string | null
         linkedCharacters?: any[]
         linkedIdeas?: any[]
+        linkedAiFeedback?: any[]
         linkedLocations?: any[]
         linkedObjects?: any[]
         storyContext?: any[]
@@ -227,6 +229,16 @@ export async function POST(req: Request) {
             linkedIdeas.forEach(i => {
                 contextBlock += `- ${i.title || 'Untitled'}\n`
                 if (i.content) contextBlock += `  Content: ${i.content}\n`
+            })
+            contextBlock += '\n'
+        }
+
+        if (linkedAiFeedback && linkedAiFeedback.length > 0) {
+            contextBlock += `SAVED AI FEEDBACK:\nThe following analyzer insights were explicitly saved as reusable AI context.\n\n`
+            linkedAiFeedback.forEach((item) => {
+                contextBlock += `- ${item.title || 'AI Feedback'}\n`
+                if (item.response) contextBlock += `  Response: ${item.response}\n`
+                if (item.source_label) contextBlock += `  Source: ${item.source_label}\n`
             })
             contextBlock += '\n'
         }
