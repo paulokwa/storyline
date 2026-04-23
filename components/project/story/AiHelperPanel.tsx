@@ -1626,7 +1626,7 @@ export default function AiHelperPanel({
         setIsPartnerBusy(true)
 
         const modeRules = projectType === 'tv_script'
-            ? `\n\nWrite in professional script format (scene headings, character names in caps, dialogue, etc.).\nDo not give advice, suggestions, or explanations.\nOutput only the script.`
+            ? `\n\nWrite in professional script format (scene headings, character names in caps, dialogue, etc.).\nUse parentheticals sparingly when a brief delivery or action cue genuinely improves the line.\nDo not give advice, suggestions, or explanations.\nOutput only the script.`
             : `\n\nWrite in narrative prose.\nDo not give advice, suggestions, or explanations.\nOutput only the story.`
         
         let finalPrompt = ''
@@ -1655,11 +1655,15 @@ export default function AiHelperPanel({
             - No markdown code blocks.
             - No preamble, no postamble, no explanation text.
             - Valid types for screenplay blocks: "scene-heading", "action", "character", "parenthetical", "dialogue", "transition".
+            - Include at least one "parenthetical" block in the JSON output.
+            - Place each "parenthetical" block between a "character" block and its following "dialogue" block.
+            - Parentheticals should stay brief and performance-oriented.
             
             JSON Structure Example:
             [
               { "type": "scene-heading", "text": "INT. OFFICE - DAY" },
               { "type": "character", "text": "JOHN" },
+              { "type": "parenthetical", "text": "under his breath" },
               { "type": "dialogue", "text": "Hello." }
             ]`
         } else if (promptMode === 'Review / Chat') {

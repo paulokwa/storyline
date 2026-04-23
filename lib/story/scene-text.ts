@@ -36,6 +36,8 @@ export function getSceneTextForAi(content: unknown): string {
                     return `SCENE HEADING: ${getNodeText(node.content).toUpperCase()}`
                 case 'screenplayCharacter':
                     return `CHARACTER: ${getNodeText(node.content).toUpperCase()}`
+                case 'screenplayParenthetical':
+                    return `PARENTHETICAL: (${getNodeText(node.content)})`
                 case 'screenplayDialogue':
                     return `DIALOGUE: ${getNodeText(node.content)}`
                 case 'screenplayAction':

@@ -772,6 +772,14 @@ body {
   margin-bottom: 0 !important;
 }
 
+.screenplay-parenthetical::before {
+  content: "(";
+}
+
+.screenplay-parenthetical::after {
+  content: ")";
+}
+
 @media (max-width: 768px) {
   .screenplay-parenthetical {
     margin-left: 15% !important;
