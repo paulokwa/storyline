@@ -3,6 +3,14 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getUserSafely } from '@/lib/supabase/client-auth'
+import {
+    createLocalComment,
+    listLocalComments,
+    reorderLocalComments,
+    softDeleteLocalCommentTree,
+    updateLocalComment,
+} from '@/lib/persistence/local-comments'
+import { isLocalProjectId } from '@/lib/persistence/project-mode'
 import { toast } from 'sonner'
 
 export interface Comment {
@@ -18,11 +26,12 @@ export interface Comment {
     updated_at: string
     resolved_at: string | null
     resolved_by: string | null
-    author_email?: string
-    order_index: number
-    is_shared?: boolean
+    author_email?: string | null
+    order_index: number | null
+    is_shared?: boolean | null
     deleted_at?: string | null
     deleted_by?: string | null
+    author_type?: 'self'
 }
 
 interface TypingState {
@@ -56,6 +65,7 @@ interface CommentsContextType {
 const CommentsContext = createContext<CommentsContextType | undefined>(undefined)
 
 export function CommentsProvider({ projectId, children }: { projectId: string, children: React.ReactNode }) {
+    const isLocalOnly = isLocalProjectId(projectId)
     const [comments, setComments] = useState<Comment[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [commentsPanelOpen, setCommentsPanelOpen] = useState(false)
@@ -208,6 +218,20 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
     }
 
     const fetchComments = useCallback(async (p_id: string) => {
+        if (isLocalOnly) {
+            setIsLoading(true)
+            try {
+                const localComments = await listLocalComments(p_id)
+                setComments(localComments)
+            } catch (error) {
+                console.error('Error fetching local comments:', error)
+                setComments([])
+            } finally {
+                setIsLoading(false)
+            }
+            return
+        }
+
         setIsLoading(true)
         const { data, error } = await supabase
             .rpc('get_project_comments_extended', { project_id_arg: p_id })
@@ -226,11 +250,11 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
             setComments(sortedData)
         }
         setIsLoading(false)
-    }, [])
+    }, [isLocalOnly])
 
     // Realtime setup
     useEffect(() => {
-        if (!projectId) return
+        if (!projectId || isLocalOnly) return
 
         const channel = supabase.channel(`comments:${projectId}`)
             .on('postgres_changes', {
@@ -296,9 +320,10 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
         return () => {
             channel.unsubscribe()
         }
-    }, [currentUser?.id, projectId])
+    }, [currentUser?.id, isLocalOnly, projectId])
 
     const sendTypingIndicator = useCallback(async (threadId: string | null) => {
+        if (isLocalOnly) return
         if (!channelRef.current) return
         const { user } = await getUserSafely(supabase)
         if (!user) return
@@ -308,9 +333,31 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
             event: 'typing',
             payload: { email: user.email, threadId, typing: !!threadId }
         })
-    }, [])
+    }, [isLocalOnly])
 
     const addComment = async ({ project_id, node_id, content, parent_id, anchor_data, is_shared = false }: any) => {
+        if (isLocalOnly) {
+            const nextComment = await createLocalComment({
+                projectId: project_id,
+                nodeId: node_id,
+                content,
+                parentId: parent_id,
+                anchorData: anchor_data,
+                isShared: false,
+                authorId: currentUser?.id ?? 'local-self',
+                authorEmail: currentUser?.email ?? null,
+                orderIndex: comments.length > 0 ? Math.min(...comments.map(c => c.order_index || 0)) - 1 : 1,
+            })
+
+            setComments(prev => {
+                if (prev.some(c => c.id === nextComment.id)) return prev
+                const next = [nextComment, ...prev]
+                return next.sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
+            })
+
+            return nextComment
+        }
+
         const { data, error } = await supabase
             .from('project_comments')
             .insert({
@@ -354,6 +401,13 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
     }
 
     const updateComment = async (id: string, content: string) => {
+        if (isLocalOnly) {
+            setComments(prev => prev.map(c =>
+                c.id === id ? { ...c, content, updated_at: new Date().toISOString() } : c
+            ))
+            await updateLocalComment(id, { content })
+            return
+        }
         // Optimistic update
         setComments(prev => prev.map(c => 
             c.id === id ? { ...c, content, updated_at: new Date().toISOString() } : c
@@ -400,6 +454,14 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
         if (activeCommentId === id) setActiveCommentId(null)
 
         try {
+            if (isLocalOnly) {
+                const deletedIds = await softDeleteLocalCommentTree(projectId, id, currentUser?.id ?? null)
+                if (deletedIds.length > 0) {
+                    setComments(prev => prev.filter(comment => !deletedIds.includes(comment.id)))
+                }
+                return
+            }
+
             await Promise.all(commentsToDelete.map(unlinkAiFeedbackForComment))
 
             const { data, error } = await supabase
@@ -428,6 +490,18 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
     }, [])
 
     const reorderComments = async (orderedIds: string[]) => {
+        if (isLocalOnly) {
+            const idToIndex = new Map(orderedIds.map((id, index) => [id, index]))
+            setComments(prev => {
+                const next = prev.map(c => ({
+                    ...c,
+                    order_index: idToIndex.has(c.id) ? idToIndex.get(c.id)! : c.order_index
+                }))
+                return next.sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
+            })
+            await reorderLocalComments(projectId, orderedIds)
+            return
+        }
         // Optimistic UI update
         const idToIndex = new Map(orderedIds.map((id, index) => [id, index]))
         
@@ -436,7 +510,7 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
                 ...c,
                 order_index: idToIndex.has(c.id) ? idToIndex.get(c.id)! : c.order_index
             }))
-            return next.sort((a, b) => a.order_index - b.order_index)
+            return next.sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
         })
 
         // Persistence
@@ -459,6 +533,18 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
     }
 
     const resolveComment = async (id: string, resolved: boolean) => {
+        if (isLocalOnly) {
+            const timestamp = resolved ? new Date().toISOString() : null
+            setComments(prev => prev.map(c =>
+                c.id === id ? { ...c, status: resolved ? 'resolved' : 'open', resolved_at: timestamp } : c
+            ))
+            await updateLocalComment(id, {
+                resolved_at: timestamp,
+                resolved_by: resolved ? (currentUser?.id ?? 'local-self') : null,
+                status: resolved ? 'resolved' : 'open',
+            })
+            return
+        }
         const timestamp = resolved ? new Date().toISOString() : null
         
         // Optimistic update
@@ -483,6 +569,13 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
     }
 
     const setCommentSharing = async (id: string, isShared: boolean) => {
+        if (isLocalOnly) {
+            await updateLocalComment(id, { is_shared: isShared })
+            setComments(prev => prev.map(c =>
+                c.id === id ? { ...c, is_shared: isShared } : c
+            ))
+            return
+        }
         const targetComment = comments.find(comment => comment.id === id)
         const replyIds = comments
             .filter(comment => comment.parent_id === id)

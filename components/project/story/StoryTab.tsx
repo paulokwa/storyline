@@ -32,6 +32,7 @@ import { analyzeContextSize, ContextSizingResult } from '@/lib/ai/config'
 import { AiSafeguardDialogs } from '@/components/project/ai/AiSafeguardDialogs'
 import { readStoredSceneNodeId, resolveSceneNodeId, writeStoredSceneNodeId } from '@/lib/project/active-scene'
 import { getSceneTextForAi } from '@/lib/story/scene-text'
+import type { ProjectStorageMode } from '@/lib/persistence/project-mode'
 
 type Project = Database['public']['Tables']['projects']['Row']
 type StructureNode = Database['public']['Tables']['structure_nodes']['Row']
@@ -74,9 +75,10 @@ interface StoryTabProps {
             consumed_micros: number
         } | null
     }
+    storageMode?: ProjectStorageMode
 }
 
-export default function StoryTab({ project, initialNodes, initialScenes, projectCharacters, projectIdeas, projectLocations, projectObjects, projectAiFeedback, projectRelationships, aiSettings }: StoryTabProps) {
+export default function StoryTab({ project, initialNodes, initialScenes, projectCharacters, projectIdeas, projectLocations, projectObjects, projectAiFeedback, projectRelationships, aiSettings, storageMode = 'cloud-enabled' }: StoryTabProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
     const { theme } = useTheme()
@@ -98,6 +100,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     } = useProjectActions()
     const { exportAction, statsAction, canExport } = useProjectActionsStore()
     const { commentsPanelOpen, setCommentsPanelOpen, fetchComments, setActiveCommentId } = useComments()
+    const isLocalOnly = storageMode === 'local-only'
     
     const [nodes, setNodes] = useState(initialNodes)
     const [scenes, setScenes] = useState(initialScenes)
@@ -108,10 +111,11 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     const [isExtremeContext, setIsExtremeContext] = useState(false)
 
     useEffect(() => {
+        if (isLocalOnly) return
         if (project?.id) {
             fetchComments(project.id)
         }
-    }, [project?.id, fetchComments])
+    }, [fetchComments, isLocalOnly, project?.id])
     const writingMode = (project.writing_mode ?? 'simple') as WritingMode
     
     const editorRef = useRef<SceneEditorRef>(null)
@@ -232,6 +236,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
 
     // Realtime Structure Sync
     useEffect(() => {
+        if (isLocalOnly) return
         if (!project.id) return
 
         const supabase = createClient()
@@ -283,7 +288,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         return () => {
             channel.unsubscribe()
         }
-    }, [project.id, activeNodeId, setActiveNodeId])
+    }, [activeNodeId, isLocalOnly, project.id, setActiveNodeId])
 
     const [showExportHint, setShowExportHint] = useState(false)
     const [portalRoot, setPortalRoot] = useState<Element | null>(null)
@@ -399,6 +404,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     }, [activeNodeId])
 
     const handleAnalyzeTrigger = () => {
+        if (isLocalOnly) return
         if (!currentSceneText) return
         
         const analysis = analyzeContextSize(
@@ -424,6 +430,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     }
 
     const handleToggleAiPanel = () => {
+        if (isLocalOnly) return
         const nextState = !aiPanelOpen
         if (nextState) {
             queueAiTourStart()
@@ -505,7 +512,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             {/* Main editor area */}
             <div data-tour="main-editor" className="story-workspace flex-1 flex flex-col overflow-hidden bg-[#fbf9f5] w-full">
                 {/* Linked Context (Sticky) */}
-                {activeNodeId && activeScene && (
+                {activeNodeId && activeScene && !isLocalOnly && (
                     <div className="story-workspace-topbar bg-[#fbf9f5] border-b border-slate-100 z-10">
                         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-start sm:items-center justify-between gap-4">
                             <div className="flex-1 snap-row">
@@ -597,8 +604,12 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                         </Badge>
                                     </div>
                                     <p className="text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">
-                                        You've selected the entire {project.type === 'tv_script' ? 'screenplay' : 'book'}. Use the AI Partner to brainstorm across the project, or view project-wide statistics and structure analysis.
+                                        {isLocalOnly
+                                            ? `You've selected the entire ${project.type === 'tv_script' ? 'screenplay' : 'book'}. Choose a scene from the structure to keep writing.`
+                                            : `You've selected the entire ${project.type === 'tv_script' ? 'screenplay' : 'book'}. Use the AI Partner to brainstorm across the project, or view project-wide statistics and structure analysis.`
+                                        }
                                     </p>
+                                    {!isLocalOnly && (
                                     <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
                                         <Button 
                                             onClick={() => statsAction ? statsAction() : router.push(`/project/${project.id}/stats`)}
@@ -629,6 +640,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                             Ask AI Partner
                                         </Button>
                                     </div>
+                                    )}
                                 </div>
                             </div>
                         ) : activeNodeId && activeScene ? (
@@ -648,6 +660,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                 projectObjects={projectObjects}
                                 aiSettings={aiSettings}
                                 allowViewerFeedback={project.allow_viewer_feedback ?? false}
+                                isLocalProject={isLocalOnly}
                             />
                         ) : activeNodeId ? (
                             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center space-y-4 animate-in fade-in duration-500">
@@ -707,7 +720,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             </div>
 
             {/* AI Helper Sidebar */}
-            <div className={cn(
+            {!isLocalOnly && <div className={cn(
                 'story-ai-sidebar bg-white flex flex-col transition-all duration-300 ease-in-out overflow-hidden z-40 md:z-20',
                 'absolute top-0 bottom-0 right-0 md:relative md:inset-auto md:h-full',
                 aiPanelOpen 
@@ -776,7 +789,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                         </button>
                     </div>
                 )}
-            </div>
+            </div>}
 
             {/* Comments Sidebar */}
             <div className={cn(
@@ -853,7 +866,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 onConfirm={() => {
                     setIsConfirmingCost(false)
                     setIsExtremeContext(false)
-                    analyzeScene()
+                    if (!isLocalOnly) analyzeScene()
                 }}
                 onCancel={() => {
                     setIsConfirmingCost(false)

@@ -66,7 +66,7 @@ import {
     Image as ImageIcon,
     X
 } from 'lucide-react'
-import { restoreStructureNode } from '@/lib/supabase/recovery'
+import { restoreRecoveryNode } from '@/lib/persistence/recovery'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { useSpeechToText } from '@/hooks/useSpeechToText'
@@ -132,6 +132,7 @@ interface SceneEditorProps {
     projectObjects: any[]
     aiSettings: any
     allowViewerFeedback?: boolean
+    isLocalProject?: boolean
 }
 
 export interface SceneEditorRef {
@@ -207,6 +208,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     projectObjects,
     aiSettings,
     allowViewerFeedback = false,
+    isLocalProject = false,
 }, ref) => {
     const router = useRouter()
 
@@ -1114,6 +1116,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         }
     }
 
+    const openAssetSelector = () => {
+        setIsAssetSelectorOpen(true)
+    }
+
     // Effect for autosave
     useEffect(() => {
         if (saveStatus !== 'idle' || !isDirty) return
@@ -1212,8 +1218,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         if (isReadOnly) return
         setIsRestoring(true)
         try {
-            const supabase = createClient()
-            await restoreStructureNode(supabase, scene.node_id, [])
+            await restoreRecoveryNode(scene.node_id, [])
             router.refresh()
         } catch (error) {
             console.error('Error restoring scene:', error)
@@ -1787,7 +1792,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                 />
                                 <div className="w-px h-4 bg-slate-200 mx-1" />
                                 <ToolbarButton
-                                    onClick={() => setIsAssetSelectorOpen(true)}
+                                    onClick={openAssetSelector}
                                     active={false}
                                     icon={ImageIcon}
                                     tooltip="Insert Illustration"
@@ -1936,7 +1941,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                 />
                                 <div className="w-px h-4 bg-slate-200 mx-1" />
                                 <ToolbarButton
-                                    onClick={() => setIsAssetSelectorOpen(true)}
+                                    onClick={openAssetSelector}
                                     active={false}
                                     icon={ImageIcon}
                                     tooltip="Insert Illustration"

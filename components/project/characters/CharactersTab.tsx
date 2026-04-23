@@ -28,12 +28,14 @@ export default function CharactersTab({
     projectId,
     projectType = 'novel',
     characters: initialCharacters = [],
-    availableEntities = []
+    availableEntities = [],
+    isLocalProject = false,
 }: {
     projectId: string
     projectType?: string
     characters?: Character[]
     availableEntities?: { id: string; name: string; type: 'character' | 'location' | 'object' }[]
+    isLocalProject?: boolean
 }) {
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'
@@ -484,14 +486,16 @@ export default function CharactersTab({
                             </div>
 
                             {/* Relationships Section */}
-                            <RelationshipManager 
-                                key={selectedCharacter.id}
-                                projectId={projectId}
-                                charId={selectedCharacter.id}
-                                charName={selectedCharacter.name}
-                                availableEntities={availableEntities}
-                                disabled={isReadOnly}
-                            />
+                            {!isLocalProject && (
+                                <RelationshipManager 
+                                    key={selectedCharacter.id}
+                                    projectId={projectId}
+                                    charId={selectedCharacter.id}
+                                    charName={selectedCharacter.name}
+                                    availableEntities={availableEntities}
+                                    disabled={isReadOnly}
+                                />
+                            )}
 
                             {/* Stats/Metatadata section */}
                             <div className="pt-16 flex items-center justify-between relative">

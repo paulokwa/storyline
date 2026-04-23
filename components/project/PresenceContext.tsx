@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { createClient } from '@/lib/supabase/client'
 import { RealtimeChannel } from '@supabase/supabase-js'
 import { getUserSafely } from '@/lib/supabase/client-auth'
+import { isLocalProjectId } from '@/lib/persistence/project-mode'
 
 export type PresenceStatus = 'viewing' | 'editing'
 
@@ -45,6 +46,7 @@ export function PresenceProvider({
     children: React.ReactNode,
     currentSceneId: string | null
 }) {
+    const isLocalOnly = isLocalProjectId(projectId)
     const [presenceUsers, setPresenceUsers] = useState<PresenceUser[]>([])
     const [myStatus, setMyStatus] = useState<PresenceStatus>('viewing')
     const channelRef = useRef<RealtimeChannel | null>(null)
@@ -54,16 +56,18 @@ export function PresenceProvider({
     const [user, setUser] = useState<any>(null)
 
     useEffect(() => {
+        if (isLocalOnly) return
+
         void getUserSafely(supabase)
             .then(({ user }) => setUser(user))
             .catch((error) => {
                 console.error('Failed to load presence user:', error)
                 setUser(null)
             })
-    }, [supabase])
+    }, [isLocalOnly, supabase])
 
     useEffect(() => {
-        if (!user || !projectId) return
+        if (isLocalOnly || !user || !projectId) return
 
         const channel = supabase.channel(`project:${projectId}`, {
             config: {
@@ -101,10 +105,11 @@ export function PresenceProvider({
             channelRef.current = null
             setPresenceUsers([])
         }
-    }, [projectId, supabase, user])
+    }, [isLocalOnly, projectId, supabase, user])
 
     // Update presence when my state changes
     useEffect(() => {
+        if (isLocalOnly) return
         if (channelRef.current && user) {
             channelRef.current.track({
                 user_id: user.id,
@@ -115,7 +120,7 @@ export function PresenceProvider({
                 last_active: Date.now()
             })
         }
-    }, [currentSceneId, myStatus, user])
+    }, [currentSceneId, isLocalOnly, myStatus, user])
 
     const activeSceneUsers = presenceUsers.filter(u => u.scene_id === currentSceneId && u.user_id !== user?.id)
 

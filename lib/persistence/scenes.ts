@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/client'
 import { getUserSafely } from '@/lib/supabase/client-auth'
 import { captureSceneVersion } from '@/lib/supabase/recovery'
+import { getLocalRecord, getLocalRecordsByNodeId, putLocalRecord, LOCAL_STORE_NAMES } from '@/lib/persistence/local-db'
+import { isLocalProjectId } from '@/lib/persistence/project-mode'
 import type { Database } from '@/lib/supabase/types'
 
 type SceneRow = Database['public']['Tables']['scenes']['Row']
@@ -30,6 +32,42 @@ export async function saveSceneContent({
     currentTitle,
     initialTitle,
 }: SaveSceneContentInput): Promise<SaveSceneContentResult> {
+    if (isLocalProjectId(scene.project_id)) {
+        const storedScene = await getLocalRecord<SceneRow>(LOCAL_STORE_NAMES.scenes, scene.id)
+        if (!storedScene) {
+            return { status: 'error', error: new Error('Local scene not found.') }
+        }
+
+        if (storedScene.version !== localVersion) {
+            return { status: 'conflict' }
+        }
+
+        const updatedScene: SceneRow = {
+            ...storedScene,
+            content: (content as SceneContent) ?? null,
+            updated_at: new Date().toISOString(),
+            version: localVersion + 1,
+        }
+
+        await putLocalRecord(LOCAL_STORE_NAMES.scenes, updatedScene)
+
+        if (currentTitle !== initialTitle) {
+            const storedNode = await getLocalRecord<Database['public']['Tables']['structure_nodes']['Row']>(LOCAL_STORE_NAMES.structureNodes, scene.node_id)
+            if (storedNode) {
+                await putLocalRecord(LOCAL_STORE_NAMES.structureNodes, {
+                    ...storedNode,
+                    title: currentTitle,
+                })
+            }
+        }
+
+        return {
+            status: 'saved',
+            savedVersion: localVersion + 1,
+            userId: null,
+        }
+    }
+
     const supabase = createClient()
     const { user } = await getUserSafely(supabase)
 
@@ -75,6 +113,19 @@ export async function restoreSceneVersion(
     sceneId: string,
     content: unknown
 ) {
+    if (isLocalProjectId(projectId)) {
+        const scene = await getLocalRecord<SceneRow>(LOCAL_STORE_NAMES.scenes, sceneId)
+        if (!scene) throw new Error('Local scene not found.')
+
+        await putLocalRecord(LOCAL_STORE_NAMES.scenes, {
+            ...scene,
+            content: content as SceneContent,
+            updated_at: new Date().toISOString(),
+            version: (scene.version ?? 1) + 1,
+        })
+        return
+    }
+
     const supabase = createClient()
     const { data: currentScene } = await supabase
         .from('scenes')
@@ -98,6 +149,19 @@ export async function restoreSceneVersion(
 }
 
 export async function insertContentIntoSceneNode(sceneNodeId: string, contentToAppend: string) {
+    if (isLocalProjectId(sceneNodeId)) {
+        const [scene] = await getLocalRecordsByNodeId<SceneRow>(LOCAL_STORE_NAMES.scenes, sceneNodeId)
+        if (scene) {
+            const currentContent = (scene as { content?: string | null }).content || ''
+            await putLocalRecord(LOCAL_STORE_NAMES.scenes, {
+                ...scene,
+                content: `${currentContent}<p>${contentToAppend.replace(/\n/g, '<br>')}</p>`,
+                updated_at: new Date().toISOString(),
+            })
+            return
+        }
+    }
+
     const supabase = createClient()
     const { data: scene, error: fetchError } = await supabase
         .from('scenes')

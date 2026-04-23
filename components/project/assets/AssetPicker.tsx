@@ -14,6 +14,15 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import {
+    deleteLocalProjectAsset,
+    getLocalAssetUrl,
+    getLocalPrimaryEntityAsset,
+    listLocalProjectAssets,
+    removeLocalPrimaryEntityAsset,
+    setLocalPrimaryEntityAsset,
+} from '@/lib/persistence/local-assets'
+import { isLocalProjectId } from '@/lib/persistence/project-mode'
 
 import { Tables } from '@/lib/supabase/types'
 
@@ -28,6 +37,7 @@ interface AssetPickerProps {
 }
 
 export default function AssetPicker({ projectId, entityId, entityType, className, disabled = false }: AssetPickerProps) {
+    const isLocalOnly = isLocalProjectId(projectId)
     const [selectedAsset, setSelectedAsset] = useState<ProjectAsset | null>(null)
     const [loading, setLoading] = useState(true)
     const [isSelecting, setIsSelecting] = useState(false)
@@ -44,6 +54,11 @@ export default function AssetPicker({ projectId, entityId, entityType, className
     async function fetchAttachedAsset() {
         setLoading(true)
         try {
+            if (isLocalOnly) {
+                setSelectedAsset(await getLocalPrimaryEntityAsset(entityId))
+                return
+            }
+
             const { data, error } = await supabase
                 .from('entity_assets')
                 .select('asset:project_assets(*)')
@@ -65,6 +80,11 @@ export default function AssetPicker({ projectId, entityId, entityType, className
         setIsSelecting(true)
         setFetchingAssets(true)
         try {
+            if (isLocalOnly) {
+                setAvailableAssets(await listLocalProjectAssets(projectId))
+                return
+            }
+
             const { data, error } = await supabase
                 .from('project_assets')
                 .select('*')
@@ -85,6 +105,14 @@ export default function AssetPicker({ projectId, entityId, entityType, className
     async function attachAsset(assetId: string) {
         if (disabled) return
         try {
+            if (isLocalOnly) {
+                await setLocalPrimaryEntityAsset(projectId, entityId, entityType, assetId)
+                setIsSelecting(false)
+                await fetchAttachedAsset()
+                toast.success('Asset linked')
+                return
+            }
+
             // 1. Unset any existing primary
             await supabase
                 .from('entity_assets')
@@ -119,6 +147,14 @@ export default function AssetPicker({ projectId, entityId, entityType, className
         setIsDeletingAsset(true)
 
         try {
+            if (isLocalOnly) {
+                await deleteLocalProjectAsset(asset.id)
+                setAvailableAssets(prev => prev.filter(a => a.id !== asset.id))
+                if (selectedAsset?.id === asset.id) setSelectedAsset(null)
+                toast.success('Asset deleted')
+                return
+            }
+
             await supabase.storage.from('project-assets').remove([asset.storage_path])
             const { error } = await supabase.from('project_assets').delete().eq('id', asset.id)
             if (error) throw error
@@ -138,6 +174,13 @@ export default function AssetPicker({ projectId, entityId, entityType, className
     async function removeAsset() {
         if (disabled) return
         try {
+            if (isLocalOnly) {
+                await removeLocalPrimaryEntityAsset(entityId)
+                setSelectedAsset(null)
+                toast.success('Asset unlinked')
+                return
+            }
+
             const { error } = await supabase
                 .from('entity_assets')
                 .delete()
@@ -154,7 +197,7 @@ export default function AssetPicker({ projectId, entityId, entityType, className
     }
 
     const getImageUrl = (path: string) => {
-        return supabase.storage.from('project-assets').getPublicUrl(path).data.publicUrl
+        return isLocalOnly ? getLocalAssetUrl({ storage_path: path }) : supabase.storage.from('project-assets').getPublicUrl(path).data.publicUrl
     }
 
     if (loading) {

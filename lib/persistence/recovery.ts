@@ -9,7 +9,15 @@ import {
     restoreProjectSnapshot,
     restoreStructureNode,
 } from '@/lib/supabase/recovery'
+import {
+    clearLocalRecoveryTrash,
+    permanentlyDeleteLocalRecoveryTrashItem,
+    restoreLocalRecoveryComment,
+    restoreLocalRecoveryEntity,
+    restoreLocalRecoveryNode,
+} from '@/lib/persistence/local-recovery'
 import { restoreSceneVersion } from '@/lib/persistence/scenes'
+import { isLocalProjectId } from '@/lib/persistence/project-mode'
 
 type RecoveryTrashItem = {
     id: string
@@ -21,16 +29,31 @@ type RecoveryTrashItem = {
 type RecoveryEntityTable = 'characters' | 'ideas' | 'locations' | 'objects' | 'ai_responses'
 
 export async function restoreRecoveryNode(nodeId: string, descendantIds: string[]) {
+    if (isLocalProjectId(nodeId)) {
+        await restoreLocalRecoveryNode(nodeId, descendantIds)
+        return
+    }
+
     const supabase = createClient()
     await restoreStructureNode(supabase, nodeId, descendantIds)
 }
 
 export async function restoreRecoveryEntity(table: RecoveryEntityTable, id: string) {
+    if (isLocalProjectId(id) && table !== 'ai_responses') {
+        await restoreLocalRecoveryEntity(table, id)
+        return
+    }
+
     const supabase = createClient()
     await restoreEntity(supabase, table, id)
 }
 
 export async function restoreRecoveryComment(id: string) {
+    if (isLocalProjectId(id)) {
+        await restoreLocalRecoveryComment(id)
+        return
+    }
+
     const supabase = createClient()
     await restoreDeletedComment(supabase as never, id)
 }
@@ -40,6 +63,10 @@ export async function restoreRecoverySceneVersion(projectId: string, version: { 
 }
 
 export async function createRecoverySnapshot(projectId: string, name: string, description?: string) {
+    if (isLocalProjectId(projectId)) {
+        throw new Error('Snapshots are not available for local-only projects yet.')
+    }
+
     const supabase = createClient()
     await createProjectSnapshot(supabase, projectId, name, description)
 }
@@ -56,6 +83,11 @@ export async function deleteRecoverySnapshot(snapshotId: string) {
 }
 
 export async function permanentlyDeleteRecoveryTrashItem(item: RecoveryTrashItem) {
+    if (isLocalProjectId(item.id)) {
+        await permanentlyDeleteLocalRecoveryTrashItem(item)
+        return
+    }
+
     const supabase = createClient()
     await permanentlyDeleteTrashItem(supabase, item.trashType, item.id, item.typeLabel)
 }
@@ -66,6 +98,7 @@ export async function permanentlyDeleteRecoveryHistoryVersion(versionId: string)
 }
 
 export async function clearRecoveryTrash(input: {
+    projectId?: string
     deletedNodes: Array<{ id: string }>
     deletedCharacters: Array<{ id: string }>
     deletedIdeas: Array<{ id: string }>
@@ -74,6 +107,11 @@ export async function clearRecoveryTrash(input: {
     deletedResponses: Array<{ id: string }>
     deletedComments: Array<{ id: string; can_permanently_delete?: boolean }>
 }) {
+    if (input.projectId && isLocalProjectId(input.projectId)) {
+        await clearLocalRecoveryTrash(input.projectId)
+        return
+    }
+
     const supabase = createClient()
     const nodesToDelete = input.deletedNodes.map((node) => node.id)
     if (nodesToDelete.length > 0) {

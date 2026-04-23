@@ -22,11 +22,14 @@ type Idea = Database['public']['Tables']['ideas']['Row']
 
 export default function IdeasTab({
     projectId,
-    ideas: initialIdeas = []
+    ideas: initialIdeas = [],
+    isLocalProject = false
 }: {
     projectId: string
     ideas?: Idea[]
+    isLocalProject?: boolean
 }) {
+    void isLocalProject
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'
     const [localIdeas, setLocalIdeas] = useState<Idea[]>(initialIdeas)

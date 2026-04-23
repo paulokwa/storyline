@@ -39,6 +39,7 @@ import {
     restoreRecoverySceneVersion,
     restoreRecoverySnapshot,
 } from '@/lib/persistence/recovery'
+import { isLocalProjectId } from '@/lib/persistence/project-mode'
 import { useRouter } from 'next/navigation'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { SanctuarySelect } from '@/components/ui/sanctuary-select'
@@ -73,6 +74,7 @@ export default function RecoveryTab({
     historyEntries,
     snapshots
 }: RecoveryTabProps) {
+    const isLocalProject = isLocalProjectId(projectId)
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'
     const router = useRouter()
@@ -106,7 +108,9 @@ export default function RecoveryTab({
         const section = searchParams.get('section')
         const sceneId = searchParams.get('sceneId')
         
-        if (section === 'history') {
+        if (isLocalProject) {
+            setActiveSection('trash')
+        } else if (section === 'history') {
             setActiveSection('history')
         } else if (section === 'snapshots') {
             setActiveSection('snapshots')
@@ -115,7 +119,7 @@ export default function RecoveryTab({
         if (sceneId) {
             setSelectedSceneId(sceneId)
         }
-    }, [searchParams])
+    }, [isLocalProject, searchParams])
     // Helper to get descendants for a node
     const getDescendants = (nodeId: string): string[] => {
         const children = allNodes.filter(n => n.parent_id === nodeId)
@@ -260,6 +264,7 @@ export default function RecoveryTab({
         setIsPermanentlyDeleting(true)
         try {
             await clearRecoveryTrash({
+                projectId,
                 deletedNodes,
                 deletedCharacters,
                 deletedIdeas,
@@ -327,6 +332,16 @@ export default function RecoveryTab({
         return Array.from(scenesMap.entries()).map(([id, title]) => ({ id, title }))
     }, [historyEntries])
 
+    const sections = isLocalProject
+        ? [
+            { id: 'trash', label: 'Trash', icon: Trash2 },
+        ]
+        : [
+            { id: 'trash', label: 'Trash', icon: Trash2 },
+            { id: 'history', label: 'History', icon: History },
+            { id: 'snapshots', label: 'Snapshots', icon: Layers },
+        ]
+
     return (
         <div className="recovery-tab recovery-tab-shell flex-1 flex flex-col overflow-hidden bg-[#fbf9f5]">
             {/* Header / Sub-nav */}
@@ -341,11 +356,7 @@ export default function RecoveryTab({
                     </div>
 
                     <div className="flex p-1 bg-white/50 backdrop-blur-sm rounded-2xl border border-slate-200/50 shadow-sm w-full sm:w-fit overflow-x-auto no-scrollbar">
-                        {[
-                            { id: 'trash', label: 'Trash', icon: Trash2 },
-                            { id: 'history', label: 'History', icon: History },
-                            { id: 'snapshots', label: 'Snapshots', icon: Layers }
-                        ].map((s) => (
+                        {sections.map((s) => (
                             <button
                                 key={s.id}
                                 onClick={() => setActiveSection(s.id as RecoverySection)}
@@ -495,7 +506,7 @@ export default function RecoveryTab({
                                 </div>
                             )}
                         </div>
-                    ) : activeSection === 'history' ? (
+                    ) : !isLocalProject && activeSection === 'history' ? (
                         <div className="space-y-8 animate-in fade-in duration-500">
                              {/* History Filters and Search */}
                              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 min-w-0">
@@ -575,7 +586,7 @@ export default function RecoveryTab({
                                  ))}
                              </div>
                         </div>
-                    ) : (
+                    ) : !isLocalProject ? (
                         <div className="space-y-8 animate-in fade-in duration-500">
                             {/* Snapshots Header */}
                             <div className="flex items-center justify-between mb-8">
@@ -642,12 +653,12 @@ export default function RecoveryTab({
                                 })}
                             </div>
                         </div>
-                    )}
+                    ) : null}
                 </div>
             </div>
 
             {/* Modals */}
-            {previewVersion && (
+            {!isLocalProject && previewVersion && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
                     <div className="w-full max-w-4xl bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col h-[85vh]">
                         <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white">
@@ -663,7 +674,7 @@ export default function RecoveryTab({
                 </div>
             )}
 
-            {showCreateModal && (
+            {!isLocalProject && showCreateModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
                     <div className="w-full max-w-md bg-white rounded-[2rem] shadow-2xl p-8">
                         <h3 className="text-xl font-serif italic text-slate-800 mb-6">New Project Snapshot</h3>
@@ -681,7 +692,7 @@ export default function RecoveryTab({
                 </div>
             )}
 
-            {snapshotToRestore && (
+            {!isLocalProject && snapshotToRestore && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-red-900/20 backdrop-blur-sm">
                     <div className="w-full max-w-md bg-white rounded-[2rem] shadow-2xl p-10 text-center">
                         <RotateCcw className="w-12 h-12 text-red-500 mx-auto mb-6" />
@@ -697,7 +708,7 @@ export default function RecoveryTab({
                 </div>
             )}
 
-             {snapshotToDelete && (
+             {!isLocalProject && snapshotToDelete && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
                     <div className="w-full max-w-sm bg-white rounded-3xl p-8 text-center">
                          <h3 className="text-xl font-serif italic text-slate-800 mb-8">Delete Snapshot?</h3>
@@ -729,7 +740,7 @@ export default function RecoveryTab({
                 </div>
             )}
 
-            {versionToDelete && (
+            {!isLocalProject && versionToDelete && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
                     <div className="w-full max-w-sm bg-white rounded-3xl p-8 text-center">
                          <h3 className="text-xl font-serif italic text-slate-800 mb-2">Remove Version?</h3>

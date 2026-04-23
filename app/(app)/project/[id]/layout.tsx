@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import ProjectShell from '@/components/project/ProjectShell'
+import LocalProjectShell from '@/components/project/local/LocalProjectShell'
 import { ProjectProvider } from '@/components/project/ProjectContext'
+import { isLocalProjectId } from '@/lib/persistence/project-mode'
 import type { Database } from '@/lib/supabase/types'
 import { requireVerifiedUser } from '@/lib/supabase/auth'
 
@@ -28,6 +30,21 @@ export default async function ProjectLayout({
     const { id } = await params
     const supabase = await createClient()
     const user = await requireVerifiedUser()
+
+    if (isLocalProjectId(id)) {
+        return (
+            <ProjectProvider role="owner">
+                <LocalProjectShell
+                    projectId={id}
+                    currentUserId={user.id}
+                    currentUserDisplayName={(user.user_metadata?.display_name as string | undefined) ?? null}
+                    currentUserAvatarUrl={(user.user_metadata?.avatar_url as string | undefined) ?? null}
+                >
+                    {children}
+                </LocalProjectShell>
+            </ProjectProvider>
+        )
+    }
 
     const { data: projectData } = await supabase
         .from('projects')

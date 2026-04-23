@@ -1,11 +1,18 @@
 import { createClient } from '@/lib/supabase/server'
+import LocalStoryPage from '@/components/project/local/LocalStoryPage'
 import StoryTab from '@/components/project/story/StoryTab'
 import { requireVerifiedUser } from '@/lib/supabase/auth'
 import { getAiRuntimeState } from '@/lib/ai/runtime'
 import { loadStoryWorkspaceData } from '@/lib/persistence/project-content'
+import { isLocalProjectId } from '@/lib/persistence/project-mode'
 
 export default async function StoryPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
+
+    if (isLocalProjectId(id)) {
+        return <LocalStoryPage projectId={id} />
+    }
+
     const supabase = await createClient()
     const user = await requireVerifiedUser()
     const {
@@ -43,6 +50,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
                 api_key: runtime.aiSettings?.api_key ?? null,
                 trial: runtime.trialAccount,
             }}
+            storageMode="cloud-enabled"
         />
     )
 }

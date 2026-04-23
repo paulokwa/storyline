@@ -18,6 +18,14 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import {
+    deleteLocalProjectAsset,
+    getLocalAssetUrl,
+    listLocalProjectAssets,
+    listLocalSceneAssets,
+    toggleLocalSceneAsset,
+} from '@/lib/persistence/local-assets'
+import { isLocalProjectId } from '@/lib/persistence/project-mode'
 
 import { Tables } from '@/lib/supabase/types'
 
@@ -36,6 +44,7 @@ interface SceneAssetsPanelProps {
 }
 
 export default function SceneAssetsPanel({ projectId, sceneId, onClose }: SceneAssetsPanelProps) {
+    const isLocalOnly = isLocalProjectId(projectId)
     const [attachedAssets, setAttachedAssets] = useState<SceneAsset[]>([])
     const [loading, setLoading] = useState(true)
     const [isSelecting, setIsSelecting] = useState(false)
@@ -56,6 +65,11 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose }: SceneA
     async function fetchAttachedAssets() {
         setLoading(true)
         try {
+            if (isLocalOnly) {
+                setAttachedAssets(await listLocalSceneAssets(sceneId))
+                return
+            }
+
             const { data, error } = await supabase
                 .from('scene_assets')
                 .select('id, asset_id, asset:project_assets(*)')
@@ -75,6 +89,11 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose }: SceneA
         setIsSelecting(true)
         setFetchingAssets(true)
         try {
+            if (isLocalOnly) {
+                setAvailableAssets(await listLocalProjectAssets(projectId))
+                return
+            }
+
             const { data, error } = await supabase
                 .from('project_assets')
                 .select('*')
@@ -96,6 +115,12 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose }: SceneA
         const existing = attachedAssets.find(a => a.asset_id === assetId)
         
         try {
+            if (isLocalOnly) {
+                await toggleLocalSceneAsset(projectId, sceneId, assetId)
+                await fetchAttachedAssets()
+                return
+            }
+
             if (existing) {
                 const { error } = await supabase
                     .from('scene_assets')
@@ -129,6 +154,14 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose }: SceneA
         setIsDeleting(true)
 
         try {
+            if (isLocalOnly) {
+                await deleteLocalProjectAsset(asset.id)
+                setAvailableAssets(prev => prev.filter(a => a.id !== asset.id))
+                setAttachedAssets(prev => prev.filter(a => a.asset_id !== asset.id))
+                toast.success('Asset deleted')
+                return
+            }
+
             await supabase.storage.from('project-assets').remove([asset.storage_path])
             const { error } = await supabase.from('project_assets').delete().eq('id', asset.id)
             if (error) throw error
@@ -146,7 +179,7 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose }: SceneA
     }
 
     const getImageUrl = (path: string) => {
-        return supabase.storage.from('project-assets').getPublicUrl(path).data.publicUrl
+        return isLocalOnly ? getLocalAssetUrl({ storage_path: path }) : supabase.storage.from('project-assets').getPublicUrl(path).data.publicUrl
     }
 
     const filteredAvailable = availableAssets.filter(a => 

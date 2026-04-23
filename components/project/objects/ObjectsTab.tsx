@@ -22,10 +22,12 @@ type StoryObject = any // Flexibility for custom schema
 
 export default function ObjectsTab({
     projectId,
-    objects: initialObjects = []
+    objects: initialObjects = [],
+    isLocalProject = false
 }: {
     projectId: string
     objects?: any[]
+    isLocalProject?: boolean
 }) {
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'

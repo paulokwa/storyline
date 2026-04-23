@@ -22,10 +22,12 @@ type Location = any // Flexibility for custom schema
 
 export default function LocationsTab({
     projectId,
-    locations: initialLocations = []
+    locations: initialLocations = [],
+    isLocalProject = false
 }: {
     projectId: string
     locations?: any[]
+    isLocalProject?: boolean
 }) {
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'

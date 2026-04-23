@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -44,12 +44,16 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from '@/components/providers/ThemeProvider'
+import { destroyLocalProject, listLocalProjects, restoreLocalProject, softDeleteLocalProject, updateLocalProject } from '@/lib/persistence/local-projects'
+import { isLocalProjectId } from '@/lib/persistence/project-mode'
 
 // Explicitly extend the Project type with fields added via recent migrations
 type Project = Database['public']['Tables']['projects']['Row'] & {
     role?: 'owner' | 'editor' | 'viewer'
     order_index?: number | null
     cover_url?: string | null
+    is_local?: boolean
+    storage_mode?: 'local-only' | 'cloud-enabled'
     members?: Array<{
         user_id: string
         role: string
@@ -71,22 +75,46 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
     const router = useRouter()
     const { theme } = useTheme()
     const isMidnight = theme === 'midnight'
+    const [localProjects, setLocalProjects] = useState<Project[]>([])
+    const [localProjectsLoaded, setLocalProjectsLoaded] = useState(false)
     const [draft, setDraft] = useState<{ state: any; step: any } | null>(null)
     const [confirmDeleteDraft, setConfirmDeleteDraft] = useState(false)
     const [view, setView] = useState<'active' | 'trash'>('active')
     const [sortFilter, setSortFilter] = useState<'custom' | 'recent' | 'az'>('custom')
     
     // Local state for dragging
-    const [orderedActive, setOrderedActive] = useState<Project[]>(projects)
-    const [orderedTrash, setOrderedTrash] = useState<Project[]>(deletedProjects)
+    const [orderedActive, setOrderedActive] = useState<Project[]>([])
+    const [orderedTrash, setOrderedTrash] = useState<Project[]>([])
+
+    const refreshLocalProjects = useCallback(async () => {
+        try {
+            const nextLocalProjects = await listLocalProjects()
+            setLocalProjects(nextLocalProjects.map((project) => ({
+                ...project,
+                role: 'owner',
+                members: [],
+                is_local: true,
+                storage_mode: 'local-only',
+            })))
+        } catch (error) {
+            console.error('Failed to load local projects:', error)
+            setLocalProjects([])
+        } finally {
+            setLocalProjectsLoaded(true)
+        }
+    }, [])
 
     useEffect(() => {
-        setOrderedActive(projects)
-    }, [projects])
+        void refreshLocalProjects()
+    }, [refreshLocalProjects])
 
     useEffect(() => {
-        setOrderedTrash(deletedProjects)
-    }, [deletedProjects])
+        setOrderedActive([...projects, ...localProjects.filter((project) => !project.deleted_at)])
+    }, [localProjects, projects])
+
+    useEffect(() => {
+        setOrderedTrash([...deletedProjects, ...localProjects.filter((project) => !!project.deleted_at)])
+    }, [deletedProjects, localProjects])
 
     useEffect(() => {
         const saved = localStorage.getItem('storyline-new-project-draft')
@@ -171,16 +199,20 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
         reorderedItem.order_index = newIndex
         setSourceList(items)
 
-        // Persist to DB
-        const supabase = createClient()
-        await supabase.from('projects')
-            .update({ order_index: newIndex } as any)
-            .eq('id', reorderedItem.id)
-        
-        router.refresh()
+        if (isLocalProjectId(reorderedItem.id)) {
+            await updateLocalProject(reorderedItem.id, { order_index: newIndex })
+            await refreshLocalProjects()
+        } else {
+            const supabase = createClient()
+            await supabase.from('projects')
+                .update({ order_index: newIndex } as any)
+                .eq('id', reorderedItem.id)
+            
+            router.refresh()
+        }
     }
 
-    if (projects.length === 0 && !draft) {
+    if (localProjectsLoaded && orderedActive.length === 0 && !draft) {
         return (
             <div className="library-grid-shell max-w-[1440px] mx-auto px-6 py-24 text-center fade-in">
                 <div className={cn("w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8", isMidnight ? "bg-slate-800/80 border border-slate-700/60" : "bg-stone-100")}>
@@ -435,6 +467,7 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
                                                                 mode={view} 
                                                                 dragHandleProps={sortFilter === 'custom' ? dragProvided.dragHandleProps : undefined}
                                                                 isDragging={snapshot.isDragging}
+                                                                onLocalProjectChange={refreshLocalProjects}
                                                             />
                                                         </motion.div>
                                                     )}
@@ -462,15 +495,17 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
     )
 }
 
-function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging }: { 
+function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, onLocalProjectChange }: { 
     project: Project, 
     mode?: 'active' | 'trash', 
     dragHandleProps?: any,
-    isDragging?: boolean
+    isDragging?: boolean,
+    onLocalProjectChange?: () => Promise<void>
 }) {
     const router = useRouter()
     const resolvedProjectType = project.project_type || project.type
     const isTV = resolvedProjectType === 'tv_script'
+    const isLocalProject = project.storage_mode === 'local-only' || isLocalProjectId(project.id)
     const [confirmDelete, setConfirmDelete] = useState(false)
     const [isActionInProgress, setIsActionInProgress] = useState(false)
     const [isEditingCover, setIsEditingCover] = useState(false)
@@ -493,24 +528,39 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging }: 
         e.preventDefault()
         e.stopPropagation()
         setIsActionInProgress(true)
-        const supabase = createClient()
-        
-        if (mode === 'active') {
-            await supabase.from('projects').update({ deleted_at: new Date().toISOString() }).eq('id', project.id)
+
+        if (isLocalProject) {
+            if (mode === 'active') {
+                await softDeleteLocalProject(project.id)
+            } else {
+                await destroyLocalProject(project.id)
+            }
+            await onLocalProjectChange?.()
         } else {
-            await supabase.from('projects').delete().eq('id', project.id)
+            const supabase = createClient()
+            
+            if (mode === 'active') {
+                await supabase.from('projects').update({ deleted_at: new Date().toISOString() }).eq('id', project.id)
+            } else {
+                await supabase.from('projects').delete().eq('id', project.id)
+            }
+            
+            router.refresh()
         }
-        
-        router.refresh()
     }
 
     async function handleRestore(e: React.MouseEvent) {
         e.preventDefault()
         e.stopPropagation()
         setIsActionInProgress(true)
-        const supabase = createClient()
-        await supabase.from('projects').update({ deleted_at: null }).eq('id', project.id)
-        router.refresh()
+        if (isLocalProject) {
+            await restoreLocalProject(project.id)
+            await onLocalProjectChange?.()
+        } else {
+            const supabase = createClient()
+            await supabase.from('projects').update({ deleted_at: null }).eq('id', project.id)
+            router.refresh()
+        }
     }
 
     return (
@@ -609,7 +659,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging }: 
                                             <Sparkles className="w-5 h-5" />
                                         </button>
                                     )}
-                                    {mode === 'active' && (
+                                    {mode === 'active' && !isLocalProject && (
                                         <>
                                             <button
                                                 onClick={e => { e.preventDefault(); e.stopPropagation(); setIsSettingsOpen(true) }}
@@ -678,6 +728,14 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging }: 
                                  hasCover ? "border-white/20 text-white/60 bg-white/5 backdrop-blur-md" : "border-amber-100 text-amber-600 bg-amber-50/30"
                              )}>
                                 Owner
+                            </Badge>
+                        )}
+                        {isLocalProject && (
+                             <Badge variant="outline" className={cn(
+                                 "text-[9px] uppercase tracking-wider py-0 px-2 font-bold",
+                                 hasCover ? "border-white/20 text-white/60 bg-white/5 backdrop-blur-md" : "border-emerald-100 text-emerald-600 bg-emerald-50/30"
+                             )}>
+                                Local Only
                             </Badge>
                         )}
 
@@ -770,22 +828,26 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging }: 
                 <div className="absolute top-0 right-0 w-32 h-32 rounded-full -mr-16 -mt-16 transition-all duration-700 bg-stone-50/50 group-hover:bg-primary/5" />
             )}
 
-            <CoverEditModal 
-                project={{
-                    id: project.id,
-                    title: project.title || '',
-                    cover_url: project.cover_url || ''
-                }}
-                isOpen={isEditingCover}
-                onOpenChange={setIsEditingCover}
-            />
+            {!isLocalProject && (
+                <>
+                    <CoverEditModal 
+                        project={{
+                            id: project.id,
+                            title: project.title || '',
+                            cover_url: project.cover_url || ''
+                        }}
+                        isOpen={isEditingCover}
+                        onOpenChange={setIsEditingCover}
+                    />
 
-            <ProjectSettingsModal
-                open={isSettingsOpen}
-                onOpenChange={setIsSettingsOpen}
-                project={project}
-                role={project.role ?? 'owner'}
-            />
+                    <ProjectSettingsModal
+                        open={isSettingsOpen}
+                        onOpenChange={setIsSettingsOpen}
+                        project={project}
+                        role={project.role ?? 'owner'}
+                    />
+                </>
+            )}
         </div>
     )
 }

@@ -10,6 +10,8 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { getLocalAssetUrl, listLocalProjectAssets } from '@/lib/persistence/local-assets'
+import { isLocalProjectId } from '@/lib/persistence/project-mode'
 
 import { Tables } from '@/lib/supabase/types'
 
@@ -23,6 +25,7 @@ interface EditorAssetSelectorProps {
 }
 
 export default function EditorAssetSelector({ projectId, isOpen, onClose, onSelect }: EditorAssetSelectorProps) {
+    const isLocalOnly = isLocalProjectId(projectId)
     const [assets, setAssets] = useState<ProjectAsset[]>([])
     const [loading, setLoading] = useState(false)
     const supabase = createClient()
@@ -36,6 +39,11 @@ export default function EditorAssetSelector({ projectId, isOpen, onClose, onSele
     const fetchAssets = async () => {
         setLoading(true)
         try {
+            if (isLocalOnly) {
+                setAssets(await listLocalProjectAssets(projectId))
+                return
+            }
+
             const { data, error } = await supabase
                 .from('project_assets')
                 .select('*')
@@ -54,7 +62,7 @@ export default function EditorAssetSelector({ projectId, isOpen, onClose, onSele
     }
 
     const getImageUrl = (path: string) => {
-        return supabase.storage.from('project-assets').getPublicUrl(path).data.publicUrl
+        return isLocalOnly ? getLocalAssetUrl({ storage_path: path }) : supabase.storage.from('project-assets').getPublicUrl(path).data.publicUrl
     }
 
     if (!isOpen) return null

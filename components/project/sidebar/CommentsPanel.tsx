@@ -34,6 +34,7 @@ import { cn, getUserColor } from '@/lib/utils'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { createClient } from '@/lib/supabase/client'
 import { getUserSafely } from '@/lib/supabase/client-auth'
+import { isLocalProjectId } from '@/lib/persistence/project-mode'
 import { toast } from 'sonner'
 
 function getAiLinkMode(link: any): 'single' | 'thread' {
@@ -90,6 +91,7 @@ export default function CommentsPanel({
     onClose?: () => void
 }) {
     const router = useRouter()
+    const isLocalOnly = isLocalProjectId(projectId)
     const { 
         comments, 
         setComments,
@@ -138,9 +140,20 @@ export default function CommentsPanel({
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
     useEffect(() => {
+        if (isLocalOnly && ['new', 'collaborators', 'ai', 'hidden'].includes(authorFilter)) {
+            setAuthorFilter('all')
+        }
+    }, [authorFilter, isLocalOnly])
+
+    useEffect(() => {
         let cancelled = false
 
         async function refreshLinkedAiIdeas() {
+            if (isLocalOnly) {
+                if (!cancelled) setLinkedAiIdeaIds(new Set())
+                return
+            }
+
             if (!activeSceneId) {
                 if (!cancelled) setLinkedAiIdeaIds(new Set())
                 return
@@ -166,12 +179,16 @@ export default function CommentsPanel({
         return () => {
             cancelled = true
         }
-    }, [activeSceneId, supabase])
+    }, [activeSceneId, isLocalOnly, supabase])
 
     useEffect(() => {
         let cancelled = false
 
         async function loadThreadPreferences() {
+            if (isLocalOnly) {
+                setHiddenThreadIds(new Set())
+                return
+            }
             if (!currentUserId) return
 
             const { data, error } = await (supabase as any)
@@ -195,9 +212,14 @@ export default function CommentsPanel({
         return () => {
             cancelled = true
         }
-    }, [currentUserId, projectId, supabase])
+    }, [currentUserId, isLocalOnly, projectId, supabase])
 
     useEffect(() => {
+        if (isLocalOnly) {
+            setUnreadNotificationCommentIds(new Set())
+            return
+        }
+
         if (!currentUserId) {
             setUnreadNotificationCommentIds(new Set())
             return
@@ -247,7 +269,7 @@ export default function CommentsPanel({
             cancelled = true
             void channel.unsubscribe()
         }
-    }, [currentUserId, projectId, supabase])
+    }, [currentUserId, isLocalOnly, projectId, supabase])
 
     const addedCommentIds = useMemo(() => {
         if (!activeSceneId || linkedAiIdeaIds.size === 0) return new Set<string>()
@@ -499,9 +521,9 @@ export default function CommentsPanel({
 
     const canReorderComments = role !== 'viewer'
 
-    const canViewerLeaveFeedback = role !== 'viewer' || allowViewerFeedback
+    const canViewerLeaveFeedback = isLocalOnly ? true : (role !== 'viewer' || allowViewerFeedback)
     const canReplyToComments = role === 'owner' || role === 'editor'
-    const canAddFeedbackToAssistant = role === 'owner' || role === 'editor'
+    const canAddFeedbackToAssistant = !isLocalOnly && (role === 'owner' || role === 'editor')
     const commentById = useMemo(() => {
         const map = new Map<string, any>()
         comments.forEach(comment => map.set(comment.id, comment))
@@ -611,11 +633,11 @@ export default function CommentsPanel({
     }, [sessionNewCommentIds, unreadNotificationThreadIds])
 
     const filteredComments = useMemo(() => {
-        let list = authorFilter === 'hidden'
+        let list = authorFilter === 'hidden' && !isLocalOnly
             ? [...visibleCommentsByHiddenState.hidden]
             : [...visibleCommentsByHiddenState.visible]
 
-        if (authorFilter === 'new') {
+        if (authorFilter === 'new' && !isLocalOnly) {
             list = list.filter(c => newThreadIds.has(c.id))
         }
 
@@ -623,11 +645,11 @@ export default function CommentsPanel({
             list = list.filter(c => c.author_id === currentUserId)
         }
 
-        if (authorFilter === 'collaborators' && currentUserId) {
+        if (authorFilter === 'collaborators' && !isLocalOnly && currentUserId) {
             list = list.filter(c => c.author_id !== currentUserId)
         }
 
-        if (authorFilter === 'ai') {
+        if (authorFilter === 'ai' && !isLocalOnly) {
             list = list.filter(c => c.anchor_data?.type === 'ai-analysis')
         }
         
@@ -646,7 +668,7 @@ export default function CommentsPanel({
             }
             return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         })
-    }, [authorFilter, visibleCommentsByHiddenState, newThreadIds, activeNodeId, currentUserId, filterByNode, showResolved])
+    }, [authorFilter, visibleCommentsByHiddenState, newThreadIds, activeNodeId, currentUserId, filterByNode, isLocalOnly, showResolved])
 
     // Meta-counts for UI feedback
     const resolvedCount = useMemo(() =>
@@ -831,18 +853,20 @@ export default function CommentsPanel({
             {canFilterByAuthor && (
                 <div className="border-b border-slate-100 px-4 py-3">
                     <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                        <button
-                            type="button"
-                            onClick={() => setAuthorFilter('new')}
-                            className={cn(
-                                "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
-                                authorFilter === 'new'
-                                    ? "bg-slate-900 text-white"
-                                    : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
-                            )}
-                        >
-                            New {newCount}
-                        </button>
+                        {!isLocalOnly && (
+                            <button
+                                type="button"
+                                onClick={() => setAuthorFilter('new')}
+                                className={cn(
+                                    "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
+                                    authorFilter === 'new'
+                                        ? "bg-slate-900 text-white"
+                                        : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                                )}
+                            >
+                                New {newCount}
+                            </button>
+                        )}
                         <button
                             type="button"
                             onClick={() => setAuthorFilter('all')}
@@ -867,42 +891,46 @@ export default function CommentsPanel({
                         >
                             Mine {mineCount}
                         </button>
-                        <button
-                            type="button"
-                            onClick={() => setAuthorFilter('collaborators')}
-                            className={cn(
-                                "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
-                                authorFilter === 'collaborators'
-                                    ? "bg-slate-900 text-white"
-                                    : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
-                            )}
-                        >
-                            Collaborators {collaboratorCount}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setAuthorFilter('ai')}
-                            className={cn(
-                                "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
-                                authorFilter === 'ai'
-                                    ? "bg-slate-900 text-white"
-                                    : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
-                            )}
-                        >
-                            AI {aiCount}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setAuthorFilter('hidden')}
-                            className={cn(
-                                "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
-                                authorFilter === 'hidden'
-                                    ? "bg-slate-900 text-white"
-                                    : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
-                            )}
-                        >
-                            Hidden {hiddenCount}
-                        </button>
+                        {!isLocalOnly && (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={() => setAuthorFilter('collaborators')}
+                                    className={cn(
+                                        "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
+                                        authorFilter === 'collaborators'
+                                            ? "bg-slate-900 text-white"
+                                            : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                                    )}
+                                >
+                                    Collaborators {collaboratorCount}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setAuthorFilter('ai')}
+                                    className={cn(
+                                        "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
+                                        authorFilter === 'ai'
+                                            ? "bg-slate-900 text-white"
+                                            : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                                    )}
+                                >
+                                    AI {aiCount}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setAuthorFilter('hidden')}
+                                    className={cn(
+                                        "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
+                                        authorFilter === 'hidden'
+                                            ? "bg-slate-900 text-white"
+                                            : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                                    )}
+                                >
+                                    Hidden {hiddenCount}
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
             )}
@@ -995,9 +1023,9 @@ export default function CommentsPanel({
                                                             addedThreadCommentIds={addedThreadCommentIds}
                                                             activeSceneId={activeSceneId}
                                                             isHidden={hiddenThreadIds.has(comment.id)}
-                                                            canHideThread={comment.author_id !== currentUserId}
+                                                            canHideThread={!isLocalOnly && comment.author_id !== currentUserId}
                                                             canReply={canReplyToComments}
-                                                            canShareWithGroup={true}
+                                                            canShareWithGroup={!isLocalOnly}
                                                             canAddToAssistant={canAddFeedbackToAssistant}
                                                         />
                                                     </div>
@@ -1045,9 +1073,9 @@ export default function CommentsPanel({
                                                 addedThreadCommentIds={addedThreadCommentIds}
                                                 activeSceneId={activeSceneId}
                                                 isHidden={hiddenThreadIds.has(comment.id)}
-                                                canHideThread={comment.author_id !== currentUserId}
+                                                canHideThread={!isLocalOnly && comment.author_id !== currentUserId}
                                                 canReply={canReplyToComments}
-                                                canShareWithGroup={true}
+                                                canShareWithGroup={!isLocalOnly}
                                                 canAddToAssistant={canAddFeedbackToAssistant}
                                             />
                                         )
@@ -1064,7 +1092,7 @@ export default function CommentsPanel({
             <div className="p-4 pb-24 md:pb-4 border-t border-slate-100 bg-slate-50/50">
                 <div className="relative" suppressHydrationWarning>
                     <textarea
-                        placeholder={canViewerLeaveFeedback ? "Add a thought..." : "The owner has not enabled viewer feedback for this project."}
+                        placeholder={isLocalOnly ? "Add a personal note..." : canViewerLeaveFeedback ? "Add a thought..." : "The owner has not enabled viewer feedback for this project."}
                         value={newCommentText}
                         onChange={(e) => {
                             setNewCommentText(e.target.value)

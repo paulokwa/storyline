@@ -54,6 +54,8 @@ import { FloatingPlayer, ReaderControls } from '@/components/project/story/Reade
 import { ProjectProvider, useProjectActions } from '@/components/project/ProjectContext'
 import { MessageSquare } from 'lucide-react'
 import { PresenceProvider, usePresence } from '@/components/project/PresenceContext'
+import type { ProjectStorageMode } from '@/lib/persistence/project-mode'
+import { updateLocalProject } from '@/lib/persistence/local-projects'
 import {
     Tooltip,
     TooltipContent,
@@ -91,6 +93,10 @@ const TABS = [
     { slug: 'recovery', label: 'Recovery', icon: History },
 ] as const
 
+const LOCAL_ONLY_TABS = TABS.filter(({ slug }) =>
+    ['story', 'characters', 'ideas', 'locations', 'objects', 'assets', 'recovery'].includes(slug)
+)
+
 function splitReaderBlocks(text: string): string[] {
     return text
         .split(/\n{2,}/)
@@ -104,6 +110,7 @@ export default function ProjectShell({
     owner,
     members,
     role = 'owner',
+    storageMode = 'cloud-enabled',
     children,
 }: {
     project: Project
@@ -111,6 +118,7 @@ export default function ProjectShell({
     owner: ProjectOwner
     members: ProjectMemberSummary[]
     role?: 'owner' | 'editor' | 'viewer'
+    storageMode?: ProjectStorageMode
     children: React.ReactNode
 }) {
     const pathname = usePathname()
@@ -124,9 +132,17 @@ export default function ProjectShell({
     const [shortcutsOpen, setShortcutsOpen] = useState(false)
     const [tourOpen, setTourOpen] = useState(false)
     const onboardingStorageKey = `storyline-onboarding:${currentUserId}:${project.type}`
+    const isLocalOnly = storageMode === 'local-only'
 
     async function saveTitle() {
         if (!titleDraft.trim()) return setEditingTitle(false)
+        if (isLocalOnly) {
+            const data = await updateLocalProject(project.id, { title: titleDraft.trim() })
+            setProject(data as Project)
+            setEditingTitle(false)
+            return
+        }
+
         const supabase = createClient()
         const { data } = await supabase
             .from('projects')
@@ -158,6 +174,8 @@ export default function ProjectShell({
     }, [pathname])
 
     useEffect(() => {
+        if (isLocalOnly) return
+
         const supabase = createClient()
         const channel = supabase
             .channel(`project-members:${project.id}`)
@@ -174,7 +192,7 @@ export default function ProjectShell({
         return () => {
             channel.unsubscribe()
         }
-    }, [project.id, router])
+    }, [isLocalOnly, project.id, router])
 
     const { activeNodeId } = useProjectActions()
 
@@ -198,6 +216,7 @@ export default function ProjectShell({
                         shortcutsOpen={shortcutsOpen}
                         setShortcutsOpen={setShortcutsOpen}
                         role={role}
+                        storageMode={storageMode}
                         pathname={pathname} 
                         onStartTour={() => setTourOpen(true)}
                     >
@@ -220,36 +239,40 @@ export default function ProjectShell({
                             />
                         )}
                         
-                        <ExportModal 
-                            open={exportModalOpen} 
-                            onOpenChange={setExportModalOpen} 
-                            projectId={project.id}
-                            projectTitle={project.title ?? 'Untitled'}
-                            projectType={project.type as any}
-                            role={role}
-                            allowCollaboratorExports={project.allow_collaborator_exports ?? false}
-                            onOpenSettings={() => {
-                                setExportModalOpen(false)
-                                setSettingsModalOpen(true)
-                            }}
-                        />
-                        
-                        <ProjectSettingsModal 
-                            open={settingsModalOpen} 
-                            onOpenChange={setSettingsModalOpen} 
-                            project={project} 
-                            role={role}
-                            onOpenShare={() => {
-                                setSettingsModalOpen(false)
-                                setShareModalOpen(true)
-                            }}
-                        />
+                        {!isLocalOnly && (
+                            <>
+                                <ExportModal 
+                                    open={exportModalOpen} 
+                                    onOpenChange={setExportModalOpen} 
+                                    projectId={project.id}
+                                    projectTitle={project.title ?? 'Untitled'}
+                                    projectType={project.type as any}
+                                    role={role}
+                                    allowCollaboratorExports={project.allow_collaborator_exports ?? false}
+                                    onOpenSettings={() => {
+                                        setExportModalOpen(false)
+                                        setSettingsModalOpen(true)
+                                    }}
+                                />
+                                
+                                <ProjectSettingsModal 
+                                    open={settingsModalOpen} 
+                                    onOpenChange={setSettingsModalOpen} 
+                                    project={project} 
+                                    role={role}
+                                    onOpenShare={() => {
+                                        setSettingsModalOpen(false)
+                                        setShareModalOpen(true)
+                                    }}
+                                />
 
-                        <ShareModal
-                            open={shareModalOpen}
-                            onOpenChange={setShareModalOpen}
-                            projectId={project.id}
-                        />
+                                <ShareModal
+                                    open={shareModalOpen}
+                                    onOpenChange={setShareModalOpen}
+                                    projectId={project.id}
+                                />
+                            </>
+                        )}
 
                         <ShortcutsLegend 
                             open={shortcutsOpen} 
@@ -284,6 +307,7 @@ function ProjectShellInner({
     shortcutsOpen,
     setShortcutsOpen,
     role,
+    storageMode,
     pathname, 
     onStartTour,
     children 
@@ -307,19 +331,37 @@ function ProjectShellInner({
 
     // Register actions in the global state for AppNav access
     const setActions = useProjectActionsStore(state => state.setActions)
-    const canExport = role === 'owner' || (project.allow_collaborator_exports ?? false)
+    const isLocalOnly = storageMode === 'local-only'
+    const canExport = !isLocalOnly && (role === 'owner' || (project.allow_collaborator_exports ?? false))
+    const canShare = !isLocalOnly && role === 'owner'
+    const supportsAi = !isLocalOnly
+    const supportsComments = true
+    const supportsAssets = true
+    const visibleTabs = isLocalOnly ? LOCAL_ONLY_TABS : TABS
     useEffect(() => {
         setActions({
-            export: () => setExportModalOpen(true),
-            share: () => setShareModalOpen(true),
-            settings: () => setSettingsModalOpen(true),
-            stats: () => router.push(`/project/${project.id}/stats`),
-            canShare: role === 'owner',
+            export: () => {
+                if (!isLocalOnly) setExportModalOpen(true)
+            },
+            share: () => {
+                if (!isLocalOnly) setShareModalOpen(true)
+            },
+            settings: () => {
+                if (!isLocalOnly) setSettingsModalOpen(true)
+            },
+            stats: () => {
+                if (!isLocalOnly) router.push(`/project/${project.id}/stats`)
+            },
+            canShare,
             canExport,
-            exportDisabledReason: canExport ? null : 'The owner has disabled exports for collaborators.'
+            exportDisabledReason: canExport
+                ? null
+                : isLocalOnly
+                    ? 'Export for local-only projects is not available yet.'
+                    : 'The owner has disabled exports for collaborators.'
         })
         return () => setActions(null)
-    }, [canExport, project.id, role, router, setActions, setExportModalOpen, setShareModalOpen, setSettingsModalOpen])
+    }, [canExport, canShare, isLocalOnly, project.id, router, setActions, setExportModalOpen, setShareModalOpen, setSettingsModalOpen])
     const { commentsPanelOpen, setCommentsPanelOpen } = useComments()
     
     // Responsive checks
@@ -371,7 +413,7 @@ function ProjectShellInner({
     }, [aiPanelOpen])
 
     useEffect(() => {
-        if (!isStoryTab || aiPanelOpen || role === 'viewer') return
+        if (!supportsAi || !isStoryTab || aiPanelOpen || role === 'viewer') return
         
         const timer = setTimeout(() => {
             const discovered = localStorage.getItem('storyline-ai-helper-discovered')
@@ -387,9 +429,10 @@ function ProjectShellInner({
         }, 5000)
         
         return () => clearTimeout(timer)
-    }, [currentSceneText, isStoryTab, aiPanelOpen, role])
+    }, [currentSceneText, isStoryTab, aiPanelOpen, role, supportsAi])
 
     const handleToggleComments = () => {
+        if (!supportsComments) return
         const nextState = !commentsPanelOpen
         if (nextState && isMobile) {
             setAiPanelOpen(false)
@@ -398,6 +441,7 @@ function ProjectShellInner({
     }
 
     const handleToggleAssets = () => {
+        if (!supportsAssets) return
         const nextState = !sceneAssetsOpen
         if (nextState && isMobile) {
             setAiPanelOpen(false)
@@ -539,9 +583,9 @@ function ProjectShellInner({
                         </div>
 
                         <div className="flex items-center gap-4">
-                            <AvatarPortal owner={owner} members={members} currentUserId={currentUserId} role={role} />
+                            {!isLocalOnly && <AvatarPortal owner={owner} members={members} currentUserId={currentUserId} role={role} />}
                             
-                            {isStoryTab && (
+                            {supportsAi && isStoryTab && (
                                 <div className="hidden lg:flex xl:hidden items-center gap-1.5 p-1 bg-violet-50/50 rounded-2xl border border-violet-100/50">
                                     <Tooltip>
                                         <TooltipTrigger>
@@ -581,7 +625,7 @@ function ProjectShellInner({
                                 </div>
                             )}
 
-                            <div className="h-6 w-px bg-slate-200/50" />
+                            {!isLocalOnly && <div className="h-6 w-px bg-slate-200/50" />}
                             
                             <Tooltip>
                                 <TooltipTrigger>
@@ -607,6 +651,7 @@ function ProjectShellInner({
                             {isStoryTab && (
                                 <div className="flex items-center gap-2 shrink-0">
                                     {/* AI Tools - Generative stuff first */}
+                                    {supportsAi && (
                                     <div className="story-mobile-ai-cluster flex items-center gap-1 bg-violet-50 p-1 rounded-2xl border border-violet-100/50">
                                         <Tooltip>
                                             <TooltipTrigger>
@@ -665,6 +710,7 @@ function ProjectShellInner({
                                             </div>
                                         )}
                                     </div>
+                                    )}
 
                                     {/* Reading/Interaction */}
                                     <ReaderControls 
@@ -697,7 +743,7 @@ function ProjectShellInner({
                                      </span>
 
                                      {/* Feedback */}
-                                     <span className="shrink-0">
+                                     {supportsComments && <span className="shrink-0">
                                      <Tooltip>
                                         <TooltipTrigger>
                                             <Button
@@ -714,10 +760,10 @@ function ProjectShellInner({
                                         </TooltipTrigger>
                                          <TooltipContent side="bottom">Feedback</TooltipContent>
                                      </Tooltip>
-                                     </span>
+                                     </span>}
 
                                      {/* Gallery */}
-                                     <span className="shrink-0">
+                                     {supportsAssets && <span className="shrink-0">
                                      <Tooltip>
                                          <TooltipTrigger>
                                              <Button
@@ -739,7 +785,7 @@ function ProjectShellInner({
                                          </TooltipTrigger>
                                          <TooltipContent side="bottom">Gallery</TooltipContent>
                                      </Tooltip>
-                                     </span>
+                                     </span>}
 
                                 </div>
                             )}
@@ -748,7 +794,7 @@ function ProjectShellInner({
 
                     <div className="project-shell-tabs mt-1">
                         <div className="snap-row flex gap-1 pl-1">
-                            {TABS.map(({ slug, label, icon: Icon }) => (
+                            {visibleTabs.map(({ slug, label, icon: Icon }) => (
                                 <Link
                                     key={slug}
                                     href={`/project/${project.id}/${slug}${slug === 'story' && activeNodeId ? `?nodeId=${activeNodeId}` : ''}`}

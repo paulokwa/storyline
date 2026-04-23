@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { PenLine, Tv, BookOpen, Zap, Map, ChevronRight, ChevronLeft, Info, Sparkles, FileText } from 'lucide-react'
+import { Tv, BookOpen, Zap, Map, ChevronRight, ChevronLeft, Sparkles, FileText } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import type { ProjectType, WritingMode } from '@/lib/supabase/types'
 import GuidedFlow from '@/components/new-project/GuidedFlow'
@@ -12,14 +12,12 @@ import ImportWizard from '@/components/new-project/ImportWizard'
 import CoverPicker from '@/components/project/CoverPicker'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { isTemporaryCoverUrl, uploadProjectCover } from '@/lib/supabase/project-covers'
+import { isTemporaryCoverUrl } from '@/lib/supabase/project-covers'
+import { createLocalProject } from '@/lib/persistence/local-projects'
 import {
-    Tooltip,
-    TooltipContent,
     TooltipProvider,
-    TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { PROJECT_TYPE_LABELS, DEFAULT_WRITING_MODE_BY_TYPE, getProjectTypeLabel } from '@/lib/constants'
+import { DEFAULT_WRITING_MODE_BY_TYPE, getProjectTypeLabel } from '@/lib/constants'
 import { toast } from 'sonner'
 
 type StartMode = 'quick' | 'guided' | 'import'
@@ -68,6 +66,22 @@ export default function NewProjectPage() {
         }
     }, [state, step])
 
+    function readFileAsDataUrl(file: File) {
+        return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => {
+                if (typeof reader.result === 'string') {
+                    resolve(reader.result)
+                    return
+                }
+
+                reject(new Error('Failed to read cover image.'))
+            }
+            reader.onerror = () => reject(reader.error ?? new Error('Failed to read cover image.'))
+            reader.readAsDataURL(file)
+        })
+    }
+
     async function createProject(extras?: {
         title?: string; premise?: string; tone?: string; setting?: string;
         firstCharacterName?: string; firstIdea?: string;
@@ -94,114 +108,29 @@ export default function NewProjectPage() {
             let persistedCoverUrl = extras?.coverUrl || state.coverUrl
 
             if (selectedCoverFile) {
-                const uploadResult = await uploadProjectCover(supabase, user.id, selectedCoverFile)
-                persistedCoverUrl = uploadResult.publicUrl
+                persistedCoverUrl = await readFileAsDataUrl(selectedCoverFile)
             } else if (isTemporaryCoverUrl(persistedCoverUrl)) {
                 persistedCoverUrl = ''
             }
 
-            const payload: any = {
-                user_id: user.id,
+            const project = await createLocalProject({
+                userId: user.id,
                 title: state.title || extras?.title || 'My New Project',
                 type: state.type!,
-                writing_mode: writingMode,
-            }
-
-            if (extras?.premise) payload.premise = extras.premise
-            if (extras?.tone) payload.tone = extras.tone
-            if (persistedCoverUrl) payload.cover_url = persistedCoverUrl
-
-            if (extras?.locations && extras.locations.length > 0) {
-                payload.setting = extras.locations.join(', ')
-            } else if (extras?.setting) {
-                payload.setting = extras.setting
-            }
-
-            const { data: project, error } = await (supabase as any)
-                .from('projects')
-                .insert(payload)
-                .select()
-                .single()
-
-            if (error || !project) {
-                console.error("Supabase Insert Error:", error)
-                return
-            }
-
-            const charactersToInsert = extras?.characters || (extras?.firstCharacterName ? [extras.firstCharacterName] : [])
-            for (let i = 0; i < charactersToInsert.length; i++) {
-                const name = charactersToInsert[i].trim()
-                if (!name) continue
-                await (supabase as any).from('characters').insert({ project_id: project.id, name: name, description: i === 0 ? 'Protagonist' : 'Supporting Character', order_index: i })
-            }
-
-            const locationsToInsert = extras?.locations || []
-            for (let i = 0; i < locationsToInsert.length; i++) {
-                const name = locationsToInsert[i].trim()
-                if (!name) continue
-                await (supabase as any).from('locations').insert({ project_id: project.id, name: name, order_index: i })
-            }
-
-            let initialSceneContent: any = null
-            const firstIdea = extras?.firstIdea?.trim()
-            if (firstIdea) {
-                await (supabase as any).from('ideas').insert({ project_id: project.id, title: 'Initial Vision', content: firstIdea, order_index: 0 })
-                const nodeType = writingMode === 'screenplay' ? 'screenplayAction' : 'paragraph';
-                const paragraphs = firstIdea.split('\n').filter(l => l.trim() !== '').map(l => ({ type: nodeType, content: [{ type: 'text', text: l }] }))
-                initialSceneContent = { type: 'doc', content: paragraphs.length ? paragraphs : [{ type: nodeType }] }
-            }
-
-            if (extras?.chunks && extras.chunks.length > 0) {
-                const chunks = extras.chunks
-                let actParentId = null
-                if (state.type === 'tv_script') {
-                    const { data: episode } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, type: 'episode', title: 'Imported Episode', order_index: 0 }).select().single()
-                    if (episode) {
-                        const { data: act } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (episode as any).id, type: 'act', title: 'Imported Act', order_index: 0 }).select().single()
-                        actParentId = act ? (act as any).id : null
-                    }
-                }
-                for (let i = 0; i < chunks.length; i++) {
-                    const chunk = chunks[i]
-                    const nodeType = writingMode === 'screenplay' ? 'screenplayAction' : 'paragraph';
-                    const paragraphs = chunk.content.split('\n').filter(l => l.trim() !== '').map(l => ({ type: nodeType, content: [{ type: 'text', text: l }] }))
-                    const tiptapJson = { type: 'doc', content: paragraphs.length ? paragraphs : [{ type: nodeType }] }
-                    if (state.type === 'novel') {
-                        const { data: chapter } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, type: 'chapter', title: chunk.title || `Chapter ${i + 1}`, order_index: i }).select().single()
-                        if (chapter) {
-                            const { data: scene } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (chapter as any).id, type: 'scene', title: chunk.title || 'Scene 1', order_index: 0 }).select().single()
-                            if (scene) await supabase.from('scenes').insert({ node_id: (scene as any).id, project_id: project.id, writing_mode: writingMode, content: tiptapJson })
-                        }
-                    } else if (actParentId) {
-                        const { data: scene } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: actParentId, type: 'scene', title: chunk.title || `Scene ${i + 1}`, order_index: i }).select().single()
-                        if (scene) await (supabase as any).from('scenes').insert({ node_id: (scene as any).id, project_id: project.id, writing_mode: writingMode, content: tiptapJson })
-                    }
-                }
-            } else if (state.type === 'tv_script') {
-                const { data: episode } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, type: 'episode', title: 'Episode 1', order_index: 0 }).select().single()
-                if (episode) {
-                    const { data: act } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (episode as any).id, type: 'act', title: 'Act 1', order_index: 0 }).select().single()
-                    if (act) {
-                        const { data: scene } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (act as any).id, type: 'scene', title: 'Scene 1', order_index: 0 }).select().single()
-                        const sceneData: any = { node_id: (scene as any).id, project_id: project.id, writing_mode: writingMode }
-                        if (initialSceneContent) sceneData.content = initialSceneContent
-                        if (scene) await supabase.from('scenes').insert(sceneData)
-                    }
-                }
-            } else {
-                const { data: chapter } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, type: 'chapter', title: 'Chapter 1', order_index: 0 }).select().single()
-                if (chapter) {
-                    const { data: scene } = await (supabase as any).from('structure_nodes').insert({ project_id: project.id, parent_id: (chapter as any).id, type: 'scene', title: 'Scene 1', order_index: 0 }).select().single()
-                    const sceneData: any = { node_id: (scene as any).id, project_id: project.id, writing_mode: writingMode }
-                    if (initialSceneContent) sceneData.content = initialSceneContent
-                    if (scene) await supabase.from('scenes').insert(sceneData)
-                }
-            }
+                writingMode,
+                premise: extras?.premise,
+                tone: extras?.tone,
+                setting: extras?.locations && extras.locations.length > 0 ? extras.locations.join(', ') : extras?.setting,
+                coverUrl: persistedCoverUrl || undefined,
+                characters: extras?.characters || (extras?.firstCharacterName ? [extras.firstCharacterName] : []),
+                locations: extras?.locations || [],
+                firstIdea: extras?.firstIdea,
+                chunks: extras?.chunks,
+            })
 
             localStorage.removeItem('storyline-new-project-draft')
             localStorage.removeItem('storyline-guided-data-draft')
             setPendingCoverFile(null)
-            router.refresh()
             router.push(`/project/${project.id}/story`)
         } catch (error) {
             console.error("Project creation error:", error)

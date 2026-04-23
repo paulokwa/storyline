@@ -20,6 +20,13 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/comp
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { getUserSafely } from '@/lib/supabase/client-auth'
+import {
+    createLocalProjectAsset,
+    deleteLocalProjectAsset,
+    getLocalAssetUrl,
+    listLocalProjectAssets,
+} from '@/lib/persistence/local-assets'
+import { isLocalProjectId } from '@/lib/persistence/project-mode'
 
 import { Tables } from '@/lib/supabase/types'
 
@@ -35,6 +42,7 @@ interface AssetManagerProps {
 }
 
 export default function AssetManager({ projectId }: AssetManagerProps) {
+    const isLocalOnly = isLocalProjectId(projectId)
     const [assets, setAssets] = useState<ProjectAsset[]>([])
     const [loading, setLoading] = useState(true)
     const [uploading, setUploading] = useState(false)
@@ -49,6 +57,11 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
     async function fetchAssets() {
         setLoading(true)
         try {
+            if (isLocalOnly) {
+                setAssets(await listLocalProjectAssets(projectId))
+                return
+            }
+
             const { data, error } = await supabase
                 .from('project_assets')
                 .select('*')
@@ -86,6 +99,13 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
         }
 
         try {
+            if (isLocalOnly) {
+                const asset = await createLocalProjectAsset(projectId, file, null)
+                setAssets(prev => [asset, ...prev])
+                toast.success('Asset saved locally')
+                return
+            }
+
             // 0. Quota Check (Phase 5.5)
             const { user } = await getUserSafely(supabase)
             if (!user) throw new Error('Not authenticated')
@@ -156,6 +176,13 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
 
     async function handleDelete(asset: ProjectAsset) {
         try {
+            if (isLocalOnly) {
+                await deleteLocalProjectAsset(asset.id)
+                setAssets(prev => prev.filter(a => a.id !== asset.id))
+                toast.success('Asset deleted')
+                return
+            }
+
             await supabase.storage
                 .from('project-assets')
                 .remove([asset.storage_path])
@@ -191,7 +218,7 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
     )
 
     const getPublicUrl = (path: string) => {
-        return supabase.storage.from('project-assets').getPublicUrl(path).data.publicUrl
+        return isLocalOnly ? getLocalAssetUrl({ storage_path: path }) : supabase.storage.from('project-assets').getPublicUrl(path).data.publicUrl
     }
 
     return (
