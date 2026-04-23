@@ -27,18 +27,18 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { createClient } from '@/lib/supabase/client'
 import { 
-    restoreStructureNode, 
-    restoreEntity, 
-    restoreDeletedComment,
-    captureSceneVersion, 
-    createProjectSnapshot,
-    restoreProjectSnapshot,
-    permanentlyDeleteTrashItem,
-    permanentlyDeleteHistoryVersion,
-    permanentlyDeleteComment
-} from '@/lib/supabase/recovery'
+    clearRecoveryTrash,
+    createRecoverySnapshot,
+    deleteRecoverySnapshot,
+    permanentlyDeleteRecoveryHistoryVersion,
+    permanentlyDeleteRecoveryTrashItem,
+    restoreRecoveryComment,
+    restoreRecoveryEntity,
+    restoreRecoveryNode,
+    restoreRecoverySceneVersion,
+    restoreRecoverySnapshot,
+} from '@/lib/persistence/recovery'
 import { useRouter } from 'next/navigation'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { SanctuarySelect } from '@/components/ui/sanctuary-select'
@@ -116,9 +116,6 @@ export default function RecoveryTab({
             setSelectedSceneId(sceneId)
         }
     }, [searchParams])
-
-    const supabase = createClient()
-
     // Helper to get descendants for a node
     const getDescendants = (nodeId: string): string[] => {
         const children = allNodes.filter(n => n.parent_id === nodeId)
@@ -130,7 +127,7 @@ export default function RecoveryTab({
         setIsRestoring(nodeId)
         try {
             const descendants = getDescendants(nodeId)
-            await restoreStructureNode(supabase, nodeId, descendants)
+            await restoreRecoveryNode(nodeId, descendants)
             router.refresh()
         } catch (error) {
             console.error('Error restoring node:', error)
@@ -143,7 +140,7 @@ export default function RecoveryTab({
         if (isReadOnly) return
         setIsRestoring(id)
         try {
-            await restoreEntity(supabase, table, id)
+            await restoreRecoveryEntity(table, id)
             router.refresh()
         } catch (error) {
             console.error('Error restoring entity:', error)
@@ -155,7 +152,7 @@ export default function RecoveryTab({
     const handleRestoreComment = async (id: string) => {
         setIsRestoring(id)
         try {
-            await restoreDeletedComment(supabase as any, id)
+            await restoreRecoveryComment(id)
             router.refresh()
         } catch (error) {
             console.error('Error restoring comment:', error)
@@ -168,25 +165,7 @@ export default function RecoveryTab({
         if (isReadOnly) return
         setIsRestoring(version.id)
         try {
-            const { data: currentScene } = await supabase
-                .from('scenes')
-                .select('*')
-                .eq('id', version.scene_id)
-                .single()
-
-            if (currentScene) {
-                await captureSceneVersion(supabase, projectId, version.scene_id, currentScene.content)
-            }
-
-            const { error } = await supabase
-                .from('scenes')
-                .update({ 
-                    content: version.content,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', version.scene_id)
-
-            if (error) throw error
+            await restoreRecoverySceneVersion(projectId, version)
             router.refresh()
         } catch (error) {
             console.error('Error restoring version:', error)
@@ -201,7 +180,7 @@ export default function RecoveryTab({
         if (!snapshotName.trim()) return
         setIsCreatingSnapshot(true)
         try {
-            await createProjectSnapshot(supabase, projectId, snapshotName, snapshotDescription)
+            await createRecoverySnapshot(projectId, snapshotName, snapshotDescription)
             setShowCreateModal(false)
             setSnapshotName('')
             setSnapshotDescription('')
@@ -218,7 +197,7 @@ export default function RecoveryTab({
         if (!snapshotToRestore) return
         setIsRestoringSnapshot(true)
         try {
-            await restoreProjectSnapshot(supabase, snapshotToRestore.id)
+            await restoreRecoverySnapshot(snapshotToRestore.id)
             setSnapshotToRestore(null)
             router.refresh()
             router.push(`/project/${projectId}/story`)
@@ -235,8 +214,7 @@ export default function RecoveryTab({
         if (!snapshotToDelete) return
         setIsDeletingSnapshot(true)
         try {
-            const { error } = await supabase.from('project_snapshots').delete().eq('id', snapshotToDelete.id)
-            if (error) throw error
+            await deleteRecoverySnapshot(snapshotToDelete.id)
             setSnapshotToDelete(null)
             router.refresh()
         } catch (error) {
@@ -251,12 +229,7 @@ export default function RecoveryTab({
         if (isReadOnly && !(itemToPermanentlyDelete.trashType === 'feedback' && itemToPermanentlyDelete.can_permanently_delete)) return
         setIsPermanentlyDeleting(true)
         try {
-            await permanentlyDeleteTrashItem(
-                supabase, 
-                itemToPermanentlyDelete.trashType, 
-                itemToPermanentlyDelete.id,
-                itemToPermanentlyDelete.typeLabel
-            )
+            await permanentlyDeleteRecoveryTrashItem(itemToPermanentlyDelete)
             setItemToPermanentlyDelete(null)
             router.refresh()
         } catch (error) {
@@ -271,7 +244,7 @@ export default function RecoveryTab({
         if (!versionToDelete) return
         setIsDeletingVersion(true)
         try {
-            await permanentlyDeleteHistoryVersion(supabase, versionToDelete.id)
+            await permanentlyDeleteRecoveryHistoryVersion(versionToDelete.id)
             setVersionToDelete(null)
             router.refresh()
         } catch (error) {
@@ -286,37 +259,15 @@ export default function RecoveryTab({
         if (!confirm('Are you sure you want to permanently clear all items in the trash? This cannot be undone.')) return
         setIsPermanentlyDeleting(true)
         try {
-            // Bulk delete active structure nodes that are soft-deleted for this project
-            const nodesToDelete = deletedNodes.map(n => n.id)
-            if (nodesToDelete.length > 0) {
-                await supabase.from('scenes').delete().in('node_id', nodesToDelete)
-                await supabase.from('structure_nodes').delete().in('id', nodesToDelete)
-            }
-            
-            // Delete other entities
-            const entities = [
-                { table: 'characters', list: deletedCharacters },
-                { table: 'ideas', list: deletedIdeas },
-                { table: 'locations', list: deletedLocations },
-                { table: 'objects', list: deletedObjects },
-                { table: 'ai_responses', list: deletedResponses }
-            ]
-
-            for (const ent of entities) {
-                const ids = ent.list.map(i => i.id)
-                if (ids.length > 0) {
-                    await (supabase.from(ent.table as any)).delete().in('id', ids)
-                }
-            }
-
-            const commentIds = deletedComments
-                .filter(comment => comment.can_permanently_delete)
-                .map(comment => comment.id)
-
-            for (const commentId of commentIds) {
-                await permanentlyDeleteComment(supabase as any, commentId)
-            }
-
+            await clearRecoveryTrash({
+                deletedNodes,
+                deletedCharacters,
+                deletedIdeas,
+                deletedLocations,
+                deletedObjects,
+                deletedResponses,
+                deletedComments,
+            })
             router.refresh()
         } catch (error) {
             console.error('Error clearing trash:', error)

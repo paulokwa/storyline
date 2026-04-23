@@ -7,12 +7,16 @@ import { cn, reorder, getNextAvailableName, formatStableDate } from '@/lib/utils
 import { Button } from '@/components/ui/button'
 import { StableInput } from '@/components/ui/stable-input'
 import { PremiumEditor } from '@/components/ui/premium-editor'
-import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
-import { softDeleteEntity } from '@/lib/supabase/recovery'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { ItemRowActionButton } from '@/components/project/ItemRowActionButton'
+import {
+    createWritingEntity,
+    reorderWritingEntities,
+    softDeleteWritingEntity,
+    updateWritingEntity,
+} from '@/lib/persistence/writing-entities'
 
 type Idea = Database['public']['Tables']['ideas']['Row']
 
@@ -64,23 +68,14 @@ export default function IdeasTab({
 
     const saveIdea = useCallback(async (id: string, updates: Database['public']['Tables']['ideas']['Update']) => {
         setIsSaving(true)
-        const supabase = createClient()
-        
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data, error } = await (supabase as any)
-            .from('ideas')
-            .update(updates)
-            .eq('id', id)
-            .select()
-            .single()
-
-        if (data) {
+        try {
+            const data = await updateWritingEntity('ideas', id, updates)
             setLocalIdeas((prev: Idea[]) => prev.map(i => i.id === id ? data as Idea : i))
-        } else if (error) {
+        } catch (error) {
             console.error('Error saving idea:', error)
+        } finally {
+            setIsSaving(false)
         }
-        
-        setIsSaving(false)
     }, [])
 
     const handleFieldChange = (id: string, field: keyof Idea, value: string) => {
@@ -110,9 +105,8 @@ export default function IdeasTab({
     async function handleDeleteIdea(id: string) {
         if (isReadOnly) return
         setIsSaving(true)
-        const supabase = createClient()
         try {
-            await softDeleteEntity(supabase, 'ideas', id)
+            await softDeleteWritingEntity('ideas', id)
             const index = localIdeas.findIndex(i => i.id === id)
             const newIdeas = localIdeas.filter(i => i.id !== id)
             setLocalIdeas(newIdeas)
@@ -135,23 +129,15 @@ export default function IdeasTab({
     async function handleCreateIdea() {
         if (isReadOnly) return
         setIsCreating(true)
-        const supabase = createClient() as any
-        
         const nextOrderIndex = Math.max(0, ...localIdeas.map((i: Idea) => i.order_index)) + 1
         const newTitle = getNextAvailableName('New Idea', localIdeas.map(i => i.title || ''))
-
-        const { data, error } = await supabase
-            .from('ideas')
-            .insert({
+        try {
+            const data = await createWritingEntity('ideas', {
                 project_id: projectId,
                 title: newTitle,
                 content: '',
-                order_index: nextOrderIndex
+                order_index: nextOrderIndex,
             })
-            .select()
-            .single()
-
-        if (data) {
             setLocalIdeas((prev: Idea[]) => [...prev, data as Idea])
             setSelectedId(data.id)
             // Auto-open rename for new idea on desktop only
@@ -159,11 +145,11 @@ export default function IdeasTab({
                 setRenamingId(data.id)
                 setRenameValue(newTitle)
             }
-        } else if (error) {
+        } catch (error) {
             console.error('Error creating idea:', error)
+        } finally {
+            setIsCreating(false)
         }
-        
-        setIsCreating(false)
     }
 
     function startRename(idea: Idea, e: React.MouseEvent) {
@@ -198,11 +184,9 @@ export default function IdeasTab({
         if (!result.destination) return
         const items = reorder(localIdeas, result.source.index, result.destination.index)
         setLocalIdeas(items)
-        const supabase = createClient()
-        const { error } = await (supabase as any)
-            .from('ideas')
-            .upsert(items.map((idea, index) => ({ ...idea, order_index: index })))
-        if (error) {
+        try {
+            await reorderWritingEntities('ideas', items.map((idea, index) => ({ ...idea, order_index: index })))
+        } catch (error) {
             console.error('Error updating idea order:', error)
             setLocalIdeas(localIdeas)
         }

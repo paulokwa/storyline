@@ -23,6 +23,7 @@ import { getUserSafely } from '@/lib/supabase/client-auth'
 import type { Database, WritingMode } from '@/lib/supabase/types'
 import { cn, getUserColor } from '@/lib/utils'
 import { getSceneTextForAi } from '@/lib/story/scene-text'
+import { saveSceneContent } from '@/lib/persistence/scenes'
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -65,7 +66,7 @@ import {
     Image as ImageIcon,
     X
 } from 'lucide-react'
-import { restoreStructureNode, captureSceneVersion } from '@/lib/supabase/recovery'
+import { restoreStructureNode } from '@/lib/supabase/recovery'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { useSpeechToText } from '@/hooks/useSpeechToText'
@@ -959,50 +960,30 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         }
 
         setSaveStatus('saving')
-        const supabase = createClient()
-        const { user } = await getUserSafely(supabase)
-        
-        // 1. Update scene content with version check
-        const { error: sceneError, count } = await supabase
-            .from('scenes')
-            .update({ 
-                content: newContent,
-                version: localVersion + 1,
-                last_editor_id: user?.id,
-                updated_at: new Date().toISOString() 
-            }, { count: 'exact' })
-            .eq('id', scene.id)
-            .eq('version', localVersion)
+        const result = await saveSceneContent({
+            scene,
+            localVersion,
+            content: newContent,
+            currentTitle,
+            initialTitle,
+        })
 
-        // 1b. Capture version
-        await captureSceneVersion(supabase, scene.project_id, scene.id, newContent)
-
-        // 2. Update structure_node title if changed
-        let nodeErrorResult = null
-        if (currentTitle !== initialTitle) {
-            const { error: nodeError } = await supabase
-                .from('structure_nodes')
-                .update({ title: currentTitle })
-                .eq('id', scene.node_id)
-            nodeErrorResult = nodeError
-        }
-
-        if (count === 0 && !sceneError) {
+        if (result.status === 'conflict') {
             console.warn('Conflict detected: local version', localVersion, 'Remote is likely newer.')
             setSaveStatus('error')
             setShowConflictModal(true)
             return
         }
 
-        if (sceneError || nodeErrorResult) {
-            console.error('Save error (scene/node):', sceneError || nodeErrorResult)
+        if (result.status === 'error') {
+            console.error('Save error (scene/node):', result.error)
             setSaveStatus('error')
         } else {
             setSaveStatus('saved')
             setIsDirty(false)
             setLastEditorName('you')
             // Use the version we just successfully saved to
-            const savedVersion = localVersion + 1
+            const savedVersion = result.savedVersion
             setLocalVersion(v => Math.max(v, savedVersion))
             setShowUpdateBanner(false)
             if (currentTitle !== initialTitle) onTitleUpdate?.(currentTitle)
@@ -1011,8 +992,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 ...scene, 
                 title: currentTitle, 
                 content: newContent, 
-                version: localVersion + 1,
-                last_editor_id: user?.id 
+                version: savedVersion,
+                last_editor_id: result.userId 
             }
             if (editor) {
                 (editor as any)._lastContent = newContent

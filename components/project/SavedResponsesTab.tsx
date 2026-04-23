@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { 
     Search, 
     Bookmark, 
@@ -32,7 +31,13 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { cn } from '@/lib/utils'
-import { softDeleteEntity } from '@/lib/supabase/recovery'
+import {
+    deleteSavedResponse,
+    insertSavedResponseIntoScene,
+    loadProjectSceneOptions,
+    loadSavedResponses,
+    renameSavedResponse,
+} from '@/lib/persistence/saved-responses'
 
 interface SavedResponse {
     id: string
@@ -68,20 +73,11 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
     const [availableScenes, setAvailableScenes] = useState<{ id: string, title: string }[]>([])
     const [isActionMenuOpen, setIsActionMenuOpen] = useState(false)
 
-    const supabase = createClient()
-
     useEffect(() => {
         async function loadResponses() {
             try {
                 setIsLoading(true)
-                const { data, error } = await (supabase
-                    .from('ai_responses' as any) as any)
-                    .select('*')
-                    .eq('project_id', projectId)
-                    .is('deleted_at', null)
-                    .order('created_at', { ascending: false })
-                
-                if (error) throw error
+                const data = await loadSavedResponses(projectId)
                 if (data) {
                     setResponses(data as SavedResponse[])
                     if (data.length > 0 && !selectedId) {
@@ -98,7 +94,7 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
             }
         }
         loadResponses()
-    }, [projectId, supabase, selectedId])
+    }, [projectId, selectedId])
 
     // Extra safeguard for mobile selection reset
     useEffect(() => {
@@ -110,21 +106,14 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
     useEffect(() => {
         async function loadScenes() {
             try {
-                const { data, error } = await (supabase
-                    .from('structure_nodes' as any) as any)
-                    .select('id, title, type')
-                    .eq('project_id', projectId)
-                    .eq('type', 'scene')
-                    .order('order_index', { ascending: true })
-                
-                if (error) throw error
+                const data = await loadProjectSceneOptions(projectId)
                 if (data) setAvailableScenes(data)
             } catch (err: any) {
                 console.error('Error loading scenes for picker:', err.message)
             }
         }
         loadScenes()
-    }, [projectId, supabase])
+    }, [projectId])
 
     const filteredResponses = useMemo(() => {
         return responses.filter(r => {
@@ -170,16 +159,7 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
         }
         setIsSavingAction(true)
         try {
-            const { error } = await (supabase
-                .from('ai_responses' as any) as any)
-                .update({ 
-                    title: titleDraft.trim(),
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', selectedResponse.id)
-            
-            if (error) throw error
-            
+            await renameSavedResponse(selectedResponse.id, titleDraft.trim())
             setResponses(prev => prev.map(r => r.id === selectedResponse.id ? { ...r, title: titleDraft.trim() } : r))
             setIsEditingTitle(false)
         } catch (err: any) {
@@ -193,7 +173,7 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
     const deleteResponse = async (id: string) => {
         setIsSavingAction(true)
         try {
-            await softDeleteEntity(supabase, 'ai_responses', id)
+            await deleteSavedResponse(id)
 
             setResponses(prev => {
                 const next = prev.filter(r => r.id !== id)
@@ -214,35 +194,10 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
         setIsSavingAction(true)
         
         try {
-            // 1. Get current content
-            const { data: scene, error: fetchError } = await (supabase
-                .from('scenes' as any) as any)
-                .select('content')
-                .eq('node_id', sceneId)
-                .single()
-            
-            if (fetchError) throw fetchError
-            
-            if (scene) {
-                const currentContent = scene.content || ''
-                // Append as a new paragraph (assuming HTML string from Tiptap)
-                // If it's empty, just start with the paragraph
-                const newContent = `${currentContent}<p>${selectedResponse.response.replace(/\n/g, '<br>')}</p>`
-                
-                const { error: updateError } = await (supabase
-                    .from('scenes' as any) as any)
-                    .update({ 
-                        content: newContent,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('node_id', sceneId)
-                
-                if (updateError) throw updateError
-
-                setInsertSuccess(true)
-                setTimeout(() => setInsertSuccess(false), 3000)
-                setIsInserting(false)
-            }
+            await insertSavedResponseIntoScene(sceneId, selectedResponse.response)
+            setInsertSuccess(true)
+            setTimeout(() => setInsertSuccess(false), 3000)
+            setIsInserting(false)
         } catch (err: any) {
             console.error('Error inserting into scene:', err.message)
             alert('Failed to insert into scene. Please try again.')

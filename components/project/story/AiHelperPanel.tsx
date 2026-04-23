@@ -15,6 +15,7 @@ import SaveAiResponseModal from '@/components/project/ai/SaveAiResponseModal'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
+import type { Database as SupabaseDatabase } from '@/lib/supabase/types'
 import { AI_TOUR_COMPLETE_KEY, AI_TOUR_PENDING_KEY, AI_TOUR_START_EVENT, AI_TOUR_STARTED_KEY } from '@/lib/ai/tour'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { useComments } from '@/components/project/CommentsContext'
@@ -38,12 +39,12 @@ interface AiHelperPanelProps {
     linkedIdeas?: any[]
     linkedLocations?: any[]
     linkedObjects?: any[]
-    linkedAiFeedback?: Database['public']['Tables']['ai_responses']['Row'][]
+    linkedAiFeedback?: SupabaseDatabase['public']['Tables']['ai_responses']['Row'][]
     projectCharacters?: any[]
     projectIdeas?: any[]
     projectLocations?: any[]
     projectObjects?: any[]
-    projectAiFeedback?: Database['public']['Tables']['ai_responses']['Row'][]
+    projectAiFeedback?: SupabaseDatabase['public']['Tables']['ai_responses']['Row'][]
     projectRelationships?: any[]
     selectedNodes?: any[]
     allNodes?: any[]
@@ -117,6 +118,16 @@ function draftsEqual(a: ContextDraft, b: ContextDraft) {
         arraysEqual(a.objects, b.objects) &&
         arraysEqual(a.aiFeedback, b.aiFeedback)
     )
+}
+
+function cloneContextDraft(draft: ContextDraft): ContextDraft {
+    return {
+        characters: [...draft.characters],
+        ideas: [...draft.ideas],
+        locations: [...draft.locations],
+        objects: [...draft.objects],
+        aiFeedback: [...draft.aiFeedback],
+    }
 }
 
 function stripFeedbackPrefix(title: string | null | undefined) {
@@ -459,6 +470,7 @@ export default function AiHelperPanel({
     const [tourOpen, setTourOpen] = useState(false)
     const [contextManagerOpen, setContextManagerOpen] = useState(false)
     const [isApplyingContext, setIsApplyingContext] = useState(false)
+    const [pendingContextDraft, setPendingContextDraft] = useState<ContextDraft | null>(null)
     const [requestNotice, setRequestNotice] = useState<string | null>(null)
     const [isRequestCancelled, setIsRequestCancelled] = useState(false)
     const cloudAbortRef = useRef<AbortController | null>(null)
@@ -483,6 +495,7 @@ export default function AiHelperPanel({
         [sceneCharacters, sceneIdeas, sceneLocations, sceneObjects, projectAiFeedback, activeSceneId]
     )
     const [contextDraft, setContextDraft] = useState<ContextDraft>(currentContextDraft)
+    const isContextSyncPending = pendingContextDraft !== null
 
     const navigateToContextTab = async (type: ContextEntityType) => {
         if (contextManagerOpen) {
@@ -494,12 +507,18 @@ export default function AiHelperPanel({
     }
 
     useEffect(() => {
-        if (!contextManagerOpen) {
+        if (pendingContextDraft && draftsEqual(currentContextDraft, pendingContextDraft)) {
+            setPendingContextDraft(null)
+            setContextDraft(currentContextDraft)
+            return
+        }
+
+        if (!contextManagerOpen && !pendingContextDraft) {
             setContextDraft((previousDraft) =>
                 draftsEqual(previousDraft, currentContextDraft) ? previousDraft : currentContextDraft
             )
         }
-    }, [currentContextDraft, contextManagerOpen])
+    }, [currentContextDraft, contextManagerOpen, pendingContextDraft])
 
     useEffect(() => {
         if (typeof window === 'undefined') return
@@ -1013,6 +1032,7 @@ export default function AiHelperPanel({
     const syncSceneContext = async () => {
         if (!activeSceneId || draftsEqual(contextDraft, currentContextDraft)) return
 
+        const nextDraft = cloneContextDraft(contextDraft)
         const characterAdds = contextDraft.characters.filter((id) => !currentContextDraft.characters.includes(id))
         const characterRemovals = currentContextDraft.characters.filter((id) => !contextDraft.characters.includes(id))
         const ideaAdds = contextDraft.ideas.filter((id) => !currentContextDraft.ideas.includes(id))
@@ -1026,6 +1046,7 @@ export default function AiHelperPanel({
 
         try {
             setIsApplyingContext(true)
+            setPendingContextDraft(nextDraft)
 
             const operations: any[] = []
 
@@ -1103,6 +1124,7 @@ export default function AiHelperPanel({
             router.refresh()
         } catch (err) {
             console.error('Error syncing AI context items:', err)
+            setPendingContextDraft(null)
             setContextDraft(currentContextDraft)
         } finally {
             setIsApplyingContext(false)
@@ -1111,12 +1133,12 @@ export default function AiHelperPanel({
 
     const handleContextManagerToggle = async () => {
         if (contextManagerOpen) {
-            await syncSceneContext()
             setContextManagerOpen(false)
+            void syncSceneContext()
             return
         }
 
-        setContextDraft(currentContextDraft)
+        setContextDraft(pendingContextDraft ?? currentContextDraft)
         setContextManagerOpen(true)
     }
 
@@ -1949,19 +1971,19 @@ export default function AiHelperPanel({
                     <button
                         type="button"
                         onClick={handleContextManagerToggle}
-                        disabled={isReadOnly || !activeSceneId || isApplyingContext}
-                        className={cn(
-                            "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] shadow-sm transition-all",
-                            contextManagerOpen
-                                ? "border-indigo-200 bg-indigo-50/90 text-indigo-600"
-                                : "border-slate-200/70 bg-white/85 text-slate-500 hover:border-slate-300 hover:bg-white hover:text-slate-700",
-                            (isReadOnly || !activeSceneId || isApplyingContext) && "cursor-not-allowed opacity-60"
-                        )}
-                    >
-                        <Database className="h-3 w-3" />
-                        <span>{isApplyingContext ? 'Saving' : 'Context'}</span>
-                        {contextManagerOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                    </button>
+                            disabled={isReadOnly || !activeSceneId || isApplyingContext}
+                            className={cn(
+                                "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] shadow-sm transition-all",
+                                contextManagerOpen
+                                    ? "border-indigo-200 bg-indigo-50/90 text-indigo-600"
+                                    : "border-slate-200/70 bg-white/85 text-slate-500 hover:border-slate-300 hover:bg-white hover:text-slate-700",
+                                (isReadOnly || !activeSceneId || isApplyingContext) && "cursor-not-allowed opacity-60"
+                            )}
+                        >
+                            <Database className="h-3 w-3" />
+                            <span>{isApplyingContext ? 'Saving...' : 'Context'}</span>
+                            {contextManagerOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                        </button>
 
                     <div className="h-4 w-px shrink-0 bg-slate-200" />
 
@@ -2019,7 +2041,7 @@ export default function AiHelperPanel({
                             )}
                         >
                             <Database className="h-3 w-3" />
-                            <span>{isApplyingContext ? 'Saving' : 'Context'}</span>
+                            <span>{isApplyingContext ? 'Saving...' : 'Context'}</span>
                             {contextManagerOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                         </button>
 

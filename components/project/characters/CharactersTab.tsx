@@ -9,14 +9,18 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { StableInput } from '@/components/ui/stable-input'
 import { PremiumEditor } from '@/components/ui/premium-editor'
-import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
-import { softDeleteEntity } from '@/lib/supabase/recovery'
 import RelationshipManager from './RelationshipManager'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import AssetPicker from '@/components/project/assets/AssetPicker'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { ItemRowActionButton } from '@/components/project/ItemRowActionButton'
+import {
+    createWritingEntity,
+    reorderWritingEntities,
+    softDeleteWritingEntity,
+    updateWritingEntity,
+} from '@/lib/persistence/writing-entities'
 
 type Character = Database['public']['Tables']['characters']['Row']
 
@@ -72,23 +76,14 @@ export default function CharactersTab({
 
     const saveCharacter = useCallback(async (id: string, updates: Database['public']['Tables']['characters']['Update']) => {
         setIsSaving(true)
-        const supabase = createClient()
-        
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data, error } = await (supabase as any)
-            .from('characters')
-            .update(updates)
-            .eq('id', id)
-            .select()
-            .single()
-
-        if (data) {
+        try {
+            const data = await updateWritingEntity('characters', id, updates)
             setLocalCharacters((prev: Character[]) => prev.map(c => c.id === id ? data as Character : c))
-        } else if (error) {
+        } catch (error) {
             console.error('Error saving character:', error)
+        } finally {
+            setIsSaving(false)
         }
-        
-        setIsSaving(false)
     }, [])
 
     const handleFieldChange = (id: string, field: keyof Character, value: string) => {
@@ -118,9 +113,8 @@ export default function CharactersTab({
     async function handleDeleteCharacter(id: string) {
         if (isReadOnly) return
         setIsSaving(true)
-        const supabase = createClient()
         try {
-            await softDeleteEntity(supabase, 'characters', id)
+            await softDeleteWritingEntity('characters', id)
             const index = localCharacters.findIndex(c => c.id === id)
             const newChars = localCharacters.filter(c => c.id !== id)
             setLocalCharacters(newChars)
@@ -143,24 +137,16 @@ export default function CharactersTab({
     async function handleCreateCharacter() {
         if (isReadOnly) return
         setIsCreating(true)
-        const supabase = createClient() as any
-        
         const nextOrderIndex = Math.max(0, ...localCharacters.map((c: Character) => c.order_index)) + 1
         const newName = getNextAvailableName('New Character', localCharacters.map(c => c.name || ''))
-
-        const { data, error } = await supabase
-            .from('characters')
-            .insert({
+        try {
+            const data = await createWritingEntity('characters', {
                 project_id: projectId,
                 name: newName,
                 description: '',
                 notes: '',
-                order_index: nextOrderIndex
+                order_index: nextOrderIndex,
             })
-            .select()
-            .single()
-
-        if (data) {
             setLocalCharacters((prev: Character[]) => [...prev, data as Character])
             setSelectedId(data.id)
             // Auto-open rename for new character on desktop only
@@ -168,16 +154,16 @@ export default function CharactersTab({
                 setRenamingId(data.id)
                 setRenameValue(newName)
             }
-        } else if (error) {
+        } catch (error: any) {
             console.error('Error creating character:', {
                 message: error.message,
                 details: error.details,
                 hint: error.hint,
                 code: error.code,
             })
+        } finally {
+            setIsCreating(false)
         }
-        
-        setIsCreating(false)
     }
 
     function startRename(char: Character, e: React.MouseEvent) {
@@ -218,24 +204,12 @@ export default function CharactersTab({
 
         setLocalCharacters(items)
 
-        // Update database
-        const supabase = createClient()
-        const updates = items.map((char, index) => ({
-            id: char.id,
-            order_index: index,
-            project_id: projectId, // Supabase update may require all PK or required fields for bulk if using upsert, but update is per row
-        }))
-
-        // Bulk update is better. Using upsert if possible, or multiple updates.
-        // Supabase allows bulk upsert.
-        const { error } = await (supabase as any)
-            .from('characters')
-            .upsert(items.map((char, index) => ({
+        try {
+            await reorderWritingEntities('characters', items.map((char, index) => ({
                 ...char,
-                order_index: index
+                order_index: index,
             })))
-
-        if (error) {
+        } catch (error) {
             console.error('Error updating character order:', error)
             // Rollback
             setLocalCharacters(localCharacters)

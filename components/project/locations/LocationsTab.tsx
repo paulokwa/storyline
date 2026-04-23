@@ -7,13 +7,16 @@ import { cn, reorder, getNextAvailableName, formatStableDate } from '@/lib/utils
 import { Button } from '@/components/ui/button'
 import { StableInput } from '@/components/ui/stable-input'
 import { PremiumEditor } from '@/components/ui/premium-editor'
-import { createClient } from '@/lib/supabase/client'
-import type { Database } from '@/lib/supabase/types'
-import { softDeleteEntity } from '@/lib/supabase/recovery'
 import AssetPicker from '@/components/project/assets/AssetPicker'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { ItemRowActionButton } from '@/components/project/ItemRowActionButton'
+import {
+    createWritingEntity,
+    reorderWritingEntities,
+    softDeleteWritingEntity,
+    updateWritingEntity,
+} from '@/lib/persistence/writing-entities'
 
 type Location = any // Flexibility for custom schema
 
@@ -63,20 +66,14 @@ export default function LocationsTab({
 
     const saveLocation = useCallback(async (id: string, updates: any) => {
         setIsSaving(true)
-        const supabase = createClient()
-        const { data, error } = await supabase
-            .from('locations' as any)
-            .update(updates)
-            .eq('id', id)
-            .select()
-            .single()
-
-        if (data) {
+        try {
+            const data = await updateWritingEntity('locations', id, updates)
             setLocalLocations((prev: any[]) => prev.map(l => l.id === id ? data : l))
-        } else if (error) {
+        } catch (error) {
             console.error('Error saving location:', error)
+        } finally {
+            setIsSaving(false)
         }
-        setIsSaving(false)
     }, [])
 
     const handleFieldChange = (id: string, field: string, value: string) => {
@@ -108,9 +105,8 @@ export default function LocationsTab({
     async function handleDeleteLocation(id: string) {
         if (isReadOnly) return
         setIsSaving(true)
-        const supabase = createClient()
         try {
-            await softDeleteEntity(supabase, 'locations', id)
+            await softDeleteWritingEntity('locations', id)
             const index = localLocations.findIndex(l => l.id === id)
             const newLocs = localLocations.filter(l => l.id !== id)
             setLocalLocations(newLocs)
@@ -133,23 +129,16 @@ export default function LocationsTab({
     async function handleCreateLocation() {
         if (isReadOnly) return
         setIsCreating(true)
-        const supabase = createClient()
         const nextOrderIndex = Math.max(0, ...localLocations.map((l: any) => l.order_index)) + 1
         const newName = getNextAvailableName('New Location', localLocations.map(l => l.name || ''))
-
-        const { data, error } = await supabase
-            .from('locations' as any)
-            .insert({
+        try {
+            const data = await createWritingEntity('locations', {
                 project_id: projectId,
                 name: newName,
                 description: '',
                 atmosphere: '',
-                order_index: nextOrderIndex
+                order_index: nextOrderIndex,
             })
-            .select()
-            .single()
-
-        if (data) {
             const loc = data as any
             setLocalLocations((prev: any[]) => [...prev, loc])
             setSelectedId(loc.id)
@@ -158,8 +147,11 @@ export default function LocationsTab({
                 setRenamingId(loc.id)
                 setRenameValue(newName)
             }
+        } catch (error) {
+            console.error('Error creating location:', error)
+        } finally {
+            setIsCreating(false)
         }
-        setIsCreating(false)
     }
 
     function startRename(loc: any, e: React.MouseEvent) {
@@ -189,11 +181,9 @@ export default function LocationsTab({
         if (!result.destination) return
         const items = reorder(localLocations, result.source.index, result.destination.index)
         setLocalLocations(items)
-        const supabase = createClient()
-        const { error } = await (supabase as any)
-            .from('locations')
-            .upsert(items.map((loc, index) => ({ ...loc, order_index: index })))
-        if (error) {
+        try {
+            await reorderWritingEntities('locations', items.map((loc, index) => ({ ...loc, order_index: index })))
+        } catch (error) {
             console.error('Error updating location order:', error)
             setLocalLocations(localLocations)
         }

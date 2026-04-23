@@ -7,13 +7,16 @@ import { cn, reorder, getNextAvailableName, formatStableDate } from '@/lib/utils
 import { Button } from '@/components/ui/button'
 import { StableInput } from '@/components/ui/stable-input'
 import { PremiumEditor } from '@/components/ui/premium-editor'
-import { createClient } from '@/lib/supabase/client'
-import type { Database } from '@/lib/supabase/types'
-import { softDeleteEntity } from '@/lib/supabase/recovery'
 import AssetPicker from '@/components/project/assets/AssetPicker'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { ItemRowActionButton } from '@/components/project/ItemRowActionButton'
+import {
+    createWritingEntity,
+    reorderWritingEntities,
+    softDeleteWritingEntity,
+    updateWritingEntity,
+} from '@/lib/persistence/writing-entities'
 
 type StoryObject = any // Flexibility for custom schema
 
@@ -63,20 +66,14 @@ export default function ObjectsTab({
 
     const saveObject = useCallback(async (id: string, updates: any) => {
         setIsSaving(true)
-        const supabase = createClient()
-        const { data, error } = await supabase
-            .from('objects' as any)
-            .update(updates)
-            .eq('id', id)
-            .select()
-            .single()
-
-        if (data) {
+        try {
+            const data = await updateWritingEntity('objects', id, updates)
             setLocalObjects((prev: any[]) => prev.map(o => o.id === id ? data : o))
-        } else if (error) {
+        } catch (error) {
             console.error('Error saving object:', error)
+        } finally {
+            setIsSaving(false)
         }
-        setIsSaving(false)
     }, [])
 
     const handleFieldChange = (id: string, field: string, value: string) => {
@@ -104,9 +101,8 @@ export default function ObjectsTab({
     async function handleDeleteObject(id: string) {
         if (isReadOnly) return
         setIsSaving(true)
-        const supabase = createClient()
         try {
-            await softDeleteEntity(supabase, 'objects', id)
+            await softDeleteWritingEntity('objects', id)
             const index = localObjects.findIndex(o => o.id === id)
             const newObjs = localObjects.filter(o => o.id !== id)
             setLocalObjects(newObjs)
@@ -129,23 +125,16 @@ export default function ObjectsTab({
     async function handleCreateObject() {
         if (isReadOnly) return
         setIsCreating(true)
-        const supabase = createClient()
         const nextOrderIndex = Math.max(0, ...localObjects.map((o: any) => o.order_index)) + 1
         const newName = getNextAvailableName('New Object', localObjects.map(o => o.name || ''))
-
-        const { data, error } = await supabase
-            .from('objects' as any)
-            .insert({
+        try {
+            const data = await createWritingEntity('objects', {
                 project_id: projectId,
                 name: newName,
                 description: '',
                 significance: '',
-                order_index: nextOrderIndex
+                order_index: nextOrderIndex,
             })
-            .select()
-            .single()
-
-        if (data) {
             const obj = data as any
             setLocalObjects((prev: any[]) => [...prev, obj])
             setSelectedId(obj.id)
@@ -154,8 +143,11 @@ export default function ObjectsTab({
                 setRenamingId(obj.id)
                 setRenameValue(newName)
             }
+        } catch (error) {
+            console.error('Error creating object:', error)
+        } finally {
+            setIsCreating(false)
         }
-        setIsCreating(false)
     }
 
     function startRename(obj: any, e: React.MouseEvent) {
@@ -185,11 +177,9 @@ export default function ObjectsTab({
         if (!result.destination) return
         const items = reorder(localObjects, result.source.index, result.destination.index)
         setLocalObjects(items)
-        const supabase = createClient()
-        const { error } = await (supabase as any)
-            .from('objects')
-            .upsert(items.map((obj, index) => ({ ...obj, order_index: index })))
-        if (error) {
+        try {
+            await reorderWritingEntities('objects', items.map((obj, index) => ({ ...obj, order_index: index })))
+        } catch (error) {
             console.error('Error updating object order:', error)
             setLocalObjects(localObjects)
         }

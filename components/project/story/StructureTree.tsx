@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
     ChevronRight, ChevronDown, Plus, Trash2,
@@ -13,11 +12,17 @@ import {
     TooltipProvider,
 } from "@/components/ui/tooltip"
 import { cn, reorder } from '@/lib/utils'
-import { GripVertical, MessageSquare } from 'lucide-react'
-import type { Database, NodeType } from '@/lib/supabase/types'
+import { GripVertical } from 'lucide-react'
+import type { Database, NodeType, WritingMode } from '@/lib/supabase/types'
 import { useComments } from '@/components/project/CommentsContext'
 import { useProjectActions } from '@/components/project/ProjectContext'
-import { softDeleteStructureNode } from '@/lib/supabase/recovery'
+import {
+    createSceneForNode,
+    createStructureNode,
+    renameStructureNode,
+    reorderStructureNodes,
+    softDeleteStructureTree,
+} from '@/lib/persistence/structure'
 
 type Project = Database['public']['Tables']['projects']['Row']
 type StructureNode = Database['public']['Tables']['structure_nodes']['Row']
@@ -50,12 +55,6 @@ const CHILD_TYPE: Partial<Record<NodeType, NodeType>> = {
     chapter: 'scene',
 }
 
-const CHILD_LABELS: Partial<Record<NodeType, string>> = {
-    episode: 'Add Act',
-    act: 'Add Scene',
-    chapter: 'Add Scene',
-}
-
 const CHILD_DISPLAY_NAMES: Partial<Record<NodeType, string>> = {
     episode: 'Act',
     act: 'Scene',
@@ -68,11 +67,6 @@ function buildTree(nodes: StructureNode[], parentId: string | null = null): Stru
         .sort((a, b) => a.order_index - b.order_index)
 }
 
-function getDescendantIds(nodes: StructureNode[], parentId: string): string[] {
-    const children = nodes.filter(n => n.parent_id === parentId)
-    return children.flatMap(c => [c.id, ...getDescendantIds(nodes, c.id)])
-}
-
 export default function StructureTree({
     project, nodes, activeNodeId, selectedNodeIds = [], onNodeSelect, onNodeToggleSelection, onNodesChange, onSceneCreated, onClose
 }: StructureTreeProps) {
@@ -83,51 +77,42 @@ export default function StructureTree({
     const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
 
     async function addRootNode() {
-        const supabase = createClient()
         const rootNodes = nodes.filter(n => n.parent_id === null)
-        const { data } = await (supabase as any).from('structure_nodes').insert({
-            project_id: project.id,
+        const data = await createStructureNode({
+            projectId: project.id,
             type: rootType,
             title: `${rootLabel} ${rootNodes.length + 1}`,
-            order_index: rootNodes.length,
-        }).select().single()
-        if (data) onNodesChange([...nodes, data as any])
+            orderIndex: rootNodes.length,
+        })
+        if (data) onNodesChange([...nodes, data])
     }
 
     async function addChild(parent: StructureNode) {
         const childType = CHILD_TYPE[parent.type as keyof typeof CHILD_TYPE]
         if (!childType) return
-        const supabase = createClient()
         const siblings = nodes.filter(n => n.parent_id === parent.id)
-        const { data: newNode, error } = await (supabase as any).from('structure_nodes').insert({
-            project_id: project.id,
-            parent_id: parent.id,
+        const newNode = await createStructureNode({
+            projectId: project.id,
+            parentId: parent.id,
             type: childType,
             title: `${CHILD_DISPLAY_NAMES[parent.type as keyof typeof CHILD_DISPLAY_NAMES] ?? childType.charAt(0).toUpperCase() + childType.slice(1)} ${siblings.length + 1}`,
-            order_index: siblings.length,
-        }).select().single()
-
-        if (error || !newNode) return
+            orderIndex: siblings.length,
+        })
         const updatedNodes = [...nodes, newNode]
         onNodesChange(updatedNodes)
 
         if (childType === 'scene') {
-            const { data: scene } = await (supabase as any).from('scenes').insert({
-                node_id: (newNode as any).id,
-                project_id: project.id,
-                writing_mode: project.writing_mode ?? 'simple',
-            }).select().single()
+            const scene = await createSceneForNode(project.id, newNode.id, (project.writing_mode ?? 'simple') as WritingMode)
             if (scene) {
-                onSceneCreated(scene as any)
-                onNodeSelect((newNode as any).id)
+                onSceneCreated(scene)
+                onNodeSelect(newNode.id)
             }
         }
     }
 
     async function deleteNode(node: StructureNode) {
-        const supabase = createClient()
         try {
-            const idsToRemove = await softDeleteStructureNode(supabase, project.id, node.id, nodes)
+            const idsToRemove = await softDeleteStructureTree(project.id, node.id, nodes)
             onNodesChange(nodes.filter(n => !idsToRemove.includes(n.id)))
             if (activeNodeId && (activeNodeId === node.id || idsToRemove.includes(activeNodeId))) {
                 const firstScene = nodes.find(n => n.type === 'scene' && !idsToRemove.includes(n.id))
@@ -140,8 +125,7 @@ export default function StructureTree({
     }
 
     async function renameNode(node: StructureNode, title: string) {
-        const supabase = createClient()
-        await (supabase as any).from('structure_nodes').update({ title }).eq('id', node.id)
+        await renameStructureNode(node.id, title)
         onNodesChange(nodes.map(n => n.id === node.id ? { ...n, title } : n))
     }
 
@@ -169,12 +153,9 @@ export default function StructureTree({
         onNodesChange(updatedNodes)
 
         // Update Supabase
-        const supabase = createClient()
-        const { error } = await (supabase as any)
-            .from('structure_nodes')
-            .upsert(newSiblings.map((n, i) => ({ ...n, order_index: i })))
-        
-        if (error) {
+        try {
+            await reorderStructureNodes(newSiblings.map((n, i) => ({ ...n, order_index: i })))
+        } catch (error) {
             console.error('Error reordering nodes:', error)
             onNodesChange(nodes) // Rollback
         }
@@ -589,3 +570,5 @@ const NodeItem = React.memo(({
 
     return true;
 });
+
+NodeItem.displayName = 'NodeItem'
