@@ -20,6 +20,7 @@ import {
     deleteLocalRecordsByProjectId,
     LOCAL_STORE_NAMES,
 } from '@/lib/persistence/local-db'
+import { listLocalProjects, type LocalProjectRow } from '@/lib/persistence/local-projects'
 import { LOCAL_PROJECT_ID_PREFIX } from '@/lib/persistence/project-mode'
 import type { Database } from '@/lib/supabase/types'
 
@@ -37,9 +38,88 @@ export type ImportResult =
     | { ok: true; projectId: string }
     | { ok: false; reason: string }
 
+export type LibraryImportOptions = {
+    backupBaseTitle: string
+    suggestedProject: LocalProjectRow | null
+    sameTypeProjects: LocalProjectRow[]
+    nextCopyTitle: string
+}
+
+type ImportLocalBackupOptions = {
+    title?: string
+}
+
+type RestoreLocalBackupOptions = {
+    title?: string | null
+}
+
 /** Generates a new local-prefixed ID. */
 function newLocalId(prefix: string): string {
     return `${LOCAL_PROJECT_ID_PREFIX}${prefix}_${crypto.randomUUID()}`
+}
+
+function normalizeProjectTitle(title: string) {
+    return title.trim().replace(/\s+/g, ' ')
+}
+
+export function getBackupBaseTitle(title: string | null | undefined): string {
+    let baseTitle = normalizeProjectTitle(title || 'Untitled')
+
+    while (/\s+\(Imported(?:\s+\d+)?\)$/i.test(baseTitle)) {
+        baseTitle = normalizeProjectTitle(baseTitle.replace(/\s+\(Imported(?:\s+\d+)?\)$/i, ''))
+    }
+
+    return baseTitle || 'Untitled'
+}
+
+function titleKey(title: string | null | undefined) {
+    return normalizeProjectTitle(title || 'Untitled').toLowerCase()
+}
+
+export function getNextImportedProjectTitle(
+    baseTitle: string | null | undefined,
+    existingTitles: Array<string | null | undefined>
+): string {
+    const normalizedBaseTitle = getBackupBaseTitle(baseTitle)
+    const existing = new Set(existingTitles.map((title) => titleKey(title)))
+    const firstImportTitle = `${normalizedBaseTitle} (Imported)`
+
+    if (!existing.has(titleKey(firstImportTitle))) {
+        return firstImportTitle
+    }
+
+    let importNumber = 2
+    while (existing.has(titleKey(`${normalizedBaseTitle} (Imported ${importNumber})`))) {
+        importNumber += 1
+    }
+
+    return `${normalizedBaseTitle} (Imported ${importNumber})`
+}
+
+export async function getLibraryImportOptions(backup: StorylineBackup): Promise<LibraryImportOptions | null> {
+    const projects = await listLocalProjects()
+    const activeProjects = projects.filter((project) => project.deleted_at == null)
+    const sameTypeProjects = activeProjects.filter((project) => project.type === backup.project.type)
+    const backupBaseTitle = getBackupBaseTitle(backup.project.title)
+    const backupBaseKey = titleKey(backupBaseTitle)
+    const suggestedProject =
+        sameTypeProjects.find((project) => titleKey(project.title) === backupBaseKey)
+        ?? sameTypeProjects.find((project) => titleKey(getBackupBaseTitle(project.title)) === backupBaseKey)
+        ?? null
+
+    if (sameTypeProjects.length === 0) {
+        return null
+    }
+
+    return {
+        backupBaseTitle,
+        suggestedProject,
+        sameTypeProjects,
+        nextCopyTitle: getNextImportedProjectTitle(
+            backupBaseTitle,
+            activeProjects.map((project) => project.title)
+        ),
+    }
 }
 
 /**
@@ -66,7 +146,11 @@ export function parseBackupFile(raw: string): { data: StorylineBackup } | { erro
         }
     }
 
-    if (obj['storage_mode'] === 'cloud-enabled' || (obj['project'] as any)?.storage_mode === 'cloud-enabled') {
+    const projectObj = typeof obj['project'] === 'object' && obj['project'] !== null
+        ? obj['project'] as Record<string, unknown>
+        : null
+
+    if (obj['storage_mode'] === 'cloud-enabled' || projectObj?.storage_mode === 'cloud-enabled') {
         return { error: 'Cloud project backups cannot be imported as local projects.' }
     }
 
@@ -91,7 +175,8 @@ export function parseBackupFile(raw: string): { data: StorylineBackup } | { erro
  */
 export async function importLocalBackup(
     backup: StorylineBackup,
-    importingUserId: string
+    importingUserId: string,
+    options: ImportLocalBackupOptions = {}
 ): Promise<ImportResult> {
     try {
         // ── Build ID remap table ──────────────────────────────────────────
@@ -126,7 +211,7 @@ export async function importLocalBackup(
             ...backup.project,
             id: newProjectId,
             user_id: importingUserId,
-            title: `${backup.project.title ?? 'Untitled'} (Imported)`,
+            title: options.title ?? getNextImportedProjectTitle(getBackupBaseTitle(backup.project.title), []),
             created_at: timestamp,
             updated_at: timestamp,
             last_accessed_at: timestamp,
@@ -252,7 +337,8 @@ export async function importLocalBackup(
 export async function restoreLocalBackup(
     backup: StorylineBackup,
     targetProjectId: string,
-    importingUserId: string
+    importingUserId: string,
+    options: RestoreLocalBackupOptions = {}
 ): Promise<ImportResult> {
     try {
         // ── 1. Purge all existing records for this project ID ─────────────
@@ -300,7 +386,7 @@ export async function restoreLocalBackup(
             ...backup.project,
             id: targetProjectId, // Retain target ID
             user_id: importingUserId, // Ensure the importing user owns it now
-            // We retain title from the backup to let user see it restored exactly
+            title: options.title ?? backup.project.title,
             created_at: timestamp,
             updated_at: timestamp,
             last_accessed_at: timestamp,

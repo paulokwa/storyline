@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import RecoveryTab from '@/components/project/recovery/RecoveryTab'
 import { loadLocalRecoveryWorkspaceData } from '@/lib/persistence/local-recovery'
 
@@ -9,6 +9,17 @@ type LocalRecoveryWorkspaceData = Awaited<ReturnType<typeof loadLocalRecoveryWor
 export default function LocalRecoveryPage({ projectId }: { projectId: string }) {
     const [data, setData] = useState<LocalRecoveryWorkspaceData | null>(null)
     const [status, setStatus] = useState<'loading' | 'ready' | 'missing'>('loading')
+
+    const reloadRecoveryData = useCallback(async () => {
+        try {
+            const nextData = await loadLocalRecoveryWorkspaceData(projectId)
+            setData(nextData)
+            setStatus('ready')
+        } catch (error) {
+            console.error('Failed to reload local recovery workspace:', error)
+            setStatus('missing')
+        }
+    }, [projectId])
 
     useEffect(() => {
         let cancelled = false
@@ -53,6 +64,7 @@ export default function LocalRecoveryPage({ projectId }: { projectId: string }) 
             allNodes={data.allNodes}
             historyEntries={data.historyEntries}
             snapshots={data.snapshots}
+            onLocalDataChanged={reloadRecoveryData}
         />
     )
 }

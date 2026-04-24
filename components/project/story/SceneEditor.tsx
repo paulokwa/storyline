@@ -262,6 +262,11 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const { activeSceneUsers, setMyStatus } = usePresence()
     const { theme } = useTheme()
     const isMidnight = theme === 'midnight'
+    const emptyStateCopy = isLocalProject
+        ? 'Start writing here. Your work is saved locally.'
+        : aiSettings?.ai_enabled === false
+            ? 'Start writing here when you are ready.'
+            : 'Ask your AI Partner on the right if you need a spark of inspiration.'
     
     const isReadOnly = role === 'viewer'
     const isMobileOrTablet = useMediaQuery('(max-width: 1024px)')
@@ -1238,7 +1243,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
     return (
         <div className={cn(
-            'scene-editor-shell min-h-full pb-32 md:pb-80 transition-all duration-700 ease-in-out relative',
+            'scene-editor-shell transition-all duration-700 ease-in-out relative',
+            isProjectEmpty ? 'flex flex-col pb-16 md:pb-24' : 'min-h-full pb-32 md:pb-80',
             writingMode === 'screenplay'
                 ? cn(
                     'scene-editor-shell-screenplay py-10 px-4 sm:px-8',
@@ -2021,9 +2027,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             </div>
 
             {isProjectEmpty && (
-                <div className="scene-editor-empty-state mt-12 p-8 rounded-3xl bg-amber-50/50 border border-amber-100 border-dashed text-center">
+                <div className="scene-editor-empty-state mt-auto p-8 rounded-3xl bg-amber-50/50 border border-amber-100 border-dashed text-center">
                     <p className="scene-editor-empty-title text-amber-700 font-serif italic text-lg mb-2">Your journey begins with a single word.</p>
-                    <p className="scene-editor-empty-copy text-amber-600/60 text-sm">Ask your AI Partner on the right if you need a spark of inspiration.</p>
+                    <p className="scene-editor-empty-copy text-amber-600/60 text-sm">{emptyStateCopy}</p>
                 </div>
             )}
 

@@ -459,7 +459,7 @@ const NodeItem = React.memo(({
                             <span
                                 className={cn(
                                     "flex-1 truncate",
-                                    !isNovelScene && "md:overflow-visible md:text-clip md:whitespace-normal md:break-words md:group-hover:hidden",
+                                    !isNovelScene && "md:overflow-visible md:text-clip md:whitespace-normal md:break-words",
                                     isRoot && "tracking-tight text-[#485748]",
                                     isScene && "text-slate-600 font-medium",
                                     mobileOptionsActive && "hidden md:block"
@@ -489,10 +489,10 @@ const NodeItem = React.memo(({
                         {/* Hover/Long Press actions — only when not confirming */}
                         {(!editing && !isReadOnly && confirmingDeleteId !== node.id) && (
                             <div className={cn(
-                                "flex items-center gap-1 shrink-0 transition-all duration-300 md:hidden md:group-hover:flex",
-                                "opacity-0 md:group-hover:opacity-100",
-                                isActive && "md:opacity-100",
-                                mobileOptionsActive ? "opacity-100 flex-1 justify-end" : "w-0 overflow-hidden pointer-events-none md:w-auto md:overflow-visible md:pointer-events-auto"
+                                "flex items-center gap-1 shrink-0 transition-opacity duration-200",
+                                "opacity-0 pointer-events-none md:w-auto md:overflow-visible md:group-hover:opacity-100 md:group-hover:pointer-events-auto",
+                                isActive && "md:opacity-100 md:pointer-events-auto",
+                                mobileOptionsActive ? "opacity-100 pointer-events-auto flex-1 justify-end" : "w-0 overflow-hidden md:w-auto"
                             )} onClick={e => e.stopPropagation()}>
                                 {CHILD_TYPE[node.type as NodeType] && (
                                     <button

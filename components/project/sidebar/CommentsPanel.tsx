@@ -71,6 +71,16 @@ function buildFeedbackIdeaContent({
     ].filter(Boolean).join('\n\n')
 }
 
+const EMPTY_INLINE_FEEDBACK_TEXT = 'Add your feedback...'
+
+function isEmptyInlineFeedback(comment: { content?: string | null; anchor_data?: any }) {
+    return comment.anchor_data?.type === 'inline' && comment.content === EMPTY_INLINE_FEEDBACK_TEXT
+}
+
+function getEditableFeedbackText(comment: { content?: string | null; anchor_data?: any }) {
+    return isEmptyInlineFeedback(comment) ? '' : (comment.content ?? '')
+}
+
 export default function CommentsPanel({ 
     projectId, 
     projectOwnerId,
@@ -348,7 +358,7 @@ export default function CommentsPanel({
             
             // If it's inline feedback and content is just the placeholder, use the reference text for the title
             let titleSource = comment.content
-            if (referenceText && (comment.content === 'Add your feedback...' || !comment.content)) {
+            if (referenceText && (comment.content === EMPTY_INLINE_FEEDBACK_TEXT || !comment.content)) {
                 titleSource = referenceText
             }
 
@@ -1188,7 +1198,7 @@ function CommentThread({
                     role={role}
                     onReply={canReply ? (() => onReply(comment.id)) : undefined}
                     isEditing={editingId === comment.id}
-                    onEdit={() => onEdit(comment.id, comment.content)}
+                    onEdit={() => onEdit(comment.id, getEditableFeedbackText(comment))}
                     editText={editText}
                     setEditText={setEditText}
                     onUpdate={() => onUpdate(comment.id)}
@@ -1228,7 +1238,7 @@ function CommentThread({
                                 isOwnerOrEditor={isOwnerOrEditor}
                                 role={role}
                                 isEditing={editingId === reply.id}
-                                onEdit={() => onEdit(reply.id, reply.content)}
+                                onEdit={() => onEdit(reply.id, getEditableFeedbackText(reply))}
                                 editText={editText}
                                 setEditText={setEditText}
                                 onUpdate={() => onUpdate(reply.id)}
@@ -1402,6 +1412,7 @@ function CommentItem({
                 <div className="space-y-2 mt-2">
                     <textarea
                         autoFocus
+                        placeholder={isEmptyInlineFeedback(comment) ? EMPTY_INLINE_FEEDBACK_TEXT : 'Edit feedback...'}
                         value={editText}
                         onChange={(e) => setEditText(e.target.value)}
                         className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[80px] resize-none"
@@ -1442,9 +1453,10 @@ function CommentItem({
                     )}
                     <p className={cn(
                         "text-sm text-slate-600 font-sans leading-relaxed whitespace-pre-wrap",
-                        comment.status === 'resolved' && "line-through text-slate-400/80 italic"
+                        comment.status === 'resolved' && "line-through text-slate-400/80 italic",
+                        isEmptyInlineFeedback(comment) && "text-slate-400 italic"
                     )}>
-                        {comment.content}
+                        {isEmptyInlineFeedback(comment) ? EMPTY_INLINE_FEEDBACK_TEXT : comment.content}
                     </p>
 
                     <div className="mt-4 pt-3 border-t border-slate-100/50 flex items-center justify-between">

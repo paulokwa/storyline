@@ -111,7 +111,6 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     const [isExtremeContext, setIsExtremeContext] = useState(false)
 
     useEffect(() => {
-        if (isLocalOnly) return
         if (project?.id) {
             fetchComments(project.id)
         }

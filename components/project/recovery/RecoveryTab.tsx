@@ -59,6 +59,7 @@ interface RecoveryTabProps {
     allNodes: any[]
     historyEntries: any[]
     snapshots: any[]
+    onLocalDataChanged?: () => Promise<void> | void
 }
 
 export default function RecoveryTab({
@@ -72,7 +73,8 @@ export default function RecoveryTab({
     deletedComments,
     allNodes,
     historyEntries,
-    snapshots
+    snapshots,
+    onLocalDataChanged
 }: RecoveryTabProps) {
     const isLocalProject = isLocalProjectId(projectId)
     const { role } = useProjectActions()
@@ -108,6 +110,15 @@ export default function RecoveryTab({
 
     const searchParams = useSearchParams()
 
+    const refreshRecoveryView = async () => {
+        if (isLocalProject && onLocalDataChanged) {
+            await onLocalDataChanged()
+            return
+        }
+
+        router.refresh()
+    }
+
     // Handle deep links from search params
     useEffect(() => {
         const section = searchParams.get('section')
@@ -137,7 +148,7 @@ export default function RecoveryTab({
         try {
             const descendants = getDescendants(nodeId)
             await restoreRecoveryNode(nodeId, descendants)
-            router.refresh()
+            await refreshRecoveryView()
         } catch (error) {
             console.error('Error restoring node:', error)
         } finally {
@@ -150,7 +161,7 @@ export default function RecoveryTab({
         setIsRestoring(id)
         try {
             await restoreRecoveryEntity(table, id)
-            router.refresh()
+            await refreshRecoveryView()
         } catch (error) {
             console.error('Error restoring entity:', error)
         } finally {
@@ -162,7 +173,7 @@ export default function RecoveryTab({
         setIsRestoring(id)
         try {
             await restoreRecoveryComment(id)
-            router.refresh()
+            await refreshRecoveryView()
         } catch (error) {
             console.error('Error restoring comment:', error)
         } finally {
@@ -175,7 +186,7 @@ export default function RecoveryTab({
         setIsRestoring(version.id)
         try {
             await restoreRecoverySceneVersion(projectId, version)
-            router.refresh()
+            await refreshRecoveryView()
         } catch (error) {
             console.error('Error restoring version:', error)
         } finally {
@@ -240,7 +251,7 @@ export default function RecoveryTab({
         try {
             await permanentlyDeleteRecoveryTrashItem(itemToPermanentlyDelete)
             setItemToPermanentlyDelete(null)
-            router.refresh()
+            await refreshRecoveryView()
         } catch (error) {
             console.error('Error permanently deleting item:', error)
         } finally {
@@ -278,7 +289,7 @@ export default function RecoveryTab({
                 deletedResponses,
                 deletedComments,
             })
-            router.refresh()
+            await refreshRecoveryView()
         } catch (error) {
             console.error('Error clearing trash:', error)
         } finally {
