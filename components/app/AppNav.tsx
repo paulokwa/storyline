@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { isAdminEmail } from '@/lib/admin'
 import { 
     PenLine, LogOut, Settings as SettingsIcon, 
-    Download, Users, Settings2, BarChart3, Mail, Shield
+    Download, Users, Settings2, BarChart3, Mail, Shield, ArchiveRestore
 } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import {
@@ -59,7 +59,7 @@ export default function AppNav({ user }: { user: User }) {
     }
 
     const displayName = (user.user_metadata?.display_name as string) || user.email?.split('@')[0] || 'Writer'
-    const { exportAction, shareAction, settingsAction, statsAction, canShare, canExport, exportDisabledReason } = useProjectActionsStore()
+    const { exportAction, restoreAction, shareAction, settingsAction, statsAction, canShare, canExport, exportDisabledReason } = useProjectActionsStore()
 
     return (
         <nav className={`app-nav-shell sticky top-0 z-40 shrink-0 px-4 sm:px-6 lg:px-8 ${
@@ -188,6 +188,18 @@ export default function AppNav({ user }: { user: User }) {
                                         >
                                             <BarChart3 className="w-4 h-4" />
                                             <span className="font-semibold text-sm">Project Stats</span>
+                                        </DropdownMenuItem>
+                                    )}
+
+                                    {restoreAction && (
+                                        <DropdownMenuItem 
+                                            onClick={restoreAction}
+                                            className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
+                                                isMidnight ? 'text-slate-300 focus:text-amber-200 focus:bg-amber-900/20' : 'text-slate-600 focus:text-amber-700 focus:bg-amber-50'
+                                            }`}
+                                        >
+                                            <ArchiveRestore className="w-4 h-4" />
+                                            <span className="font-semibold text-sm">Restore from Backup</span>
                                         </DropdownMenuItem>
                                     )}
                                     

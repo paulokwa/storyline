@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+﻿import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { requireVerifiedUser } from '@/lib/supabase/auth'
 import ProjectGrid from '@/components/library/ProjectGrid'
@@ -122,7 +122,7 @@ export default async function LibraryPage() {
 
     return (
         <div className="library-page-shell flex h-full min-h-0 flex-1 flex-col overflow-auto bg-slate-50/50 custom-scrollbar">
-            <ProjectGrid projects={projects} deletedProjects={deletedProjects} />
+            <ProjectGrid projects={projects} deletedProjects={deletedProjects} currentUserId={user.id} />
         </div>
     )
 }

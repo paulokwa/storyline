@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { isLocalProjectId } from '@/lib/persistence/project-mode'
+import { loadLocalStoryWorkspaceData } from '@/lib/persistence/local-projects'
 import { 
     BarChart3, 
     BookOpen, 
@@ -46,35 +48,64 @@ export default function ProjectStatsPage() {
 
     useEffect(() => {
         async function fetchData() {
-            const supabase = createClient()
+            if (!id) return
             
-            // Fetch core project data first
-            const [
-                { data: projectData },
-                { data: nodesData },
-                { data: scenesData },
-                { data: charactersData },
-                { data: ideasData },
-            ] = await Promise.all([
-                supabase.from('projects').select('*').eq('id', id as string).single(),
-                supabase.from('structure_nodes').select('*').eq('project_id', id as string).is('deleted_at', null),
-                supabase.from('scenes').select('*').eq('project_id', id as string),
-                supabase.from('characters').select('id').eq('project_id', id as string),
-                supabase.from('ideas').select('id').eq('project_id', id as string),
-            ])
+            let projectData: any
+            let nodesData: any[] = []
+            let scenesData: any[] = []
+            let charactersData: any[] = []
+            let ideasData: any[] = []
+            let charLinksData: any[] = []
+            let ideaLinksData: any[] = []
 
-            if (projectData && nodesData && scenesData) {
-                const sceneIds = scenesData.map(s => s.id)
+            if (isLocalProjectId(id as string)) {
+                // Fetch from LOCAL storage
+                const workspaceData = await loadLocalStoryWorkspaceData(id as string)
+                projectData = workspaceData.project
+                nodesData = workspaceData.nodes
+                scenesData = workspaceData.allScenes
+                charactersData = workspaceData.projectCharacters
+                ideasData = workspaceData.projectIdeas
+                // Local linking not supported yet, so links remain empty
+            } else {
+                // Fetch from SUPABASE
+                const supabase = createClient()
                 
-                // Fetch links for these scenes
                 const [
-                    { data: charLinksData },
-                    { data: ideaLinksData },
+                    { data: pData },
+                    { data: nData },
+                    { data: sData },
+                    { data: cData },
+                    { data: iData },
                 ] = await Promise.all([
-                    supabase.from('scene_characters').select('*').in('scene_id', sceneIds),
-                    supabase.from('scene_ideas').select('*').in('scene_id', sceneIds),
+                    supabase.from('projects').select('*').eq('id', id as string).single(),
+                    supabase.from('structure_nodes').select('*').eq('project_id', id as string).is('deleted_at', null),
+                    supabase.from('scenes').select('*').eq('project_id', id as string),
+                    supabase.from('characters').select('id').eq('project_id', id as string),
+                    supabase.from('ideas').select('id').eq('project_id', id as string),
                 ])
 
+                projectData = pData
+                nodesData = nData || []
+                scenesData = sData || []
+                charactersData = cData || []
+                ideasData = iData || []
+
+                if (projectData && nodesData && scenesData.length > 0) {
+                    const sceneIds = scenesData.map(s => s.id)
+                    const [
+                        { data: cLinks },
+                        { data: iLinks },
+                    ] = await Promise.all([
+                        supabase.from('scene_characters').select('*').in('scene_id', sceneIds),
+                        supabase.from('scene_ideas').select('*').in('scene_id', sceneIds),
+                    ])
+                    charLinksData = cLinks || []
+                    ideaLinksData = iLinks || []
+                }
+            }
+
+            if (projectData && nodesData && scenesData) {
                 setProject(projectData)
                 const computedStats = calculateProjectStats(
                     projectData,
@@ -85,8 +116,8 @@ export default function ProjectStatsPage() {
                         ideas: ideasData?.length || 0 
                     },
                     { 
-                        characters: charLinksData || [], 
-                        ideas: ideaLinksData || [] 
+                        characters: charLinksData, 
+                        ideas: ideaLinksData
                     }
                 )
                 setStats(computedStats)

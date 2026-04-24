@@ -46,6 +46,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from '@/components/providers/ThemeProvider'
 import { destroyLocalProject, listLocalProjects, restoreLocalProject, softDeleteLocalProject, updateLocalProject } from '@/lib/persistence/local-projects'
 import { isLocalProjectId } from '@/lib/persistence/project-mode'
+import ImportBackupButton from '@/components/library/ImportBackupButton'
 
 // Explicitly extend the Project type with fields added via recent migrations
 type Project = Database['public']['Tables']['projects']['Row'] & {
@@ -71,7 +72,7 @@ function getAvatarInitials(name: string | null | undefined, fallback = 'U') {
         : value.slice(0, 2).toUpperCase()
 }
 
-export default function ProjectGrid({ projects, deletedProjects }: { projects: Project[], deletedProjects: Project[] }) {
+export default function ProjectGrid({ projects, deletedProjects, currentUserId }: { projects: Project[], deletedProjects: Project[], currentUserId: string }) {
     const router = useRouter()
     const { theme } = useTheme()
     const isMidnight = theme === 'midnight'
@@ -81,6 +82,19 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
     const [confirmDeleteDraft, setConfirmDeleteDraft] = useState(false)
     const [view, setView] = useState<'active' | 'trash'>('active')
     const [sortFilter, setSortFilter] = useState<'custom' | 'recent' | 'az'>('custom')
+
+    // Load sort preference on mount
+    useEffect(() => {
+        const saved = localStorage.getItem('storyline-library-sort')
+        if (saved && (saved === 'custom' || saved === 'recent' || saved === 'az')) {
+            setSortFilter(saved as any)
+        }
+    }, [])
+
+    // Save sort preference when it changes
+    useEffect(() => {
+        localStorage.setItem('storyline-library-sort', sortFilter)
+    }, [sortFilter])
     
     // Local state for dragging
     const [orderedActive, setOrderedActive] = useState<Project[]>([])
@@ -315,6 +329,8 @@ export default function ProjectGrid({ projects, deletedProjects }: { projects: P
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
+
+                        <ImportBackupButton currentUserId={currentUserId} />
 
                         <Link href="/new" className="w-full md:w-auto">
                             <Button className="sanctuary-btn-primary h-14 w-full md:w-auto justify-center px-5 sm:px-8 rounded-full text-sm sm:text-base font-semibold gap-2 sm:gap-3 shadow-xl hover:shadow-primary/20">

@@ -2,7 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { isLocalProjectId } from '@/lib/persistence/project-mode'
+import { updateLocalProject, destroyLocalProject } from '@/lib/persistence/local-projects'
 import {
     Dialog,
     DialogContent,
@@ -34,7 +37,15 @@ interface ProjectSettingsModalProps {
     onOpenShare?: () => void
 }
 
-function ToggleStatePill({ checked }: { checked: boolean }) {
+function ToggleStatePill({ checked, isLocalOnly }: { checked: boolean, isLocalOnly?: boolean }) {
+    if (isLocalOnly) {
+        return (
+            <span className="inline-flex min-w-[5.5rem] items-center justify-center rounded-full border px-3 py-1 text-[8px] sm:text-[10px] font-bold uppercase tracking-widest border-indigo-100 bg-indigo-50/50 text-indigo-600">
+                Requires Cloud
+            </span>
+        )
+    }
+
     return (
         <span
             className={cn(
@@ -59,9 +70,18 @@ export default function ProjectSettingsModal({
     const { theme } = useTheme()
     const isMidnight = theme === 'midnight'
     const router = useRouter()
+    const isLocalOnly = isLocalProjectId(project.id)
     const [loading, setLoading] = useState(false)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const canManageProject = role === 'owner'
+
+    const handleLockedSettingClick = () => {
+        if (!isLocalOnly) return
+        toast.info("Cloud required", {
+            description: "Collaboration features require enabling cloud sync. This will be available in a later update.",
+            duration: 5000,
+        })
+    }
 
     const [activeTab, setActiveTab] = useState<'general' | 'metadata'>('general')
     const [title, setTitle] = useState(project.title ?? '')
@@ -81,6 +101,23 @@ export default function ProjectSettingsModal({
     async function handleSave() {
         if (!canManageProject) return
         setLoading(true)
+
+        if (isLocalProjectId(project.id)) {
+            await updateLocalProject(project.id, {
+                title: title.trim(),
+                type: type,
+                project_type: type, // sync both to match Supabase behavior
+                premise: premise.trim() || null,
+                tone: tone.trim() || null,
+                writing_mode: writingMode,
+                export_metadata: metadata as any,
+            })
+            setLoading(false)
+            onOpenChange(false)
+            router.refresh()
+            return
+        }
+
         const supabase = createClient()
         const { error } = await (supabase
             .from('projects') as any)
@@ -107,6 +144,15 @@ export default function ProjectSettingsModal({
     async function handleDelete() {
         if (!canManageProject) return
         setLoading(true)
+
+        if (isLocalProjectId(project.id)) {
+            await destroyLocalProject(project.id)
+            setLoading(false)
+            router.push('/library')
+            router.refresh()
+            return
+        }
+
         const supabase = createClient()
         const { error } = await supabase
             .from('projects')
@@ -150,7 +196,7 @@ export default function ProjectSettingsModal({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className={cn(
-                "project-settings-modal dialog-viewport-safe flex w-[calc(100%-0.75rem)] max-w-[500px] flex-col gap-0 p-0 overflow-hidden rounded-[2rem] shadow-2xl !opacity-100 backdrop-blur-none sm:w-full",
+                "project-settings-modal dialog-viewport-safe flex w-[calc(100%-1rem)] max-w-[850px] flex-col gap-0 p-0 overflow-hidden rounded-[2.5rem] shadow-2xl !opacity-100 backdrop-blur-none sm:w-full",
                 isMidnight
                     ? "border border-slate-600/30 bg-[#10192b]"
                     : "border border-slate-200/50 bg-[#fbf9f5]"
@@ -166,6 +212,8 @@ export default function ProjectSettingsModal({
                                 Configure the foundations of your story.
                             </DialogDescription>
                         </DialogHeader>
+
+
 
                         <div className="mx-5 mt-3 flex shrink-0 gap-1 rounded-xl bg-slate-100 p-1 sm:mx-8 sm:mt-4">
                             <button
@@ -228,17 +276,17 @@ export default function ProjectSettingsModal({
                                             id="writingMode"
                                             value={writingMode}
                                             onValueChange={(nextValue) => {
-                                                    if (!canManageProject) return
-                                                    const newMode = nextValue as any;
-                                                    const isMismatch = (type === 'novel' && newMode === 'screenplay') ||
-                                                                     (type === 'tv_script' && newMode === 'simple');
-                                                    
-                                                    if (isMismatch) {
-                                                        const confirm = window.confirm(`Switching editor mode may not match your project structure. ${getProjectTypeLabel('tv_script')} mode works best with ${getProjectTypeLabel('tv_script').toLowerCase()}s. Continue?`);
-                                                        if (!confirm) return;
-                                                    }
-                                                    setWritingMode(newMode);
-                                                }}
+                                                if (!canManageProject) return
+                                                const newMode = nextValue as any;
+                                                const isMismatch = (type === 'novel' && newMode === 'screenplay') ||
+                                                                 (type === 'tv_script' && newMode === 'simple');
+                                                
+                                                if (isMismatch) {
+                                                    const confirm = window.confirm(`Switching editor mode may not match your project structure. ${getProjectTypeLabel('tv_script')} mode works best with ${getProjectTypeLabel('tv_script').toLowerCase()}s. Continue?`);
+                                                    if (!confirm) return;
+                                                }
+                                                setWritingMode(newMode);
+                                            }}
                                             disabled={!canManageProject}
                                             options={[
                                                 { value: 'simple', label: 'Simple (Prose)' },
@@ -260,7 +308,7 @@ export default function ProjectSettingsModal({
                                             onChange={(e) => setPremise(e.target.value)}
                                             placeholder="The elevator pitch for your story..."
                                             disabled={!canManageProject}
-                                            className="rounded-2xl border-border bg-muted/50 focus:bg-card focus:ring-primary/20 transition-all min-h-[100px] resize-none"
+                                            className="rounded-2xl border-border bg-muted/50 focus:bg-card focus:ring-primary/20 transition-all min-h-[140px] resize-none text-sm leading-relaxed"
                                         />
                                     </div>
 
@@ -278,72 +326,143 @@ export default function ProjectSettingsModal({
                                             onChange={(e) => setTone(e.target.value)}
                                             placeholder="e.g. Noir, Whimsical, Gritty Realism..."
                                             disabled={!canManageProject}
-                                            className="rounded-2xl border-border bg-muted/50 focus:bg-card focus:ring-primary/20 transition-all min-h-[80px] resize-none"
+                                            className="rounded-2xl border-border bg-muted/50 focus:bg-card focus:ring-primary/20 transition-all min-h-[100px] resize-none text-sm leading-relaxed"
                                         />
                                     </div>
+
+                                    {isLocalOnly && (
+                                        <div className={cn(
+                                            "mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl border",
+                                            isMidnight 
+                                                ? "bg-indigo-500/10 border-indigo-400/20" 
+                                                : "bg-indigo-50 border-indigo-100"
+                                        )}>
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-indigo-500/10 rounded-lg shrink-0">
+                                                    <Globe className="w-4 h-4 text-indigo-600" />
+                                                </div>
+                                                <div className="space-y-0.5">
+                                                    <h4 className="text-sm font-bold text-indigo-900">Local Mode: private on this device</h4>
+                                                    <p className="text-xs text-indigo-700/80 font-medium">
+                                                        Stored locally. Collaboration and sharing require cloud sync.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col items-start sm:items-end gap-1 w-full sm:w-auto shrink-0">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={handleLockedSettingClick}
+                                                    className="w-full sm:w-auto rounded-lg bg-white/80 border-indigo-200 text-indigo-600 hover:bg-white hover:text-indigo-700 h-8 text-xs font-bold shadow-sm"
+                                                >
+                                                    Enable Cloud & Collaboration
+                                                </Button>
+                                                <p className="text-[9px] text-indigo-400 font-bold uppercase tracking-widest px-1">
+                                                    Coming soon
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     <div className="space-y-3">
                                         <div className="rounded-2xl border border-border bg-muted/30 p-4">
                                             <div className="flex items-start gap-4">
                                                 <div className="space-y-1 flex-1 min-w-0">
-                                                        <div className="flex items-center justify-between gap-4">
-                                                            <Label htmlFor="allowViewerFeedback" className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                                                <MessageSquare className="h-4 w-4 text-primary" />
-                                                                Allow Viewer Feedback
-                                                            </Label>
+                                                    <div className="flex items-center justify-between gap-4">
+                                                        <Label 
+                                                            htmlFor="allowViewerFeedback" 
+                                                            className={cn(
+                                                                "flex items-center gap-2 text-sm font-semibold text-foreground",
+                                                                isLocalOnly && "cursor-pointer"
+                                                            )}
+                                                            onClick={isLocalOnly ? handleLockedSettingClick : undefined}
+                                                        >
+                                                            <MessageSquare className="h-4 w-4 text-primary" />
+                                                            Allow Viewer Feedback
+                                                        </Label>
                                                         <div className="flex items-center gap-3 shrink-0">
-                                                            <ToggleStatePill checked={allowViewerFeedback} />
-                                                            <Switch
-                                                                id="allowViewerFeedback"
-                                                                checked={allowViewerFeedback}
-                                                                onCheckedChange={setAllowViewerFeedback}
-                                                                disabled={!canManageProject}
-                                                                className={cn(
-                                                                    "data-[size=default]:h-7 data-[size=default]:w-12",
-                                                                    allowViewerFeedback
-                                                                        ? "data-checked:bg-emerald-600"
-                                                                        : "data-unchecked:bg-slate-300"
-                                                                )}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <p className="text-xs leading-relaxed text-slate-500">
-                                                        When on, viewers can highlight passages, leave feedback, and save AI conversations into feedback threads. They still cannot edit the project itself.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="rounded-2xl border border-border bg-muted/30 p-4">
-                                            <div className="space-y-3">
-                                                <div className="flex items-start gap-4">
-                                                    <div className="space-y-1 flex-1 min-w-0">
-                                                        <div className="flex items-center justify-between gap-4">
-                                                            <Label htmlFor="shareOwnerFeedback" className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                                                <Globe className="h-4 w-4 text-primary" />
-                                                                Share Owner Feedback Broadly
-                                                            </Label>
-                                                            <div className="flex items-center gap-3 shrink-0">
-                                                                <ToggleStatePill checked={shareOwnerFeedback} />
+                                                            <ToggleStatePill checked={allowViewerFeedback} isLocalOnly={isLocalOnly} />
+                                                            <div onClick={isLocalOnly ? handleLockedSettingClick : undefined} className="flex">
                                                                 <Switch
-                                                                    id="shareOwnerFeedback"
-                                                                    checked={shareOwnerFeedback}
-                                                                    onCheckedChange={setShareOwnerFeedback}
-                                                                    disabled={!canManageProject}
+                                                                    id="allowViewerFeedback"
+                                                                    checked={allowViewerFeedback}
+                                                                    onCheckedChange={setAllowViewerFeedback}
+                                                                    disabled={!canManageProject || isLocalOnly}
                                                                     className={cn(
                                                                         "data-[size=default]:h-7 data-[size=default]:w-12",
-                                                                        shareOwnerFeedback
+                                                                        allowViewerFeedback && !isLocalOnly
                                                                             ? "data-checked:bg-emerald-600"
                                                                             : "data-unchecked:bg-slate-300"
                                                                     )}
                                                                 />
                                                             </div>
                                                         </div>
+                                                    </div>
+                                                    <p className="text-xs leading-relaxed text-slate-500">
+                                                        {isLocalOnly 
+                                                            ? "Enable cloud sync to let invited viewers highlight passages and leave feedback."
+                                                            : "When on, viewers can highlight passages, leave feedback, and save AI conversations into feedback threads. They still cannot edit the project itself."
+                                                        }
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-2xl border border-border bg-muted/30 p-4">
+                                            <div className="space-y-3">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="space-y-1 flex-1 min-w-0">
+                                                        <div className="flex items-center justify-between gap-4">
+                                                            <Label 
+                                                                htmlFor="shareOwnerFeedback" 
+                                                                className={cn(
+                                                                    "flex items-center gap-2 text-sm font-semibold text-foreground",
+                                                                    isLocalOnly && "cursor-pointer"
+                                                                )}
+                                                                onClick={isLocalOnly ? handleLockedSettingClick : undefined}
+                                                            >
+                                                                <Globe className="h-4 w-4 text-primary" />
+                                                                Share Owner Feedback Broadly
+                                                            </Label>
+                                                            <div className="flex items-center gap-3 shrink-0">
+                                                                <ToggleStatePill checked={shareOwnerFeedback} isLocalOnly={isLocalOnly} />
+                                                                <div onClick={isLocalOnly ? handleLockedSettingClick : undefined} className="flex">
+                                                                    <Switch
+                                                                        id="shareOwnerFeedback"
+                                                                        checked={shareOwnerFeedback}
+                                                                        onCheckedChange={setShareOwnerFeedback}
+                                                                        disabled={!canManageProject || isLocalOnly}
+                                                                        className={cn(
+                                                                            "data-[size=default]:h-7 data-[size=default]:w-12",
+                                                                            shareOwnerFeedback && !isLocalOnly
+                                                                                ? "data-checked:bg-emerald-600"
+                                                                                : "data-unchecked:bg-slate-300"
+                                                                        )}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                         <p className="text-xs leading-relaxed text-slate-500">
-                                                            Legacy project-wide visibility for owner feedback. Per-comment sharing is available directly from each feedback item and is recommended for finer privacy control.
+                                                            {isLocalOnly 
+                                                                ? "Cloud sync is required before feedback can be shared with collaborators."
+                                                                : "Legacy project-wide visibility for owner feedback. Per-comment sharing is available directly from each feedback item and is recommended for finer privacy control."
+                                                            }
                                                         </p>
                                                     </div>
                                                 </div>
-                                                {onOpenShare && (
+                                                {isLocalOnly ? (
+                                                     <button
+                                                        type="button"
+                                                        onClick={handleLockedSettingClick}
+                                                        className="flex w-full items-center justify-between rounded-xl border border-indigo-100 bg-indigo-50/30 px-3 py-2 text-left transition-colors hover:bg-indigo-50"
+                                                    >
+                                                        <span className="flex items-center gap-2 text-[11px] font-semibold text-indigo-600">
+                                                            <Users className="h-3.5 w-3.5 text-indigo-400" />
+                                                            Enable cloud to manage collaborators
+                                                        </span>
+                                                        <ArrowUpRight className="h-3.5 w-3.5 text-indigo-400" />
+                                                    </button>
+                                                ) : onOpenShare && (
                                                     <button
                                                         type="button"
                                                         onClick={onOpenShare}
@@ -358,36 +477,50 @@ export default function ProjectSettingsModal({
                                                 )}
                                             </div>
                                         </div>
+
                                         <div className="rounded-2xl border border-border bg-muted/30 p-4">
                                             <div className="flex items-start gap-4">
                                                 <div className="space-y-1 flex-1 min-w-0">
                                                     <div className="flex items-center justify-between gap-4">
-                                                        <Label htmlFor="allowCollaboratorExports" className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                                        <Label 
+                                                            htmlFor="allowCollaboratorExports" 
+                                                            className={cn(
+                                                                "flex items-center gap-2 text-sm font-semibold text-foreground",
+                                                                isLocalOnly && "cursor-pointer"
+                                                            )}
+                                                            onClick={isLocalOnly ? handleLockedSettingClick : undefined}
+                                                        >
                                                             <Globe className="h-4 w-4 text-primary" />
                                                             Allow Collaborator Exports
                                                         </Label>
                                                         <div className="flex items-center gap-3 shrink-0">
-                                                            <ToggleStatePill checked={allowCollaboratorExports} />
-                                                            <Switch
-                                                                id="allowCollaboratorExports"
-                                                                checked={allowCollaboratorExports}
-                                                                onCheckedChange={setAllowCollaboratorExports}
-                                                                disabled={!canManageProject}
-                                                                className={cn(
-                                                                    "data-[size=default]:h-7 data-[size=default]:w-12",
-                                                                    allowCollaboratorExports
-                                                                        ? "data-checked:bg-emerald-600"
-                                                                        : "data-unchecked:bg-slate-300"
-                                                                )}
-                                                            />
+                                                            <ToggleStatePill checked={allowCollaboratorExports} isLocalOnly={isLocalOnly} />
+                                                            <div onClick={isLocalOnly ? handleLockedSettingClick : undefined} className="flex">
+                                                                <Switch
+                                                                    id="allowCollaboratorExports"
+                                                                    checked={allowCollaboratorExports}
+                                                                    onCheckedChange={setAllowCollaboratorExports}
+                                                                    disabled={!canManageProject || isLocalOnly}
+                                                                    className={cn(
+                                                                        "data-[size=default]:h-7 data-[size=default]:w-12",
+                                                                        allowCollaboratorExports && !isLocalOnly
+                                                                            ? "data-checked:bg-emerald-600"
+                                                                            : "data-unchecked:bg-slate-300"
+                                                                    )}
+                                                                />
+                                                            </div>
                                                         </div>
                                                     </div>
                                                     <p className="text-xs leading-relaxed text-slate-500">
-                                                        When off, collaborators can still read the shared {getProjectTypeLabel(project.type).toLowerCase()} but cannot export it. The owner can always export.
+                                                        {isLocalOnly 
+                                                            ? "Cloud sync is required before collaborator export permissions can be managed."
+                                                            : `When off, collaborators can still read the shared ${getProjectTypeLabel(project.type).toLowerCase()} but cannot export it. The owner can always export.`
+                                                        }
                                                     </p>
                                                 </div>
                                             </div>
                                         </div>
+                                        
                                         {!canManageProject && (
                                             <p className="px-1 text-[10px] italic text-slate-400">
                                                 Only the owner can change collaboration, feedback visibility, and export access settings.
@@ -397,7 +530,7 @@ export default function ProjectSettingsModal({
                                 </div>
                             ) : (
                                 <div className="space-y-5 animate-in fade-in slide-in-from-right-2 duration-300 sm:space-y-6">
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-2 gap-6">
                                         <div className="space-y-2.5">
                                             <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                                 <Type className="w-3 h-3" /> Author Name
@@ -424,7 +557,7 @@ export default function ProjectSettingsModal({
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-2 gap-6">
                                         <div className="space-y-2.5">
                                             <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                                 <Copyright className="w-3 h-3" /> Copyright
@@ -451,7 +584,7 @@ export default function ProjectSettingsModal({
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-2 gap-6">
                                         <div className="space-y-2.5">
                                             <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                                 <Globe className="w-3 h-3" /> Language
@@ -491,7 +624,7 @@ export default function ProjectSettingsModal({
                                         />
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-2 gap-6">
                                         <div className="space-y-2.5">
                                             <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                                 <Tag className="w-3 h-3" /> Keywords
@@ -556,7 +689,7 @@ export default function ProjectSettingsModal({
                                     )}
                                 </div>
 
-                                <div className="mx-auto grid w-full max-w-[36rem] grid-cols-[0.92fr_1.58fr] gap-3">
+                                <div className="mx-auto grid w-full max-w-[42rem] grid-cols-[0.92fr_1.58fr] gap-4">
                                     <Button
                                         variant="outline"
                                         onClick={() => onOpenChange(false)}

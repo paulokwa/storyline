@@ -46,6 +46,7 @@ import ExportModal from '@/components/export/ExportModal'
 import { getProjectTypeLabel } from '@/lib/constants'
 import ProjectSettingsModal from '@/components/project/ProjectSettingsModal'
 import ShareModal from '@/components/project/ShareModal'
+import RestoreBackupModal from '@/components/project/RestoreBackupModal'
 import { cn, getUserColor } from '@/lib/utils'
 import type { Database } from '@/lib/supabase/types'
 import { ReaderProvider, useSpeech } from '@/hooks/useSpeech'
@@ -56,6 +57,8 @@ import { MessageSquare } from 'lucide-react'
 import { PresenceProvider, usePresence } from '@/components/project/PresenceContext'
 import type { ProjectStorageMode } from '@/lib/persistence/project-mode'
 import { updateLocalProject } from '@/lib/persistence/local-projects'
+import { exportLocalBackup } from '@/lib/backup/export-local-backup'
+import { recordBackupComplete } from '@/lib/backup/backup-reminder'
 import {
     Tooltip,
     TooltipContent,
@@ -129,6 +132,7 @@ export default function ProjectShell({
     const [exportModalOpen, setExportModalOpen] = useState(false)
     const [settingsModalOpen, setSettingsModalOpen] = useState(false)
     const [shareModalOpen, setShareModalOpen] = useState(false)
+    const [restoreModalOpen, setRestoreModalOpen] = useState(false)
     const [shortcutsOpen, setShortcutsOpen] = useState(false)
     const [tourOpen, setTourOpen] = useState(false)
     const onboardingStorageKey = `storyline-onboarding:${currentUserId}:${project.type}`
@@ -213,6 +217,7 @@ export default function ProjectShell({
                         setExportModalOpen={setExportModalOpen}
                         setSettingsModalOpen={setSettingsModalOpen}
                         setShareModalOpen={setShareModalOpen}
+                        setRestoreModalOpen={setRestoreModalOpen}
                         shortcutsOpen={shortcutsOpen}
                         setShortcutsOpen={setShortcutsOpen}
                         role={role}
@@ -254,17 +259,6 @@ export default function ProjectShell({
                                         setSettingsModalOpen(true)
                                     }}
                                 />
-                                
-                                <ProjectSettingsModal 
-                                    open={settingsModalOpen} 
-                                    onOpenChange={setSettingsModalOpen} 
-                                    project={project} 
-                                    role={role}
-                                    onOpenShare={() => {
-                                        setSettingsModalOpen(false)
-                                        setShareModalOpen(true)
-                                    }}
-                                />
 
                                 <ShareModal
                                     open={shareModalOpen}
@@ -273,6 +267,36 @@ export default function ProjectShell({
                                 />
                             </>
                         )}
+
+                        {isLocalOnly && (
+                            <RestoreBackupModal
+                                open={restoreModalOpen}
+                                onOpenChange={setRestoreModalOpen}
+                                projectId={project.id}
+                                projectTitle={project.title ?? 'Untitled'}
+                                currentUserId={currentUserId}
+                                onRestoreComplete={() => {
+                                    window.location.reload()
+                                }}
+                                onOpenExport={() => {
+                                    setRestoreModalOpen(false)
+                                    exportLocalBackup(project.id).then(({ wordCount }) => {
+                                        recordBackupComplete(project.id, wordCount)
+                                    })
+                                }}
+                            />
+                        )}
+
+                        <ProjectSettingsModal 
+                            open={settingsModalOpen} 
+                            onOpenChange={setSettingsModalOpen} 
+                            project={project} 
+                            role={role}
+                            onOpenShare={() => {
+                                setSettingsModalOpen(false)
+                                setShareModalOpen(true)
+                            }}
+                        />
 
                         <ShortcutsLegend 
                             open={shortcutsOpen} 
@@ -304,6 +328,7 @@ function ProjectShellInner({
     setExportModalOpen, 
     setSettingsModalOpen, 
     setShareModalOpen,
+    setRestoreModalOpen,
     shortcutsOpen,
     setShortcutsOpen,
     role,
@@ -332,7 +357,7 @@ function ProjectShellInner({
     // Register actions in the global state for AppNav access
     const setActions = useProjectActionsStore(state => state.setActions)
     const isLocalOnly = storageMode === 'local-only'
-    const canExport = !isLocalOnly && (role === 'owner' || (project.allow_collaborator_exports ?? false))
+    const canExport = role === 'owner' || (!isLocalOnly && (project.allow_collaborator_exports ?? false))
     const canShare = !isLocalOnly && role === 'owner'
     const supportsAi = !isLocalOnly
     const supportsComments = true
@@ -341,27 +366,35 @@ function ProjectShellInner({
     useEffect(() => {
         setActions({
             export: () => {
-                if (!isLocalOnly) setExportModalOpen(true)
+                if (isLocalOnly) {
+                    // Local-only projects: trigger a .storyline backup download
+                    void exportLocalBackup(project.id).then(({ wordCount }) => {
+                        recordBackupComplete(project.id, wordCount)
+                    }).catch((err) => {
+                        console.error('[ProjectShell] Local backup export failed:', err)
+                    })
+                } else {
+                    setExportModalOpen(true)
+                }
             },
             share: () => {
                 if (!isLocalOnly) setShareModalOpen(true)
             },
             settings: () => {
-                if (!isLocalOnly) setSettingsModalOpen(true)
+                setSettingsModalOpen(true)
             },
             stats: () => {
-                if (!isLocalOnly) router.push(`/project/${project.id}/stats`)
+                router.push(`/project/${project.id}/stats`)
             },
             canShare,
             canExport,
+            restore: isLocalOnly ? () => setRestoreModalOpen(true) : undefined,
             exportDisabledReason: canExport
                 ? null
-                : isLocalOnly
-                    ? 'Export for local-only projects is not available yet.'
-                    : 'The owner has disabled exports for collaborators.'
+                : 'The owner has disabled exports for collaborators.',
         })
         return () => setActions(null)
-    }, [canExport, canShare, isLocalOnly, project.id, router, setActions, setExportModalOpen, setShareModalOpen, setSettingsModalOpen])
+    }, [canExport, canShare, isLocalOnly, project.id, router, setActions, setExportModalOpen, setShareModalOpen, setSettingsModalOpen, setRestoreModalOpen])
     const { commentsPanelOpen, setCommentsPanelOpen } = useComments()
     
     // Responsive checks

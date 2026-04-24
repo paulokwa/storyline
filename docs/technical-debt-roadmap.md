@@ -80,3 +80,13 @@ This document tracks identified architectural risks, technical debt, and reliabi
 ### 3. Writing UX Polish
 *   **Description**: Implement subtle animations for cursor focus, smoother "paper" transitions, and customizable font-size/theme settings (Sepia/Dark).
 *   **Priority**: Low
+
+### 4. Optional Later Improvements (Backup & Assets)
+*   **Description**: Refine the local-only data management and recovery experience.
+*   **Items**:
+    *   **Backup file size warning**: Warn users when a backup is likely to be very large (especially if assets like images are embedded).
+    *   **Versioning**: Support multiple local backups with timestamps/names rather than a single manual file.
+    *   **Conflict handling**: Strategy for handling state mismatches during future cloud sync or import merges.
+    *   **Better asset handling**: Optimize how binary files and high-res attachments are serialized in the `.storyline` format.
+*   **Priority**: Low
+

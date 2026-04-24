@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
@@ -100,6 +100,11 @@ export default function RecoveryTab({
     const [isPermanentlyDeleting, setIsPermanentlyDeleting] = useState(false)
     const [versionToDelete, setVersionToDelete] = useState<any | null>(null)
     const [isDeletingVersion, setIsDeletingVersion] = useState(false)
+    const [isMounted, setIsMounted] = useState(false)
+
+    useEffect(() => {
+        setIsMounted(true)
+    }, [])
 
     const searchParams = useSearchParams()
 
@@ -467,7 +472,7 @@ export default function RecoveryTab({
                                                             </span>
                                                             <span className="text-[10px] text-slate-300 font-medium flex items-center gap-1">
                                                                 <Clock className="w-3 h-3" />
-                                                                {new Date(item.deleted_at).toLocaleDateString()}
+                                                                {isMounted ? new Date(item.deleted_at).toLocaleDateString() : "..."}
                                                             </span>
                                                         </div>
                                                         <h3 className="text-base sm:text-lg font-serif italic text-slate-800 truncate">{item.title || item.name || 'Untitled'}</h3>
@@ -553,7 +558,7 @@ export default function RecoveryTab({
                                                  <div className="flex-1 min-w-0">
                                                      <div className="flex items-center gap-2 mb-0.5">
                                                          <span className="text-[10px] text-slate-300 font-medium">
-                                                            {new Date(version.created_at).toLocaleDateString()} · {new Date(version.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            {isMounted ? `${new Date(version.created_at).toLocaleDateString()} · ${new Date(version.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "..."}
                                                          </span>
                                                      </div>
                                                      <h3 className="text-base sm:text-lg font-serif italic text-slate-800 truncate leading-snug">
@@ -618,7 +623,7 @@ export default function RecoveryTab({
                                                             <Layers className="w-5 h-5" />
                                                         </div>
                                                         <div>
-                                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{new Date(snapshot.created_at).toLocaleDateString()}</p>
+                                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{isMounted ? new Date(snapshot.created_at).toLocaleDateString() : "..."}</p>
                                                         </div>
                                                     </div>
                                                     {!isReadOnly && (
@@ -745,7 +750,7 @@ export default function RecoveryTab({
                     <div className="w-full max-w-sm bg-white rounded-3xl p-8 text-center">
                          <h3 className="text-xl font-serif italic text-slate-800 mb-2">Remove Version?</h3>
                          <p className="text-xs text-slate-400 mb-8 font-medium italic leading-relaxed">
-                            Permanently delete this version from {new Date(versionToDelete.created_at).toLocaleDateString()}?
+                            Permanently delete this version from {isMounted ? new Date(versionToDelete.created_at).toLocaleDateString() : "..."}?
                          </p>
                          <div className="grid grid-cols-2 gap-3">
                             <Button variant="ghost" onClick={() => setVersionToDelete(null)} className="uppercase tracking-widest text-[10px] font-bold text-slate-400">Cancel</Button>
