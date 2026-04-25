@@ -27,7 +27,8 @@ export default async function ProjectLayout({
     children: React.ReactNode
     params: Promise<{ id: string }>
 }) {
-    const { id } = await params
+    const { id: rawId } = await params
+    const id = decodeURIComponent(rawId)
     const supabase = await createClient()
     const user = await requireVerifiedUser()
 

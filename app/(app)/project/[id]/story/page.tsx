@@ -7,7 +7,8 @@ import { loadStoryWorkspaceData } from '@/lib/persistence/project-content'
 import { isLocalProjectId } from '@/lib/persistence/project-mode'
 
 export default async function StoryPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params
+    const { id: rawId } = await params
+    const id = decodeURIComponent(rawId)
 
     if (isLocalProjectId(id)) {
         return <LocalStoryPage projectId={id} />

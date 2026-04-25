@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import ProjectShell from '@/components/project/ProjectShell'
 import { getLocalProject, touchLocalProject, type LocalProjectRow } from '@/lib/persistence/local-projects'
 import BackupBanner from '@/components/project/local/BackupBanner'
+import MigratedBanner from '@/components/project/local/MigratedBanner'
 
 export default function LocalProjectShell({
     projectId,
@@ -83,7 +84,14 @@ export default function LocalProjectShell({
             members={[]}
             storageMode="local-only"
         >
-            <BackupBanner projectId={projectId} />
+            {project.migrated_to_cloud_project_id ? (
+                <MigratedBanner 
+                    projectId={projectId} 
+                    cloudProjectId={project.migrated_to_cloud_project_id} 
+                />
+            ) : (
+                <BackupBanner projectId={projectId} />
+            )}
             {children}
         </ProjectShell>
     )

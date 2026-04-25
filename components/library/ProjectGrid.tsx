@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -82,6 +82,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
     const [confirmDeleteDraft, setConfirmDeleteDraft] = useState(false)
     const [view, setView] = useState<'active' | 'trash'>('active')
     const [sortFilter, setSortFilter] = useState<'custom' | 'recent' | 'az'>('custom')
+    const initialMount = useRef(true)
 
     // Load sort preference on mount
     useEffect(() => {
@@ -93,6 +94,10 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
 
     // Save sort preference when it changes
     useEffect(() => {
+        if (initialMount.current) {
+            initialMount.current = false
+            return
+        }
         localStorage.setItem('storyline-library-sort', sortFilter)
     }, [sortFilter])
     
@@ -746,12 +751,19 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                                 Owner
                             </Badge>
                         )}
-                        {isLocalProject && (
+                        {isLocalProject ? (
                              <Badge variant="outline" className={cn(
                                  "text-[9px] uppercase tracking-wider py-0 px-2 font-bold",
                                  hasCover ? "border-white/20 text-white/60 bg-white/5 backdrop-blur-md" : "border-emerald-100 text-emerald-600 bg-emerald-50/30"
                              )}>
                                 Local Only
+                            </Badge>
+                        ) : (
+                            <Badge variant="outline" className={cn(
+                                "text-[9px] uppercase tracking-wider py-0 px-2 font-bold",
+                                hasCover ? "border-white/20 text-white/60 bg-white/5 backdrop-blur-md" : "border-sky-100 text-sky-600 bg-sky-50/30"
+                            )}>
+                                Cloud Sync
                             </Badge>
                         )}
 

@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { isLocalProjectId } from '@/lib/persistence/project-mode'
 import { updateLocalProject, destroyLocalProject } from '@/lib/persistence/local-projects'
+import { migrateLocalProjectToCloud } from '@/lib/persistence/local-to-cloud'
 import {
     Dialog,
     DialogContent,
@@ -74,6 +75,11 @@ export default function ProjectSettingsModal({
     const [loading, setLoading] = useState(false)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const canManageProject = role === 'owner'
+    const localProject = project as any
+    const isAlreadyMigrated = !!localProject.migrated_to_cloud_project_id
+
+    const [showMigrationConfirm, setShowMigrationConfirm] = useState(false)
+    const [migrationProgress, setMigrationProgress] = useState<string | null>(null)
 
     const handleLockedSettingClick = () => {
         if (!isLocalOnly) return
@@ -141,6 +147,32 @@ export default function ProjectSettingsModal({
         }
     }
 
+    async function handleMigration() {
+        if (!isLocalOnly || !canManageProject || isAlreadyMigrated) return
+        setLoading(true)
+        setMigrationProgress('Initializing migration...')
+        
+        try {
+            const newProjectId = await migrateLocalProjectToCloud(project.id, (progress) => {
+                setMigrationProgress(progress)
+            })
+            
+            toast.success('Successfully migrated project to cloud!')
+            setLoading(false)
+            setMigrationProgress(null)
+            setShowMigrationConfirm(false)
+            
+            // Redirect to the new cloud project
+            onOpenChange(false)
+            router.push(`/project/${newProjectId}/story`)
+        } catch (error: any) {
+            console.error('Migration failed:', error)
+            toast.error(error.message || 'Failed to migrate project.')
+            setLoading(false)
+            setMigrationProgress(null)
+        }
+    }
+
     async function handleDelete() {
         if (!canManageProject) return
         setLoading(true)
@@ -201,7 +233,44 @@ export default function ProjectSettingsModal({
                     ? "border border-slate-600/30 bg-[#10192b]"
                     : "border border-slate-200/50 bg-[#fbf9f5]"
             )}>
-                {!showDeleteConfirm ? (
+                {showMigrationConfirm ? (
+                    <div className="py-6 space-y-6 px-6">
+                        <div className="w-20 h-20 bg-indigo-500/10 rounded-[2rem] flex items-center justify-center mx-auto text-indigo-600">
+                            <Globe className="w-10 h-10" />
+                        </div>
+                        <div className="text-center space-y-3">
+                            <h2 className="text-2xl font-serif text-foreground">Enable Cloud Sync?</h2>
+                            <div className="text-muted-foreground max-w-sm mx-auto text-sm space-y-2">
+                                <p>Your project and assets will be securely uploaded to the cloud, enabling collaboration and cross-device sync.</p>
+                                <p className="font-semibold text-foreground">Your local project will be kept as a backup. AI settings are not affected.</p>
+                            </div>
+                        </div>
+                        
+                        {migrationProgress && (
+                            <div className="mt-4 p-4 bg-muted/50 rounded-xl flex items-center justify-center border border-border">
+                                <p className="text-sm font-semibold text-indigo-600 animate-pulse">{migrationProgress}</p>
+                            </div>
+                        )}
+                        
+                        <div className="flex flex-col gap-3">
+                            <Button
+                                onClick={handleMigration}
+                                disabled={loading}
+                                className="h-14 rounded-full text-base font-semibold shadow-lg shadow-indigo-200/50 bg-indigo-600 hover:bg-indigo-700 text-white"
+                            >
+                                {loading ? 'Migrating...' : 'Yes, Upload to Cloud'}
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                onClick={() => setShowMigrationConfirm(false)}
+                                disabled={loading}
+                                className="h-12 rounded-full text-muted-foreground"
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    </div>
+                ) : !showDeleteConfirm ? (
                     <>
                         <DialogHeader className={cn(
                             "shrink-0 border-b px-5 pb-5 pt-10 sm:px-8 sm:pb-8 sm:pt-12",
@@ -342,24 +411,41 @@ export default function ProjectSettingsModal({
                                                     <Globe className="w-4 h-4 text-indigo-600" />
                                                 </div>
                                                 <div className="space-y-0.5">
-                                                    <h4 className="text-sm font-bold text-indigo-900">Local Mode: private on this device</h4>
+                                                    <h4 className="text-sm font-bold text-indigo-900">
+                                                        {isAlreadyMigrated ? 'Cloud Project Available' : 'Local Mode: private on this device'}
+                                                    </h4>
                                                     <p className="text-xs text-indigo-700/80 font-medium">
-                                                        Stored locally. Collaboration and sharing require cloud sync.
+                                                        {isAlreadyMigrated 
+                                                            ? 'This project has been migrated to the cloud for collaboration.'
+                                                            : 'Stored locally. Collaboration and sharing require cloud sync.'
+                                                        }
                                                     </p>
                                                 </div>
                                             </div>
                                             <div className="flex flex-col items-start sm:items-end gap-1 w-full sm:w-auto shrink-0">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={handleLockedSettingClick}
-                                                    className="w-full sm:w-auto rounded-lg bg-white/80 border-indigo-200 text-indigo-600 hover:bg-white hover:text-indigo-700 h-8 text-xs font-bold shadow-sm"
-                                                >
-                                                    Enable Cloud & Collaboration
-                                                </Button>
-                                                <p className="text-[9px] text-indigo-400 font-bold uppercase tracking-widest px-1">
-                                                    Coming soon
-                                                </p>
+                                                {isAlreadyMigrated ? (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            onOpenChange(false);
+                                                            router.push(`/project/${localProject.migrated_to_cloud_project_id}/story`);
+                                                        }}
+                                                        className="w-full sm:w-auto rounded-lg bg-white/80 border-indigo-200 text-indigo-600 hover:bg-white hover:text-indigo-700 h-8 text-xs font-bold shadow-sm"
+                                                    >
+                                                        Open Cloud Version
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setShowMigrationConfirm(true)}
+                                                        disabled={!canManageProject}
+                                                        className="w-full sm:w-auto rounded-lg bg-white/80 border-indigo-200 text-indigo-600 hover:bg-white hover:text-indigo-700 h-8 text-xs font-bold shadow-sm"
+                                                    >
+                                                        Enable Cloud & Collaboration
+                                                    </Button>
+                                                )}
                                             </div>
                                         </div>
                                     )}

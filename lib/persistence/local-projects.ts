@@ -26,6 +26,7 @@ type ObjectRow = Database['public']['Tables']['objects']['Row']
 export type LocalProjectRow = ProjectRow & {
     is_local: true
     storage_mode: 'local-only'
+    migrated_to_cloud_project_id?: string | null
 }
 
 type LocalSceneWithLinks = SceneRow & {
@@ -84,6 +85,7 @@ function createLocalProjectRow(input: CreateLocalProjectInput): LocalProjectRow 
         writing_mode: writingMode,
         is_local: true,
         storage_mode: 'local-only',
+        migrated_to_cloud_project_id: null,
     }
 }
 
@@ -265,7 +267,7 @@ export async function listLocalProjects() {
     })
 }
 
-export async function updateLocalProject(projectId: string, updates: ProjectUpdate) {
+export async function updateLocalProject(projectId: string, updates: ProjectUpdate & { migrated_to_cloud_project_id?: string | null }) {
     const project = await requireLocalProject(projectId)
     const nextProject: LocalProjectRow = {
         ...project,
