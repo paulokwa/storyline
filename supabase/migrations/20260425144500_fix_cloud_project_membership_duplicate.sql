@@ -1,13 +1,3 @@
-ALTER TABLE public.profiles
-    ADD COLUMN IF NOT EXISTS preferred_storage_mode TEXT NOT NULL DEFAULT 'local';
-
-ALTER TABLE public.profiles
-    DROP CONSTRAINT IF EXISTS profiles_preferred_storage_mode_check;
-
-ALTER TABLE public.profiles
-    ADD CONSTRAINT profiles_preferred_storage_mode_check
-    CHECK (preferred_storage_mode IN ('local', 'cloud'));
-
 CREATE OR REPLACE FUNCTION public.create_cloud_project(p_blueprint JSONB)
 RETURNS UUID
 LANGUAGE plpgsql
