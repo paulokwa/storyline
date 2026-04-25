@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Tv, BookOpen, Zap, Map, ChevronRight, ChevronLeft, Sparkles, FileText } from 'lucide-react'
+import { Tv, BookOpen, Zap, Map, ChevronRight, ChevronLeft, Sparkles, FileText, LockKeyhole, Cloud } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import type { ProjectType, WritingMode } from '@/lib/supabase/types'
 import GuidedFlow from '@/components/new-project/GuidedFlow'
@@ -13,7 +13,7 @@ import CoverPicker from '@/components/project/CoverPicker'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { isTemporaryCoverUrl } from '@/lib/supabase/project-covers'
-import { createLocalProject } from '@/lib/persistence/local-projects'
+import { createProject as createStoredProject, type PreferredStorageMode } from '@/lib/persistence/projects'
 import {
     TooltipProvider,
 } from "@/components/ui/tooltip"
@@ -41,6 +41,9 @@ export default function NewProjectPage() {
     })
     const [pendingCoverFile, setPendingCoverFile] = useState<File | null>(null)
     const [creating, setCreating] = useState(false)
+    const [preferredStorageMode, setPreferredStorageMode] = useState<PreferredStorageMode>('local')
+    const [selectedStorageMode, setSelectedStorageMode] = useState<PreferredStorageMode>('local')
+    const storageSelectionTouchedRef = useRef(false)
 
     // Draft Persistence
     useEffect(() => {
@@ -65,6 +68,34 @@ export default function NewProjectPage() {
             localStorage.setItem('storyline-new-project-draft', JSON.stringify({ state, step }))
         }
     }, [state, step])
+
+    useEffect(() => {
+        let cancelled = false
+        const supabase = createClient()
+
+        void (async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user || cancelled) return
+
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('preferred_storage_mode')
+                .eq('id', user.id)
+                .maybeSingle()
+
+            if (!cancelled) {
+                const profileStorageMode: PreferredStorageMode = profile?.preferred_storage_mode === 'cloud' ? 'cloud' : 'local'
+                setPreferredStorageMode(profileStorageMode)
+                if (!storageSelectionTouchedRef.current) {
+                    setSelectedStorageMode(profileStorageMode)
+                }
+            }
+        })()
+
+        return () => {
+            cancelled = true
+        }
+    }, [])
 
     function readFileAsDataUrl(file: File) {
         return new Promise<string>((resolve, reject) => {
@@ -103,17 +134,21 @@ export default function NewProjectPage() {
         }
 
         try {
+            const storageMode = selectedStorageMode
             const writingMode = extras?.writingMode || (state.type ? DEFAULT_WRITING_MODE_BY_TYPE[state.type] : 'simple')
             const selectedCoverFile = extras?.coverFile ?? pendingCoverFile
             let persistedCoverUrl = extras?.coverUrl || state.coverUrl
 
-            if (selectedCoverFile) {
+            if (storageMode === 'local' && selectedCoverFile) {
                 persistedCoverUrl = await readFileAsDataUrl(selectedCoverFile)
+            } else if (storageMode === 'cloud' && selectedCoverFile) {
+                persistedCoverUrl = ''
             } else if (isTemporaryCoverUrl(persistedCoverUrl)) {
                 persistedCoverUrl = ''
             }
 
-            const project = await createLocalProject({
+            const project = await createStoredProject({
+                storageMode,
                 userId: user.id,
                 title: state.title || extras?.title || 'My New Project',
                 type: state.type!,
@@ -138,6 +173,15 @@ export default function NewProjectPage() {
         } finally {
             setCreating(false)
         }
+    }
+
+    const creatingLabel = selectedStorageMode === 'cloud'
+        ? 'Creating your cloud project...'
+        : 'Creating...'
+
+    const handleStorageModeChange = (storageMode: PreferredStorageMode) => {
+        storageSelectionTouchedRef.current = true
+        setSelectedStorageMode(storageMode)
     }
 
     const steps: Step[] = (() => {
@@ -205,6 +249,9 @@ export default function NewProjectPage() {
                             <StepStartMode
                                 value={state.startMode}
                                 projectType={state.type!}
+                                storageMode={selectedStorageMode}
+                                preferredStorageMode={preferredStorageMode}
+                                onStorageModeChange={handleStorageModeChange}
                                 onSelect={(startMode) => {
                                     setState(s => ({ ...s, startMode }))
                                     if (startMode === 'guided') {
@@ -227,6 +274,7 @@ export default function NewProjectPage() {
                                 onComplete={createProject}
                                 onBack={() => setStep('start_mode')}
                                 creating={creating}
+                                creatingLabel={creatingLabel}
                             />
                         )}
 
@@ -236,6 +284,7 @@ export default function NewProjectPage() {
                                 onComplete={(chunks) => createProject({ chunks })}
                                 onBack={() => setStep('start_mode')}
                                 creating={creating}
+                                creatingLabel={creatingLabel}
                             />
                         )}
 
@@ -247,6 +296,7 @@ export default function NewProjectPage() {
                                 onComplete={() => createProject()}
                                 onBack={() => setStep('start_mode')}
                                 creating={creating}
+                                creatingLabel={creatingLabel}
                             />
                         )}
 
@@ -331,9 +381,12 @@ function StepTypeSelect({ value, onSelect, onBack }: {
     )
 }
 
-function StepStartMode({ value, projectType, onSelect, onBack, creating }: {
+function StepStartMode({ value, projectType, storageMode, preferredStorageMode, onStorageModeChange, onSelect, onBack, creating }: {
     value: StartMode | null
     projectType: ProjectType
+    storageMode: PreferredStorageMode
+    preferredStorageMode: PreferredStorageMode
+    onStorageModeChange: (mode: PreferredStorageMode) => void
     onSelect: (m: StartMode) => void
     onBack: () => void
     creating: boolean
@@ -346,6 +399,13 @@ function StepStartMode({ value, projectType, onSelect, onBack, creating }: {
                 </h1>
                 <p className="text-slate-500 font-medium">Choose how you want to start.</p>
             </div>
+
+            <StorageModeSelector
+                value={storageMode}
+                preferredStorageMode={preferredStorageMode}
+                onChange={onStorageModeChange}
+                disabled={creating}
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <TypeCard
@@ -385,6 +445,84 @@ function StepStartMode({ value, projectType, onSelect, onBack, creating }: {
                 </button>
             )}
         </div>
+    )
+}
+
+function StorageModeSelector({ value, preferredStorageMode, onChange, disabled }: {
+    value: PreferredStorageMode
+    preferredStorageMode: PreferredStorageMode
+    onChange: (mode: PreferredStorageMode) => void
+    disabled?: boolean
+}) {
+    return (
+        <div className="space-y-3">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <div className="text-xs font-bold uppercase tracking-[0.24em] text-[#546354]/70">Storage</div>
+                    <p className="text-sm text-slate-500 font-medium">Choose where this project will be stored.</p>
+                </div>
+                <div className="text-xs text-slate-400 font-semibold">
+                    Default: {preferredStorageMode === 'cloud' ? 'Cloud & collaboration' : 'Private on this device'}
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <StorageModeOption
+                    icon={<LockKeyhole className="w-5 h-5" />}
+                    title="Private on this device"
+                    description="Stored locally. Works offline. You can enable cloud later."
+                    selected={value === 'local'}
+                    disabled={disabled}
+                    onClick={() => onChange('local')}
+                />
+                <StorageModeOption
+                    icon={<Cloud className="w-5 h-5" />}
+                    title="Cloud & collaboration"
+                    description="Stored in the cloud. Supports collaboration and access across devices."
+                    selected={value === 'cloud'}
+                    disabled={disabled}
+                    onClick={() => onChange('cloud')}
+                />
+            </div>
+        </div>
+    )
+}
+
+function StorageModeOption({ icon, title, description, selected, disabled, onClick }: {
+    icon: React.ReactNode
+    title: string
+    description: string
+    selected: boolean
+    disabled?: boolean
+    onClick: () => void
+}) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            disabled={disabled}
+            aria-pressed={selected}
+            className={cn(
+                'group h-full min-h-32 text-left p-5 rounded-2xl transition-all duration-300 border-2 outline-none active:scale-[0.99]',
+                selected
+                    ? 'bg-white border-[#546354]/30 shadow-[0_12px_36px_rgba(84,99,84,0.1)]'
+                    : 'bg-stone-50/60 border-transparent hover:bg-white hover:border-slate-100 hover:shadow-[0_14px_36px_rgba(0,0,0,0.05)]',
+                disabled && 'opacity-50 cursor-not-allowed'
+            )}
+        >
+            <div className="flex items-start gap-4">
+                <div className={cn(
+                    'w-10 h-10 rounded-xl flex shrink-0 items-center justify-center transition-all duration-300',
+                    selected ? 'bg-[#546354] text-white shadow-lg shadow-[#546354]/15' : 'bg-white text-slate-400 group-hover:text-[#546354]'
+                )}>
+                    {icon}
+                </div>
+                <div className="min-w-0">
+                    <div className="text-base font-bold text-slate-800 leading-tight">{title}</div>
+                    <p className="mt-1 text-sm text-slate-500 leading-relaxed font-medium">{description}</p>
+                </div>
+            </div>
+        </button>
     )
 }
 
@@ -430,13 +568,14 @@ function TypeCard({ icon, title, description, selected, onClick, disabled }: {
     )
 }
 
-function StepIdentity({ value, onChange, onFileChange, onComplete, onBack, creating }: {
+function StepIdentity({ value, onChange, onFileChange, onComplete, onBack, creating, creatingLabel }: {
     value: string
     onChange: (v: string) => void
     onFileChange: (file: File | null) => void
     onComplete: () => void
     onBack: () => void
     creating: boolean
+    creatingLabel: string
 }) {
     return (
         <div className="fade-in space-y-10">
@@ -465,7 +604,7 @@ function StepIdentity({ value, onChange, onFileChange, onComplete, onBack, creat
                     {creating ? (
                         <>
                             <Sparkles className="w-5 h-5 animate-spin" />
-                            Creating...
+                            {creatingLabel}
                         </>
                     ) : (
                         <>

@@ -3,9 +3,8 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { ChevronLeft, ChevronRight, Sparkles, Image as ImageIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
 import type { ProjectType } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
 import CoverPicker from '@/components/project/CoverPicker'
@@ -26,6 +25,7 @@ interface GuidedFlowProps {
     onComplete: (data: GuidedData & { coverFile?: File | null }) => void
     onBack: () => void
     creating: boolean
+    creatingLabel?: string
     onDataChange?: (data: GuidedData) => void
 }
 
@@ -60,7 +60,7 @@ const TONES = [
 ]
 
 
-export default function GuidedFlow({ projectType, initialTitle, onComplete, onBack, creating, onDataChange }: GuidedFlowProps) {
+export default function GuidedFlow({ projectType, initialTitle, onComplete, onBack, creating, creatingLabel = 'Creating Sanctuary...', onDataChange }: GuidedFlowProps) {
     const [stepIndex, setStepIndex] = useState(0)
     const [coverFile, setCoverFile] = useState<File | null>(null)
     const [data, setData] = useState<GuidedData>(() => {
@@ -336,7 +336,7 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
                     className="sanctuary-btn-primary h-14 w-full rounded-[1.75rem] px-6 text-base font-semibold gap-3 sm:w-auto sm:px-10 sm:rounded-full"
                 >
                     {creating ? (
-                        <><Sparkles className="w-4 h-4 animate-spin-slow" /> Creating Sanctuary...</>
+                        <><Sparkles className="w-4 h-4 animate-spin-slow" /> {creatingLabel}</>
                     ) : stepIndex === STEPS.length - 1 ? (
                         <>Initialize Archive <ChevronRight className="w-5 h-5" /></>
                     ) : (

@@ -722,6 +722,7 @@ export type Database = {
           is_early_user: boolean | null
           onboarding_completed: boolean
           plan_type: string | null
+          preferred_storage_mode: string
           updated_at: string | null
         }
         Insert: {
@@ -734,6 +735,7 @@ export type Database = {
           is_early_user?: boolean | null
           onboarding_completed?: boolean
           plan_type?: string | null
+          preferred_storage_mode?: string
           updated_at?: string | null
         }
         Update: {
@@ -746,6 +748,7 @@ export type Database = {
           is_early_user?: boolean | null
           onboarding_completed?: boolean
           plan_type?: string | null
+          preferred_storage_mode?: string
           updated_at?: string | null
         }
         Relationships: []
@@ -1490,6 +1493,10 @@ export type Database = {
         Returns: undefined
       }
       can_edit_project: { Args: { p_id: string }; Returns: boolean }
+      create_cloud_project: {
+        Args: { p_blueprint: Json }
+        Returns: string
+      }
       admin_adjust_ai_trial: {
         Args: {
           p_admin_user_id: string

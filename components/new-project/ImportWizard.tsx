@@ -1,17 +1,16 @@
 'use client'
 
 import React, { useState, useRef } from 'react'
-import { UploadCloud, FileText, SplitSquareHorizontal, CheckCircle2, AlertCircle, Loader2, Info, Sparkles, Wand2, X, ChevronLeft } from 'lucide-react'
+import { UploadCloud, FileText, CheckCircle2, AlertCircle, Loader2, Info, Sparkles, Wand2, X, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
     Tooltip,
     TooltipContent,
-    TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { cn } from '@/lib/utils'
-import type { ProjectType, WritingMode } from '@/lib/supabase/types'
+import type { ProjectType } from '@/lib/supabase/types'
 import { getProjectTypeLabel } from '@/lib/constants'
 import { getDeviceFingerprint } from '@/lib/client/device-fingerprint'
 
@@ -20,9 +19,10 @@ interface ImportWizardProps {
     onComplete: (chunks: { title: string; content: string }[]) => void
     onBack: () => void
     creating: boolean
+    creatingLabel?: string
 }
 
-export default function ImportWizard({ projectType, onComplete, onBack, creating }: ImportWizardProps) {
+export default function ImportWizard({ projectType, onComplete, onBack, creating, creatingLabel = 'Building Project...' }: ImportWizardProps) {
     const [file, setFile] = useState<File | null>(null)
     const [rawText, setRawText] = useState('')
     const [uploading, setUploading] = useState(false)
@@ -65,8 +65,8 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
             
             setRawText(data.text)
             processChunks(data.text, 'chapter_keyword')
-        } catch (err: any) {
-            setError(err.message)
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Upload failed')
             setFile(null)
         } finally {
             setUploading(false)
@@ -194,8 +194,8 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
             setSplitStrategy('custom')
             setAiStatus('')
 
-        } catch (err: any) {
-            setError(err.message)
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'AI Detection failed')
         } finally {
             setAiDetecting(false)
         }
@@ -343,7 +343,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                             <h4 className="font-semibold text-amber-900 text-sm">Formatting Caveats</h4>
                             <p className="text-xs text-amber-800/70 leading-relaxed">
                                 • Images, tables, and complex styling (bold/italic) may not import perfectly.<br />
-                                • PDF and EPUB files may include extra "noise" such as page numbers, headers, or metadata.<br />
+                                • PDF and EPUB files may include extra &quot;noise&quot; such as page numbers, headers, or metadata.<br />
                                 • Please review your content in the editor after finishing the import.
                             </p>
                         </div>
@@ -399,7 +399,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                             disabled={creating || chunks.length === 0}
                         >
                             {creating ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
-                            {creating ? 'Building Project...' : 'Finalize Import'}
+                            {creating ? creatingLabel : 'Finalize Import'}
                         </Button>
                     </div>
                 </div>
@@ -418,7 +418,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                     <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-[2rem] flex items-center justify-center mb-6 shadow-xl shadow-indigo-100">
                         <Sparkles className="w-10 h-10" />
                     </div>
-                    <h3 className="text-2xl font-serif text-slate-800 mb-2">Analyzing your soul's work…</h3>
+                    <h3 className="text-2xl font-serif text-slate-800 mb-2">Analyzing your soul&apos;s work…</h3>
                     <p className="text-slate-500 font-medium mb-6 animate-pulse">{aiStatus}</p>
                     <div className="w-64 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div className="h-full bg-indigo-500" style={{width: '60%'}} />
@@ -478,7 +478,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                             </div>
 
                             <div className="space-y-4">
-                                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Type "IMPORT" to continue</label>
+                                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Type &quot;IMPORT&quot; to continue</label>
                                 <Input 
                                     autoFocus
                                     value={sanityInput}

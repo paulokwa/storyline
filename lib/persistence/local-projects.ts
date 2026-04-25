@@ -1,7 +1,7 @@
 'use client'
 
-import { DEFAULT_WRITING_MODE_BY_TYPE } from '@/lib/constants'
-import type { Database, Json, ProjectType, WritingMode } from '@/lib/supabase/types'
+import { generateInitialProject, type InitialProjectInput, type ProjectBlueprint } from '@/lib/persistence/project-blueprint'
+import type { Database } from '@/lib/supabase/types'
 import { LOCAL_PROJECT_ID_PREFIX, isLocalProjectId } from '@/lib/persistence/project-mode'
 import {
     LOCAL_STORE_NAMES,
@@ -22,6 +22,7 @@ type CharacterRow = Database['public']['Tables']['characters']['Row']
 type IdeaRow = Database['public']['Tables']['ideas']['Row']
 type LocationRow = Database['public']['Tables']['locations']['Row']
 type ObjectRow = Database['public']['Tables']['objects']['Row']
+type AiResponseRow = Database['public']['Tables']['ai_responses']['Row']
 
 export type LocalProjectRow = ProjectRow & {
     is_local: true
@@ -36,19 +37,8 @@ type LocalSceneWithLinks = SceneRow & {
     scene_objects: Array<{ objects: ObjectRow | null }>
 }
 
-type CreateLocalProjectInput = {
+export type CreateLocalProjectInput = InitialProjectInput & {
     userId: string
-    title: string
-    type: ProjectType
-    writingMode?: WritingMode
-    premise?: string
-    tone?: string
-    setting?: string
-    coverUrl?: string
-    characters?: string[]
-    locations?: string[]
-    firstIdea?: string
-    chunks?: { title: string; content: string }[]
 }
 
 function nowIso() {
@@ -59,173 +49,106 @@ function createLocalId(prefix: string) {
     return `${LOCAL_PROJECT_ID_PREFIX}${prefix}_${crypto.randomUUID()}`
 }
 
-function createLocalProjectRow(input: CreateLocalProjectInput): LocalProjectRow {
+function createLocalProjectRow(input: CreateLocalProjectInput, blueprint: ProjectBlueprint): LocalProjectRow {
     const timestamp = nowIso()
-    const writingMode = input.writingMode ?? DEFAULT_WRITING_MODE_BY_TYPE[input.type]
 
     return {
         allow_collaborator_exports: false,
         allow_viewer_feedback: false,
-        cover_url: input.coverUrl || null,
+        cover_url: blueprint.project.coverUrl,
         created_at: timestamp,
         deleted_at: null,
         export_metadata: null,
         id: createLocalId('project'),
         last_accessed_at: timestamp,
-        order_index: Date.now(),
-        premise: input.premise ?? null,
-        project_type: input.type,
+        order_index: blueprint.project.orderIndex,
+        premise: blueprint.project.premise,
+        project_type: blueprint.project.type,
         share_owner_feedback: false,
-        setting: input.setting ?? null,
-        title: input.title,
-        tone: input.tone ?? null,
-        type: input.type,
+        setting: blueprint.project.setting,
+        title: blueprint.project.title,
+        tone: blueprint.project.tone,
+        type: blueprint.project.type,
         updated_at: timestamp,
         user_id: input.userId,
-        writing_mode: writingMode,
+        writing_mode: blueprint.project.writingMode,
         is_local: true,
         storage_mode: 'local-only',
         migrated_to_cloud_project_id: null,
     }
 }
 
-function createStructureNodeRow(projectId: string, type: StructureNodeRow['type'], title: string, orderIndex: number, parentId: string | null = null): StructureNodeRow {
-    return {
-        created_at: nowIso(),
-        deleted_at: null,
-        id: createLocalId('node'),
-        order_index: orderIndex,
-        parent_id: parentId,
-        project_id: projectId,
-        title,
-        type,
-    }
-}
+async function writeInitialProjectContent(
+    project: LocalProjectRow,
+    blueprint: ProjectBlueprint
+) {
+    const timestamp = nowIso()
+    const nodeIdsByKey = new Map<string, string>()
+    const nodes: StructureNodeRow[] = blueprint.nodes.map((node) => {
+        const id = createLocalId('node')
+        nodeIdsByKey.set(node.key, id)
+        return {
+            created_at: timestamp,
+            deleted_at: null,
+            id,
+            order_index: node.orderIndex,
+            parent_id: null,
+            project_id: project.id,
+            title: node.title,
+            type: node.type,
+        }
+    })
 
-function createSceneRow(projectId: string, nodeId: string, writingMode: WritingMode, content: Json | null = null): SceneRow {
-    return {
-        content,
+    nodes.forEach((node, index) => {
+        const parentKey = blueprint.nodes[index].parentKey
+        node.parent_id = parentKey ? nodeIdsByKey.get(parentKey) ?? null : null
+    })
+
+    const scenes: SceneRow[] = blueprint.scenes.map((scene) => ({
+        content: scene.content,
         deleted_at: null,
         id: createLocalId('scene'),
         last_editor_id: null,
-        node_id: nodeId,
-        project_id: projectId,
-        updated_at: nowIso(),
+        node_id: nodeIdsByKey.get(scene.nodeKey)!,
+        project_id: project.id,
+        updated_at: timestamp,
         version: 1,
-        writing_mode: writingMode,
-    }
-}
+        writing_mode: scene.writingMode,
+    }))
 
-function createCharacterRow(projectId: string, name: string, orderIndex: number, description = '', notes = ''): CharacterRow {
-    return {
-        created_at: nowIso(),
+    const characters: CharacterRow[] = blueprint.entities.characters.map((character) => ({
+        created_at: timestamp,
         deleted_at: null,
-        description,
+        description: character.description,
         id: createLocalId('character'),
-        name,
-        notes,
-        order_index: orderIndex,
-        project_id: projectId,
-    }
-}
+        name: character.name,
+        notes: character.notes,
+        order_index: character.orderIndex,
+        project_id: project.id,
+    }))
 
-function createIdeaRow(projectId: string, title: string, orderIndex: number, content = ''): IdeaRow {
-    return {
-        content,
-        created_at: nowIso(),
+    const ideas: IdeaRow[] = blueprint.entities.ideas.map((idea) => ({
+        content: idea.content,
+        created_at: timestamp,
         deleted_at: null,
         id: createLocalId('idea'),
-        order_index: orderIndex,
-        project_id: projectId,
-        title,
-        updated_at: nowIso(),
-    }
-}
+        order_index: idea.orderIndex,
+        project_id: project.id,
+        title: idea.title,
+        updated_at: timestamp,
+    }))
 
-function createLocationRow(projectId: string, name: string, orderIndex: number): LocationRow {
-    return {
-        atmosphere: '',
-        created_at: nowIso(),
+    const locations: LocationRow[] = blueprint.entities.locations.map((location) => ({
+        atmosphere: location.atmosphere,
+        created_at: timestamp,
         deleted_at: null,
-        description: '',
+        description: location.description,
         id: createLocalId('location'),
-        name,
-        order_index: orderIndex,
-        project_id: projectId,
-        updated_at: nowIso(),
-    }
-}
-
-function buildRichTextContent(text: string, writingMode: WritingMode): Json {
-    const nodeType = writingMode === 'screenplay' ? 'screenplayAction' : 'paragraph'
-    const paragraphs = text
-        .split('\n')
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .map((line) => ({
-            type: nodeType,
-            content: [{ type: 'text', text: line }],
-        }))
-
-    return {
-        type: 'doc',
-        content: paragraphs.length > 0 ? paragraphs : [{ type: nodeType }],
-    }
-}
-
-async function writeInitialProjectContent(
-    project: LocalProjectRow,
-    input: CreateLocalProjectInput
-) {
-    const writingMode = (project.writing_mode ?? DEFAULT_WRITING_MODE_BY_TYPE[project.type as ProjectType]) as WritingMode
-    const characters = (input.characters ?? []).map((name, index) => createCharacterRow(project.id, name.trim(), index, index === 0 ? 'Protagonist' : 'Supporting Character'))
-        .filter((row) => row.name)
-    const locations = (input.locations ?? []).map((name, index) => createLocationRow(project.id, name.trim(), index))
-        .filter((row) => row.name)
-    const ideas: IdeaRow[] = []
-
-    let initialSceneContent: Json | null = null
-    if (input.firstIdea?.trim()) {
-        ideas.push(createIdeaRow(project.id, 'Initial Vision', 0, input.firstIdea.trim()))
-        initialSceneContent = buildRichTextContent(input.firstIdea.trim(), writingMode)
-    }
-
-    const nodes: StructureNodeRow[] = []
-    const scenes: SceneRow[] = []
-
-    const chunks = input.chunks?.filter((chunk) => chunk.content.trim()) ?? []
-
-    if (chunks.length > 0) {
-        if (project.type === 'novel') {
-            chunks.forEach((chunk, index) => {
-                const chapter = createStructureNodeRow(project.id, 'chapter', chunk.title || `Chapter ${index + 1}`, index)
-                const sceneNode = createStructureNodeRow(project.id, 'scene', chunk.title || 'Scene 1', 0, chapter.id)
-                nodes.push(chapter, sceneNode)
-                scenes.push(createSceneRow(project.id, sceneNode.id, writingMode, buildRichTextContent(chunk.content, writingMode)))
-            })
-        } else {
-            const episode = createStructureNodeRow(project.id, 'episode', 'Imported Episode', 0)
-            const act = createStructureNodeRow(project.id, 'act', 'Imported Act', 0, episode.id)
-            nodes.push(episode, act)
-
-            chunks.forEach((chunk, index) => {
-                const sceneNode = createStructureNodeRow(project.id, 'scene', chunk.title || `Scene ${index + 1}`, index, act.id)
-                nodes.push(sceneNode)
-                scenes.push(createSceneRow(project.id, sceneNode.id, writingMode, buildRichTextContent(chunk.content, writingMode)))
-            })
-        }
-    } else if (project.type === 'tv_script') {
-        const episode = createStructureNodeRow(project.id, 'episode', 'Episode 1', 0)
-        const act = createStructureNodeRow(project.id, 'act', 'Act 1', 0, episode.id)
-        const sceneNode = createStructureNodeRow(project.id, 'scene', 'Scene 1', 0, act.id)
-        nodes.push(episode, act, sceneNode)
-        scenes.push(createSceneRow(project.id, sceneNode.id, writingMode, initialSceneContent))
-    } else {
-        const chapter = createStructureNodeRow(project.id, 'chapter', 'Chapter 1', 0)
-        const sceneNode = createStructureNodeRow(project.id, 'scene', 'Scene 1', 0, chapter.id)
-        nodes.push(chapter, sceneNode)
-        scenes.push(createSceneRow(project.id, sceneNode.id, writingMode, initialSceneContent))
-    }
+        name: location.name,
+        order_index: location.orderIndex,
+        project_id: project.id,
+        updated_at: timestamp,
+    }))
 
     await Promise.all([
         bulkPutLocalRecords(LOCAL_STORE_NAMES.structureNodes, nodes),
@@ -238,9 +161,10 @@ async function writeInitialProjectContent(
 }
 
 export async function createLocalProject(input: CreateLocalProjectInput) {
-    const project = createLocalProjectRow(input)
+    const blueprint = generateInitialProject(input)
+    const project = createLocalProjectRow(input, blueprint)
     await putLocalRecord(LOCAL_STORE_NAMES.projects, project)
-    await writeInitialProjectContent(project, input)
+    await writeInitialProjectContent(project, blueprint)
     return project
 }
 
@@ -335,7 +259,7 @@ export async function loadLocalStoryWorkspaceData(projectId: string) {
         getLocalRecordsByProjectId<IdeaRow>(LOCAL_STORE_NAMES.ideas, projectId),
         getLocalRecordsByProjectId<LocationRow>(LOCAL_STORE_NAMES.locations, projectId),
         getLocalRecordsByProjectId<ObjectRow>(LOCAL_STORE_NAMES.objects, projectId),
-        getLocalRecordsByProjectId<any>(LOCAL_STORE_NAMES.aiResponses, projectId),
+        getLocalRecordsByProjectId<AiResponseRow>(LOCAL_STORE_NAMES.aiResponses, projectId),
     ])
 
     const allScenes: LocalSceneWithLinks[] = scenes

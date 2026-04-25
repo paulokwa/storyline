@@ -30,8 +30,8 @@ const options: Array<{
     {
         id: 'cloud',
         title: 'Start with Cloud & Collaboration',
-        copy: 'Use Storyline with cloud collaboration in mind while keeping project creation local-first.',
-        detail: 'Cloud can be enabled per project. Turn on cloud sync from Project Settings after creating a project.',
+        copy: 'Create new projects directly in the cloud with collaboration ready from the start.',
+        detail: 'Storyline will create cloud projects directly in Supabase without a local duplicate or migration step.',
         icon: Cloud,
     },
 ]
@@ -49,6 +49,9 @@ export default function StorageFirstOnboarding({ displayName }: StorageFirstOnbo
         const response = await fetch('/api/onboarding/complete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                preferredStorageMode: selectedPath === 'cloud' ? 'cloud' : 'local',
+            }),
         })
 
         const data = await response.json().catch(() => null)
@@ -79,10 +82,10 @@ export default function StorageFirstOnboarding({ displayName }: StorageFirstOnbo
                             Welcome to Storyline{displayName ? `, ${displayName}` : ''}.
                         </h1>
                         <p className="max-w-2xl text-base leading-7 text-slate-600 md:text-lg">
-                            Start with private writing on this device, or keep cloud collaboration in view for projects that need it later.
+                            Choose where Storyline should create new projects by default.
                         </p>
                         <p className="max-w-2xl text-sm leading-6 text-slate-500">
-                            New projects still begin local-only. Cloud sync can be enabled per project from Project Settings after you create one.
+                            Private projects stay local on this device. Cloud projects are created directly in Supabase for collaboration.
                         </p>
                     </div>
 
@@ -92,8 +95,8 @@ export default function StorageFirstOnboarding({ displayName }: StorageFirstOnbo
                                 <ShieldCheck className="h-5 w-5" />
                             </div>
                             <div>
-                                <p className="text-sm font-semibold text-slate-900">Local-first remains the default</p>
-                                <p className="text-sm text-slate-500">This choice does not create a cloud project or turn on automatic sync.</p>
+                                <p className="text-sm font-semibold text-slate-900">You can change course later</p>
+                                <p className="text-sm text-slate-500">Existing local projects can still move to cloud from Project Settings.</p>
                             </div>
                         </div>
                         <div className="space-y-3 text-sm text-slate-600">
@@ -101,10 +104,10 @@ export default function StorageFirstOnboarding({ displayName }: StorageFirstOnbo
                                 Create a Book or Screenplay from the library.
                             </div>
                             <div className="rounded-2xl bg-[#f5f4ef] px-4 py-3">
-                                Keep work local until you choose otherwise.
+                                Start Private keeps new projects local-only.
                             </div>
                             <div className="rounded-2xl bg-[#f5f4ef] px-4 py-3">
-                                Enable cloud sync per project when collaboration is needed.
+                                Start with Cloud creates new projects directly in Supabase.
                             </div>
                         </div>
                     </div>
