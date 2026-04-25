@@ -58,6 +58,7 @@ export default function LocalAiPage({
             projectLocations={data.projectLocations}
             projectObjects={data.projectObjects}
             projectRelationships={data.projectRelationships}
+            projectAiFeedback={data.projectAiFeedback}
             aiSettings={aiSettings}
         />
     )

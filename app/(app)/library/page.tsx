@@ -24,11 +24,11 @@ export default async function LibraryPage() {
 
     const { data: profile } = await supabase
         .from('profiles')
-        .select('ai_onboarding_completed')
+        .select('onboarding_completed')
         .eq('id', user.id)
         .maybeSingle()
 
-    if (!profile?.ai_onboarding_completed) {
+    if (!profile?.onboarding_completed) {
         redirect('/welcome')
     }
 

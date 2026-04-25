@@ -14,7 +14,6 @@ type PreferencesBody = {
     ollamaUrl?: string
     apiKey?: string
     removeApiKey?: boolean
-    completeOnboarding?: boolean
 }
 
 export async function POST(request: Request) {
@@ -120,17 +119,6 @@ export async function POST(request: Request) {
 
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 400 })
-    }
-
-    if (body.completeOnboarding) {
-        const { error: profileError } = await supabase
-            .from('profiles')
-            .update({ ai_onboarding_completed: true })
-            .eq('id', user.id)
-
-        if (profileError) {
-            return NextResponse.json({ error: profileError.message }, { status: 400 })
-        }
     }
 
     const modeChanged =

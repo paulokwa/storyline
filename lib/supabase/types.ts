@@ -720,6 +720,7 @@ export type Database = {
           display_name: string | null
           id: string
           is_early_user: boolean | null
+          onboarding_completed: boolean
           plan_type: string | null
           updated_at: string | null
         }
@@ -731,6 +732,7 @@ export type Database = {
           display_name?: string | null
           id: string
           is_early_user?: boolean | null
+          onboarding_completed?: boolean
           plan_type?: string | null
           updated_at?: string | null
         }
@@ -742,6 +744,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           is_early_user?: boolean | null
+          onboarding_completed?: boolean
           plan_type?: string | null
           updated_at?: string | null
         }

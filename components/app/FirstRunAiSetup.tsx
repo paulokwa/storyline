@@ -109,7 +109,6 @@ export default function FirstRunAiSetup({ displayName, initialAiSettings, trialS
                     aiEnabled: true,
                     billingMode: 'app_managed_trial',
                     aiProvider: 'openai',
-                    completeOnboarding: true,
                 }
                 : mode === 'byok'
                     ? {
@@ -117,7 +116,6 @@ export default function FirstRunAiSetup({ displayName, initialAiSettings, trialS
                         billingMode: 'byok',
                         aiProvider: provider,
                         apiKey,
-                        completeOnboarding: true,
                     }
                     : mode === 'ollama'
                         ? {
@@ -126,13 +124,11 @@ export default function FirstRunAiSetup({ displayName, initialAiSettings, trialS
                             aiProvider: 'ollama',
                             ollamaUrl,
                             ollamaModel,
-                            completeOnboarding: true,
                         }
                         : {
                             aiEnabled: false,
                             billingMode: 'app_managed_trial',
                             aiProvider: 'openai',
-                            completeOnboarding: true,
                         }
 
         const response = await fetch('/api/ai/preferences', {

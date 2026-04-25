@@ -4,10 +4,9 @@ import {
     loadLocalStoryWorkspaceData,
     getLocalProject,
     updateLocalProject,
-    LocalProjectRow,
 } from '@/lib/persistence/local-projects'
 import { getLocalRecordsByProjectId, LOCAL_STORE_NAMES } from '@/lib/persistence/local-db'
-import type { Database } from '@/lib/supabase/types'
+import type { Database, Json } from '@/lib/supabase/types'
 
 type ProjectRow = Database['public']['Tables']['projects']['Row']
 type StructureNodeRow = Database['public']['Tables']['structure_nodes']['Row']
@@ -21,10 +20,23 @@ type ProjectAssetRow = Database['public']['Tables']['project_assets']['Row']
 type SceneAssetRow = Database['public']['Tables']['scene_assets']['Row']
 type EntityAssetRow = Database['public']['Tables']['entity_assets']['Row']
 type AiResponseRow = Database['public']['Tables']['ai_responses']['Row']
+type MigrationTable =
+    | 'projects'
+    | 'structure_nodes'
+    | 'scenes'
+    | 'characters'
+    | 'ideas'
+    | 'locations'
+    | 'objects'
+    | 'project_comments'
+    | 'project_assets'
+    | 'scene_assets'
+    | 'entity_assets'
+    | 'ai_responses'
+type MigrationInsert = Database['public']['Tables'][MigrationTable]['Insert']
 
-async function fetchBase64AsBlob(base64: string): Promise<Blob> {
-    const res = await fetch(base64)
-    return res.blob()
+function getErrorMessage(error: unknown) {
+    return error instanceof Error ? error.message : String(error)
 }
 
 export async function migrateLocalProjectToCloud(localProjectId: string, onProgress?: (msg: string) => void) {
@@ -105,10 +117,9 @@ export async function migrateLocalProjectToCloud(localProjectId: string, onProgr
         premise: localProject.premise ?? null,
         tone: localProject.tone ?? null,
         setting: localProject.setting ?? null,
-        // cover_url is the actual column name in Supabase (not cover_image_url)
-        cover_url: isBlobOrLocalUrl((localProject as any).cover_url ?? (localProject as any).cover_image_url)
+        cover_url: isBlobOrLocalUrl(localProject.cover_url)
             ? null
-            : ((localProject as any).cover_url ?? (localProject as any).cover_image_url ?? null),
+            : localProject.cover_url,
         order_index: localProject.order_index ?? 0,
         export_metadata: localProject.export_metadata ?? null,
         share_owner_feedback: localProject.share_owner_feedback ?? false,
@@ -118,7 +129,7 @@ export async function migrateLocalProjectToCloud(localProjectId: string, onProgr
         updated_at: new Date().toISOString(),
         last_accessed_at: localProject.last_accessed_at ?? null,
         deleted_at: null,
-        project_type: (localProject as any).project_type ?? null,
+        project_type: localProject.project_type ?? null,
     }
 
     // Map Nodes
@@ -131,16 +142,16 @@ export async function migrateLocalProjectToCloud(localProjectId: string, onProgr
 
     // Helper to recursively remap local_ IDs in JSON content (Tiptap doc trees etc.)
     const ID_ATTR_KEYS = new Set(['commentId', 'assetId', 'entityId', 'nodeId', 'sceneId'])
-    const remapJsonContent = (obj: any): any => {
-        if (!obj) return obj
+    const remapJsonContent = (obj: Json): Json => {
+        if (obj === null) return obj
         if (Array.isArray(obj)) return obj.map(remapJsonContent)
         if (typeof obj === 'object') {
-            const newObj: any = {}
+            const newObj: Record<string, Json> = {}
             for (const [k, v] of Object.entries(obj)) {
                 if (ID_ATTR_KEYS.has(k) && typeof v === 'string' && v.startsWith('local_')) {
                     newObj[k] = getNewId(v) ?? v
                 } else {
-                    newObj[k] = remapJsonContent(v)
+                    newObj[k] = remapJsonContent(v as Json)
                 }
             }
             return newObj
@@ -150,14 +161,16 @@ export async function migrateLocalProjectToCloud(localProjectId: string, onProgr
 
     // Map Scenes
     const cloudScenes: SceneRow[] = allScenes.map(s => {
-        const { scene_characters, scene_ideas, scene_locations, scene_objects, ...sceneData } = s as any
         return {
-            ...sceneData,
             id: getNewId(s.id)!,
             project_id: newProjectId,
             node_id: getNewId(s.node_id)!,
             last_editor_id: user.id, // Update editor
-            content: remapJsonContent(sceneData.content)
+            content: remapJsonContent(s.content),
+            deleted_at: s.deleted_at,
+            updated_at: s.updated_at,
+            version: s.version,
+            writing_mode: s.writing_mode,
         }
     })
 
@@ -187,6 +200,10 @@ export async function migrateLocalProjectToCloud(localProjectId: string, onProgr
         anchor_data: c.anchor_data,
         order_index: c.order_index || 0,
         is_shared: c.is_shared || false,
+        deleted_at: c.deleted_at ?? null,
+        deleted_by: getNewId(c.deleted_by),
+        resolved_at: c.resolved_at ?? null,
+        resolved_by: getNewId(c.resolved_by),
         created_at: c.created_at,
         updated_at: c.updated_at
     }))
@@ -233,7 +250,7 @@ export async function migrateLocalProjectToCloud(localProjectId: string, onProgr
         ...cloudAiResponses
     ]
 
-    const validatePayloadRecursively = (obj: any, path: string = '') => {
+    const validatePayloadRecursively = (obj: unknown, path: string = '') => {
         if (!obj) return
         if (Array.isArray(obj)) {
             obj.forEach((item, i) => validatePayloadRecursively(item, `${path}[${i}]`))
@@ -267,7 +284,7 @@ export async function migrateLocalProjectToCloud(localProjectId: string, onProgr
     onProgress?.('Creating cloud project...')
 
     // Helper to throw on Supabase insertion error
-    const insertOrThrow = async (table: string, payload: any[]) => {
+    const insertOrThrow = async (table: MigrationTable, payload: MigrationInsert[]) => {
         if (payload.length === 0) return
         const { error } = await supabase.from(table).insert(payload)
         if (error) throw new Error(`Database insertion failed for ${table}: ${error.message}`)
@@ -276,8 +293,8 @@ export async function migrateLocalProjectToCloud(localProjectId: string, onProgr
     // Insert project row first (needed for storage RLS)
     try {
         await insertOrThrow('projects', [cloudProject])
-    } catch (projectErr: any) {
-        throw new Error(`Migration Atomicity Error: ${projectErr.message}`)
+    } catch (projectErr: unknown) {
+        throw new Error(`Migration Atomicity Error: ${getErrorMessage(projectErr)}`)
     }
 
     // Track uploaded storage paths for cleanup on failure
@@ -308,15 +325,15 @@ export async function migrateLocalProjectToCloud(localProjectId: string, onProgr
                 })
 
                 if (!res.ok) {
-                    const body = await res.json().catch(() => ({}))
+                    const body = await res.json().catch(() => ({})) as { error?: string }
                     throw new Error(body.error ?? `HTTP ${res.status}`)
                 }
 
                 const { storagePath } = await res.json()
                 uploadedPaths.push(storagePath)
                 cloudAsset.storage_path = storagePath
-            } catch (err: any) {
-                throw new Error(`Failed to upload asset '${localAsset.file_name}': ${err.message}`)
+            } catch (err: unknown) {
+                throw new Error(`Failed to upload asset '${localAsset.file_name}': ${getErrorMessage(err)}`)
             }
         } else {
             cloudAsset.storage_path = localAsset.storage_path
@@ -343,14 +360,14 @@ export async function migrateLocalProjectToCloud(localProjectId: string, onProgr
         await insertOrThrow('entity_assets', cloudEntityAssets)
         await insertOrThrow('ai_responses', cloudAiResponses)
 
-    } catch (dbErr: any) {
+    } catch (dbErr: unknown) {
         // Clean up: delete the project (cascades or we rely on the caller to retry)
         await supabase.from('projects').delete().eq('id', newProjectId)
         // Also remove any uploaded storage files
         if (uploadedPaths.length > 0) {
             await supabase.storage.from('project-assets').remove(uploadedPaths)
         }
-        throw new Error(`Migration Atomicity Error: ${dbErr.message}`)
+        throw new Error(`Migration Atomicity Error: ${getErrorMessage(dbErr)}`)
     }
 
     // 6. Mark local project as migrated

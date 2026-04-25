@@ -7,7 +7,7 @@ import type { Database } from '@/lib/supabase/types'
 type AiResponse = Database['public']['Tables']['ai_responses']['Row']
 type AiResponseInsert = Database['public']['Tables']['ai_responses']['Insert']
 
-export async function saveAiResponse(data: AiResponseInsert): Promise<{ error: any }> {
+export async function saveAiResponse(data: AiResponseInsert): Promise<{ error: unknown }> {
     const { project_id } = data
     
     if (isLocalProjectId(project_id)) {
@@ -38,7 +38,7 @@ export async function saveAiResponse(data: AiResponseInsert): Promise<{ error: a
     }
 }
 
-export async function getAiResponses(projectId: string): Promise<{ data: AiResponse[] | null, error: any }> {
+export async function getAiResponses(projectId: string): Promise<{ data: AiResponse[] | null, error: unknown }> {
     if (isLocalProjectId(projectId)) {
         try {
             const records = await getLocalRecordsByProjectId<AiResponse>(LOCAL_STORE_NAMES.aiResponses, projectId)
@@ -59,10 +59,10 @@ export async function getAiResponses(projectId: string): Promise<{ data: AiRespo
     }
 }
 
-export async function renameAiResponse(id: string, title: string): Promise<{ error: any }> {
+export async function renameAiResponse(id: string, title: string): Promise<{ error: unknown }> {
     if (isLocalProjectId(id)) {
         try {
-            await updateLocalRecord(LOCAL_STORE_NAMES.aiResponses, id, {
+            await updateLocalRecord<AiResponse>(LOCAL_STORE_NAMES.aiResponses, id, {
                 title,
                 updated_at: new Date().toISOString()
             })
@@ -80,7 +80,7 @@ export async function renameAiResponse(id: string, title: string): Promise<{ err
     }
 }
 
-export async function deleteAiResponse(id: string): Promise<{ error: any }> {
+export async function deleteAiResponse(id: string): Promise<{ error: unknown }> {
     if (isLocalProjectId(id)) {
         try {
             // For local, we just delete it (soft delete not strictly required for local AI feedback yet but we could implement it if needed)
