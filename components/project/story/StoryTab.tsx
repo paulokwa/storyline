@@ -403,7 +403,6 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     }, [activeNodeId])
 
     const handleAnalyzeTrigger = () => {
-        if (isLocalOnly) return
         if (!currentSceneText) return
         
         const analysis = analyzeContextSize(
@@ -429,7 +428,6 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     }
 
     const handleToggleAiPanel = () => {
-        if (isLocalOnly) return
         const nextState = !aiPanelOpen
         if (nextState) {
             queueAiTourStart()
@@ -719,7 +717,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             </div>
 
             {/* AI Helper Sidebar */}
-            {!isLocalOnly && <div className={cn(
+            {<div className={cn(
                 'story-ai-sidebar bg-white flex flex-col transition-all duration-300 ease-in-out overflow-hidden z-40 md:z-20',
                 'absolute top-0 bottom-0 right-0 md:relative md:inset-auto md:h-full',
                 aiPanelOpen 
@@ -865,7 +863,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 onConfirm={() => {
                     setIsConfirmingCost(false)
                     setIsExtremeContext(false)
-                    if (!isLocalOnly) analyzeScene()
+                    analyzeScene()
                 }}
                 onCancel={() => {
                     setIsConfirmingCost(false)

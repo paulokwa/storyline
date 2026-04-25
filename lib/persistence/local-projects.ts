@@ -308,6 +308,7 @@ export async function destroyLocalProject(projectId: string) {
         deleteLocalRecordsByProjectId(LOCAL_STORE_NAMES.ideas, projectId),
         deleteLocalRecordsByProjectId(LOCAL_STORE_NAMES.locations, projectId),
         deleteLocalRecordsByProjectId(LOCAL_STORE_NAMES.objects, projectId),
+        deleteLocalRecordsByProjectId(LOCAL_STORE_NAMES.aiResponses, projectId),
     ])
 }
 
@@ -326,6 +327,7 @@ export async function loadLocalStoryWorkspaceData(projectId: string) {
         projectIdeas,
         projectLocations,
         projectObjects,
+        projectAiFeedback,
     ] = await Promise.all([
         getLocalRecordsByProjectId<StructureNodeRow>(LOCAL_STORE_NAMES.structureNodes, projectId),
         getLocalRecordsByProjectId<SceneRow>(LOCAL_STORE_NAMES.scenes, projectId),
@@ -333,6 +335,7 @@ export async function loadLocalStoryWorkspaceData(projectId: string) {
         getLocalRecordsByProjectId<IdeaRow>(LOCAL_STORE_NAMES.ideas, projectId),
         getLocalRecordsByProjectId<LocationRow>(LOCAL_STORE_NAMES.locations, projectId),
         getLocalRecordsByProjectId<ObjectRow>(LOCAL_STORE_NAMES.objects, projectId),
+        getLocalRecordsByProjectId<any>(LOCAL_STORE_NAMES.aiResponses, projectId),
     ])
 
     const allScenes: LocalSceneWithLinks[] = scenes
@@ -352,7 +355,7 @@ export async function loadLocalStoryWorkspaceData(projectId: string) {
         projectIdeas: sortActiveRows(projectIdeas),
         projectLocations: sortActiveRows(projectLocations),
         projectObjects: sortActiveRows(projectObjects),
-        projectAiFeedback: [],
+        projectAiFeedback: projectAiFeedback || [],
         allScenes,
         projectRelationships: [],
     }

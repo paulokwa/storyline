@@ -22,6 +22,7 @@ interface AiFullCanvasProps {
     projectLocations: any[]
     projectObjects: any[]
     projectRelationships: any[]
+    projectAiFeedback: any[]
     aiSettings: any
 }
 
@@ -35,6 +36,7 @@ export default function AiFullCanvas({
     projectLocations,
     projectObjects,
     projectRelationships,
+    projectAiFeedback,
     aiSettings
 }: AiFullCanvasProps) {
     const router = useRouter()
@@ -119,7 +121,6 @@ export default function AiFullCanvas({
                         <h1 className="text-sm font-serif italic text-slate-800 font-bold">AI Partner</h1>
                     </div>
                 </div>
-
             </div>
 
             <div className="ai-full-canvas-body flex-1 flex justify-center overflow-hidden">
@@ -129,10 +130,7 @@ export default function AiFullCanvas({
                         projectTitle={project.title}
                         sceneText={currentSceneText || fallbackSceneText}
                         onInsert={(content) => {
-                            // In full canvas mode, we might want to handle insertion differently
-                            // For now, let's just log and maybe navigate back
                             console.log("Full Canvas: AI wants to insert content", content)
-                            // We can use the global state if available, but for now we just show the output
                         }}
                         sceneCharacters={activeScene?.scene_characters ?? []}
                         sceneIdeas={activeScene?.scene_ideas ?? []}
@@ -147,6 +145,7 @@ export default function AiFullCanvas({
                         projectLocations={projectLocations}
                         projectObjects={projectObjects}
                         selectedNodes={selectedNodes}
+                        projectAiFeedback={projectAiFeedback}
                         projectRelationships={projectRelationships}
                         allNodes={allNodes}
                         allScenes={allScenes}
@@ -175,7 +174,7 @@ export default function AiFullCanvas({
                     )}
                 </div>
                 <div className="hidden sm:block italic lowercase capitalize tracking-normal font-serif text-slate-300">
-                    Your story stays private and protected with your AI Partner.
+                    AI only receives the text you send when you use an AI feature. Your project storage mode does not change.
                 </div>
             </div>
 

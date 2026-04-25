@@ -2373,7 +2373,7 @@ export default function AiHelperPanel({
                                             Insert into Scene
                                         </Button>
                                         <Tooltip>
-                                            <TooltipTrigger>
+                                            <TooltipTrigger asChild>
                                                 <Button
                                                     onClick={() => setSaveModalOpen(true)}
                                                     variant="outline"
@@ -2811,6 +2811,9 @@ export default function AiHelperPanel({
                                     <Send className="w-4 h-4" />
                                 )}
                             </button>
+                        </div>
+                        <div className="mt-2 text-center text-[10px] text-slate-400">
+                            AI only receives the text you send when you use an AI feature. Your project storage mode does not change.
                         </div>
 
                     </form>

@@ -359,7 +359,7 @@ function ProjectShellInner({
     const isLocalOnly = storageMode === 'local-only'
     const canExport = role === 'owner' || (!isLocalOnly && (project.allow_collaborator_exports ?? false))
     const canShare = !isLocalOnly && role === 'owner'
-    const supportsAi = !isLocalOnly
+    const supportsAi = true
     const supportsComments = true
     const supportsAssets = true
     const visibleTabs = isLocalOnly ? LOCAL_ONLY_TABS : TABS

@@ -20,6 +20,7 @@ type ProjectCommentRow = Database['public']['Tables']['project_comments']['Row']
 type ProjectAssetRow = Database['public']['Tables']['project_assets']['Row']
 type SceneAssetRow = Database['public']['Tables']['scene_assets']['Row']
 type EntityAssetRow = Database['public']['Tables']['entity_assets']['Row']
+type AiResponseRow = Database['public']['Tables']['ai_responses']['Row']
 
 async function fetchBase64AsBlob(base64: string): Promise<Blob> {
     const res = await fetch(base64)
@@ -49,13 +50,15 @@ export async function migrateLocalProjectToCloud(localProjectId: string, onProgr
         comments,
         projectAssets,
         sceneAssets,
-        entityAssets
+        entityAssets,
+        aiResponses
     ] = await Promise.all([
         loadLocalStoryWorkspaceData(localProjectId),
         getLocalRecordsByProjectId<ProjectCommentRow>(LOCAL_STORE_NAMES.comments, localProjectId),
         getLocalRecordsByProjectId<ProjectAssetRow>(LOCAL_STORE_NAMES.projectAssets, localProjectId),
         getLocalRecordsByProjectId<SceneAssetRow>(LOCAL_STORE_NAMES.sceneAssets, localProjectId),
         getLocalRecordsByProjectId<EntityAssetRow>(LOCAL_STORE_NAMES.entityAssets, localProjectId),
+        getLocalRecordsByProjectId<AiResponseRow>(LOCAL_STORE_NAMES.aiResponses, localProjectId),
     ])
 
     const { nodes, projectCharacters, projectIdeas, projectLocations, projectObjects, allScenes } = workspaceData
@@ -82,6 +85,7 @@ export async function migrateLocalProjectToCloud(localProjectId: string, onProgr
     projectAssets.forEach(a => getNewId(a.id))
     sceneAssets.forEach(a => getNewId(a.id))
     entityAssets.forEach(a => getNewId(a.id))
+    aiResponses.forEach(r => getNewId(r.id))
 
     const newProjectId = getNewId(localProject.id)!
 
@@ -212,11 +216,21 @@ export async function migrateLocalProjectToCloud(localProjectId: string, onProgr
         asset_id: getNewId(a.asset_id)!
     }))
 
+    // Map AI Responses
+    const cloudAiResponses: AiResponseRow[] = aiResponses.map(r => ({
+        ...r,
+        id: getNewId(r.id)!,
+        project_id: newProjectId,
+        source_scene_id: getNewId(r.source_scene_id),
+        source_node_id: getNewId(r.source_node_id),
+    }))
+
     // Quick validation check to ensure no 'local_' IDs slipped through foreign keys
     const allPayloads = [
         ...cloudNodes, ...cloudScenes, ...cloudCharacters, ...cloudIdeas, 
         ...cloudLocations, ...cloudObjects, ...cloudComments, 
-        ...cloudProjectAssets, ...cloudSceneAssets, ...cloudEntityAssets
+        ...cloudProjectAssets, ...cloudSceneAssets, ...cloudEntityAssets,
+        ...cloudAiResponses
     ]
 
     const validatePayloadRecursively = (obj: any, path: string = '') => {
@@ -327,6 +341,7 @@ export async function migrateLocalProjectToCloud(localProjectId: string, onProgr
         await insertOrThrow('project_assets', cloudProjectAssets)
         await insertOrThrow('scene_assets', cloudSceneAssets)
         await insertOrThrow('entity_assets', cloudEntityAssets)
+        await insertOrThrow('ai_responses', cloudAiResponses)
 
     } catch (dbErr: any) {
         // Clean up: delete the project (cascades or we rely on the caller to retry)

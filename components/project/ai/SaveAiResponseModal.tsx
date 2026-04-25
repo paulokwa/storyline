@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SanctuarySelect } from '@/components/ui/sanctuary-select'
 import { Bookmark, Loader2, CheckCircle2 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { saveAiResponse } from '@/lib/persistence/ai-feedback'
 
 interface SaveAiResponseModalProps {
     open: boolean
@@ -110,26 +110,22 @@ export default function SaveAiResponseModal({
         
         setIsSaving(true)
         setError(null)
-        const supabase = createClient()
-
         try {
-            const { error: saveError } = await (supabase
-                .from('ai_responses') as any)
-                .insert({
-                    project_id: projectId,
-                    title: (title || autoTitle).trim(),
-                    auto_title: autoTitle,
-                    prompt: prompt || 'N/A',
-                    response: response,
-                    type,
-                    source_scene_id: sourceSceneId || null,
-                    source_node_id: sourceNodeId || null,
-                    source_label: sourceLabel,
-                    model,
-                    action,
-                    linked_entities: linkedEntities,
-                    context_snapshot: contextSnapshot,
-                })
+            const { error: saveError } = await saveAiResponse({
+                project_id: projectId,
+                title: (title || autoTitle).trim(),
+                auto_title: autoTitle,
+                prompt: prompt || 'N/A',
+                response: response,
+                type,
+                source_scene_id: sourceSceneId || null,
+                source_node_id: sourceNodeId || null,
+                source_label: sourceLabel,
+                model,
+                action,
+                linked_entities: linkedEntities,
+                context_snapshot: contextSnapshot,
+            })
 
             if (saveError) throw saveError
 

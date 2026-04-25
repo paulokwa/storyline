@@ -1,5 +1,5 @@
 const DB_NAME = 'storyline-local-projects'
-const DB_VERSION = 2
+const DB_VERSION = 3
 
 export const LOCAL_STORE_NAMES = {
     projects: 'projects',
@@ -13,6 +13,7 @@ export const LOCAL_STORE_NAMES = {
     projectAssets: 'project_assets',
     sceneAssets: 'scene_assets',
     entityAssets: 'entity_assets',
+    aiResponses: 'ai_responses',
 } as const
 
 export type LocalStoreName = typeof LOCAL_STORE_NAMES[keyof typeof LOCAL_STORE_NAMES]
@@ -95,6 +96,7 @@ export async function openLocalPersistenceDb() {
         createStore(db, LOCAL_STORE_NAMES.projectAssets, { projectIndex: true })
         createStore(db, LOCAL_STORE_NAMES.sceneAssets, { projectIndex: true, sceneIndex: true, assetIndex: true })
         createStore(db, LOCAL_STORE_NAMES.entityAssets, { projectIndex: true, entityIndex: true, assetIndex: true })
+        createStore(db, LOCAL_STORE_NAMES.aiResponses, { projectIndex: true })
     }
 
     return requestToPromise(request)
@@ -213,4 +215,30 @@ export async function deleteLocalRecordsByProjectId(storeName: Exclude<LocalStor
     })
 
     await transactionToPromise(transaction)
+}
+
+/**
+ * Update specific fields of a local record.
+ */
+export async function updateLocalRecord<T extends { id: string }>(
+    storeName: LocalStoreName, 
+    id: string, 
+    updates: Partial<T>
+) {
+    const db = await openLocalPersistenceDb()
+    const transaction = db.transaction(storeName, 'readwrite')
+    const store = transaction.objectStore(storeName)
+    
+    // Get current record
+    const current = await requestToPromise(store.get(id)) as T | undefined
+    if (!current) {
+        throw new Error(`Cannot update record ${id} in store ${storeName}: Not found`)
+    }
+    
+    // Merge and put
+    const updated = { ...current, ...updates }
+    store.put(updated)
+    
+    await transactionToPromise(transaction)
+    return updated
 }

@@ -10,12 +10,24 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
     const { id: rawId } = await params
     const id = decodeURIComponent(rawId)
 
-    if (isLocalProjectId(id)) {
-        return <LocalStoryPage projectId={id} />
-    }
-
     const supabase = await createClient()
     const user = await requireVerifiedUser()
+    const runtime = await getAiRuntimeState(supabase, user.id)
+
+    const aiSettings = {
+        ai_enabled: runtime.aiSettings?.ai_enabled ?? true,
+        billing_mode: runtime.aiSettings?.billing_mode ?? 'app_managed_trial',
+        ai_provider: runtime.aiSettings?.ai_provider ?? 'openai',
+        ai_fallback_enabled: runtime.aiSettings?.ai_fallback_enabled ?? false,
+        ollama_model: runtime.aiSettings?.ollama_model ?? '',
+        ollama_url: runtime.aiSettings?.ollama_url ?? '',
+        api_key: runtime.aiSettings?.api_key ?? null,
+        trial: runtime.trialAccount,
+    }
+
+    if (isLocalProjectId(id)) {
+        return <LocalStoryPage projectId={id} aiSettings={aiSettings} />
+    }
     const {
         project,
         nodes,
@@ -28,8 +40,6 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
         projectRelationships,
     } = await loadStoryWorkspaceData(supabase, id)
 
-    const runtime = await getAiRuntimeState(supabase, user.id)
-
     return (
         <StoryTab
             project={project!}
@@ -41,16 +51,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
             projectObjects={projectObjects}
             projectAiFeedback={projectAiFeedback}
             projectRelationships={projectRelationships}
-            aiSettings={{
-                ai_enabled: runtime.aiSettings?.ai_enabled ?? true,
-                billing_mode: runtime.aiSettings?.billing_mode ?? 'app_managed_trial',
-                ai_provider: runtime.aiSettings?.ai_provider ?? 'openai',
-                ai_fallback_enabled: runtime.aiSettings?.ai_fallback_enabled ?? false,
-                ollama_model: runtime.aiSettings?.ollama_model ?? '',
-                ollama_url: runtime.aiSettings?.ollama_url ?? '',
-                api_key: runtime.aiSettings?.api_key ?? null,
-                trial: runtime.trialAccount,
-            }}
+            aiSettings={aiSettings}
             storageMode="cloud-enabled"
         />
     )

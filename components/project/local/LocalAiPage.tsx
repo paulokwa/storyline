@@ -1,12 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import StoryTab from '@/components/project/story/StoryTab'
+import AiFullCanvas from '@/components/project/ai/AiFullCanvas'
 import { loadLocalStoryWorkspaceData } from '@/lib/persistence/local-projects'
 
 type StoryWorkspaceData = Awaited<ReturnType<typeof loadLocalStoryWorkspaceData>>
 
-export default function LocalStoryPage({ projectId, aiSettings }: { projectId: string, aiSettings: React.ComponentProps<typeof StoryTab>['aiSettings'] }) {
+export default function LocalAiPage({ 
+    projectId, 
+    aiSettings 
+}: { 
+    projectId: string, 
+    aiSettings: React.ComponentProps<typeof AiFullCanvas>['aiSettings'] 
+}) {
     const [data, setData] = useState<StoryWorkspaceData | null>(null)
     const [status, setStatus] = useState<'loading' | 'ready' | 'missing'>('loading')
 
@@ -21,7 +27,7 @@ export default function LocalStoryPage({ projectId, aiSettings }: { projectId: s
                     setStatus('ready')
                 }
             } catch (error) {
-                console.error('Failed to load local story workspace:', error)
+                console.error('Failed to load local AI workspace:', error)
                 if (!cancelled) setStatus('missing')
             }
         })()
@@ -35,25 +41,24 @@ export default function LocalStoryPage({ projectId, aiSettings }: { projectId: s
         return (
             <div className="flex flex-1 items-center justify-center bg-[#fbf9f5] px-6 py-12">
                 <p className="text-sm font-medium text-slate-400">
-                    {status === 'missing' ? 'Local story data is unavailable.' : 'Loading story workspace…'}
+                    {status === 'missing' ? 'Local project data is unavailable.' : 'Opening AI Partner…'}
                 </p>
             </div>
         )
     }
 
     return (
-        <StoryTab
+        <AiFullCanvas 
+            projectId={projectId}
             project={data.project}
-            initialNodes={data.nodes}
-            initialScenes={data.allScenes}
+            allNodes={data.nodes}
+            allScenes={data.allScenes}
             projectCharacters={data.projectCharacters}
             projectIdeas={data.projectIdeas}
             projectLocations={data.projectLocations}
             projectObjects={data.projectObjects}
-            projectAiFeedback={data.projectAiFeedback}
             projectRelationships={data.projectRelationships}
             aiSettings={aiSettings}
-            storageMode="local-only"
         />
     )
 }
