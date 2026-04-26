@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { isLocalProjectId } from '@/lib/persistence/project-mode'
 import { updateLocalProject, destroyLocalProject } from '@/lib/persistence/local-projects'
 import { migrateLocalProjectToCloud } from '@/lib/persistence/local-to-cloud'
+import { getBackupMeta } from '@/lib/backup/backup-reminder'
 import {
     Dialog,
     DialogContent,
@@ -20,15 +21,19 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { SanctuarySelect } from '@/components/ui/sanctuary-select'
-import { Trash2, AlertTriangle, Save, Globe, Info, Tag, Hash, Copyright, Book, Type, MessageSquare, LogOut, Users, ArrowUpRight } from 'lucide-react'
+import { Trash2, AlertTriangle, Save, Globe, Info, Tag, Hash, Copyright, Book, Type, MessageSquare, LogOut, Users, ArrowUpRight, ChevronDown, Copy, Database as DatabaseIcon, HardDrive, type LucideIcon } from 'lucide-react'
 import type { Database } from '@/lib/supabase/types'
 import type { ExportMetadata } from '@/lib/export/buildExportPayload'
+import type { BackupReminderMeta } from '@/lib/backup/backup-format'
 import { cn } from '@/lib/utils'
 import { PROJECT_TYPE_LABELS, getProjectTypeLabel } from '@/lib/constants'
 import { useTheme } from '@/components/providers/ThemeProvider'
 import { getUserSafely } from '@/lib/supabase/client-auth'
 
 type Project = Database['public']['Tables']['projects']['Row']
+type LocalProjectDetails = Project & {
+    migrated_to_cloud_project_id?: string | null
+}
 
 interface ProjectSettingsModalProps {
     open: boolean
@@ -36,6 +41,18 @@ interface ProjectSettingsModalProps {
     project: Project
     role?: 'owner' | 'editor' | 'viewer'
     onOpenShare?: () => void
+}
+
+function formatProjectDate(value: string | null | undefined) {
+    if (!value) return 'Not available'
+
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return 'Not available'
+
+    return new Intl.DateTimeFormat(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+    }).format(date)
 }
 
 function ToggleStatePill({ checked, isLocalOnly }: { checked: boolean, isLocalOnly?: boolean }) {
@@ -75,8 +92,10 @@ export default function ProjectSettingsModal({
     const [loading, setLoading] = useState(false)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const canManageProject = role === 'owner'
-    const localProject = project as any
+    const localProject = project as LocalProjectDetails
     const isAlreadyMigrated = !!localProject.migrated_to_cloud_project_id
+    const [advancedDetailsOpen, setAdvancedDetailsOpen] = useState(false)
+    const [backupMeta, setBackupMeta] = useState<BackupReminderMeta | null>(null)
 
     const [showMigrationConfirm, setShowMigrationConfirm] = useState(false)
     const [migrationProgress, setMigrationProgress] = useState<string | null>(null)
@@ -100,8 +119,24 @@ export default function ProjectSettingsModal({
     const [allowCollaboratorExports, setAllowCollaboratorExports] = useState(project.allow_collaborator_exports ?? false)
     const [metadata, setMetadata] = useState<ExportMetadata>((project.export_metadata as any) || {})
 
+    useEffect(() => {
+        if (!open) return
+
+        setAdvancedDetailsOpen(false)
+        setBackupMeta(isLocalOnly ? getBackupMeta(project.id) : null)
+    }, [open, isLocalOnly, project.id])
+
     const updateMetadata = (key: keyof ExportMetadata, value: string) => {
         setMetadata(prev => ({ ...prev, [key]: value }))
+    }
+
+    async function handleCopyProjectId() {
+        try {
+            await navigator.clipboard.writeText(project.id)
+            toast.success('Project ID copied.')
+        } catch {
+            toast.error('Unable to copy project ID.')
+        }
     }
 
     async function handleSave() {
@@ -613,6 +648,112 @@ export default function ProjectSettingsModal({
                                             </p>
                                         )}
                                     </div>
+
+                                    <section className={cn(
+                                        "rounded-2xl border p-4 sm:p-5",
+                                        isMidnight
+                                            ? "border-slate-700/60 bg-slate-900/35"
+                                            : "border-slate-200 bg-white/55"
+                                    )}>
+                                        <div className="space-y-1">
+                                            <h3 className="text-sm font-semibold text-foreground">About this project</h3>
+                                            <p className="text-xs leading-relaxed text-slate-500">
+                                                Informational details about storage, sync status, and technical metadata.
+                                            </p>
+                                        </div>
+
+                                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                            <InfoRow
+                                                label="Storage mode"
+                                                value={isLocalOnly ? 'Local on this device' : 'Cloud'}
+                                            />
+                                            <InfoRow
+                                                label="Cloud status"
+                                                value={isLocalOnly ? 'Not synced' : 'Synced'}
+                                            />
+                                            <InfoRow
+                                                label="Collaboration"
+                                                value={isLocalOnly ? 'Requires cloud' : 'Available'}
+                                            />
+                                            <InfoRow
+                                                label="AI"
+                                                value="Available if enabled"
+                                            />
+                                        </div>
+
+                                        <div className="mt-4 border-t border-border/70 pt-4">
+                                            <button
+                                                type="button"
+                                                onClick={() => setAdvancedDetailsOpen((openState) => !openState)}
+                                                className="flex w-full items-center justify-between rounded-xl px-1 py-1 text-left text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
+                                            >
+                                                <span>Advanced details</span>
+                                                <ChevronDown className={cn(
+                                                    "h-4 w-4 transition-transform duration-200",
+                                                    advancedDetailsOpen && "rotate-180"
+                                                )} />
+                                            </button>
+
+                                            {advancedDetailsOpen && (
+                                                <div className={cn(
+                                                    "mt-3 space-y-3 rounded-2xl border p-4",
+                                                    isMidnight
+                                                        ? "border-slate-700/60 bg-slate-950/30"
+                                                        : "border-slate-200 bg-slate-50/80"
+                                                )}>
+                                                    <div className="flex flex-col gap-3 rounded-xl border border-border/70 bg-background/70 p-3 sm:flex-row sm:items-center sm:justify-between">
+                                                        <div className="min-w-0">
+                                                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                                                                Project ID
+                                                            </p>
+                                                            <p className="mt-1 truncate font-mono text-xs text-slate-600">
+                                                                {project.id}
+                                                            </p>
+                                                        </div>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={handleCopyProjectId}
+                                                            className="h-8 rounded-full px-3 text-xs"
+                                                        >
+                                                            <Copy className="mr-1.5 h-3.5 w-3.5" />
+                                                            Copy
+                                                        </Button>
+                                                    </div>
+
+                                                    <AdvancedInfoRow
+                                                        icon={isLocalOnly ? HardDrive : DatabaseIcon}
+                                                        label="Storage backend"
+                                                        value={isLocalOnly ? 'IndexedDB' : 'Supabase'}
+                                                    />
+                                                    <AdvancedInfoRow
+                                                        label="Created"
+                                                        value={formatProjectDate(project.created_at)}
+                                                    />
+                                                    <AdvancedInfoRow
+                                                        label="Last updated"
+                                                        value={formatProjectDate(project.updated_at)}
+                                                    />
+                                                    {localProject.migrated_to_cloud_project_id && (
+                                                        <AdvancedInfoRow
+                                                            label="Cloud version ID"
+                                                            value={localProject.migrated_to_cloud_project_id}
+                                                            monospace
+                                                        />
+                                                    )}
+                                                    {isLocalOnly && backupMeta && (
+                                                        <AdvancedInfoRow
+                                                            label="Backup status"
+                                                            value={backupMeta.last_backup_at
+                                                                ? `Last local backup ${formatProjectDate(backupMeta.last_backup_at)}`
+                                                                : 'No local backup recorded yet'}
+                                                        />
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </section>
                                 </div>
                             ) : (
                                 <div className="space-y-5 animate-in fade-in slide-in-from-right-2 duration-300 sm:space-y-6">
@@ -830,5 +971,43 @@ export default function ProjectSettingsModal({
                 )}
             </DialogContent>
         </Dialog>
+    )
+}
+
+function InfoRow({ label, value }: { label: string, value: string }) {
+    return (
+        <div className="rounded-xl border border-border/60 bg-background/50 px-4 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{label}</p>
+            <p className="mt-1 text-sm font-medium text-foreground">{value}</p>
+        </div>
+    )
+}
+
+function AdvancedInfoRow({
+    label,
+    value,
+    icon: Icon,
+    monospace = false,
+}: {
+    label: string
+    value: string
+    icon?: LucideIcon
+    monospace?: boolean
+}) {
+    return (
+        <div className="flex items-start justify-between gap-4 rounded-xl border border-border/60 bg-background/55 px-4 py-3">
+            <div className="min-w-0">
+                <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                    {Icon && <Icon className="h-3.5 w-3.5" />}
+                    {label}
+                </p>
+                <p className={cn(
+                    "mt-1 break-words text-sm text-slate-600",
+                    monospace && "font-mono text-xs"
+                )}>
+                    {value}
+                </p>
+            </div>
+        </div>
     )
 }

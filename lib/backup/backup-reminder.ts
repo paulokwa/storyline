@@ -47,6 +47,10 @@ function readMeta(projectId: string): BackupReminderMeta {
     }
 }
 
+export function getBackupMeta(projectId: string): BackupReminderMeta {
+    return readMeta(projectId)
+}
+
 function writeMeta(projectId: string, meta: BackupReminderMeta): void {
     if (typeof window === 'undefined') return
     try {
