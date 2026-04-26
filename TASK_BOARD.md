@@ -41,6 +41,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 
 ## Done
 
+- Replaced the AI partner horizontal mode buttons with a selectable dropdown.
 - Added root-level continuity files.
 - Added session start prompt.
 - Added session end prompt.

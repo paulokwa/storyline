@@ -6,6 +6,33 @@ Agents should update this file before ending a session.
 
 ---
 
+## 2026-04-26 - AI partner mode selector changed to dropdown
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Replaced the AI partner horizontal mode button scroller with a single selectable dropdown.
+- Kept the existing AI mode options and `promptMode` behavior.
+- User confirmed the issue is resolved.
+
+### Current status
+
+The AI partner mode control now shows the current mode and opens a list of available modes when clicked.
+
+### Next recommended step
+
+Continue with the selected high-priority technical debt item when ready; recommended first candidate remains centralized rate limiting for AI routes.
+
+### Risks or warnings
+
+- `npx tsc --noEmit --pretty false` passed.
+- `npm run lint` still fails on existing repo-wide lint issues unrelated to this change.
+
+---
+
 ## 2026-04-26 - Technical debt roadmap summarized into root continuity files
 
 ### Current branch

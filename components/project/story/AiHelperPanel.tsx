@@ -6,9 +6,9 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Package, Bookmark, Database, Maximize2, MessageSquarePlus, Users, Lightbulb, MapPin, Box, HelpCircle, Layout, Square } from 'lucide-react'
-import { useDragScroll } from '@/hooks/useDragScroll'
 import { PremiumEditor } from '@/components/ui/premium-editor'
 import { Button } from '@/components/ui/button'
+import { SanctuarySelect } from '@/components/ui/sanctuary-select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import SaveAiResponseModal from '@/components/project/ai/SaveAiResponseModal'
@@ -480,8 +480,6 @@ export default function AiHelperPanel({
     const cancelledRequestRef = useRef(false)
     const requestTokenRef = useRef(0)
     const lastSubmittedPromptRef = useRef('')
-    const { scrollRef, isDragging, onMouseDown, onMouseLeave, onMouseUp, onMouseMove } = useDragScroll()
-    const modeScroll = useDragScroll()
     const aiAccessIssue = useMemo(() => getAiAccessIssue(aiSettings), [aiSettings])
 
     const currentContextDraft = useMemo(
@@ -1840,6 +1838,7 @@ export default function AiHelperPanel({
     const modeOptions = isNovel
         ? ['Review / Chat', 'Continue Writing', 'Improve Scene', 'Add Conflict', 'Rewrite with Emotion']
         : ['Review / Chat', 'Write as Script Scene', 'Continue Writing', 'Improve Scene', 'Add Conflict', 'Rewrite with Emotion']
+    const modeSelectOptions = modeOptions.map((mode) => ({ value: mode, label: mode }))
 
     return (
         <div className="ai-helper-panel flex flex-col h-full min-h-0 overflow-hidden border-l border-[#d8ddcf] bg-[linear-gradient(180deg,#f5f4ef_0%,#fbf9f5_52%,#f8f6f1_100%)] shadow-[inset_1px_0_0_rgba(255,255,255,0.45),-18px_0_40px_rgba(84,99,84,0.04)]">
@@ -1912,7 +1911,7 @@ export default function AiHelperPanel({
                     </div>
                 </div>
 
-                {/* Mode Buttons Row */}
+                {/* Mode Selector */}
                 <div className={cn(
                     "mt-2 flex items-center gap-2 border-t border-white/70 pt-2",
                     isFullCanvas && "md:mt-0 md:pt-0 md:border-t-0"
@@ -1926,32 +1925,16 @@ export default function AiHelperPanel({
                             data-tour="ai-mode-selector"
                             className="relative min-w-0 flex-1"
                         >
-                            <div 
-                                ref={modeScroll.scrollRef}
-                                onMouseDown={modeScroll.onMouseDown}
-                                onMouseLeave={modeScroll.onMouseLeave}
-                                onMouseUp={modeScroll.onMouseUp}
-                                onMouseMove={modeScroll.onMouseMove}
-                                className={cn(
-                                    "flex min-h-9 items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 pr-8 [mask-image:linear-gradient(to_right,black_calc(100%-40px),transparent_100%)] overscroll-x-contain pointer-events-auto",
-                                    modeScroll.isDragging ? "cursor-grabbing" : "cursor-grab"
-                                )}
-                            >
-                            {modeOptions.map(mode => (
-                                <button
-                                    key={mode}
-                                    onClick={() => setPromptMode(mode)}
-                                    className={cn(
-                                        "shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.18em] transition-all",
-                                        promptMode === mode 
-                                            ? "border-indigo-200 bg-indigo-50 text-indigo-700 shadow-sm" 
-                                            : "border-slate-200/70 bg-white/72 text-slate-500 hover:border-slate-300 hover:bg-white hover:text-slate-700"
-                                    )}
-                                >
-                                    {mode.replace('Writing', '').replace('Scene', '').replace('with Emotion', '').replace('Review / ', '').trim()}
-                                </button>
-                            ))}
-                            </div>
+                            <SanctuarySelect
+                                value={promptMode}
+                                options={modeSelectOptions}
+                                onValueChange={setPromptMode}
+                                placeholder="Choose mode"
+                                triggerClassName="h-9 min-h-9 rounded-full border-indigo-200/80 bg-white/90 px-3 text-[11px] font-bold uppercase tracking-[0.16em] text-indigo-700 shadow-sm hover:border-indigo-300 hover:bg-white focus-visible:ring-indigo-100"
+                                contentClassName="w-[max(var(--anchor-width),17rem)]"
+                                itemClassName="text-[12px]"
+                                iconClassName="text-indigo-400"
+                            />
                         </div>
                         {isFullCanvas && (
                             <div className="hidden shrink-0 md:flex md:items-center">
