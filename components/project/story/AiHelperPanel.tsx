@@ -5,7 +5,7 @@ import { getProjectTypeLabel } from '@/lib/constants'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Package, Bookmark, Database, Maximize2, MessageSquarePlus, Users, Lightbulb, MapPin, Box, HelpCircle, Layout, Square } from 'lucide-react'
+import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Bookmark, Database, Maximize2, Users, Lightbulb, MapPin, Box, HelpCircle, Layout, Square } from 'lucide-react'
 import { PremiumEditor } from '@/components/ui/premium-editor'
 import { Button } from '@/components/ui/button'
 import { SanctuarySelect } from '@/components/ui/sanctuary-select'
@@ -381,20 +381,6 @@ function buildContextText(text: string, strategy: ContextStrategy): string {
     return text.slice(0, MAX_SCENE_CHARS_FULL)
 }
 
-const MODE_EXPLANATIONS: Record<string, string> = {
-    'Continue Writing': 'Seamlessly continues the scene based on your prompt.',
-    'Improve Scene': 'Refines the clarity, flow, and overall prose quality.',
-    'Add Conflict': 'Introduces new tension, higher stakes, or drama.',
-    'Rewrite with Emotion': 'Deepens emotional resonance and character expressions.',
-    'Write as Script Scene': 'Generates a new scene in structured screenplay format.',
-    'Review / Chat': 'Ask questions about your story elements or critique your work.',
-    'What happens next?': 'Pushes the scene forward with the most natural next beat.',
-    'More tense': 'Reworks the moment to raise pressure, urgency, and stakes.',
-    'More natural': 'Smooths dialogue and prose so the scene feels more believable.',
-    'Dialogue idea': 'Generates a short exchange that fits the current moment.',
-    'How to end it?': 'Finds a strong closing beat for the scene.'
-}
-
 type ScreenplayBlock = {
     type: 'scene-heading' | 'action' | 'character' | 'parenthetical' | 'dialogue' | 'transition'
     text: string
@@ -645,12 +631,6 @@ export default function AiHelperPanel({
         strategy: ContextStrategy
     } | null>(null)
 
-    // Phase 5 AI Reuse Context
-    const [includeArchiveContext, setIncludeArchiveContext] = useState(false)
-    const [archiveResponses, setArchiveResponses] = useState<any[]>([])
-    const [selectedArchiveIds, setSelectedArchiveIds] = useState<string[]>([])
-    const [isLoadingArchive, setIsLoadingArchive] = useState(false)
-
     const supabase = createClient()
     const [saveModalOpen, setSaveModalOpen] = useState(false)
     const [saveSuccess, setSaveSuccess] = useState(false)
@@ -747,54 +727,6 @@ export default function AiHelperPanel({
             setShowAiAccessNotice(false)
         }
     }, [aiAccessIssue])
-
-    // Snapshot scene text at submit time so the hook body stays stable during streaming
-    // Fetch archive context when enabled
-    useEffect(() => {
-        async function loadArchive() {
-            if (!includeArchiveContext) {
-                setArchiveResponses([])
-                setSelectedArchiveIds([]) // Clear selection when disabled for safety
-                return
-            }
-            try {
-                setIsLoadingArchive(true)
-                const { data, error } = await (supabase
-                    .from('ai_responses' as any) as any)
-                    .select('id, title, response, type, source_label')
-                    .eq('project_id', projectId)
-                    .neq('type', 'analysis') // Don't allow linking analysis results
-                    .order('created_at', { ascending: false })
-                    .limit(8)
-                
-                if (error) throw error
-                if (data) {
-                    setArchiveResponses(data.filter((item: any) => item.type !== 'analysis_feedback'))
-                }
-            } catch (err: any) {
-                console.error('Error loading archive context:', err.message)
-            } finally {
-                setIsLoadingArchive(false)
-            }
-        }
-        loadArchive()
-    }, [includeArchiveContext, projectId, supabase])
-
-    const archiveContextString = useMemo(() => {
-        if (!includeArchiveContext || selectedArchiveIds.length === 0) return ''
-        const selectedIndices = archiveResponses.filter(r => selectedArchiveIds.includes(r.id))
-        return selectedIndices.map(r => 
-            `=== Saved Response: ${r.title} ===\nType: ${r.type}\nSource: ${r.source_label}\n\n${r.response}`
-        ).join('\n\n')
-    }, [includeArchiveContext, archiveResponses, selectedArchiveIds])
-
-    const toggleArchiveId = (id: string) => {
-        setSelectedArchiveIds(prev => {
-            if (prev.includes(id)) return prev.filter(i => i !== id)
-            if (prev.length >= 5) return prev // Max 5 limit
-            return [...prev, id]
-        })
-    }
 
     const sceneTextRef = useRef(sceneText)
     sceneTextRef.current = sceneText
@@ -1083,31 +1015,6 @@ export default function AiHelperPanel({
                     </Tooltip>
                 )}
 
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            data-tour="ai-memory-btn"
-                            onClick={() => setIncludeArchiveContext(!includeArchiveContext)}
-                            className={cn(
-                                "relative h-8 w-8 rounded-xl border shadow-sm transition-all",
-                                includeArchiveContext
-                                    ? "border-indigo-200 bg-indigo-50/90 text-indigo-600"
-                                    : "border-slate-200/70 bg-white/75 text-slate-400 hover:border-slate-300 hover:bg-white hover:text-slate-600"
-                            )}
-                        >
-                            {isLoadingArchive ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Package className="w-3.5 h-3.5" />}
-                            {selectedArchiveIds.length > 0 && (
-                                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-indigo-500 text-white text-[8px] flex items-center justify-center rounded-full font-bold border border-white">
-                                    {selectedArchiveIds.length}
-                                </span>
-                            )}
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">Archive Context</TooltipContent>
-                </Tooltip>
-
                 {onClose && (
                     <>
                         <div className="w-px h-4 bg-slate-200 mx-1"></div>
@@ -1379,7 +1286,6 @@ export default function AiHelperPanel({
                 if (nodes && nodes.length > 0) {
                     console.log('AI Helper: inserting structured screenplay nodes:', nodes.length)
                     onInsert(nodes)
-                    handleClear()
                     return
                 }
             } catch (err) {
@@ -1389,7 +1295,6 @@ export default function AiHelperPanel({
 
         console.log('AI Helper: Inserting as plain text/HTML')
         onInsert(displayedCompletion)
-        handleClear()
     }
 
     const handleSaveToFeedback = async () => {
@@ -1455,7 +1360,6 @@ export default function AiHelperPanel({
                     projectId,
                     sceneId: activeSceneId,
                     input: contextText,
-                    archiveContext: archiveContextString,
                     linkedCharacters: linkedCharacters.map((c: any) => ({
                         id: c.id,
                         name: c.name,
@@ -1569,10 +1473,6 @@ export default function AiHelperPanel({
         const charactersContext = linkedCharacters.length > 0 
             ? `Characters: ${linkedCharacters.map(c => c.name).join(', ')}. ` 
             : ''
-        const archiveContext = includeArchiveContext && archiveContextString
-            ? `\n\nRELEVANT ARCHIVED RESPONSES:\n${archiveContextString}\n\n`
-            : ''
-        
         const ideasContext = linkedRegularIdeas.length > 0 
             ? `Ideas: ${linkedRegularIdeas.map(i => i.title).join(', ')}. ` 
             : ''
@@ -2047,7 +1947,7 @@ export default function AiHelperPanel({
             {/* Header */}
             <div 
                 data-tour="ai-header"
-                className="ai-helper-header shrink-0 border-b border-[#ddd8ce] bg-[linear-gradient(180deg,rgba(251,249,245,0.96)_0%,rgba(245,244,239,0.92)_100%)] px-4 py-3 backdrop-blur-sm md:px-6 md:py-4"
+                className="ai-helper-header shrink-0 border-b border-[#ddd8ce] bg-[linear-gradient(180deg,rgba(251,249,245,0.96)_0%,rgba(245,244,239,0.92)_100%)] px-4 py-3 backdrop-blur-sm md:px-6 md:pt-4 md:pb-3"
             >
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -2101,12 +2001,13 @@ export default function AiHelperPanel({
                                     <TooltipTrigger className="shrink-0 ml-1">
                                         <button
                                             onClick={handleClear}
+                                            aria-label="Clear AI response preview"
                                             className="p-1 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
                                         >
                                             <X className="w-3 md:w-3.5 h-3 md:h-3.5" />
                                         </button>
                                     </TooltipTrigger>
-                                    <TooltipContent side="top">Clear response</TooltipContent>
+                                    <TooltipContent side="top">Clear preview</TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
                         )}
@@ -2115,14 +2016,10 @@ export default function AiHelperPanel({
 
                 {/* Mode Selector */}
                 <div className={cn(
-                    "mt-2 flex items-center gap-2 border-t border-white/70 pt-2",
+                    "mt-1 flex items-center gap-2 border-t border-white/70 pt-1.5",
                     isFullCanvas && "md:mt-0 md:pt-0 md:border-t-0"
                 )}>
                     <div className="flex min-w-0 flex-1 items-center gap-3">
-                        <div className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-indigo-200/70 bg-white/80 px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] text-indigo-600 shadow-sm">
-                            <MessageSquarePlus className="w-3 h-3" />
-                            <span className="hidden sm:inline">Mode</span>
-                        </div>
                         <div
                             data-tour="ai-mode-selector"
                             className="relative min-w-0 flex-1"
@@ -2145,9 +2042,6 @@ export default function AiHelperPanel({
                         )}
                     </div>
                 </div>
-                <p className="mt-2 text-[10px] font-medium text-slate-400">
-                    {MODE_EXPLANATIONS[promptMode]}
-                </p>
             </div>
 
             {/* Context Indicator */}
@@ -2639,60 +2533,6 @@ export default function AiHelperPanel({
                     </div>
                 )}
             </div>
-            
-            {includeArchiveContext && (
-                <div className="ai-helper-memory px-6 py-3 border-b border-slate-200/60 bg-white/50 animate-in slide-in-from-top-2 duration-300">
-                    <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">AI Memory</span>
-                            {isLoadingArchive && <Loader2 className="w-3 h-3 animate-spin text-indigo-400" />}
-                        </div>
-                        <button 
-                            onClick={() => setIncludeArchiveContext(false)}
-                            className="text-[9px] text-slate-400 hover:text-slate-600 underline"
-                        >
-                            Disable
-                        </button>
-                    </div>
-                    <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1 scrollbar-thin">
-                        {archiveResponses.length > 0 ? (
-                            archiveResponses.map((r) => {
-                                const isSelected = selectedArchiveIds.includes(r.id)
-                                return (
-                                    <Tooltip key={r.id}>
-                                        <TooltipTrigger>
-                                            <button
-                                                onClick={() => toggleArchiveId(r.id)}
-                                                className={cn(
-                                                    "text-[9px] px-2 py-1 rounded-lg border transition-all text-left truncate flex-1 min-w-[100px] flex items-center gap-1.5",
-                                                    isSelected 
-                                                        ? "bg-indigo-50 text-indigo-700 border-indigo-200 font-bold ring-1 ring-indigo-200" 
-                                                        : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
-                                                )}
-                                            >
-                                                <div className={cn(
-                                                    "w-1 h-1 rounded-full shrink-0",
-                                                    isSelected ? "bg-indigo-500" : "bg-slate-300"
-                                                )} />
-                                                <span className="truncate">{r.title}</span>
-                                            </button>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="top">
-                                            {r.title} ({r.source_label})
-                                        </TooltipContent>
-                                    </Tooltip>
-                                )
-                            })
-                        ) : !isLoadingArchive && (
-                            <p className="text-[10px] text-slate-400 italic">No memories found in your archive.</p>
-                        )}
-                    </div>
-                    {selectedArchiveIds.length >= 5 && (
-                        <p className="text-[8px] text-amber-600 font-bold uppercase mt-2">Max selection reached</p>
-                    )}
-                </div>
-            )}
-
             {/* Input Area */}
             <div className="z-10 border-t border-[#ddd8ce] bg-[linear-gradient(180deg,rgba(245,244,239,0.9)_0%,rgba(251,249,245,0.96)_100%)]">
                 {/* Context Preview */}
@@ -2855,7 +2695,7 @@ export default function AiHelperPanel({
                         </div>
                     )}
                 </div>
-                <div className="px-4 pt-3 pb-4 md:pt-4 md:pb-6">
+                <div className="px-4 pt-3 pb-3 md:pt-4 md:pb-2">
                     <form onSubmit={handleSubmit} className="space-y-3" suppressHydrationWarning>
                         {isVirtualRootSelected && (
                             <div className="flex flex-col gap-2 p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-indigo-700 animate-in fade-in zoom-in duration-300 mb-2">

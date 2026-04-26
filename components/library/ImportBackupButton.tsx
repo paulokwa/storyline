@@ -22,6 +22,7 @@ import {
 import { BACKUP_FILE_EXTENSION, type StorylineBackup } from '@/lib/backup/backup-format'
 import { getProjectTypeLabel } from '@/lib/constants'
 import { cn } from '@/lib/utils'
+import LocalTransferGuidance from '@/components/project/local/LocalTransferGuidance'
 
 type PendingLibraryImport = {
     backup: StorylineBackup
@@ -31,9 +32,11 @@ type PendingLibraryImport = {
 export default function ImportBackupButton({
     currentUserId,
     className,
+    showTransferGuidance = true,
 }: {
     currentUserId: string
     className?: string
+    showTransferGuidance?: boolean
 }) {
     const router = useRouter()
     const inputRef = useRef<HTMLInputElement>(null)
@@ -164,7 +167,7 @@ export default function ImportBackupButton({
         : 'Project'
 
     return (
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex w-full flex-col items-stretch gap-3 md:items-end">
             <button
                 onClick={handleClick}
                 disabled={isLoading}
@@ -208,6 +211,14 @@ export default function ImportBackupButton({
                 >
                     {errorMessage}
                 </p>
+            )}
+
+            {showTransferGuidance && (
+                <LocalTransferGuidance
+                    compact
+                    className="w-full md:max-w-xl"
+                    cloudSyncHref="/settings"
+                />
             )}
 
             {pendingImport && (

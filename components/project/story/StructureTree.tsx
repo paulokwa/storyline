@@ -10,6 +10,9 @@ import {
 } from 'lucide-react'
 import {
     TooltipProvider,
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { cn, reorder } from '@/lib/utils'
 import { GripVertical } from 'lucide-react'
@@ -65,6 +68,18 @@ function buildTree(nodes: StructureNode[], parentId: string | null = null): Stru
     return nodes
         .filter(n => n.parent_id === parentId)
         .sort((a, b) => a.order_index - b.order_index)
+}
+
+function truncateLongWords(value: string, maxWordLength = 18) {
+    return value
+        .split(/(\s+)/)
+        .map((part) => {
+            if (!part.trim()) return part
+            return part.length > maxWordLength
+                ? `${part.slice(0, maxWordLength - 1)}…`
+                : part
+        })
+        .join('')
 }
 
 export default function StructureTree({
@@ -341,12 +356,11 @@ const NodeItem = React.memo(({
     const isRoot = node.type === 'episode' || node.type === 'chapter'
     const isActive = isScene && activeNodeId === node.id
     const isSelected = selectedNodeIds.includes(node.id)
-    const isNovelScene = projectType === 'novel' && isScene
-
     const { comments } = useComments()
     const openCommentCount = useMemo(() => {
         return comments.filter(c => c.node_id === node.id && c.status === 'open' && !c.parent_id).length
     }, [comments, node.id])
+    const displayTitle = useMemo(() => truncateLongWords(node.title), [node.title])
 
     function handleClick(e: React.MouseEvent) {
         e.stopPropagation()
@@ -365,16 +379,16 @@ const NodeItem = React.memo(({
     return (
         <Draggable draggableId={node.id} index={index} isDragDisabled={isDragDisabled}>
             {(provided, snapshot) => (
-                <div ref={provided.innerRef} {...provided.draggableProps}>
+                <div ref={provided.innerRef} {...provided.draggableProps} className="group">
                     <div
                         className={cn(
-                            'group flex items-center gap-2 py-3 px-3 sm:px-4 mx-2 sm:mx-3 rounded-2xl cursor-pointer transition-all duration-300 text-sm mb-1 relative border border-transparent',
+                            'flex min-w-0 items-center gap-2 py-3 px-3 sm:px-4 mx-2 sm:mx-3 rounded-2xl cursor-pointer transition-all duration-300 text-sm mb-1 relative border border-transparent',
                             isActive
                                 ? 'bg-white text-[#546354] shadow-[0_8px_24px_rgba(0,0,0,0.06)] font-bold border-[#546354]/10 z-10'
                                 : 'text-slate-500 hover:bg-white/60',
                             isRoot && 'font-serif italic text-base py-3 sm:py-4 bg-white/30 backdrop-blur-sm border-white/40 mb-2 mt-2 shadow-[0_2px_8px_rgba(0,0,0,0.02)]',
                             isAct && 'font-semibold text-slate-700 py-2 sm:py-2.5',
-                            isScene && 'text-slate-500 py-1.5 sm:py-2',
+                            isScene && 'items-start text-slate-500 py-1.5 sm:py-2',
                             isSelected && 'bg-indigo-50/40 border-indigo-200/50',
                             snapshot.isDragging && 'shadow-2xl z-50 bg-white ring-2 ring-[#546354]/10'
                         )}
@@ -393,10 +407,12 @@ const NodeItem = React.memo(({
                             {...(!isDragDisabled ? provided.dragHandleProps : {})}
                             className={cn(
                                 "shrink-0 rounded-md p-1 -ml-1 text-slate-300 transition-opacity hover:text-slate-400",
+                                isScene && "mt-0.5 self-start",
                                 isDragDisabled
                                     ? "cursor-default opacity-0 pointer-events-none"
-                                    : "cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100",
-                                isActive && !isDragDisabled && "opacity-100"
+                                    : "cursor-grab active:cursor-grabbing",
+                                isActive && !isDragDisabled && "opacity-100",
+                                !isActive && !isDragDisabled && "opacity-0"
                             )}
                             onClick={(e) => e.stopPropagation()}
                             aria-label={isDragDisabled ? undefined : `Drag ${node.title}`}
@@ -406,7 +422,7 @@ const NodeItem = React.memo(({
                         </button>
 
                         {openCommentCount > 0 && (
-                            <div className="flex items-center justify-center bg-[#546354]/10 text-[#546354] rounded-full min-w-[18px] h-[18px] px-1 shadow-sm border border-[#546354]/10 shrink-0">
+                            <div className={cn("flex items-center justify-center bg-[#546354]/10 text-[#546354] rounded-full min-w-[18px] h-[18px] px-1 shadow-sm border border-[#546354]/10 shrink-0", isScene && "mt-1 self-start")}>
                                 <span className="text-[9px] font-bold">{openCommentCount}</span>
                             </div>
                         )}
@@ -416,12 +432,13 @@ const NodeItem = React.memo(({
                                 {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                             </span>
                         )}
-                        {isScene && <div className="w-4 shrink-0" />}
+                        {isScene && <div className="mt-1 w-4 shrink-0 self-start" />}
 
                         {onToggleSelection && (
                             <div 
                                 className={cn(
                                     "w-4 h-4 min-w-4 min-h-4 shrink-0 border-2 rounded-md flex items-center justify-center transition-all duration-200",
+                                    isScene && "mt-1 self-start",
                                     isSelected 
                                         ? "bg-indigo-500 border-indigo-500" 
                                         : "border-slate-300 group-hover:border-slate-400"
@@ -437,6 +454,7 @@ const NodeItem = React.memo(({
 
                         <Icon className={cn(
                             'shrink-0 transition-transform duration-300',
+                            isScene && 'mt-1 self-start',
                             isRoot ? 'w-5 h-5 text-[#546354]/80' : 'w-4 h-4',
                             isActive ? 'text-[#546354] scale-110' : 'text-slate-400',
                             isAct && 'text-slate-500'
@@ -452,29 +470,30 @@ const NodeItem = React.memo(({
                                     if (e.key === 'Escape') { setDraft(node.title); setEditing(false) }
                                 }}
                                 onClick={e => e.stopPropagation()}
-                                className="flex-1 bg-white border border-[#546354]/20 rounded-xl px-3 text-xs outline-none h-8 font-serif italic shadow-inner"
+                                className="min-w-0 flex-1 bg-white border border-[#546354]/20 rounded-xl px-3 text-xs outline-none h-8 font-serif italic shadow-inner"
                                 autoFocus
                             />
                         ) : (
                             <span
                                 className={cn(
-                                    "flex-1 truncate",
-                                    !isNovelScene && "md:overflow-visible md:text-clip md:whitespace-normal md:break-words",
+                                    "min-w-0 flex-1",
+                                    isScene ? "whitespace-normal break-normal leading-5 pr-3" : "truncate sm:whitespace-normal sm:break-words",
                                     isRoot && "tracking-tight text-[#485748]",
                                     isScene && "text-slate-600 font-medium",
                                     mobileOptionsActive && "hidden md:block"
                                 )}
+                                title={node.title}
                                 onDoubleClick={isReadOnly ? undefined : (e) => { e.stopPropagation(); setEditing(true) }}
                             >
-                                {node.title}
+                                {displayTitle}
                             </span>
                         )}
 
 
 
                         {/* Confirm delete — always visible when active, outside hover conditional */}
-                        {confirmingDeleteId === node.id && !editing && (
-                            <div className="flex items-center gap-1 shrink-0 animate-in fade-in duration-150" onClick={e => e.stopPropagation()}>
+                        {false && confirmingDeleteId === node.id && !editing && (
+                            <div className="ml-auto flex items-center gap-1 shrink-0 self-start animate-in fade-in duration-150" onClick={e => e.stopPropagation()}>
                                 <button
                                     onClick={e => { e.stopPropagation(); onRequestDelete(null) }}
                                     className="px-2 py-1 text-[9px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider rounded"
@@ -489,8 +508,8 @@ const NodeItem = React.memo(({
                         {/* Hover/Long Press actions — only when not confirming */}
                         {(!editing && !isReadOnly && confirmingDeleteId !== node.id) && (
                             <div className={cn(
-                                "flex items-center gap-1 shrink-0 transition-opacity duration-200",
-                                "opacity-0 pointer-events-none md:w-auto md:overflow-visible md:group-hover:opacity-100 md:group-hover:pointer-events-auto",
+                                "ml-auto flex items-center gap-1 shrink-0 self-start transition-opacity duration-200",
+                                "opacity-0 pointer-events-none md:w-auto md:overflow-visible",
                                 isActive && "md:opacity-100 md:pointer-events-auto",
                                 mobileOptionsActive ? "opacity-100 pointer-events-auto flex-1 justify-end" : "w-0 overflow-hidden md:w-auto"
                             )} onClick={e => e.stopPropagation()}>
@@ -517,6 +536,88 @@ const NodeItem = React.memo(({
                             </div>
                         )}
                     </div>
+
+                    {false && (!editing && !isReadOnly && confirmingDeleteId !== node.id) && (
+                        <div
+                            className={cn(
+                                "mx-2 mb-1 mt-1 sm:mx-3",
+                                mobileOptionsActive ? "block" : "hidden md:block"
+                            )}
+                            style={{
+                                paddingLeft: `${depth * 24 + (isScene ? 40 : 20)}px`,
+                                paddingRight: '12px',
+                            }}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div
+                                className={cn(
+                                    "mx-auto w-full max-w-[248px] overflow-hidden rounded-2xl border border-slate-200/80 bg-white/92 shadow-sm transition-all duration-200",
+                                    mobileOptionsActive
+                                        ? "opacity-100"
+                                        : "opacity-0 pointer-events-none md:group-hover:opacity-100 md:group-hover:pointer-events-auto"
+                                )}
+                            >
+                                <div className="grid grid-cols-3 gap-1 p-2">
+                                    {CHILD_TYPE[node.type as NodeType] ? (
+                                        <button
+                                            onClick={() => onAddChild(node)}
+                                            className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500 transition-colors hover:bg-primary/10 hover:text-primary"
+                                        >
+                                            <Plus className="h-3.5 w-3.5" />
+                                            Add
+                                        </button>
+                                    ) : (
+                                        <div />
+                                    )}
+                                    <button
+                                        onClick={e => { e.stopPropagation(); setEditing(true) }}
+                                        className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                                    >
+                                        <Pencil className="h-3.5 w-3.5" />
+                                        Edit
+                                    </button>
+                                    <button
+                                        onClick={e => { e.stopPropagation(); onRequestDelete(node.id) }}
+                                        className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-amber-600 transition-colors hover:bg-amber-50 hover:text-amber-700"
+                                    >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                        Trash
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {confirmingDeleteId === node.id && !editing && (
+                        <div
+                            className="mx-2 mb-1 mt-1 sm:mx-3 animate-in fade-in slide-in-from-top-1 duration-150"
+                            style={{
+                                paddingLeft: `${depth * 24 + (isScene ? 40 : 20)}px`,
+                                paddingRight: '12px',
+                            }}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="mx-auto flex w-full max-w-[248px] flex-col items-center gap-2 rounded-2xl border border-amber-100 bg-amber-50/90 px-3 py-2.5 shadow-sm">
+                                <p className="text-center text-[9px] font-bold uppercase tracking-[0.22em] text-amber-700/80">
+                                    Delete this scene?
+                                </p>
+                                <div className="grid w-full grid-cols-2 gap-2">
+                                    <button
+                                        onClick={e => { e.stopPropagation(); onRequestDelete(null) }}
+                                        className="rounded-full border border-amber-100 bg-white/80 px-3 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-slate-500 transition-colors hover:text-slate-700"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={e => { e.stopPropagation(); onDelete(node) }}
+                                        className="rounded-full bg-amber-500 px-3 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-white transition-colors hover:bg-amber-600"
+                                    >
+                                        Trash
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {!isScene && expanded && (
                         <Droppable droppableId={node.id} isDropDisabled={isReadOnly}>

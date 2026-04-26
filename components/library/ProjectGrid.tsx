@@ -47,6 +47,7 @@ import { useTheme } from '@/components/providers/ThemeProvider'
 import { destroyLocalProject, listLocalProjects, restoreLocalProject, softDeleteLocalProject, updateLocalProject } from '@/lib/persistence/local-projects'
 import { isLocalProjectId } from '@/lib/persistence/project-mode'
 import ImportBackupButton from '@/components/library/ImportBackupButton'
+import LocalTransferGuidance from '@/components/project/local/LocalTransferGuidance'
 
 // Explicitly extend the Project type with fields added via recent migrations
 type Project = Database['public']['Tables']['projects']['Row'] & {
@@ -241,11 +242,20 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                 <p className={cn("text-lg mb-10 max-w-md mx-auto font-medium leading-relaxed", isMidnight ? "text-slate-400" : "text-slate-500")}>
                     Create a Book or Screenplay and begin writing your next masterpiece.
                 </p>
-                <Link href="/new">
-                    <Button className="sanctuary-btn-primary h-14 px-10 rounded-full text-base font-semibold gap-3 shadow-xl hover:shadow-primary/20 transition-all active:scale-[0.98]">
-                        <Plus className="w-5 h-5" /> Start New Project
-                    </Button>
-                </Link>
+                <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-4">
+                    <Link href="/new">
+                        <Button className="sanctuary-btn-primary h-14 px-10 rounded-full text-base font-semibold gap-3 shadow-xl hover:shadow-primary/20 transition-all active:scale-[0.98]">
+                            <Plus className="w-5 h-5" /> Start New Project
+                        </Button>
+                    </Link>
+                    <LocalTransferGuidance
+                        className="w-full text-left"
+                        cloudSyncHref="/settings"
+                    />
+                    <div className="w-full">
+                        <ImportBackupButton currentUserId={currentUserId} className="w-full md:w-auto" showTransferGuidance={false} />
+                    </div>
+                </div>
             </div>
         )
     }

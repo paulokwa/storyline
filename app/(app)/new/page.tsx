@@ -22,6 +22,8 @@ import { toast } from 'sonner'
 
 type StartMode = 'quick' | 'guided' | 'import'
 type Step = 'title' | 'type' | 'start_mode' | 'identity' | 'guided' | 'import'
+const LOCAL_MODE_EDUCATION_PENDING_KEY = 'storyline-local-mode-education-pending'
+const LOCAL_MODE_EDUCATION_SHOWN_KEY = 'storyline-local-mode-education-shown'
 
 interface NewProjectState {
     title: string
@@ -166,6 +168,14 @@ export default function NewProjectPage() {
             localStorage.removeItem('storyline-new-project-draft')
             localStorage.removeItem('storyline-guided-data-draft')
             setPendingCoverFile(null)
+
+            if (
+                storageMode === 'local'
+                && localStorage.getItem(LOCAL_MODE_EDUCATION_SHOWN_KEY) !== 'true'
+            ) {
+                sessionStorage.setItem(LOCAL_MODE_EDUCATION_PENDING_KEY, project.id)
+            }
+
             router.push(`/project/${project.id}/story`)
         } catch (error) {
             console.error("Project creation error:", error)

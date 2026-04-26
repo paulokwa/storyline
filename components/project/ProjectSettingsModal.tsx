@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils'
 import { PROJECT_TYPE_LABELS, getProjectTypeLabel } from '@/lib/constants'
 import { useTheme } from '@/components/providers/ThemeProvider'
 import { getUserSafely } from '@/lib/supabase/client-auth'
+import LocalTransferGuidance from '@/components/project/local/LocalTransferGuidance'
 
 type Project = Database['public']['Tables']['projects']['Row']
 type LocalProjectDetails = Project & {
@@ -41,6 +42,7 @@ interface ProjectSettingsModalProps {
     project: Project
     role?: 'owner' | 'editor' | 'viewer'
     onOpenShare?: () => void
+    onOpenRestore?: () => void
 }
 
 function formatProjectDate(value: string | null | undefined) {
@@ -84,6 +86,7 @@ export default function ProjectSettingsModal({
     project,
     role = 'owner',
     onOpenShare,
+    onOpenRestore,
 }: ProjectSettingsModalProps) {
     const { theme } = useTheme()
     const isMidnight = theme === 'midnight'
@@ -428,53 +431,61 @@ export default function ProjectSettingsModal({
                                     </div>
 
                                     {isLocalOnly && (
-                                        <div className={cn(
-                                            "mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl border",
-                                            isMidnight 
-                                                ? "bg-indigo-500/10 border-indigo-400/20" 
-                                                : "bg-indigo-50 border-indigo-100"
-                                        )}>
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-indigo-500/10 rounded-lg shrink-0">
-                                                    <Globe className="w-4 h-4 text-indigo-600" />
+                                        <div className="mt-6 space-y-4">
+                                            <div className={cn(
+                                                "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl border",
+                                                isMidnight 
+                                                    ? "bg-indigo-500/10 border-indigo-400/20" 
+                                                    : "bg-indigo-50 border-indigo-100"
+                                            )}>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-indigo-500/10 rounded-lg shrink-0">
+                                                        <Globe className="w-4 h-4 text-indigo-600" />
+                                                    </div>
+                                                    <div className="space-y-0.5">
+                                                        <h4 className="text-sm font-bold text-indigo-900">
+                                                            {isAlreadyMigrated ? 'Cloud Project Available' : 'Local Mode: private on this device'}
+                                                        </h4>
+                                                        <p className="text-xs text-indigo-700/80 font-medium">
+                                                            {isAlreadyMigrated 
+                                                                ? 'This project has been migrated to the cloud for collaboration.'
+                                                                : 'Stored locally. Collaboration and sharing require cloud sync.'
+                                                            }
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div className="space-y-0.5">
-                                                    <h4 className="text-sm font-bold text-indigo-900">
-                                                        {isAlreadyMigrated ? 'Cloud Project Available' : 'Local Mode: private on this device'}
-                                                    </h4>
-                                                    <p className="text-xs text-indigo-700/80 font-medium">
-                                                        {isAlreadyMigrated 
-                                                            ? 'This project has been migrated to the cloud for collaboration.'
-                                                            : 'Stored locally. Collaboration and sharing require cloud sync.'
-                                                        }
-                                                    </p>
+                                                <div className="flex flex-col items-start sm:items-end gap-1 w-full sm:w-auto shrink-0">
+                                                    {isAlreadyMigrated ? (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                onOpenChange(false);
+                                                                router.push(`/project/${localProject.migrated_to_cloud_project_id}/story`);
+                                                            }}
+                                                            className="w-full sm:w-auto rounded-lg bg-white/80 border-indigo-200 text-indigo-600 hover:bg-white hover:text-indigo-700 h-8 text-xs font-bold shadow-sm"
+                                                        >
+                                                            Open Cloud Version
+                                                        </Button>
+                                                    ) : (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => setShowMigrationConfirm(true)}
+                                                            disabled={!canManageProject}
+                                                            className="w-full sm:w-auto rounded-lg bg-white/80 border-indigo-200 text-indigo-600 hover:bg-white hover:text-indigo-700 h-8 text-xs font-bold shadow-sm"
+                                                        >
+                                                            Enable Cloud & Collaboration
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </div>
-                                            <div className="flex flex-col items-start sm:items-end gap-1 w-full sm:w-auto shrink-0">
-                                                {isAlreadyMigrated ? (
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            onOpenChange(false);
-                                                            router.push(`/project/${localProject.migrated_to_cloud_project_id}/story`);
-                                                        }}
-                                                        className="w-full sm:w-auto rounded-lg bg-white/80 border-indigo-200 text-indigo-600 hover:bg-white hover:text-indigo-700 h-8 text-xs font-bold shadow-sm"
-                                                    >
-                                                        Open Cloud Version
-                                                    </Button>
-                                                ) : (
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => setShowMigrationConfirm(true)}
-                                                        disabled={!canManageProject}
-                                                        className="w-full sm:w-auto rounded-lg bg-white/80 border-indigo-200 text-indigo-600 hover:bg-white hover:text-indigo-700 h-8 text-xs font-bold shadow-sm"
-                                                    >
-                                                        Enable Cloud & Collaboration
-                                                    </Button>
-                                                )}
-                                            </div>
+
+                                            <LocalTransferGuidance
+                                                compact
+                                                onImportBackup={onOpenRestore}
+                                                onLearnAboutCloudSync={() => setShowMigrationConfirm(true)}
+                                            />
                                         </div>
                                     )}
 

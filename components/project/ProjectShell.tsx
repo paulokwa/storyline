@@ -47,6 +47,13 @@ import { getProjectTypeLabel } from '@/lib/constants'
 import ProjectSettingsModal from '@/components/project/ProjectSettingsModal'
 import ShareModal from '@/components/project/ShareModal'
 import RestoreBackupModal from '@/components/project/RestoreBackupModal'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
 import { cn, getUserColor } from '@/lib/utils'
 import type { Database } from '@/lib/supabase/types'
 import { ReaderProvider, useSpeech } from '@/hooks/useSpeech'
@@ -99,6 +106,8 @@ const TABS = [
 const LOCAL_ONLY_TABS = TABS.filter(({ slug }) =>
     ['story', 'characters', 'ideas', 'locations', 'objects', 'assets', 'recovery'].includes(slug)
 )
+const LOCAL_MODE_EDUCATION_PENDING_KEY = 'storyline-local-mode-education-pending'
+const LOCAL_MODE_EDUCATION_SHOWN_KEY = 'storyline-local-mode-education-shown'
 
 function splitReaderBlocks(text: string): string[] {
     return text
@@ -135,6 +144,7 @@ export default function ProjectShell({
     const [restoreModalOpen, setRestoreModalOpen] = useState(false)
     const [shortcutsOpen, setShortcutsOpen] = useState(false)
     const [tourOpen, setTourOpen] = useState(false)
+    const [localModeEducationOpen, setLocalModeEducationOpen] = useState(false)
     const onboardingStorageKey = `storyline-onboarding:${currentUserId}:${project.type}`
     const isLocalOnly = storageMode === 'local-only'
 
@@ -178,6 +188,14 @@ export default function ProjectShell({
     }, [pathname])
 
     useEffect(() => {
+        if (!isLocalOnly) return
+        if (localStorage.getItem(LOCAL_MODE_EDUCATION_SHOWN_KEY) === 'true') return
+        if (sessionStorage.getItem(LOCAL_MODE_EDUCATION_PENDING_KEY) !== project.id) return
+
+        setLocalModeEducationOpen(true)
+    }, [isLocalOnly, project.id])
+
+    useEffect(() => {
         if (isLocalOnly) return
 
         const supabase = createClient()
@@ -197,6 +215,23 @@ export default function ProjectShell({
             channel.unsubscribe()
         }
     }, [isLocalOnly, project.id, router])
+
+    function dismissLocalModeEducation() {
+        localStorage.setItem(LOCAL_MODE_EDUCATION_SHOWN_KEY, 'true')
+        sessionStorage.removeItem(LOCAL_MODE_EDUCATION_PENDING_KEY)
+        setLocalModeEducationOpen(false)
+    }
+
+    async function handleBackupFromEducation() {
+        try {
+            const { wordCount } = await exportLocalBackup(project.id)
+            recordBackupComplete(project.id, wordCount)
+        } catch (err) {
+            console.error('[ProjectShell] Local backup export failed:', err)
+        } finally {
+            dismissLocalModeEducation()
+        }
+    }
 
     const { activeNodeId } = useProjectActions()
 
@@ -287,11 +322,55 @@ export default function ProjectShell({
                             />
                         )}
 
+                        {isLocalOnly && (
+                            <Dialog
+                                open={localModeEducationOpen}
+                                onOpenChange={(open) => {
+                                    if (!open) {
+                                        dismissLocalModeEducation()
+                                        return
+                                    }
+                                    setLocalModeEducationOpen(open)
+                                }}
+                            >
+                                <DialogContent className="max-w-md rounded-[2rem] border border-[#d9e1d5] bg-[#fbf9f5] p-0 shadow-2xl">
+                                    <div className="p-8">
+                                        <DialogHeader className="space-y-3 text-left">
+                                            <DialogTitle className="font-serif text-2xl text-slate-900">Stored on this device</DialogTitle>
+                                            <DialogDescription className="text-sm leading-6 text-slate-600">
+                                                This project is stored only on this device. To access it elsewhere, export a backup or enable cloud sync.
+                                            </DialogDescription>
+                                        </DialogHeader>
+
+                                        <div className="mt-6 flex flex-col gap-3">
+                                            <Button
+                                                type="button"
+                                                onClick={handleBackupFromEducation}
+                                                className="h-11 rounded-full bg-[#546354] text-white hover:bg-[#465345]"
+                                            >
+                                                <Download className="mr-2 h-4 w-4" />
+                                                Back up project
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                onClick={dismissLocalModeEducation}
+                                                className="h-11 rounded-full text-slate-600 hover:text-slate-900"
+                                            >
+                                                Got it
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
+                        )}
+
                         <ProjectSettingsModal 
                             open={settingsModalOpen} 
                             onOpenChange={setSettingsModalOpen} 
                             project={project} 
                             role={role}
+                            onOpenRestore={isLocalOnly ? () => setRestoreModalOpen(true) : undefined}
                             onOpenShare={() => {
                                 setSettingsModalOpen(false)
                                 setShareModalOpen(true)

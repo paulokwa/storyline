@@ -44,6 +44,9 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 
 - Replaced the AI partner horizontal mode buttons with a selectable dropdown.
 - Merged quick writing ideas into the main AI mode selector and removed visible prompt injection for those modes.
+- Removed Archive Context from the AI Partner while keeping normal AI Memory saving/viewing.
+- Tightened redundant AI Partner header and footer spacing on desktop.
+- Removed the redundant static Mode pill from the AI Partner header.
 - Fixed screenplay AI insertion so non-chat screenplay modes attempt structured screenplay block insertion.
 - Fixed structure tree act checkbox collapse on desktop.
 - Fixed story-context selection so tree visuals, explicit AI selection, and AI-ready chip roll-up behave consistently.

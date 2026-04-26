@@ -17,6 +17,9 @@ Agents should update this file before ending a session.
 - Merged quick writing ideas into the main AI mode selector and removed visible prompt injection for those modes.
 - Kept quick writing steering internal so users can type their own prompt text while still using the selected AI mode.
 - Extended screenplay-mode AI insert behavior so non-chat screenplay responses try to insert as structured screenplay blocks, not just plain text.
+- Removed Archive Context from the AI Partner so saved AI responses now live only in AI Memory, not as inline request context controls.
+- Trimmed excess desktop spacing in the AI Partner header and input footer.
+- Removed the redundant static `Mode` pill so the dropdown selector stands on its own.
 - Fixed the desktop structure tree checkbox collapse bug on act rows.
 - Reworked story-context selection so explicit AI selection is separate from derived tree checkbox visuals.
 - Fixed act/scene selection roll-up behavior so:
@@ -28,7 +31,7 @@ Agents should update this file before ending a session.
 
 ### Current status
 
-AI mode selection is consolidated, screenplay insertion is more consistent for screenplay projects, and structure-tree selection now behaves consistently between the tree, AI-ready bar, and AI Partner context.
+AI mode selection is consolidated, the AI Partner header is leaner, AI Memory is no longer duplicated as Archive Context inside the panel, screenplay insertion is more consistent for screenplay projects, and structure-tree selection now behaves consistently between the tree, AI-ready bar, and AI Partner context.
 
 ### Next recommended step
 
