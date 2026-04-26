@@ -999,6 +999,10 @@ function CollaborativeAvatars({
     const ownerInitials = ownerName.includes(' ')
         ? ownerName.split(' ').map((part: string) => part[0]).join('').slice(0, 2).toUpperCase()
         : ownerName.slice(0, 2).toUpperCase()
+
+    if (!showOwnerBadge && visibleUsers.length === 0 && remainingCount <= 0) {
+        return null
+    }
     
     return (
         <div className="flex items-center -space-x-1.5 hover:-space-x-1 transition-all duration-300">

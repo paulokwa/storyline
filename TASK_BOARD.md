@@ -33,7 +33,6 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Review whether scene analysis outputs should save directly to AI Memory when the user chooses Add to AI.
 - Audit app-wide AI terminology and decide whether to use AI, Assistant, Muse, or another label consistently.
 - Improve inline image insertion discoverability in prose/book mode.
-- Clarify Scene Visual References vs inline illustration wording.
 - Update feature/showcase page after a root-and-branch feature audit.
 - Rework help menu/page near launch after major feature changes settle.
 - Run pre-launch security audit covering input sanitization, auth flows, exposed secrets, personal emails, repo references, and deployment settings.
@@ -86,6 +85,8 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Fixed screenplay AI insertion so non-chat screenplay modes attempt structured screenplay block insertion.
 - Fixed structure tree act checkbox collapse on desktop.
 - Fixed story-context selection so tree visuals, explicit AI selection, and AI-ready chip roll-up behave consistently.
+- Clarified prose scene gallery wording while preserving screenplay visual reference labels.
+- Removed the empty collaborator avatar pill from solo projects while preserving shared-project collaborator avatars.
 - Added root-level continuity files.
 - Added session start prompt.
 - Added session end prompt.

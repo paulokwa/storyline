@@ -47,10 +47,15 @@ interface SceneAssetsPanelProps {
 export default function SceneAssetsPanel({ projectId, sceneId, onClose, projectType }: SceneAssetsPanelProps) {
     const isLocalOnly = isLocalProjectId(projectId)
     const isScreenplay = projectType === 'tv_script'
-    const title = isScreenplay ? 'Scene Visual References' : 'Scene Inspirations'
+    const title = isScreenplay ? 'Scene Visual References' : 'Scene Gallery'
     const selectorSubtitle = isScreenplay
         ? 'Select images to attach as scene visual references'
-        : 'Select images to attach as scene reference'
+        : 'Select images to attach to this scene gallery'
+    const emptyStateMessage = isScreenplay
+        ? 'No visual references attached to this scene yet.'
+        : 'No gallery images attached to this scene yet.'
+    const browseButtonLabel = isScreenplay ? 'Browse Assets' : 'Open Gallery'
+    const attachButtonLabel = isScreenplay ? 'Attach Reference' : 'Add to Gallery'
     const [attachedAssets, setAttachedAssets] = useState<SceneAsset[]>([])
     const [loading, setLoading] = useState(true)
     const [isSelecting, setIsSelecting] = useState(false)
@@ -220,14 +225,14 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose, projectT
                         <div className="w-12 h-12 rounded-2xl bg-white border border-stone-100 flex items-center justify-center mb-4 shadow-sm">
                             <Plus className="w-5 h-5 text-stone-200" />
                         </div>
-                        <p className="text-sm font-serif italic text-slate-400 mb-6">No visual references attached to this scene yet.</p>
+                        <p className="text-sm font-serif italic text-slate-400 mb-6">{emptyStateMessage}</p>
                         <Button 
                             variant="outline" 
                             size="sm" 
                             className="rounded-full bg-white shadow-sm ring-1 ring-stone-100 border-none uppercase text-[10px] font-bold tracking-widest px-6"
                             onClick={openSelector}
                         >
-                            Browse Assets
+                            {browseButtonLabel}
                         </Button>
                     </div>
                 ) : (
@@ -262,7 +267,7 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose, projectT
                             onClick={openSelector}
                         >
                             <Plus className="w-4 h-4 text-stone-300" />
-                            <span className="text-[10px] uppercase tracking-widest font-bold text-stone-300">Attach Reference</span>
+                            <span className="text-[10px] uppercase tracking-widest font-bold text-stone-300">{attachButtonLabel}</span>
                         </Button>
                     </div>
                 )}

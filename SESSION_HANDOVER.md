@@ -5,6 +5,33 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-04-26 - Scene gallery wording and empty collaborator pill cleanup
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Clarified prose scene-asset wording so book projects use `Scene Gallery`, `Open Gallery`, and `Add to Gallery` instead of screenplay-style reference copy.
+- Preserved screenplay-specific `Scene Visual References` wording.
+- Removed the empty collaborator avatar pill/blip from solo projects in the app header.
+- Preserved collaborator avatar rendering for shared projects.
+- User confirmed these items are resolved.
+
+### Current status
+
+The recent low-risk UI cleanup is in place. Solo projects no longer show an empty collaborator cluster, and prose scene asset language now matches existing gallery terminology.
+
+### Next recommended step
+
+Run the broader browser regression already listed for visual references, AI-off analyzer feedback, and book/prose image behavior.
+
+### Risks or warnings
+
+- These fixes were kept intentionally narrow and were not validated with a fresh browser regression in this session.
+
+---
 ## 2026-04-26 - AI access defaults and screenplay visual references
 
 ### Current branch
