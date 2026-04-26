@@ -22,6 +22,71 @@ This file tracks tests that need to be done and records confirmed successful tes
 
 ---
 
+## Reusable Agent Test Prompt
+
+Use this when asking Codex, AG, Claude, or another coding agent to safely pick and run one test from this file.
+
+```text
+You are continuing the Storyline project.
+
+Before doing anything, read these repo-root files:
+
+- MASTER_BRIEF.md
+- DECISION_LOG.md
+- SESSION_HANDOVER.md
+- TASK_BOARD.md
+- TESTING.md
+
+Your task is to pick ONE test from TESTING.md that you can realistically run in this environment.
+
+Rules:
+
+1. Do not change app code unless the test requires a tiny non-product test helper, and explain before doing so.
+2. Prefer tests that can be verified with the current environment, such as:
+   - TypeScript/build checks
+   - lint or focused lint checks
+   - unit-like checks if scripts exist
+   - browser regression if Playwright/browser access is available
+   - static verification of routing, copy, feature flags, or UI conditions
+3. Do not pretend a manual/browser/device test passed if this environment cannot actually run it.
+4. If the test cannot be fully verified, mark it as not completed in your final answer and do not update TESTING.md.
+5. If a test fails, do NOT update TESTING.md as Passed.
+6. If a test fails, do NOT commit or push.
+7. If a test passes, update TESTING.md only for that exact test:
+   - Set Status to Passed
+   - Set Tested by to Codex, AG, or the actual agent/tool name
+   - Set Date tested to today’s date in YYYY-MM-DD format
+   - Add a concise note explaining what was verified
+8. If the test result changes current session status or creates useful context for future agents, also update SESSION_HANDOVER.md with a short top entry.
+9. Do not edit MASTER_BRIEF.md unless explicitly instructed.
+10. Do not add to DECISION_LOG.md unless a meaningful product/architecture decision was made. A test passing is usually not a decision.
+11. Keep edits concise. Do not rewrite whole files unnecessarily.
+12. After a successful test and only after updating the relevant Markdown files, commit and push the changes.
+13. If there is nothing safe or realistic to test in this environment, say so clearly and suggest the best test for a human/browser/device session.
+
+Process:
+
+1. Summarize in 3-5 bullets what you read from the continuity files.
+2. List 2-3 candidate tests from TESTING.md that this environment can realistically run.
+3. Pick the safest/highest-value one.
+4. Run the test.
+5. Report the result.
+6. If Passed:
+   - update TESTING.md
+   - update SESSION_HANDOVER.md only if useful
+   - commit and push
+   - provide the commit hash
+7. If Failed or Blocked:
+   - do not update TESTING.md as Passed
+   - do not commit or push
+   - explain exactly what failed or what blocked the test
+
+Important:
+Only successful verified tests should be committed. Failed or blocked tests should be reported, not committed.
+```
+
+---
+
 # Tests To Do
 
 ## Core Project Flow
