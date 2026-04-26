@@ -35,6 +35,10 @@ Default branch: `main`
 15. After completing session-end updates, commit and push the changes to GitHub unless the user explicitly says not to, there are no changes to commit, or the agent/tool does not have Git/GitHub write access. If unable to commit or push, say so clearly and provide the exact files that still need committing.
 16. Do not edit `MASTER_BRIEF.md` unless the user explicitly asks for the Master Brief itself to be changed.
 
+## Supporting Reference Docs
+
+- `docs/technical-debt-roadmap.md` is a deeper reference file for reliability and technical debt issues. It explains why certain items matter and gives implementation guidance. It is not the active task list; use `TASK_BOARD.md` for active priorities and `TESTING.md` for verification.
+
 ## Locked Decisions
 
 - Use lightweight Markdown files in the repo root as the agent continuity system.
