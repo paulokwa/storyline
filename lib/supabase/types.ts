@@ -723,6 +723,9 @@ export type Database = {
           onboarding_completed: boolean
           plan_type: string | null
           preferred_storage_mode: string
+          quota_override_bytes: number | null
+          storage_quota_bytes: number | null
+          storage_used_bytes: number
           updated_at: string | null
         }
         Insert: {
@@ -736,6 +739,9 @@ export type Database = {
           onboarding_completed?: boolean
           plan_type?: string | null
           preferred_storage_mode?: string
+          quota_override_bytes?: number | null
+          storage_quota_bytes?: number | null
+          storage_used_bytes?: number
           updated_at?: string | null
         }
         Update: {
@@ -749,6 +755,9 @@ export type Database = {
           onboarding_completed?: boolean
           plan_type?: string | null
           preferred_storage_mode?: string
+          quota_override_bytes?: number | null
+          storage_quota_bytes?: number | null
+          storage_used_bytes?: number
           updated_at?: string | null
         }
         Relationships: []
@@ -1493,6 +1502,14 @@ export type Database = {
         Returns: undefined
       }
       can_edit_project: { Args: { p_id: string }; Returns: boolean }
+      calculate_project_asset_storage_used: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
+      check_storage_quota: {
+        Args: { p_incoming_file_size: number; p_user_id: string }
+        Returns: Json
+      }
       create_cloud_project: {
         Args: { p_blueprint: Json }
         Returns: string
@@ -1697,6 +1714,10 @@ export type Database = {
       remove_project_member: {
         Args: { p_id: string; p_user_id: string }
         Returns: undefined
+      }
+      refresh_profile_storage_usage: {
+        Args: { p_user_id: string }
+        Returns: number
       }
       touch_project: { Args: { p_id: string }; Returns: undefined }
       update_project_member_role: {

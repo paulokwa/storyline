@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
@@ -95,7 +95,6 @@ export default function ProjectSettingsModal({
     const localProject = project as LocalProjectDetails
     const isAlreadyMigrated = !!localProject.migrated_to_cloud_project_id
     const [advancedDetailsOpen, setAdvancedDetailsOpen] = useState(false)
-    const [backupMeta, setBackupMeta] = useState<BackupReminderMeta | null>(null)
 
     const [showMigrationConfirm, setShowMigrationConfirm] = useState(false)
     const [migrationProgress, setMigrationProgress] = useState<string | null>(null)
@@ -118,13 +117,7 @@ export default function ProjectSettingsModal({
     const [allowViewerFeedback, setAllowViewerFeedback] = useState(project.allow_viewer_feedback ?? false)
     const [allowCollaboratorExports, setAllowCollaboratorExports] = useState(project.allow_collaborator_exports ?? false)
     const [metadata, setMetadata] = useState<ExportMetadata>((project.export_metadata as any) || {})
-
-    useEffect(() => {
-        if (!open) return
-
-        setAdvancedDetailsOpen(false)
-        setBackupMeta(isLocalOnly ? getBackupMeta(project.id) : null)
-    }, [open, isLocalOnly, project.id])
+    const backupMeta: BackupReminderMeta | null = isLocalOnly ? getBackupMeta(project.id) : null
 
     const updateMetadata = (key: keyof ExportMetadata, value: string) => {
         setMetadata(prev => ({ ...prev, [key]: value }))
@@ -650,19 +643,17 @@ export default function ProjectSettingsModal({
                                     </div>
 
                                     <section className={cn(
-                                        "rounded-2xl border p-4 sm:p-5",
-                                        isMidnight
-                                            ? "border-slate-700/60 bg-slate-900/35"
-                                            : "border-slate-200 bg-white/55"
+                                        "border-t pt-5 sm:pt-6",
+                                        isMidnight ? "border-slate-700/50" : "border-slate-200/80"
                                     )}>
                                         <div className="space-y-1">
-                                            <h3 className="text-sm font-semibold text-foreground">About this project</h3>
+                                            <h3 className="text-sm font-medium text-foreground">About this project</h3>
                                             <p className="text-xs leading-relaxed text-slate-500">
-                                                Informational details about storage, sync status, and technical metadata.
+                                                Basic info about how this project is stored and synced.
                                             </p>
                                         </div>
 
-                                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                        <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
                                             <InfoRow
                                                 label="Storage mode"
                                                 value={isLocalOnly ? 'Local on this device' : 'Cloud'}
@@ -677,36 +668,36 @@ export default function ProjectSettingsModal({
                                             />
                                             <InfoRow
                                                 label="AI"
-                                                value="Available if enabled"
+                                                value="Optional"
                                             />
                                         </div>
 
-                                        <div className="mt-4 border-t border-border/70 pt-4">
+                                        <div className="mt-3 pt-1">
                                             <button
                                                 type="button"
                                                 onClick={() => setAdvancedDetailsOpen((openState) => !openState)}
-                                                className="flex w-full items-center justify-between rounded-xl px-1 py-1 text-left text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
+                                                className="flex w-full items-center justify-between rounded-lg px-1 py-1.5 text-left text-xs font-medium text-slate-500 transition-colors hover:text-slate-800"
                                             >
                                                 <span>Advanced details</span>
                                                 <ChevronDown className={cn(
-                                                    "h-4 w-4 transition-transform duration-200",
+                                                    "h-3.5 w-3.5 transition-transform duration-200",
                                                     advancedDetailsOpen && "rotate-180"
                                                 )} />
                                             </button>
 
                                             {advancedDetailsOpen && (
                                                 <div className={cn(
-                                                    "mt-3 space-y-3 rounded-2xl border p-4",
+                                                    "mt-2 space-y-2 rounded-xl border p-3",
                                                     isMidnight
-                                                        ? "border-slate-700/60 bg-slate-950/30"
-                                                        : "border-slate-200 bg-slate-50/80"
+                                                        ? "border-slate-700/50 bg-slate-950/20"
+                                                        : "border-slate-200/80 bg-slate-50/65"
                                                 )}>
-                                                    <div className="flex flex-col gap-3 rounded-xl border border-border/70 bg-background/70 p-3 sm:flex-row sm:items-center sm:justify-between">
+                                                    <div className="flex flex-col gap-2 rounded-lg border border-border/60 bg-background/60 p-3 sm:flex-row sm:items-center sm:justify-between">
                                                         <div className="min-w-0">
-                                                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                                                            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
                                                                 Project ID
                                                             </p>
-                                                            <p className="mt-1 truncate font-mono text-xs text-slate-600">
+                                                            <p className="mt-1 truncate font-mono text-[11px] text-slate-600">
                                                                 {project.id}
                                                             </p>
                                                         </div>
@@ -715,9 +706,9 @@ export default function ProjectSettingsModal({
                                                             variant="outline"
                                                             size="sm"
                                                             onClick={handleCopyProjectId}
-                                                            className="h-8 rounded-full px-3 text-xs"
+                                                            className="h-7 rounded-full px-3 text-[11px]"
                                                         >
-                                                            <Copy className="mr-1.5 h-3.5 w-3.5" />
+                                                            <Copy className="mr-1.5 h-3 w-3" />
                                                             Copy
                                                         </Button>
                                                     </div>
@@ -744,7 +735,7 @@ export default function ProjectSettingsModal({
                                                     )}
                                                     {isLocalOnly && backupMeta && (
                                                         <AdvancedInfoRow
-                                                            label="Backup status"
+                                                            label="Last backup"
                                                             value={backupMeta.last_backup_at
                                                                 ? `Last local backup ${formatProjectDate(backupMeta.last_backup_at)}`
                                                                 : 'No local backup recorded yet'}
@@ -976,9 +967,9 @@ export default function ProjectSettingsModal({
 
 function InfoRow({ label, value }: { label: string, value: string }) {
     return (
-        <div className="rounded-xl border border-border/60 bg-background/50 px-4 py-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{label}</p>
-            <p className="mt-1 text-sm font-medium text-foreground">{value}</p>
+        <div className="rounded-lg border border-border/50 bg-background/35 px-3 py-2.5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">{label}</p>
+            <p className="mt-1 text-xs font-medium text-foreground">{value}</p>
         </div>
     )
 }
@@ -995,15 +986,15 @@ function AdvancedInfoRow({
     monospace?: boolean
 }) {
     return (
-        <div className="flex items-start justify-between gap-4 rounded-xl border border-border/60 bg-background/55 px-4 py-3">
+        <div className="flex items-start justify-between gap-4 rounded-lg border border-border/50 bg-background/45 px-3 py-2.5">
             <div className="min-w-0">
-                <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
-                    {Icon && <Icon className="h-3.5 w-3.5" />}
+                <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                    {Icon && <Icon className="h-3 w-3" />}
                     {label}
                 </p>
                 <p className={cn(
-                    "mt-1 break-words text-sm text-slate-600",
-                    monospace && "font-mono text-xs"
+                    "mt-1 break-words text-xs text-slate-600",
+                    monospace && "font-mono text-[11px]"
                 )}>
                     {value}
                 </p>

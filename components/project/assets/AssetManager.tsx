@@ -12,13 +12,10 @@ import {
     Trash2, 
     Search,
     Info,
-    Expand,
-    Clock,
     ExternalLink
 } from 'lucide-react'
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
 import { getUserSafely } from '@/lib/supabase/client-auth'
 import {
     createLocalProjectAsset,
@@ -35,6 +32,30 @@ type StorageQuotaCheckResult = {
     within_quota: boolean
     current_usage_bytes: number
     effective_quota_bytes: number
+}
+
+function getErrorMessage(error: unknown) {
+    return error instanceof Error ? error.message : String(error)
+}
+
+function parseStorageQuotaCheckResult(value: unknown): StorageQuotaCheckResult | null {
+    const candidate = Array.isArray(value) ? value[0] : value
+    if (!candidate || typeof candidate !== 'object') return null
+
+    const record = candidate as Record<string, unknown>
+    if (
+        typeof record.within_quota !== 'boolean' ||
+        typeof record.current_usage_bytes !== 'number' ||
+        typeof record.effective_quota_bytes !== 'number'
+    ) {
+        return null
+    }
+
+    return {
+        within_quota: record.within_quota,
+        current_usage_bytes: record.current_usage_bytes,
+        effective_quota_bytes: record.effective_quota_bytes,
+    }
 }
 
 interface AssetManagerProps {
@@ -70,7 +91,7 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
 
             if (error) throw error
             setAssets(data || [])
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error fetching assets:', error)
             toast.error('Failed to load assets')
         } finally {
@@ -110,15 +131,14 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
             const { user } = await getUserSafely(supabase)
             if (!user) throw new Error('Not authenticated')
 
-            const { data: quota, error: quotaError } = await (supabase as any).rpc('check_storage_quota', {
+            const { data: quota, error: quotaError } = await supabase.rpc('check_storage_quota', {
                 p_user_id: user.id,
                 p_incoming_file_size: file.size
             })
 
             if (quotaError) throw quotaError
-            if (!quota) throw new Error('Unable to verify storage quota')
-
-            const storageQuota = quota as StorageQuotaCheckResult
+            const storageQuota = parseStorageQuotaCheckResult(quota)
+            if (!storageQuota) throw new Error('Unable to verify storage quota')
 
             if (!storageQuota.within_quota) {
                 const usedMb = (storageQuota.current_usage_bytes / (1024 * 1024)).toFixed(1)
@@ -134,40 +154,27 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
             // 1. Get image dimensions
             const dimensions = await getImageDimensions(file)
 
-            // 2. Upload to Storage
-            const assetId = crypto.randomUUID()
-            const extension = file.name.split('.').pop()
-            const storagePath = `projects/${projectId}/images/${assetId}.${extension}`
+            const formData = new FormData()
+            formData.append('projectId', projectId)
+            formData.append('file', file)
+            formData.append('width', String(dimensions.width))
+            formData.append('height', String(dimensions.height))
 
-            const { error: uploadError } = await supabase.storage
-                .from('project-assets')
-                .upload(storagePath, file)
+            const uploadResponse = await fetch('/api/project-assets/upload', {
+                method: 'POST',
+                body: formData,
+            })
 
-            if (uploadError) throw uploadError
-
-            // 3. Save to Database
-            const { error: dbError } = await supabase
-                .from('project_assets')
-                .insert({
-                    id: assetId,
-                    project_id: projectId,
-                    storage_path: storagePath,
-                    file_name: file.name,
-                    mime_type: file.type,
-                    file_size: file.size,
-                    width: dimensions.width,
-                    height: dimensions.height,
-                    uploaded_by: user.id,
-                    asset_type: 'image'
-                })
-
-            if (dbError) throw dbError
+            if (!uploadResponse.ok) {
+                const body = await uploadResponse.json().catch(() => ({})) as { error?: string }
+                throw new Error(body.error ?? `Upload failed with status ${uploadResponse.status}`)
+            }
 
             toast.success('Asset uploaded successfully')
             fetchAssets()
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Upload failed:', error)
-            toast.error('Upload failed: ' + error.message)
+            toast.error('Upload failed: ' + getErrorMessage(error))
         } finally {
             setUploading(false)
             if (fileInputRef.current) fileInputRef.current.value = ''
@@ -196,7 +203,7 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
 
             setAssets(prev => prev.filter(a => a.id !== asset.id))
             toast.success('Asset deleted')
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Delete failed:', error)
             toast.error('Failed to delete asset')
         }
