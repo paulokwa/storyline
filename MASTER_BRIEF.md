@@ -32,7 +32,8 @@ Default branch: `main`
 12. At the end of each session, update `SESSION_HANDOVER.md`, `TASK_BOARD.md`, and `TESTING.md` if relevant.
 13. If a meaningful decision was made, append it to `DECISION_LOG.md`.
 14. If the user confirms that something is fixed, completed, working, resolved, verified, tested, or otherwise done, update the relevant non-Master Brief files to reflect that status. Usually this means moving items in `TASK_BOARD.md`, adding a concise note to `SESSION_HANDOVER.md`, updating `TESTING.md` when testing is involved, and adding to `DECISION_LOG.md` only if a meaningful decision was made.
-15. Do not edit `MASTER_BRIEF.md` unless the user explicitly asks for the Master Brief itself to be changed.
+15. After completing session-end updates, commit and push the changes to GitHub unless the user explicitly says not to, there are no changes to commit, or the agent/tool does not have Git/GitHub write access. If unable to commit or push, say so clearly and provide the exact files that still need committing.
+16. Do not edit `MASTER_BRIEF.md` unless the user explicitly asks for the Master Brief itself to be changed.
 
 ## Locked Decisions
 
@@ -40,6 +41,7 @@ Default branch: `main`
 - Keep project memory simple and readable before adding GitHub Project automation.
 - Use concise session start and session end prompts to force agents to load and update context.
 - Markdown files are preferred because they are visible to all agents and portable across machines.
+- Session-end continuity updates should be committed and pushed to GitHub when possible.
 - `MASTER_BRIEF.md` is controlled by the user and should only be edited when explicitly directed.
 
 ## Agent Session Start Prompt
@@ -93,13 +95,16 @@ Before ending this session:
 4. If any decisions were made:
    - Append them to DECISION_LOG.md with date and reason
 
+5. Commit and push all session changes to GitHub, unless I explicitly said not to or there are no changes to commit.
+
 Rules:
 - Keep updates concise
 - Do NOT rewrite existing content unnecessarily
 - Preserve structure and formatting
 - Do NOT edit MASTER_BRIEF.md unless explicitly directed
+- If you cannot commit or push, say so clearly and list the files that still need committing
 
-Output the updated sections clearly.
+Output the updated sections clearly, then include the commit hash if a commit was created.
 ```
 
 ## Things Not To Change Without Permission
