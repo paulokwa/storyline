@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,7 +18,6 @@ import {
 import { cn, reorder } from '@/lib/utils'
 import { GripVertical } from 'lucide-react'
 import type { Database, NodeType, WritingMode } from '@/lib/supabase/types'
-import { useComments } from '@/components/project/CommentsContext'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import {
     createSceneForNode,
@@ -90,13 +90,31 @@ export default function StructureTree({
     const rootType: NodeType = project.type === 'tv_script' ? 'episode' : 'chapter'
     const rootLabel = project.type === 'tv_script' ? 'Episode' : 'Chapter'
     const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
+    const [dragState, setDragState] = useState<{
+        draggingId: string | null;
+        overId: string | null;
+        overIndex: number | null;
+        neighborIds: string[];
+    }>({ draggingId: null, overId: null, overIndex: null, neighborIds: [] });
+
+    const getNeighbors = (overId: string | null, overIndex: number | null, draggingId: string | null) => {
+        if (!overId || overIndex === null || !draggingId) return [];
+        const parentId = overId === 'root' ? null : overId;
+        const siblings = nodes.filter(n => n.parent_id === parentId).sort((a, b) => a.order_index - b.order_index);
+        const filtered = siblings.filter(n => n.id !== draggingId);
+        const res = [];
+        if (overIndex > 0 && filtered[overIndex - 1]) res.push(filtered[overIndex - 1].id);
+        if (filtered[overIndex]) res.push(filtered[overIndex].id);
+        return res;
+    };
 
     async function addRootNode() {
         const rootNodes = nodes.filter(n => n.parent_id === null)
+        const siblingsOfType = rootNodes.filter(n => n.type === rootType)
         const data = await createStructureNode({
             projectId: project.id,
             type: rootType,
-            title: `${rootLabel} ${rootNodes.length + 1}`,
+            title: `${rootLabel} ${siblingsOfType.length + 1}`,
             orderIndex: rootNodes.length,
         })
         if (data) onNodesChange([...nodes, data])
@@ -106,11 +124,12 @@ export default function StructureTree({
         const childType = CHILD_TYPE[parent.type as keyof typeof CHILD_TYPE]
         if (!childType) return
         const siblings = nodes.filter(n => n.parent_id === parent.id)
+        const siblingsOfType = siblings.filter(n => n.type === childType)
         const newNode = await createStructureNode({
             projectId: project.id,
             parentId: parent.id,
             type: childType,
-            title: `${CHILD_DISPLAY_NAMES[parent.type as keyof typeof CHILD_DISPLAY_NAMES] ?? childType.charAt(0).toUpperCase() + childType.slice(1)} ${siblings.length + 1}`,
+            title: `${CHILD_DISPLAY_NAMES[parent.type as keyof typeof CHILD_DISPLAY_NAMES] ?? childType.charAt(0).toUpperCase() + childType.slice(1)} ${siblingsOfType.length + 1}`,
             orderIndex: siblings.length,
         })
         const updatedNodes = [...nodes, newNode]
@@ -145,34 +164,90 @@ export default function StructureTree({
     }
 
     async function handleReorder(result: DropResult) {
+        setDragState({ draggingId: null, overId: null, overIndex: null, neighborIds: [] });
+        
+        // Select the node after the drop completes to avoid re-render conflicts
+        setTimeout(() => {
+            onNodeSelect(result.draggableId);
+        }, 100);
+
         if (!result.destination || isReadOnly) return
 
         const sourceParentId = result.source.droppableId === 'root' ? null : result.source.droppableId
         const destParentId = result.destination.droppableId === 'root' ? null : result.destination.droppableId
 
-        // For now, only support reordering within the same parent
-        if (sourceParentId !== destParentId) return 
+        const draggedNodeId = result.draggableId
+        const draggedNode = nodes.find(n => n.id === draggedNodeId)
+        if (!draggedNode) return
 
-        const siblings = nodes.filter(n => n.parent_id === sourceParentId).sort((a, b) => a.order_index - b.order_index)
-        const newSiblings = reorder(siblings, result.source.index, result.destination.index)
-        
-        // Update all nodes in the state
-        const updatedNodes = nodes.map(n => {
-            const newIndex = newSiblings.findIndex(sib => sib.id === n.id)
-            if (newIndex !== -1) {
-                return { ...n, order_index: newIndex }
+        // Type Validation
+        if (destParentId === null) {
+            // Can only drop root-level types (Episode/Chapter) at the root
+            if (draggedNode.type !== rootType) return
+        } else {
+            const destParentNode = nodes.find(n => n.id === destParentId)
+            if (!destParentNode) return
+            const allowedChildType = CHILD_TYPE[destParentNode.type as NodeType]
+            if (draggedNode.type !== allowedChildType) return
+        }
+
+        // Support cross-parent reordering
+        if (sourceParentId === destParentId) {
+            const siblings = nodes.filter(n => n.parent_id === sourceParentId).sort((a, b) => a.order_index - b.order_index)
+            const newSiblings = reorder(siblings, result.source.index, result.destination.index)
+            
+            const updatedNodes = nodes.map(n => {
+                const newIndex = newSiblings.findIndex(sib => sib.id === n.id)
+                if (newIndex !== -1) return { ...n, order_index: newIndex }
+                return n
+            })
+            
+            onNodesChange(updatedNodes)
+            try {
+                await reorderStructureNodes(newSiblings.map((n, i) => ({ ...n, order_index: i })))
+            } catch (error) {
+                console.error('Error reordering nodes:', error)
+                onNodesChange(nodes)
             }
-            return n
-        })
-        
-        onNodesChange(updatedNodes)
+        } else {
+            // Cross-parent move
+            const draggedNodeId = result.draggableId
+            const draggedNode = nodes.find(n => n.id === draggedNodeId)
+            if (!draggedNode) return
 
-        // Update Supabase
-        try {
-            await reorderStructureNodes(newSiblings.map((n, i) => ({ ...n, order_index: i })))
-        } catch (error) {
-            console.error('Error reordering nodes:', error)
-            onNodesChange(nodes) // Rollback
+            // 1. Prepare siblings in both lists
+            const sourceSiblings = nodes.filter(n => n.parent_id === sourceParentId && n.id !== draggedNodeId).sort((a, b) => a.order_index - b.order_index)
+            const destSiblings = nodes.filter(n => n.parent_id === destParentId).sort((a, b) => a.order_index - b.order_index)
+            
+            // 2. Insert into destination
+            const newDestSiblings = [...destSiblings]
+            newDestSiblings.splice(result.destination.index, 0, { ...draggedNode, parent_id: destParentId })
+
+            // 3. Re-index both
+            const finalSourceSiblings = sourceSiblings.map((n, i) => ({ ...n, order_index: i }))
+            const finalDestSiblings = newDestSiblings.map((n, i) => ({ ...n, order_index: i }))
+
+            // 4. Update state
+            const updatedNodes = nodes.map(n => {
+                const inSource = finalSourceSiblings.find(s => s.id === n.id)
+                if (inSource) return inSource
+                const inDest = finalDestSiblings.find(s => s.id === n.id)
+                if (inDest) return inDest
+                return n
+            })
+
+            onNodesChange(updatedNodes)
+
+            // 5. Update Supabase
+            try {
+                // Update parent_id and order_index for dragged node
+                // Update order_index for all siblings
+                const allUpdates = [...finalSourceSiblings, ...finalDestSiblings]
+                await reorderStructureNodes(allUpdates)
+            } catch (error) {
+                console.error('Error cross-parent reordering:', error)
+                onNodesChange(nodes)
+            }
         }
     }
 
@@ -230,7 +305,22 @@ export default function StructureTree({
                                         {project.title}
                                     </span>
                                 </div>
-                                <Shield className="w-3.5 h-3.5 text-slate-300" />
+                                {!isReadOnly && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            addRootNode()
+                                        }}
+                                        className={cn(
+                                            "p-1.5 rounded-lg transition-all opacity-0 group-hover:opacity-100 hover:bg-indigo-100/50 text-slate-400 hover:text-indigo-600",
+                                            selectedNodeIds.includes('virtual-root') && "opacity-100 text-indigo-500"
+                                        )}
+                                        title={`Add ${rootLabel}`}
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                    </button>
+                                )}
+                                <Shield className="w-3.5 h-3.5 text-slate-300 ml-1" />
                             </div>
 
                             {rootNodes.length === 0 ? (
@@ -247,10 +337,37 @@ export default function StructureTree({
                                     </Button>
                                 </div>
                             ) : (
-                                <DragDropContext onDragEnd={handleReorder}>
-                                    <Droppable droppableId="root" isDropDisabled={isReadOnly}>
-                                        {(provided) => (
-                                            <div {...provided.droppableProps} ref={provided.innerRef}>
+                                <DragDropContext 
+                                    onDragStart={(start) => {
+                                        setDragState({ draggingId: start.draggableId, overId: null, overIndex: null, neighborIds: [] });
+                                    }}
+                                    onDragUpdate={(update) => {
+                                        const overId = update.destination?.droppableId ?? null;
+                                        const overIndex = update.destination?.index ?? null;
+                                        setDragState(prev => ({ 
+                                            ...prev, 
+                                            overId,
+                                            overIndex,
+                                            neighborIds: getNeighbors(overId, overIndex, prev.draggingId)
+                                        }));
+                                    }}
+                                    onDragEnd={(result) => {
+                                        handleReorder(result);
+                                    }}
+                                >
+                                    <Droppable 
+                                        droppableId="root" 
+                                        isDropDisabled={isReadOnly || (dragState.draggingId ? nodes.find(n => n.id === dragState.draggingId)?.type === 'scene' : false)}
+                                    >
+                                        {(provided, snapshot) => (
+                                            <div 
+                                                {...provided.droppableProps} 
+                                                ref={provided.innerRef}
+                                                className={cn(
+                                                    "min-h-[100px] transition-colors duration-200 rounded-3xl",
+                                                    snapshot.isDraggingOver && "bg-[#546354]/5 ring-2 ring-inset ring-[#546354]/10"
+                                                )}
+                                            >
                                                 {rootNodes.map((node, index) => (
                                                     <NodeItem
                                                         key={node.id}
@@ -260,6 +377,7 @@ export default function StructureTree({
                                                         index={index}
                                                         activeNodeId={activeNodeId}
                                                         depth={0}
+                                                        dragState={dragState}
                                                         onSelect={onNodeSelect}
                                                         onToggleSelection={onNodeToggleSelection}
                                                         selectedNodeIds={selectedNodeIds}
@@ -312,10 +430,11 @@ interface NodeItemProps {
     onRename: (n: StructureNode, title: string) => void
     confirmingDeleteId: string | null
     onRequestDelete: (id: string | null) => void
+    dragState?: { draggingId: string | null; overId: string | null; overIndex: number | null; neighborIds: string[] }
 }
 
 const NodeItem = React.memo(({
-    node, nodes, projectType, index, activeNodeId, selectedNodeIds = [], depth, onSelect, onToggleSelection, onAddChild, onDelete, onRename, confirmingDeleteId, onRequestDelete
+    node, nodes, projectType, index, activeNodeId, selectedNodeIds = [], depth, dragState, onSelect, onToggleSelection, onAddChild, onDelete, onRename, confirmingDeleteId, onRequestDelete
 }: NodeItemProps) => {
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'
@@ -354,18 +473,14 @@ const NodeItem = React.memo(({
     const isScene = node.type === 'scene'
     const isAct = node.type === 'act'
     const isRoot = node.type === 'episode' || node.type === 'chapter'
-    const isActive = isScene && activeNodeId === node.id
+    const isActive = activeNodeId === node.id
     const isSelected = selectedNodeIds.includes(node.id)
-    const { comments } = useComments()
-    const openCommentCount = useMemo(() => {
-        return comments.filter(c => c.node_id === node.id && c.status === 'open' && !c.parent_id).length
-    }, [comments, node.id])
     const displayTitle = useMemo(() => truncateLongWords(node.title), [node.title])
 
     function handleClick(e: React.MouseEvent) {
         e.stopPropagation()
-        if (isScene) onSelect(node.id)
-        else setExpanded(e => !e)
+        onSelect(node.id)
+        if (!isScene) setExpanded(e => !e)
     }
 
     function finishRename() {
@@ -375,57 +490,63 @@ const NodeItem = React.memo(({
     }
 
     const isDragDisabled = isReadOnly || editing || confirmingDeleteId === node.id
+    const isBeingDragged = dragState?.draggingId === node.id
+    const isAdjacentToDrop = useMemo(() => {
+        return dragState?.neighborIds?.includes(node.id) ?? false
+    }, [dragState?.neighborIds, node.id])
 
-    return (
-        <Draggable draggableId={node.id} index={index} isDragDisabled={isDragDisabled}>
-            {(provided, snapshot) => (
-                <div ref={provided.innerRef} {...provided.draggableProps} className="group">
-                    <div
-                        className={cn(
-                            'flex min-w-0 items-center gap-2 py-3 px-3 sm:px-4 mx-2 sm:mx-3 rounded-2xl cursor-pointer transition-all duration-300 text-sm mb-1 relative border border-transparent',
-                            isActive
-                                ? 'bg-white text-[#546354] shadow-[0_8px_24px_rgba(0,0,0,0.06)] font-bold border-[#546354]/10 z-10'
-                                : 'text-slate-500 hover:bg-white/60',
-                            isRoot && 'font-serif italic text-base py-3 sm:py-4 bg-white/30 backdrop-blur-sm border-white/40 mb-2 mt-2 shadow-[0_2px_8px_rgba(0,0,0,0.02)]',
-                            isAct && 'font-semibold text-slate-700 py-2 sm:py-2.5',
-                            isScene && 'items-start text-slate-500 py-1.5 sm:py-2',
-                            isSelected && 'bg-indigo-50/40 border-indigo-200/50',
-                            snapshot.isDragging && 'shadow-2xl z-50 bg-white ring-2 ring-[#546354]/10'
-                        )}
-                        style={{ paddingLeft: `${depth * 24 + (isScene ? 12 : 0)}px` }}
-                        onClick={handleClick}
-                        onTouchStart={handleTouchStart}
-                        onTouchEnd={handleTouchEnd}
-                        onTouchMove={handleTouchMove}
-                    >
-                        {isActive && (
-                            <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#546354] rounded-full shadow-[0_0_12px_rgba(84,99,84,0.3)]" />
-                        )}
+    const itemContent = (provided: any, snapshot: any) => (
+        <div 
+            ref={provided.innerRef} 
+            {...provided.draggableProps} 
+            className={cn("group", snapshot.isDragging && "z-[9999]")}
+        >
+            <div
+                className={cn(
+                    'flex min-w-0 items-center gap-2 py-3 px-3 sm:px-4 mx-2 sm:mx-3 rounded-2xl cursor-pointer transition-all duration-300 text-sm mb-1 relative border border-transparent',
+                    isActive
+                        ? 'bg-white text-[#546354] shadow-[0_8px_24px_rgba(0,0,0,0.06)] font-bold border-[#546354]/10 z-10'
+                        : 'text-slate-500 hover:bg-white/60',
+                    isRoot && 'font-serif italic text-base py-3 sm:py-4 bg-white/30 backdrop-blur-sm border-white/40 mb-2 mt-2 shadow-[0_2px_8px_rgba(0,0,0,0.02)]',
+                    isAct && 'font-semibold text-slate-700 py-2 sm:py-2.5',
+                    isScene && 'items-start text-slate-500 py-1.5 sm:py-2',
+                    isSelected && 'bg-indigo-50/40 border-indigo-200/50',
+                    snapshot.isDragging && 'shadow-2xl bg-white ring-2 ring-[#546354]/10 border-slate-200 opacity-100 !transform-none cursor-grabbing',
+                    (!snapshot.isDragging && isAdjacentToDrop) && 'ring-[3px] ring-indigo-500/40 bg-indigo-50/50 shadow-[0_0_15px_rgba(99,102,241,0.1)]'
+                )}
+                style={{ 
+                    paddingLeft: `${depth * 24 + (isScene ? 12 : 0)}px`,
+                    // Fix for portal displacement: when portaling, we need to ensure the width is maintained
+                    ...(snapshot.isDragging ? { width: '280px' } : {})
+                }}
+                onClick={handleClick}
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                onTouchMove={handleTouchMove}
+            >
+                {isActive && (
+                    <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#546354] rounded-full shadow-[0_0_12px_rgba(84,99,84,0.3)]" />
+                )}
 
-                        <button
-                            type="button"
-                            {...(!isDragDisabled ? provided.dragHandleProps : {})}
-                            className={cn(
-                                "shrink-0 rounded-md p-1 -ml-1 text-slate-300 transition-opacity hover:text-slate-400",
-                                isScene && "mt-0.5 self-start",
-                                isDragDisabled
-                                    ? "cursor-default opacity-0 pointer-events-none"
-                                    : "cursor-grab active:cursor-grabbing",
-                                isActive && !isDragDisabled && "opacity-100",
-                                !isActive && !isDragDisabled && "opacity-0"
-                            )}
-                            onClick={(e) => e.stopPropagation()}
-                            aria-label={isDragDisabled ? undefined : `Drag ${node.title}`}
-                            tabIndex={isDragDisabled ? -1 : 0}
-                        >
-                            <GripVertical className="w-3.5 h-3.5" />
-                        </button>
-
-                        {openCommentCount > 0 && (
-                            <div className={cn("flex items-center justify-center bg-[#546354]/10 text-[#546354] rounded-full min-w-[18px] h-[18px] px-1 shadow-sm border border-[#546354]/10 shrink-0", isScene && "mt-1 self-start")}>
-                                <span className="text-[9px] font-bold">{openCommentCount}</span>
-                            </div>
-                        )}
+                <button
+                    type="button"
+                    {...(!isDragDisabled ? provided.dragHandleProps : {})}
+                    className={cn(
+                        "shrink-0 rounded-md p-1 -ml-1 text-slate-300 transition-all hover:text-slate-400 hover:bg-slate-100",
+                        isScene && "mt-0.5 self-start",
+                        isDragDisabled
+                            ? "cursor-default opacity-0 pointer-events-none"
+                            : "cursor-grab active:cursor-grabbing",
+                        isActive && !isDragDisabled && "opacity-100",
+                        !isActive && !isDragDisabled && "opacity-0",
+                        snapshot.isDragging && "opacity-100 text-slate-600 bg-slate-100/80 shadow-sm scale-110"
+                    )}
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={isDragDisabled ? undefined : `Drag ${node.title}`}
+                    tabIndex={isDragDisabled ? -1 : 0}
+                >
+                    <GripVertical className="w-3.5 h-3.5" />
+                </button>
 
                         {!isScene && (
                             <span className="text-slate-400 group-hover:text-[#546354] transition-colors shrink-0">
@@ -477,7 +598,7 @@ const NodeItem = React.memo(({
                             <span
                                 className={cn(
                                     "min-w-0 flex-1",
-                                    isScene ? "whitespace-normal break-normal leading-5 pr-3" : "truncate sm:whitespace-normal sm:break-words",
+                                    isScene ? "whitespace-normal break-normal leading-5 pr-3" : "truncate",
                                     isRoot && "tracking-tight text-[#485748]",
                                     isScene && "text-slate-600 font-medium",
                                     mobileOptionsActive && "hidden md:block"
@@ -508,10 +629,10 @@ const NodeItem = React.memo(({
                         {/* Hover/Long Press actions — only when not confirming */}
                         {(!editing && !isReadOnly && confirmingDeleteId !== node.id) && (
                             <div className={cn(
-                                "ml-auto flex items-center gap-1 shrink-0 self-start transition-opacity duration-200",
+                                "ml-auto flex items-center gap-1 shrink-0 self-start transition-all duration-200",
                                 "opacity-0 pointer-events-none md:w-auto md:overflow-visible",
-                                isActive && "md:opacity-100 md:pointer-events-auto",
-                                mobileOptionsActive ? "opacity-100 pointer-events-auto flex-1 justify-end" : "w-0 overflow-hidden md:w-auto"
+                                isActive && "opacity-100 pointer-events-auto",
+                                mobileOptionsActive ? "opacity-100 pointer-events-auto flex-1 justify-end" : "w-0 md:w-auto overflow-hidden md:overflow-visible"
                             )} onClick={e => e.stopPropagation()}>
                                 {CHILD_TYPE[node.type as NodeType] && (
                                     <button
@@ -619,11 +740,14 @@ const NodeItem = React.memo(({
                         </div>
                     )}
 
-                    {!isScene && expanded && (
+                    {(!isScene && expanded) && (
                         <Droppable droppableId={node.id} isDropDisabled={isReadOnly}>
-                            {(provided) => (
+                            {(provided, snapshot) => (
                                 <div 
-                                    className="fade-in"
+                                    className={cn(
+                                        "fade-in min-h-[40px] transition-colors duration-200 rounded-2xl mx-1",
+                                        snapshot.isDraggingOver && "bg-[#546354]/10 ring-2 ring-inset ring-[#546354]/5"
+                                    )}
                                     {...provided.droppableProps}
                                     ref={provided.innerRef}
                                 >
@@ -637,6 +761,7 @@ const NodeItem = React.memo(({
                                             activeNodeId={activeNodeId}
                                             selectedNodeIds={selectedNodeIds}
                                             depth={depth + 1}
+                                            dragState={dragState}
                                             onSelect={onSelect}
                                             onToggleSelection={onToggleSelection}
                                             onAddChild={onAddChild}
@@ -652,7 +777,17 @@ const NodeItem = React.memo(({
                         </Droppable>
                     )}
                 </div>
-            )}
+    )
+
+    return (
+        <Draggable draggableId={node.id} index={index} isDragDisabled={isDragDisabled}>
+            {(provided, snapshot) => {
+                const element = itemContent(provided, snapshot);
+                if (snapshot.isDragging) {
+                    return createPortal(element, document.body);
+                }
+                return element;
+            }}
         </Draggable>
     )
 }, (prev, next) => {
@@ -668,6 +803,7 @@ const NodeItem = React.memo(({
     if (prev.nodes !== next.nodes) return false;
     if (prev.depth !== next.depth) return false;
     if (prev.confirmingDeleteId !== next.confirmingDeleteId) return false;
+    if (prev.dragState !== next.dragState) return false;
 
     return true;
 });

@@ -818,7 +818,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                 isLocalProject={isLocalOnly}
                             />
                         ) : activeNodeId ? (
-                            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center space-y-4 animate-in fade-in duration-500">
+                            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center space-y-6 animate-in fade-in duration-500">
                                 <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300">
                                     <BookOpen className="w-8 h-8" />
                                 </div>
