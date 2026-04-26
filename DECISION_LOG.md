@@ -6,6 +6,41 @@ Keep entries concise. Do not rewrite old decisions unless explicitly instructed.
 
 ---
 
+## 2026-04-26 - Structure panel UX and empty state improvements
+
+Decision:
+Adopted dynamic deletion prompts, neighbor highlighting, and welcoming empty states for container nodes.
+
+Reason:
+Hardcoded "scene" references during deletion of acts/episodes were confusing. Drag-and-drop lacked visual feedback for target boundaries. Clicking an Act resulted in an error state instead of a guidance state.
+
+Impact:
+- Deletion prompts are now type-aware.
+- Drag-and-drop has "Neighbor Highlighting" with an indigo glow.
+- Acts/Episodes now show "Your story awaits... Select a scene to begin writing".
+- Grab handles are high-contrast dark pills during drag.
+
+Status:
+Approved.
+
+---
+
+## 2026-04-26 - Keep detailed technical debt roadmap in docs and summarize it in root continuity files
+
+Decision:
+Do not move or delete `docs/technical-debt-roadmap.md`. Keep it as the detailed technical debt source, while summarizing its priorities in `MASTER_BRIEF.md` and actionable tasks in `TASK_BOARD.md`.
+
+Reason:
+The technical debt roadmap contains useful implementation detail. The root continuity files should help agents orient quickly without becoming bloated or duplicating every detail.
+
+Impact:
+Agents should check `docs/technical-debt-roadmap.md` before implementing any reliability or technical debt work, but can use the root files for quick prioritization and session continuity.
+
+Status:
+Approved.
+
+---
+
 ## 2026-04-26 - Separate explicit AI story-context selection from derived tree checkbox state
 
 Decision:
@@ -56,22 +91,6 @@ Markdown is visible to all agents, easy to edit, easy to review in Git history, 
 
 Impact:
 GitHub Projects may be considered later, but it is not required for the current workflow.
-
-Status:
-Approved.
-
----
-
-## 2026-04-26 - Keep detailed technical debt roadmap in docs and summarize it in root continuity files
-
-Decision:
-Do not move or delete `docs/technical-debt-roadmap.md`. Keep it as the detailed technical debt source, while summarizing its priorities in `MASTER_BRIEF.md` and actionable tasks in `TASK_BOARD.md`.
-
-Reason:
-The technical debt roadmap contains useful implementation detail. The root continuity files should help agents orient quickly without becoming bloated or duplicating every detail.
-
-Impact:
-Agents should check `docs/technical-debt-roadmap.md` before implementing any reliability or technical debt work, but can use the root files for quick prioritization and session continuity.
 
 Status:
 Approved.

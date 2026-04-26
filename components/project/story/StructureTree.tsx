@@ -64,6 +64,13 @@ const CHILD_DISPLAY_NAMES: Partial<Record<NodeType, string>> = {
     chapter: 'Scene',
 }
 
+const NODE_DISPLAY_NAMES: Record<string, string> = {
+    episode: 'Episode',
+    act: 'Act',
+    scene: 'Scene',
+    chapter: 'Chapter',
+}
+
 function buildTree(nodes: StructureNode[], parentId: string | null = null): StructureNode[] {
     return nodes
         .filter(n => n.parent_id === parentId)
@@ -105,7 +112,9 @@ export default function StructureTree({
         const res = [];
         if (overIndex > 0 && filtered[overIndex - 1]) res.push(filtered[overIndex - 1].id);
         if (filtered[overIndex]) res.push(filtered[overIndex].id);
-        return res;
+        
+        // Safety: ensure draggingId is not in res
+        return res.filter(id => id !== draggingId);
     };
 
     async function addRootNode() {
@@ -165,13 +174,10 @@ export default function StructureTree({
 
     async function handleReorder(result: DropResult) {
         setDragState({ draggingId: null, overId: null, overIndex: null, neighborIds: [] });
+        // Force selection of the dragged node after the reorder
+        onNodeSelect(result.draggableId);
         
-        // Select the node after the drop completes to avoid re-render conflicts
-        setTimeout(() => {
-            onNodeSelect(result.draggableId);
-        }, 100);
-
-        if (!result.destination || isReadOnly) return
+        if (!result.destination || isReadOnly) return;
 
         const sourceParentId = result.source.droppableId === 'root' ? null : result.source.droppableId
         const destParentId = result.destination.droppableId === 'root' ? null : result.destination.droppableId
@@ -301,7 +307,7 @@ export default function StructureTree({
                                         {selectedNodeIds.includes('virtual-root') && <Check className="w-3 h-3 text-white" />}
                                     </div>
                                     {project.type === 'tv_script' ? <Clapperboard className="w-5 h-5 text-indigo-500/80" /> : <Book className="w-5 h-5 text-indigo-500/80" />}
-                                    <span className="truncate uppercase tracking-wider text-[11px] font-black">
+                                    <span className="truncate uppercase tracking-wider text-[11px] font-black whitespace-nowrap">
                                         {project.title}
                                     </span>
                                 </div>
@@ -503,19 +509,19 @@ const NodeItem = React.memo(({
         >
             <div
                 className={cn(
-                    'flex min-w-0 items-center gap-2 py-3 px-3 sm:px-4 mx-2 sm:mx-3 rounded-2xl cursor-pointer transition-all duration-300 text-sm mb-1 relative border border-transparent',
+                    'flex min-w-0 items-center gap-1.5 py-3 px-2 sm:px-3 mx-1 sm:mx-2 rounded-2xl cursor-pointer transition-all duration-300 text-sm mb-1 relative border border-transparent',
                     isActive
                         ? 'bg-white text-[#546354] shadow-[0_8px_24px_rgba(0,0,0,0.06)] font-bold border-[#546354]/10 z-10'
                         : 'text-slate-500 hover:bg-white/60',
                     isRoot && 'font-serif italic text-base py-3 sm:py-4 bg-white/30 backdrop-blur-sm border-white/40 mb-2 mt-2 shadow-[0_2px_8px_rgba(0,0,0,0.02)]',
                     isAct && 'font-semibold text-slate-700 py-2 sm:py-2.5',
-                    isScene && 'items-start text-slate-500 py-1.5 sm:py-2',
+                    isScene && 'items-center text-slate-500 py-1.5',
                     isSelected && 'bg-indigo-50/40 border-indigo-200/50',
                     snapshot.isDragging && 'shadow-2xl bg-white ring-2 ring-[#546354]/10 border-slate-200 opacity-100 !transform-none cursor-grabbing',
-                    (!snapshot.isDragging && isAdjacentToDrop) && 'ring-[3px] ring-indigo-500/40 bg-indigo-50/50 shadow-[0_0_15px_rgba(99,102,241,0.1)]'
+                    (!snapshot.isDragging && isAdjacentToDrop) && 'bg-indigo-50/80 border-indigo-400 shadow-[0_0_25px_rgba(99,102,241,0.25)] ring-2 ring-indigo-500/20 z-20'
                 )}
                 style={{ 
-                    paddingLeft: `${depth * 24 + (isScene ? 12 : 0)}px`,
+                    paddingLeft: `${depth * (window?.innerWidth < 1024 ? 16 : 20) + (isScene ? 8 : 0)}px`,
                     // Fix for portal displacement: when portaling, we need to ensure the width is maintained
                     ...(snapshot.isDragging ? { width: '280px' } : {})
                 }}
@@ -538,8 +544,8 @@ const NodeItem = React.memo(({
                             ? "cursor-default opacity-0 pointer-events-none"
                             : "cursor-grab active:cursor-grabbing",
                         isActive && !isDragDisabled && "opacity-100",
-                        !isActive && !isDragDisabled && "opacity-0",
-                        snapshot.isDragging && "opacity-100 text-slate-600 bg-slate-100/80 shadow-sm scale-110"
+                        !isActive && !isDragDisabled && "opacity-0 group-hover:opacity-60",
+                        snapshot.isDragging && "opacity-100 text-white bg-[#546354] shadow-xl scale-125 ring-4 ring-[#546354]/10"
                     )}
                     onClick={(e) => e.stopPropagation()}
                     aria-label={isDragDisabled ? undefined : `Drag ${node.title}`}
@@ -597,9 +603,8 @@ const NodeItem = React.memo(({
                         ) : (
                             <span
                                 className={cn(
-                                    "min-w-0 flex-1",
-                                    isScene ? "whitespace-normal break-normal leading-5 pr-3" : "truncate",
-                                    isRoot && "tracking-tight text-[#485748]",
+                                    "min-w-0 flex-1 truncate whitespace-nowrap overflow-hidden text-ellipsis",
+                                    isRoot && "font-serif not-italic text-slate-800",
                                     isScene && "text-slate-600 font-medium",
                                     mobileOptionsActive && "hidden md:block"
                                 )}
@@ -720,7 +725,7 @@ const NodeItem = React.memo(({
                         >
                             <div className="mx-auto flex w-full max-w-[248px] flex-col items-center gap-2 rounded-2xl border border-amber-100 bg-amber-50/90 px-3 py-2.5 shadow-sm">
                                 <p className="text-center text-[9px] font-bold uppercase tracking-[0.22em] text-amber-700/80">
-                                    Delete this scene?
+                                    Delete this {(NODE_DISPLAY_NAMES[node.type] || 'node').toLowerCase()}?
                                 </p>
                                 <div className="grid w-full grid-cols-2 gap-2">
                                     <button

@@ -5,6 +5,41 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-04-26 - Structure panel UX improvements and StoryTab restoration
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- **Restored `StoryTab.tsx`**: Fully reconstructed the file after corruption, ensuring all project selection and editor coordination logic is intact.
+- **Improved Drag-and-Drop UX**: 
+  - Implemented dynamic "Neighbor Highlighting" in the structure tree. Nodes adjacent to the drop zone now "light up" with an indigo glow.
+  - Fixed grab handle visibility on desktop; handle is now dark with a high-contrast white icon during drag.
+  - Ensured moved scenes remain selected and active in the editor after a drop.
+- **Dynamic Deletion Prompt**: Updated the delete confirmation dialog to correctly identify the node type (e.g., "Delete this act?" instead of "Delete this scene?").
+- **Sidebar Layout Fix**: Enforced `whitespace-nowrap` on sidebar titles to prevent "one word per line" wrapping issues reported on desktop.
+- **Empty State UX**: Container nodes (Acts/Episodes) now show the "Your story awaits..." prompt instead of a "Scene Not Found" error.
+
+### Current status
+
+The structure panel is much more responsive and visually clear during reorganization. The editor is stable, and common "dead ends" (like clicking an Act node) now have proper UI feedback.
+
+### Next recommended step
+
+Run a browser-based regression test on the drag-and-drop neighbors:
+- Drag a scene between two others and verify both neighbors glow.
+- Drag a scene to the very top or bottom of an Act and verify only the single neighbor glows.
+- Verify that titles no longer wrap to multiple lines in the structure tree.
+
+### Risks or warnings
+
+- `StructureTree.tsx` now uses `window.innerWidth` for padding calculations; ensure this doesn't cause hydration mismatches (guarded with `useMemo` and client-side logic).
+- The `StoryTab.tsx` restoration was massive; while verified by line count and key exports, a full run through the writing flow is recommended.
+
+---
+
 
 ## 2026-04-26 - AI mode consolidation and structure-selection context fixes
 

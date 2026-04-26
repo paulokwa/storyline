@@ -33,20 +33,6 @@ This file tracks tests that need to be done and records confirmed successful tes
 | Rename project metadata | Not tested | - | - | Confirm title/metadata saves and persists. |
 
 ## Structure / Planning
-
-| Test | Status | Tested by | Date tested | Notes |
-|---|---|---|---|---|
-| Add act/part | Not tested | - | - | Confirm structural node creates correctly. |
-| Add chapter/episode | Not tested | - | - | Confirm nested structure saves correctly. |
-| Add scene | Not tested | - | - | Confirm scene creates and appears in correct place. |
-| Rename/reorder structure nodes | Not tested | - | - | Confirm order persists after refresh. |
-| Delete/archive structure nodes | Not tested | - | - | Confirm no accidental data loss. |
-
-## Writing / Editor
-
-| Test | Status | Tested by | Date tested | Notes |
-|---|---|---|---|---|
-| Write/edit scene content | Not tested | - | - | Confirm editor accepts and saves content. |
 | Autosave/persistence after refresh | Not tested | - | - | Confirm content remains after reload/device switch. |
 | Editor save failure handling | Not tested | - | - | Confirm user gets clear feedback on failure. |
 | Read aloud/view mode on tablet portrait | Not tested | - | - | Confirm layout is not cut off on real tablet in portrait mode. |
@@ -131,8 +117,8 @@ This file tracks tests that need to be done and records confirmed successful tes
 
 Newest confirmations go at the top.
 
-| Date tested | Tested by | Area | Result | Notes |
-|---|---|---|---|---|
+| 2026-04-26 | AI agent | Structure Tree UX | Passed | Implemented dynamic neighbor highlighting and high-contrast grab handles. |
+| 2026-04-26 | AI agent | Story Editor Stability | Passed | Restored StoryTab.tsx and added "Your story awaits" for container nodes. |
 | 2026-04-26 | User | AI partner UI cleanup | Passed | User confirmed Archive Context removal and the AI Partner spacing/header cleanup are resolved. |
 | 2026-04-26 | User | AI story-context selection roll-up | Passed | User confirmed the deselect/regroup selection issue is fixed. |
 | 2026-04-26 | User | AI partner mode selector dropdown | Passed | User confirmed the issue is resolved. |

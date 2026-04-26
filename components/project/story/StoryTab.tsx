@@ -817,7 +817,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                 allowViewerFeedback={project.allow_viewer_feedback ?? false}
                                 isLocalProject={isLocalOnly}
                             />
-                        ) : activeNodeId ? (
+                        ) : (activeNodeId && nodes.find(n => n.id === activeNodeId)?.type === 'scene') ? (
                             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center space-y-6 animate-in fade-in duration-500">
                                 <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300">
                                     <BookOpen className="w-8 h-8" />
@@ -875,7 +875,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             </div>
 
             {/* AI Helper Sidebar */}
-            {<div className={cn(
+            <div className={cn(
                 'story-ai-sidebar bg-white flex flex-col transition-all duration-300 ease-in-out overflow-hidden z-40 md:z-20',
                 'absolute top-0 bottom-0 right-0 md:relative md:inset-auto md:h-full',
                 aiPanelOpen 
@@ -941,7 +941,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                         </button>
                     </div>
                 )}
-            </div>}
+            </div>
 
             {/* Comments Sidebar */}
             <div className={cn(
