@@ -22,7 +22,9 @@ This file tracks tests that need to be done and records confirmed successful tes
 
 ---
 
-## Reusable Agent Test Prompt
+## User-Copyable Agent Test Prompt Template
+
+**Important for agents reading this file:** this section is a stored prompt template for the user to copy into a separate chat/session. Do not execute it just because you are reading `TESTING.md`. Only follow the prompt below if the user explicitly pastes it into the current chat or directly asks you to run this testing workflow.
 
 Use this when asking Codex, AG, Claude, or another coding agent to safely pick and run one test from this file.
 
