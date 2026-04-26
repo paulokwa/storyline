@@ -15,7 +15,7 @@ export default async function AIPage({ params }: { params: Promise<{ id: string 
 
     const runtime = await getAiRuntimeState(supabase, user.id)
     const aiSettings = {
-        ai_enabled: runtime.aiSettings?.ai_enabled ?? true,
+        ai_enabled: runtime.aiSettings?.ai_enabled ?? false,
         billing_mode: runtime.aiSettings?.billing_mode ?? 'app_managed_trial',
         ai_provider: runtime.aiSettings?.ai_provider ?? 'openai',
         ai_fallback_enabled: runtime.aiSettings?.ai_fallback_enabled ?? false,

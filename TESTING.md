@@ -53,6 +53,7 @@ This file tracks tests that need to be done and records confirmed successful tes
 
 | Test | Status | Tested by | Date tested | Notes |
 |---|---|---|---|---|
+| AI-disabled scene analyzer feedback | Needs retest | - | - | Verify clicking Analyze with AI off opens the AI sidebar with analyzer-specific access messaging. |
 | AI partner mode selector dropdown | Passed | User | 2026-04-26 | User confirmed the horizontal mode button issue is resolved. |
 | AI story-context selection roll-up | Passed | User | 2026-04-26 | User confirmed act/scene selection behavior is now working again after tree and AI-ready bar fixes. |
 | AI partner UI cleanup | Passed | User | 2026-04-26 | User confirmed Archive Context removal, redundant Mode pill removal, and desktop spacing cleanup are resolved. |
@@ -96,6 +97,8 @@ This file tracks tests that need to be done and records confirmed successful tes
 
 | Test | Status | Tested by | Date tested | Notes |
 |---|---|---|---|---|
+| Screenplay visual references panel | Needs retest | - | - | Verify labels, attach/remove flow, refresh persistence, and no inline image insertion in screenplay mode. |
+| Book/prose inline illustration regression | Needs retest | - | - | Confirm Insert Illustration and Gallery behavior remain unchanged in book/prose mode. |
 | Tablet portrait layout | Not tested | - | - | Confirm important views do not cut off. |
 | Mobile/narrow screen layout | Not tested | - | - | Confirm core flows remain usable. |
 | Desktop layout | Not tested | - | - | Confirm normal working layout. |
@@ -117,6 +120,7 @@ This file tracks tests that need to be done and records confirmed successful tes
 
 Newest confirmations go at the top.
 
+| 2026-04-26 | AI agent | TypeScript compile | Passed | `npx tsc --noEmit` and `npx tsc --noEmit --pretty false` passed after session changes. |
 | 2026-04-26 | AI agent | Structure Tree UX | Passed | Implemented dynamic neighbor highlighting and high-contrast grab handles. |
 | 2026-04-26 | AI agent | Story Editor Stability | Passed | Restored StoryTab.tsx and added "Your story awaits" for container nodes. |
 | 2026-04-26 | User | AI partner UI cleanup | Passed | User confirmed Archive Context removal and the AI Partner spacing/header cleanup are resolved. |

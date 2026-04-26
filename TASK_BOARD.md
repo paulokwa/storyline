@@ -13,6 +13,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
   - `DECISION_LOG.md`
   - `SESSION_HANDOVER.md`
   - `TASK_BOARD.md`
+- Run browser regression for screenplay visual references, AI-off analyzer feedback, and book/prose image behavior.
 - Choose the first high-priority technical debt item to tackle.
 
 ## Next
@@ -54,6 +55,12 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 
 ## Done
 
+- Fixed `StructureTree.tsx` server render crash caused by render-time `window` access.
+- Made missing AI settings default to AI off across runtime, settings, preferences save, and admin reporting paths.
+- Hid AI-specific editor empty-state nudges when AI is disabled.
+- Added analyzer-specific AI access feedback when scene analysis is clicked while AI is unavailable.
+- Added screenplay-only Visual References UX using existing scene attachments.
+- Blocked inline screenplay image insertion while preserving prose inline illustrations.
 - Fixed structure tree drag-and-drop neighbor highlighting and grab handle visibility.
 - Fixed sidebar title word-wrapping issues on desktop.
 - Restored `StoryTab.tsx` after code corruption and added proper empty states for container nodes.

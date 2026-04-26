@@ -60,6 +60,7 @@ interface AiHelperPanelProps {
     isFullCanvas?: boolean
     onReturnToSidebar?: () => void
     allowViewerFeedback?: boolean
+    accessContext?: AiAccessContext
     aiSettings: {
         ai_enabled: boolean
         billing_mode: string
@@ -75,6 +76,13 @@ interface AiHelperPanelProps {
             consumed_micros: number
         } | null
     }
+}
+
+export type AiAccessContext = 'partner' | 'analyzer'
+
+type AiAccessIssue = {
+    title: string
+    description: string
 }
 
 type ContextEntityType = 'characters' | 'ideas' | 'locations' | 'objects' | 'aiFeedback'
@@ -235,11 +243,6 @@ const MAX_SCENE_CHARS_TAIL = 10000
 
 type ContextStrategy = 'continuation' | 'full-scene'
 
-type AiAccessIssue = {
-    title: string
-    description: string
-}
-
 type FriendlyAiError = {
     title: string
     description: string
@@ -319,11 +322,17 @@ function getContextStrategy(mode: string): ContextStrategy {
     return 'full-scene' // Includes Improve, Conflict, Emotion, Script, and Review/Chat
 }
 
-function getAiAccessIssue(aiSettings: AiHelperPanelProps['aiSettings']): AiAccessIssue | null {
+export function getAiAccessIssue(
+    aiSettings: AiHelperPanelProps['aiSettings'],
+    context: AiAccessContext = 'partner'
+): AiAccessIssue | null {
+    const featureLabel = context === 'analyzer' ? 'Scene Analyzer' : 'AI Partner'
+    const actionLabel = context === 'analyzer' ? 'analyze scenes' : 'keep chatting'
+
     if (!aiSettings.ai_enabled) {
         return {
-            title: 'AI Partner is turned off',
-            description: 'Open Account Settings from your avatar, then enable AI Partner to keep chatting.',
+            title: `${featureLabel} needs AI access`,
+            description: `Open Account Settings from your avatar, then enable AI Partner to ${actionLabel}.`,
         }
     }
 
@@ -334,21 +343,21 @@ function getAiAccessIssue(aiSettings: AiHelperPanelProps['aiSettings']): AiAcces
 
         if (aiSettings.trial?.status === 'exhausted') {
             return {
-                title: 'Free Trial AI is exhausted',
-                description: 'Switch to your own API key or Ollama in Account Settings to keep using AI Partner.',
+                title: `${featureLabel} is unavailable`,
+                description: `Free Trial AI is exhausted. Switch to your own API key or Ollama in Account Settings to ${actionLabel}.`,
             }
         }
 
         if (aiSettings.trial?.status === 'blocked' || aiSettings.trial?.status === 'abuse_review') {
             return {
-                title: 'Free Trial AI is currently limited',
-                description: 'You can still switch to your own API key or Ollama from Account Settings.',
+                title: `${featureLabel} is currently limited`,
+                description: `You can still switch to your own API key or Ollama from Account Settings to ${actionLabel}.`,
             }
         }
 
         return {
-            title: 'Free Trial AI is unavailable',
-            description: 'Open Account Settings to switch to your own key or Ollama.',
+            title: `${featureLabel} is unavailable`,
+            description: `Open Account Settings to switch to your own key or Ollama so you can ${actionLabel}.`,
         }
     }
 
@@ -358,15 +367,15 @@ function getAiAccessIssue(aiSettings: AiHelperPanelProps['aiSettings']): AiAcces
 
     if (aiSettings.ai_provider === 'gemini' && !aiSettings.api_key) {
         return {
-            title: 'Gemini needs an API key',
-            description: 'Add your Gemini API key in Account Settings before using AI Partner.',
+            title: `Gemini needs an API key for ${featureLabel}`,
+            description: `Add your Gemini API key in Account Settings before trying to ${actionLabel}.`,
         }
     }
 
     if (aiSettings.ai_provider === 'openai' && !aiSettings.api_key) {
         return {
-            title: 'OpenAI needs an API key',
-            description: 'Add your OpenAI API key in Account Settings before using AI Partner.',
+            title: `OpenAI needs an API key for ${featureLabel}`,
+            description: `Add your OpenAI API key in Account Settings before trying to ${actionLabel}.`,
         }
     }
 
@@ -586,6 +595,7 @@ export default function AiHelperPanel({
     onReturnToSidebar,
     onClose,
     allowViewerFeedback = false,
+    accessContext = 'partner',
 }: AiHelperPanelProps) {
     const label = getProjectTypeLabel(projectType)
     const isNovel = projectType === 'novel'
@@ -648,7 +658,7 @@ export default function AiHelperPanel({
     const cancelledRequestRef = useRef(false)
     const requestTokenRef = useRef(0)
     const lastSubmittedPromptRef = useRef('')
-    const aiAccessIssue = useMemo(() => getAiAccessIssue(aiSettings), [aiSettings])
+    const aiAccessIssue = useMemo(() => getAiAccessIssue(aiSettings, accessContext), [accessContext, aiSettings])
 
     const currentContextDraft = useMemo(
         () => buildContextDraft({

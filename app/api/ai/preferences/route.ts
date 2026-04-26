@@ -104,7 +104,7 @@ export async function POST(request: Request) {
 
     const payload = {
         user_id: user.id,
-        ai_enabled: body.aiEnabled ?? currentSettings?.ai_enabled ?? true,
+        ai_enabled: body.aiEnabled ?? currentSettings?.ai_enabled ?? false,
         billing_mode: nextBillingMode,
         ai_provider: nextProvider,
         ai_fallback_enabled: body.aiFallbackEnabled ?? currentSettings?.ai_fallback_enabled ?? false,

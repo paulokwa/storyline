@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { Button } from '@/components/ui/button'
@@ -103,6 +103,20 @@ export default function StructureTree({
         overIndex: number | null;
         neighborIds: string[];
     }>({ draggingId: null, overId: null, overIndex: null, neighborIds: [] });
+    const [indentStep, setIndentStep] = useState(20)
+
+    useEffect(() => {
+        const updateIndentStep = () => {
+            setIndentStep(window.innerWidth < 1024 ? 16 : 20)
+        }
+
+        updateIndentStep()
+        window.addEventListener('resize', updateIndentStep)
+
+        return () => {
+            window.removeEventListener('resize', updateIndentStep)
+        }
+    }, [])
 
     const getNeighbors = (overId: string | null, overIndex: number | null, draggingId: string | null) => {
         if (!overId || overIndex === null || !draggingId) return [];
@@ -383,6 +397,7 @@ export default function StructureTree({
                                                         index={index}
                                                         activeNodeId={activeNodeId}
                                                         depth={0}
+                                                        indentStep={indentStep}
                                                         dragState={dragState}
                                                         onSelect={onNodeSelect}
                                                         onToggleSelection={onNodeToggleSelection}
@@ -429,6 +444,7 @@ interface NodeItemProps {
     activeNodeId: string | null
     selectedNodeIds?: string[]
     depth: number
+    indentStep: number
     onSelect: (id: string) => void
     onToggleSelection?: (id: string) => void
     onAddChild: (n: StructureNode) => void
@@ -440,7 +456,7 @@ interface NodeItemProps {
 }
 
 const NodeItem = React.memo(({
-    node, nodes, projectType, index, activeNodeId, selectedNodeIds = [], depth, dragState, onSelect, onToggleSelection, onAddChild, onDelete, onRename, confirmingDeleteId, onRequestDelete
+    node, nodes, projectType, index, activeNodeId, selectedNodeIds = [], depth, indentStep, dragState, onSelect, onToggleSelection, onAddChild, onDelete, onRename, confirmingDeleteId, onRequestDelete
 }: NodeItemProps) => {
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'
@@ -521,7 +537,7 @@ const NodeItem = React.memo(({
                     (!snapshot.isDragging && isAdjacentToDrop) && 'bg-indigo-50/80 border-indigo-400 shadow-[0_0_25px_rgba(99,102,241,0.25)] ring-2 ring-indigo-500/20 z-20'
                 )}
                 style={{ 
-                    paddingLeft: `${depth * (window?.innerWidth < 1024 ? 16 : 20) + (isScene ? 8 : 0)}px`,
+                    paddingLeft: `${depth * indentStep + (isScene ? 8 : 0)}px`,
                     // Fix for portal displacement: when portaling, we need to ensure the width is maintained
                     ...(snapshot.isDragging ? { width: '280px' } : {})
                 }}
@@ -766,6 +782,7 @@ const NodeItem = React.memo(({
                                             activeNodeId={activeNodeId}
                                             selectedNodeIds={selectedNodeIds}
                                             depth={depth + 1}
+                                            indentStep={indentStep}
                                             dragState={dragState}
                                             onSelect={onSelect}
                                             onToggleSelection={onToggleSelection}
@@ -807,6 +824,7 @@ const NodeItem = React.memo(({
     if (prev.node !== next.node) return false;
     if (prev.nodes !== next.nodes) return false;
     if (prev.depth !== next.depth) return false;
+    if (prev.indentStep !== next.indentStep) return false;
     if (prev.confirmingDeleteId !== next.confirmingDeleteId) return false;
     if (prev.dragState !== next.dragState) return false;
 

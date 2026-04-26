@@ -5,6 +5,43 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-04-26 - AI access defaults and screenplay visual references
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Fixed the `window is not defined` crash in `StructureTree.tsx` by removing render-time `window.innerWidth` access and moving indentation sizing behind a client-side effect.
+- Changed missing AI settings to default to AI off across story, AI, settings, preferences save, and admin reporting paths.
+- Hid the editor AI empty-state nudge when AI is not enabled.
+- Updated the scene analyzer button so AI-disabled users get the AI sidebar with analyzer-specific access messaging instead of no feedback.
+- Added screenplay-only visual reference UX using the existing `project_assets` and `scene_assets` system.
+- Blocked inline `storyImage` insertion in screenplay mode while preserving prose inline illustration behavior.
+- Standardized screenplay visual reference labels:
+  - short buttons/tooltips: `Visual References`
+  - panel titles/headers: `Scene Visual References`
+
+### Current status
+
+The app compiles with the focused changes. Screenplay visual references remain scene attachments only; no database, export, or AI-context changes were made for visual references.
+
+### Next recommended step
+
+Run a browser regression pass:
+- Open a screenplay scene and confirm `Visual References` opens `Scene Visual References`.
+- Attach/remove a scene visual reference, refresh, and confirm it persists.
+- Confirm screenplay inline image insertion is blocked with the expected toast.
+- Confirm book/prose still supports `Insert Illustration` and existing `Gallery` behavior.
+- Click scene analysis with AI off and confirm the AI sidebar explains analyzer access requirements.
+
+### Risks or warnings
+
+- Browser regression has not been run in this session.
+- `.env.local` contains live-looking API/service keys in the workspace; rotate them if they were exposed outside the local machine.
+
+---
 ## 2026-04-26 - Structure panel UX improvements and StoryTab restoration
 
 ### Current branch

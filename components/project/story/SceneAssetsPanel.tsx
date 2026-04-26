@@ -41,10 +41,16 @@ interface SceneAssetsPanelProps {
     projectId: string
     sceneId: string
     onClose?: () => void
+    projectType?: 'novel' | 'tv_script'
 }
 
-export default function SceneAssetsPanel({ projectId, sceneId, onClose }: SceneAssetsPanelProps) {
+export default function SceneAssetsPanel({ projectId, sceneId, onClose, projectType }: SceneAssetsPanelProps) {
     const isLocalOnly = isLocalProjectId(projectId)
+    const isScreenplay = projectType === 'tv_script'
+    const title = isScreenplay ? 'Scene Visual References' : 'Scene Inspirations'
+    const selectorSubtitle = isScreenplay
+        ? 'Select images to attach as scene visual references'
+        : 'Select images to attach as scene reference'
     const [attachedAssets, setAttachedAssets] = useState<SceneAsset[]>([])
     const [loading, setLoading] = useState(true)
     const [isSelecting, setIsSelecting] = useState(false)
@@ -193,7 +199,7 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose }: SceneA
                 <div>
                     <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#546354]/60">
                         <ImageIcon className="w-3.5 h-3.5" />
-                        <span>Scene Inspirations</span>
+                        <span>{title}</span>
                     </div>
                 </div>
                 {onClose && (
@@ -270,7 +276,7 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose }: SceneA
                         <div className="p-6 border-b border-stone-50 bg-[#fbf9f5] flex items-center justify-between">
                             <div>
                                 <h3 className="text-xl font-serif italic text-slate-800">Project Assets</h3>
-                                <p className="text-[10px] uppercase tracking-widest text-[#546354]/60 font-bold mt-1">Select images to attach as scene reference</p>
+                                <p className="text-[10px] uppercase tracking-widest text-[#546354]/60 font-bold mt-1">{selectorSubtitle}</p>
                             </div>
                             <Button variant="ghost" size="icon" onClick={() => setIsSelecting(false)} className="rounded-full">
                                 <X className="w-4 h-4" />

@@ -6,6 +6,42 @@ Keep entries concise. Do not rewrite old decisions unless explicitly instructed.
 
 ---
 
+## 2026-04-26 - Screenplay visuals stay as scene references, not manuscript images
+
+Decision:
+Support screenplay visuals through existing scene-level asset attachments (`scene_assets` linked to `project_assets`) and keep inline `storyImage` insertion disabled for screenplay text.
+
+Reason:
+Screenplay manuscript text should remain clean and industry-style. Existing scene attachments already provide the required planning/reference model without schema changes.
+
+Impact:
+- Screenplay UI uses `Visual References` for short buttons/tooltips and `Scene Visual References` for panel headers.
+- Book/prose inline illustration behavior remains unchanged.
+- Scene visual references are not included in export or AI context yet.
+
+Status:
+Approved.
+
+---
+
+## 2026-04-26 - Missing AI settings default to AI off
+
+Decision:
+Treat missing AI settings as `ai_enabled: false` across user-facing runtime shaping, preference saves, and admin reporting.
+
+Reason:
+Users who have not enabled AI should not see AI-specific editor nudges or be reported as AI-enabled by default.
+
+Impact:
+- Editor AI empty-state nudges are hidden when AI is off.
+- Scene analysis now opens the AI sidebar with analyzer-specific access guidance when AI access is unavailable.
+- Admin reporting no longer labels missing settings as AI-enabled.
+
+Status:
+Approved.
+
+---
+
 ## 2026-04-26 - Structure panel UX and empty state improvements
 
 Decision:

@@ -23,6 +23,12 @@ export const StoryImage = Node.create({
   draggable: true,
   selectable: true,
 
+  addOptions() {
+    return {
+      allowInlineImages: true,
+    }
+  },
+
   addAttributes() {
     return {
       assetId: {
@@ -73,6 +79,8 @@ export const StoryImage = Node.create({
   addCommands() {
     return {
       setImage: (options: { assetId: string; src: string; alt?: string; caption?: string; width?: string; alignment?: string }) => ({ chain }) => {
+        if (!this.options.allowInlineImages) return false
+
         return chain()
           .insertContent({
             type: this.name,

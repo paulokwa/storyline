@@ -75,6 +75,7 @@ import EditorAssetSelector from './EditorAssetSelector'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { ReaderControls } from './ReaderMode'
+import { toast } from 'sonner'
 
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { useComments } from '@/components/project/CommentsContext'
@@ -193,6 +194,8 @@ const ToolbarButton = ({
 const TOP_ACTION_PILL_BASE =
     "scene-editor-top-action hidden h-8 rounded-full px-3 text-[10px] font-bold uppercase tracking-widest transition-all border border-slate-200/70 bg-white/70 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
 
+const SCREENPLAY_INLINE_IMAGE_DISABLED_MESSAGE = 'Inline images are disabled in screenplay mode. Use Scene Visual References instead.'
+
 const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     scene,
     title: initialTitle,
@@ -262,13 +265,16 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const { activeSceneUsers, setMyStatus } = usePresence()
     const { theme } = useTheme()
     const isMidnight = theme === 'midnight'
+    const isAiEnabled = !!aiSettings?.ai_enabled
     const emptyStateCopy = isLocalProject
         ? 'Start writing here. Your work is saved locally.'
-        : aiSettings?.ai_enabled === false
+        : !isAiEnabled
             ? 'Start writing here when you are ready.'
             : 'Ask your AI Partner on the right if you need a spark of inspiration.'
+    const shouldShowEmptyState = Boolean(isProjectEmpty && (isLocalProject || isAiEnabled))
     
     const isReadOnly = role === 'viewer'
+    const isScreenplayMode = writingMode === 'screenplay'
     const isMobileOrTablet = useMediaQuery('(max-width: 1024px)')
     const isAndroid = useMemo(() => {
         if (typeof navigator === 'undefined') return false
@@ -571,7 +577,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                     }
                 }
             }),
-            StoryImage
+            StoryImage.configure({
+                allowInlineImages: writingMode !== 'screenplay',
+            })
         ]
 
         const isScriptProject = projectType === 'tv_script';
@@ -1122,6 +1130,11 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     }
 
     const openAssetSelector = () => {
+        if (isScreenplayMode) {
+            toast.error(SCREENPLAY_INLINE_IMAGE_DISABLED_MESSAGE)
+            return
+        }
+
         setIsAssetSelectorOpen(true)
     }
 
@@ -1553,7 +1566,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             )}
                         >
                             <ImageIcon className="w-3 h-3 mr-1" />
-                             Gallery
+                             {isScreenplayMode ? 'Visual References' : 'Gallery'}
                         </Button>
 
                         {!isReadOnly && speechSupported && (
@@ -2026,7 +2039,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 )}
             </div>
 
-            {isProjectEmpty && (
+            {shouldShowEmptyState && (
                 <div className="scene-editor-empty-state mt-auto p-8 rounded-3xl bg-amber-50/50 border border-amber-100 border-dashed text-center">
                     <p className="scene-editor-empty-title text-amber-700 font-serif italic text-lg mb-2">Your journey begins with a single word.</p>
                     <p className="scene-editor-empty-copy text-amber-600/60 text-sm">{emptyStateCopy}</p>
@@ -2089,8 +2102,15 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 projectId={scene.project_id}
                 isOpen={isAssetSelectorOpen}
                 onClose={() => setIsAssetSelectorOpen(false)}
+                inlineImagesDisabled={isScreenplayMode}
+                disabledMessage={SCREENPLAY_INLINE_IMAGE_DISABLED_MESSAGE}
                 onSelect={(asset) => {
                     if (!editor) return
+                    if (isScreenplayMode) {
+                        toast.error(SCREENPLAY_INLINE_IMAGE_DISABLED_MESSAGE)
+                        setIsAssetSelectorOpen(false)
+                        return
+                    }
 
                     const { to } = editor.state.selection
 

@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import StructureTree from './StructureTree'
 import SceneEditor, { SceneEditorRef } from './SceneEditor'
-import AiHelperPanel from './AiHelperPanel'
+import AiHelperPanel, { getAiAccessIssue, type AiAccessContext } from './AiHelperPanel'
 import { queueAiTourStart } from '@/lib/ai/tour'
 import SceneAssetsPanel from './SceneAssetsPanel'
 import LinkedContext from './LinkedContext'
@@ -109,6 +109,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     const [preflight, setPreflight] = useState<ContextSizingResult | null>(null)
     const [isConfirmingCost, setIsConfirmingCost] = useState(false)
     const [isExtremeContext, setIsExtremeContext] = useState(false)
+    const [aiAccessContext, setAiAccessContext] = useState<AiAccessContext>('partner')
 
     useEffect(() => {
         if (project?.id) {
@@ -562,6 +563,15 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
 
     const handleAnalyzeTrigger = () => {
         if (!currentSceneText) return
+
+        const analyzerAccessIssue = getAiAccessIssue(aiSettings, 'analyzer')
+        if (analyzerAccessIssue) {
+            setAiAccessContext('analyzer')
+            setAnalysisResult(null)
+            queueAiTourStart()
+            setAiPanelOpen(true)
+            return
+        }
         
         const analysis = analyzeContextSize(
             currentSceneText, 
@@ -588,10 +598,16 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     const handleToggleAiPanel = () => {
         const nextState = !aiPanelOpen
         if (nextState) {
+            setAiAccessContext('partner')
             queueAiTourStart()
             setAnalysisResult(null)
         }
         setAiPanelOpen(nextState)
+    }
+
+    const handleCloseAiPanel = () => {
+        setAiAccessContext('partner')
+        setAiPanelOpen(false)
     }
 
     return (
@@ -605,7 +621,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                     )}
                     onClick={() => {
                         setSidebarOpen(false)
-                        setAiPanelOpen(false)
+                        handleCloseAiPanel()
                         setCommentsPanelOpen(false)
                         setSceneAssetsOpen(false)
                     }}
@@ -912,10 +928,11 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                             projectPremise={project.premise}
                             projectTone={project.tone}
                             aiSettings={aiSettings}
+                            accessContext={aiAccessContext}
                             allowViewerFeedback={project.allow_viewer_feedback ?? false}
                             activeNodeId={activeNodeId}
                             activeSceneId={activeScene?.id}
-                            onClose={() => setAiPanelOpen(false)}
+                            onClose={handleCloseAiPanel}
                             onClearSelection={() => setSelectedNodeIds([])}
                             onInsert={(content) => editorRef.current?.insertContent(content)}
                         />
@@ -978,6 +995,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                         <SceneAssetsPanel 
                             projectId={project.id}
                             sceneId={activeScene.id}
+                            projectType={project.type as any}
                             onClose={() => setSceneAssetsOpen(false)}
                         />
                     </div>

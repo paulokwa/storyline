@@ -629,7 +629,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
         lastSignInAt: user?.last_sign_in_at ?? null,
         currentBillingMode: settings?.billing_mode ?? 'app_managed_trial',
         currentProvider: settings?.ai_provider ?? 'openai',
-        aiEnabled: settings?.ai_enabled ?? true,
+        aiEnabled: settings?.ai_enabled ?? false,
         status: account.status,
         remainingMicros: account.remaining_micros,
         reservedMicros: account.reserved_micros,

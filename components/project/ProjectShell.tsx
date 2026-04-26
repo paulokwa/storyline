@@ -441,6 +441,7 @@ function ProjectShellInner({
     const supportsAi = true
     const supportsComments = true
     const supportsAssets = true
+    const sceneAssetsLabel = project.type === 'tv_script' ? 'Visual References' : 'Gallery'
     const visibleTabs = isLocalOnly ? LOCAL_ONLY_TABS : TABS
     useEffect(() => {
         setActions({
@@ -895,7 +896,7 @@ function ProjectShellInner({
                                                  <ImageIcon className="w-4 h-4" />
                                              </Button>
                                          </TooltipTrigger>
-                                         <TooltipContent side="bottom">Gallery</TooltipContent>
+                                         <TooltipContent side="bottom">{sceneAssetsLabel}</TooltipContent>
                                      </Tooltip>
                                      </span>}
 

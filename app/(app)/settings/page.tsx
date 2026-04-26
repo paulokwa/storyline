@@ -30,7 +30,7 @@ export default async function SettingsPage() {
                 }}
                 maskedApiKey={maskedApiKey} 
                 aiSettings={{
-                    ai_enabled: runtime.aiSettings?.ai_enabled ?? true,
+                    ai_enabled: runtime.aiSettings?.ai_enabled ?? false,
                     billing_mode: runtime.aiSettings?.billing_mode ?? 'app_managed_trial',
                     ai_provider: runtime.aiSettings?.ai_provider ?? 'gemini',
                     ai_fallback_enabled: runtime.aiSettings?.ai_fallback_enabled ?? false,

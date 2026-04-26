@@ -22,9 +22,18 @@ interface EditorAssetSelectorProps {
     isOpen: boolean
     onClose: () => void
     onSelect: (asset: { id: string, url: string, alt: string }) => void
+    inlineImagesDisabled?: boolean
+    disabledMessage?: string
 }
 
-export default function EditorAssetSelector({ projectId, isOpen, onClose, onSelect }: EditorAssetSelectorProps) {
+export default function EditorAssetSelector({
+    projectId,
+    isOpen,
+    onClose,
+    onSelect,
+    inlineImagesDisabled = false,
+    disabledMessage = 'Inline image insertion is disabled here.',
+}: EditorAssetSelectorProps) {
     const isLocalOnly = isLocalProjectId(projectId)
     const [assets, setAssets] = useState<ProjectAsset[]>([])
     const [loading, setLoading] = useState(false)
@@ -111,6 +120,12 @@ export default function EditorAssetSelector({ projectId, isOpen, onClose, onSele
                                 <div 
                                     key={asset.id}
                                     onClick={() => {
+                                        if (inlineImagesDisabled) {
+                                            toast.error(disabledMessage)
+                                            onClose()
+                                            return
+                                        }
+
                                         onSelect({
                                             id: asset.id,
                                             url: getImageUrl(asset.storage_path),
