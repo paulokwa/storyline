@@ -39,6 +39,36 @@ Treat the app as a production-bound creative writing tool. Avoid broad rewrites 
 
 ---
 
+## Required Reference Files
+
+Before planning or changing the project, read:
+
+- `MASTER_BRIEF.md`
+- `AGENTS.md`
+- `TROUBLESHOOTING.md`
+- `DECISION_LOG.md`
+- `SESSION_HANDOVER.md`
+- `TASK_BOARD.md`
+- `TESTING.md`
+
+If debugging a failure, always check `TROUBLESHOOTING.md` before inventing a new fix.
+
+---
+
+## Troubleshooting Lookup Rule
+
+When investigating any bug, broken dev server, build failure, runtime error, Supabase issue, export/import issue, local/cloud sync issue, or unexplained behaviour:
+
+1. Search `TROUBLESHOOTING.md` for a matching symptom or category.
+2. State whether a matching known issue was found.
+3. If a match exists, apply the documented safe fix first unless evidence clearly rules it out.
+4. If no match exists, continue normal diagnosis and avoid speculative commands.
+5. If a new fix is confirmed, add a concise entry to `TROUBLESHOOTING.md` before ending the session.
+
+Do not skip this lookup just because the likely fix seems obvious.
+
+---
+
 ## Permissions Behaviour
 
 If you can:
@@ -71,7 +101,8 @@ For bugs, broken dev server, build failures, or unexpected runtime behaviour:
 
 1. Reproduce or inspect the failure.
 2. Capture the exact error message.
-3. Identify the category:
+3. Check `TROUBLESHOOTING.md` for known matching symptoms or safe fixes.
+4. Identify the category:
    - Next.js cache/build artifact issue
    - dependency/install issue
    - environment variable issue
@@ -82,10 +113,11 @@ For bugs, broken dev server, build failures, or unexpected runtime behaviour:
    - local storage/IndexedDB issue
    - asset/storage issue
    - unknown
-4. Inspect the relevant files.
-5. Apply the smallest safe fix.
-6. Verify the result.
-7. Report clearly.
+5. Inspect the relevant files.
+6. Apply the smallest safe fix.
+7. Verify the result.
+8. If the fix is new and reusable, update `TROUBLESHOOTING.md`.
+9. Report clearly.
 
 ---
 
@@ -97,12 +129,13 @@ Check in this order:
 
 1. Confirm the project root contains `package.json`.
 2. Inspect available scripts.
-3. Check whether another dev server is already running.
-4. Run the dev command if allowed.
-5. Capture the terminal error.
-6. If the error suggests stale/corrupt build state, clear `.next`.
-7. Retry the dev server.
-8. Only then consider deeper dependency fixes.
+3. Check `TROUBLESHOOTING.md` for known Next.js/dev-server symptoms.
+4. Check whether another dev server is already running.
+5. Run the dev command if allowed.
+6. Capture the terminal error.
+7. If the error suggests stale/corrupt build state, clear `.next`.
+8. Retry the dev server.
+9. Only then consider deeper dependency fixes.
 
 Safe cache reset:
 
@@ -128,7 +161,7 @@ Bad:
 “Try these ten commands.”
 
 Good:
-“I found evidence that `.next` is stale. I cleared `.next`, restarted the dev server, and verified the app loads.”
+“I found evidence that `.next` is stale. I checked TROUBLESHOOTING.md, cleared `.next`, restarted the dev server, and verified the app loads.”
 
 When commands are needed, run them yourself if available.
 
@@ -258,6 +291,7 @@ End every task with:
 ```text
 Summary:
 - What was wrong:
+- Troubleshooting match:
 - What I changed:
 - Files changed:
 - Commands run:
@@ -272,6 +306,7 @@ Summary:
 Act more like an autonomous debugging agent and less like a chatbot.
 
 Investigate first.
+Check known fixes.
 Fix second.
 Verify third.
 Explain last.
