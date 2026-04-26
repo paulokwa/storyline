@@ -18,20 +18,21 @@ Default branch: `main`
 
 ## Core Workflow Rules
 
-1. Read `MASTER_BRIEF.md`, `DECISION_LOG.md`, `SESSION_HANDOVER.md`, and `TASK_BOARD.md` before starting work.
+1. Read `MASTER_BRIEF.md`, `DECISION_LOG.md`, `SESSION_HANDOVER.md`, `TASK_BOARD.md`, and `TESTING.md` before starting work.
 2. Treat this file as the source of truth for broad project workflow and agent behaviour.
 3. Use `TASK_BOARD.md` for active tasks and technical debt priorities.
 4. Use `DECISION_LOG.md` for decisions and reasons.
 5. Use `SESSION_HANDOVER.md` for current session status and next-step context.
-6. Do not change locked decisions unless explicitly instructed with: `revise the plan`.
-7. Prefer consistency over clever redesign.
-8. If a requested change conflicts with this brief, stop and explain the conflict before editing.
-9. Keep changes focused on the requested task.
-10. Do not silently rewrite architecture, auth, billing, database policies, AI provider logic, or deployment settings.
-11. At the end of each session, update `SESSION_HANDOVER.md` and `TASK_BOARD.md`.
-12. If a meaningful decision was made, append it to `DECISION_LOG.md`.
-13. If the user confirms that something is fixed, completed, working, resolved, verified, or otherwise done, update the relevant non-Master Brief files to reflect that status. Usually this means moving items in `TASK_BOARD.md`, adding a concise note to `SESSION_HANDOVER.md`, and adding to `DECISION_LOG.md` only if a meaningful decision was made.
-14. Do not edit `MASTER_BRIEF.md` unless the user explicitly asks for the Master Brief itself to be changed.
+6. Use `TESTING.md` for tests that need doing and confirmed test results.
+7. Do not change locked decisions unless explicitly instructed with: `revise the plan`.
+8. Prefer consistency over clever redesign.
+9. If a requested change conflicts with this brief, stop and explain the conflict before editing.
+10. Keep changes focused on the requested task.
+11. Do not silently rewrite architecture, auth, billing, database policies, AI provider logic, or deployment settings.
+12. At the end of each session, update `SESSION_HANDOVER.md`, `TASK_BOARD.md`, and `TESTING.md` if relevant.
+13. If a meaningful decision was made, append it to `DECISION_LOG.md`.
+14. If the user confirms that something is fixed, completed, working, resolved, verified, tested, or otherwise done, update the relevant non-Master Brief files to reflect that status. Usually this means moving items in `TASK_BOARD.md`, adding a concise note to `SESSION_HANDOVER.md`, updating `TESTING.md` when testing is involved, and adding to `DECISION_LOG.md` only if a meaningful decision was made.
+15. Do not edit `MASTER_BRIEF.md` unless the user explicitly asks for the Master Brief itself to be changed.
 
 ## Locked Decisions
 
@@ -54,6 +55,7 @@ Before doing anything:
    - DECISION_LOG.md
    - SESSION_HANDOVER.md
    - TASK_BOARD.md
+   - TESTING.md
 
 Rules:
 - Treat MASTER_BRIEF.md as the source of truth.
@@ -86,7 +88,9 @@ Before ending this session:
    - Move completed tasks to Done
    - Adjust Now / Next if needed
 
-3. If any decisions were made:
+3. Update TESTING.md if anything was tested, verified, confirmed working, or now needs testing.
+
+4. If any decisions were made:
    - Append them to DECISION_LOG.md with date and reason
 
 Rules:
