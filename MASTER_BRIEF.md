@@ -30,6 +30,8 @@ Default branch: `main`
 10. Do not silently rewrite architecture, auth, billing, database policies, AI provider logic, or deployment settings.
 11. At the end of each session, update `SESSION_HANDOVER.md` and `TASK_BOARD.md`.
 12. If a meaningful decision was made, append it to `DECISION_LOG.md`.
+13. If the user confirms that something is fixed, completed, working, resolved, verified, or otherwise done, update the relevant non-Master Brief files to reflect that status. Usually this means moving items in `TASK_BOARD.md`, adding a concise note to `SESSION_HANDOVER.md`, and adding to `DECISION_LOG.md` only if a meaningful decision was made.
+14. Do not edit `MASTER_BRIEF.md` unless the user explicitly asks for the Master Brief itself to be changed.
 
 ## Locked Decisions
 
@@ -37,6 +39,7 @@ Default branch: `main`
 - Keep project memory simple and readable before adding GitHub Project automation.
 - Use concise session start and session end prompts to force agents to load and update context.
 - Markdown files are preferred because they are visible to all agents and portable across machines.
+- `MASTER_BRIEF.md` is controlled by the user and should only be edited when explicitly directed.
 
 ## Agent Session Start Prompt
 
@@ -55,6 +58,7 @@ Before doing anything:
 Rules:
 - Treat MASTER_BRIEF.md as the source of truth.
 - Do NOT change existing decisions unless explicitly told: "revise the plan".
+- Do NOT edit MASTER_BRIEF.md unless explicitly directed.
 - Prefer consistency over optimization.
 - If something is unclear, ask before acting.
 - If you did not read the files, say so explicitly.
@@ -89,12 +93,14 @@ Rules:
 - Keep updates concise
 - Do NOT rewrite existing content unnecessarily
 - Preserve structure and formatting
+- Do NOT edit MASTER_BRIEF.md unless explicitly directed
 
 Output the updated sections clearly.
 ```
 
 ## Things Not To Change Without Permission
 
+- `MASTER_BRIEF.md`
 - Database schema or migrations
 - Supabase RLS policies
 - Auth flow
