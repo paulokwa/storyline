@@ -34,6 +34,35 @@ Default branch: `main`
 - Keep project memory simple and readable before adding GitHub Project automation.
 - Use concise session start and session end prompts to force agents to load and update context.
 - Markdown files are preferred because they are visible to all agents and portable across machines.
+- Keep `docs/technical-debt-roadmap.md` as the detailed source for technical debt and reliability work.
+- Keep root continuity files as summaries and working memory, not replacements for detailed docs.
+
+## Current Technical Debt Priorities
+
+Detailed source: `docs/technical-debt-roadmap.md`
+
+### High priority reliability work
+
+- Atomic project scaffolding via Supabase RPC so Project -> Episode -> Act -> Scene creation happens in one transaction.
+- Centralized rate limiting for AI routes instead of in-memory serverless `Map` rate limits.
+- Robust retry and initialization patterns for editor save and project initialization flows.
+- AI trial reconciliation and RPC failure handling for trial grant/finalize/fail flows.
+- AI abuse-control hardening for trial farming, disposable domains, IP/fingerprint heuristics, and suspicious signup friction.
+
+### Medium priority maintainability work
+
+- Unified Supabase type safety using generated `Database` types instead of widespread `any` usage.
+- State management consolidation, likely with Zustand, to reduce prop-drilling and re-render risk.
+- Structure tree performance improvements for large projects.
+- AI trial cost model calibration against real provider usage.
+- Local AI usage logging integrity improvements for Ollama/admin analytics.
+
+### Lower priority future improvements
+
+- Advanced offline / pending sync beyond current `localStorage` fallback.
+- Stronger destructive action guards for high-impact deletes.
+- Writing UX polish such as smoother focus, paper transitions, font sizing, and themes.
+- Backup and asset handling improvements for `.storyline` files.
 
 ## Agent Session Start Prompt
 
@@ -103,9 +132,10 @@ Output the updated sections clearly.
 
 ## Current Phase
 
-Project continuity system is being added.
+Project continuity system is active. Technical debt priorities have been summarized from `docs/technical-debt-roadmap.md` into the root continuity files.
 
 ## Open Questions
 
 - Which future project areas should be documented as locked decisions?
 - Should GitHub Projects be added later after the Markdown workflow proves useful?
+- Which high-priority technical debt item should be tackled first?
