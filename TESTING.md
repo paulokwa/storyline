@@ -31,11 +31,15 @@ This file tracks tests that need to be done and records confirmed successful tes
 | Create a new project | Not tested | - | - | Confirm full project scaffolding works. |
 | Open an existing project | Not tested | - | - | Confirm project loads without missing data. |
 | Rename project metadata | Not tested | - | - | Confirm title/metadata saves and persists. |
+| Local/cloud mode feature boundaries | Not tested | - | - | Confirm local features work, cloud-only features are hidden or explained, and cloud projects are not stuck in local-mode wording. |
+| Cloud project open messaging | Not tested | - | - | Confirm opening a cloud project does not flash local project messaging. |
 
 ## Structure / Planning
 | Autosave/persistence after refresh | Not tested | - | - | Confirm content remains after reload/device switch. |
 | Editor save failure handling | Not tested | - | - | Confirm user gets clear feedback on failure. |
 | Read aloud/view mode on tablet portrait | Not tested | - | - | Confirm layout is not cut off on real tablet in portrait mode. |
+| Undelete local scene cleanup | Needs retest | - | - | Undelete works but recovered item should disappear from recovery list. |
+| Legacy cloud deleted scene cleanup | Needs retest | - | - | Deleted scene text should not remain visible in cloud-enabled project. |
 
 ## Import / Export
 
@@ -48,6 +52,13 @@ This file tracks tests that need to be done and records confirmed successful tes
 | Import `.epub` | Not tested | - | - | Confirm import works and limitations are clear. |
 | Manual split / rename / reorder during import | Not tested | - | - | Confirm user can clean up chunks before committing import. |
 | Export project/manuscript | Not tested | - | - | Confirm export works and output is usable. |
+| Import with AI disabled | Not tested | - | - | Confirm AI-assisted import is disabled or handled correctly when AI is off. |
+| Large import cost protection | Not tested | - | - | Confirm large books do not abuse free trial or trigger unexpected cost. |
+| Import from backup into project | Not tested | - | - | Confirm title check, warning, and update behavior. |
+| Backup vs export wording | Not tested | - | - | Confirm `.storyline` backup is clearly distinct from export formats. |
+| Restore from backup (local) | Not tested | - | - | Confirm restore works and warnings are clear. |
+| Restore from backup (cloud) | Not tested | - | - | Confirm behavior or absence is intentional. |
+| Backup reminder trigger | Needs retest | - | - | User has not seen reminder trigger despite word growth. |
 
 ## AI Features
 
@@ -57,7 +68,9 @@ This file tracks tests that need to be done and records confirmed successful tes
 | AI partner mode selector dropdown | Passed | User | 2026-04-26 | User confirmed the horizontal mode button issue is resolved. |
 | AI story-context selection roll-up | Passed | User | 2026-04-26 | User confirmed act/scene selection behavior is now working again after tree and AI-ready bar fixes. |
 | AI partner UI cleanup | Passed | User | 2026-04-26 | User confirmed Archive Context removal, redundant Mode pill removal, and desktop spacing cleanup are resolved. |
-| Screenplay AI insert from non-chat modes | Needs retest | - | - | Logic was updated to try structured screenplay insertion beyond `Write as Script Scene`; verify in browser. |
+| Screenplay AI insert from non-chat modes | Needs retest | - | - | Verify structured screenplay insertion works. |
+| AI token usage audit | Not tested | - | - | Confirm unnecessary requests are not being sent. |
+| AI terminology consistency | Not tested | - | - | Audit consistency of AI-related wording across the app. |
 | BYOK Gemini connection | Not tested | - | - | Confirm user-supplied Gemini key works. |
 | Ollama/local AI connection | Not tested | - | - | Confirm local model connection works if enabled. |
 | App-managed free trial AI usage | Not tested | - | - | Confirm trial mode works for new users. |
@@ -92,17 +105,21 @@ This file tracks tests that need to be done and records confirmed successful tes
 | AI tour launches correctly | Not tested | - | - | Confirm it does not overlap main tour. |
 | Help page covers current features | Not tested | - | - | Confirm coverage against real app features. |
 | User-facing AI setup instructions | Not tested | - | - | Confirm non-technical users can follow them. |
+| Mobile tour performance | Not tested | - | - | Cover section may be too slow; check asset sizes. |
 
 ## UI / Device / Accessibility
 
 | Test | Status | Tested by | Date tested | Notes |
 |---|---|---|---|---|
-| Screenplay visual references panel | Needs retest | - | - | Verify labels, attach/remove flow, refresh persistence, and no inline image insertion in screenplay mode. |
-| Book/prose inline illustration regression | Needs retest | - | - | Confirm Insert Illustration and Gallery behavior remain unchanged in book/prose mode. |
+| Screenplay visual references panel | Needs retest | - | - | Verify labels, attach/remove flow, refresh persistence. |
+| Book/prose inline illustration regression | Needs retest | - | - | Confirm Insert Illustration and Gallery behavior remain unchanged. |
 | Tablet portrait layout | Not tested | - | - | Confirm important views do not cut off. |
 | Mobile/narrow screen layout | Not tested | - | - | Confirm core flows remain usable. |
 | Desktop layout | Not tested | - | - | Confirm normal working layout. |
-| Font/readability audit | Not tested | - | - | Confirm font choices, sizing, and contrast. |
+| Font/readability audit | Not tested | - | - | Grey text may be too light and cause strain. |
+| Screenplay editor width on mobile | Not tested | - | - | Editor becomes narrow after typing. |
+| Swipe/tap sidebar close behavior | Not tested | - | - | Compare swipe vs tap-outside UX. |
+| Local mode image loading | Not tested | - | - | Confirm images load correctly in local mode. |
 
 ## Reliability / Technical Debt
 
@@ -113,6 +130,7 @@ This file tracks tests that need to be done and records confirmed successful tes
 | Retry/backoff for save/init flows | Not tested | - | - | Confirm intermittent failures recover cleanly. |
 | AI trial reconciliation checks | Not tested | - | - | Confirm ledger/account/event data stays consistent. |
 | Structure tree performance with large project | Not tested | - | - | Confirm acceptable performance with many nodes. |
+| Code injection / input sanitization checks | Not tested | - | - | Verify editor, imports, comments, and inputs do not execute unsafe scripts. |
 
 ---
 
@@ -120,10 +138,10 @@ This file tracks tests that need to be done and records confirmed successful tes
 
 Newest confirmations go at the top.
 
-| 2026-04-26 | AI agent | TypeScript compile | Passed | `npx tsc --noEmit` and `npx tsc --noEmit --pretty false` passed after session changes. |
-| 2026-04-26 | AI agent | Structure Tree UX | Passed | Implemented dynamic neighbor highlighting and high-contrast grab handles. |
-| 2026-04-26 | AI agent | Story Editor Stability | Passed | Restored StoryTab.tsx and added "Your story awaits" for container nodes. |
-| 2026-04-26 | User | AI partner UI cleanup | Passed | User confirmed Archive Context removal and the AI Partner spacing/header cleanup are resolved. |
-| 2026-04-26 | User | AI story-context selection roll-up | Passed | User confirmed the deselect/regroup selection issue is fixed. |
-| 2026-04-26 | User | AI partner mode selector dropdown | Passed | User confirmed the issue is resolved. |
+| 2026-04-26 | AI agent | TypeScript compile | Passed | `npx tsc --noEmit` passed after session changes. |
+| 2026-04-26 | AI agent | Structure Tree UX | Passed | Implemented neighbor highlighting and grab handles. |
+| 2026-04-26 | AI agent | Story Editor Stability | Passed | Restored StoryTab.tsx and added empty states. |
+| 2026-04-26 | User | AI partner UI cleanup | Passed | User confirmed UI cleanup resolved. |
+| 2026-04-26 | User | AI story-context selection roll-up | Passed | User confirmed selection behavior is fixed. |
+| 2026-04-26 | User | AI partner mode selector dropdown | Passed | User confirmed issue resolved. |
 | - | - | - | - | - |
