@@ -123,6 +123,38 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         () => new Set(nodes.filter(node => node.type === 'scene').map(node => node.id)),
         [nodes]
     )
+    const nodeById = useMemo(
+        () => new Map(nodes.map((node) => [node.id, node])),
+        [nodes]
+    )
+    const childrenByParentId = useMemo(() => {
+        const map = new Map<string | null, StructureNode[]>()
+        for (const node of nodes) {
+            const key = node.parent_id ?? null
+            const siblings = map.get(key) ?? []
+            siblings.push(node)
+            map.set(key, siblings)
+        }
+        for (const siblings of map.values()) {
+            siblings.sort((a, b) => a.order_index - b.order_index)
+        }
+        return map
+    }, [nodes])
+    const treeOrderIndex = useMemo(() => {
+        const order = new Map<string, number>()
+        let cursor = 0
+
+        const visit = (parentId: string | null) => {
+            const children = childrenByParentId.get(parentId) ?? []
+            for (const child of children) {
+                order.set(child.id, cursor++)
+                visit(child.id)
+            }
+        }
+
+        visit(null)
+        return order
+    }, [childrenByParentId])
     const firstSceneNodeId = useMemo(
         () => nodes.find(node => node.type === 'scene')?.id ?? null,
         [nodes]
@@ -329,70 +361,196 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     const handleSceneSelect = useCallback((nodeId: string) => {
         setActiveNodeId(nodeId)
         setCurrentSceneText('') 
-    }, [setCurrentSceneText])
+    }, [setActiveNodeId, setCurrentSceneText])
 
     const handleSceneCreated = useCallback((scene: Scene) => {
         setScenes((prev: any[]) => [...prev, scene])
     }, [])
 
+    const getDescendantIds = useCallback((parentId: string): string[] => {
+        const descendants: string[] = []
+
+        const visit = (currentParentId: string) => {
+            const children = childrenByParentId.get(currentParentId) ?? []
+            for (const child of children) {
+                descendants.push(child.id)
+                visit(child.id)
+            }
+        }
+
+        visit(parentId)
+        return descendants
+    }, [childrenByParentId])
+
+    const isDescendantOf = useCallback((nodeId: string, ancestorId: string) => {
+        let currentParentId = nodeById.get(nodeId)?.parent_id ?? null
+        while (currentParentId) {
+            if (currentParentId === ancestorId) return true
+            currentParentId = nodeById.get(currentParentId)?.parent_id ?? null
+        }
+        return false
+    }, [nodeById])
+
+    const sortNodeIdsInTreeOrder = useCallback((ids: string[]) => {
+        const deduped = Array.from(new Set(ids))
+        return deduped.sort((a, b) => {
+            if (a === 'virtual-root') return -1
+            if (b === 'virtual-root') return 1
+            return (treeOrderIndex.get(a) ?? Number.MAX_SAFE_INTEGER) - (treeOrderIndex.get(b) ?? Number.MAX_SAFE_INTEGER)
+        })
+    }, [treeOrderIndex])
+
+    const buildSelectionExcludingSubtree = useCallback((rootId: string, excludedId: string): string[] => {
+        if (rootId === excludedId) return []
+        if (!isDescendantOf(excludedId, rootId)) return [rootId]
+
+        const directChildren = childrenByParentId.get(rootId) ?? []
+        return directChildren.flatMap((child) => {
+            if (child.id === excludedId) return []
+            if (isDescendantOf(excludedId, child.id)) {
+                return buildSelectionExcludingSubtree(child.id, excludedId)
+            }
+            return [child.id]
+        })
+    }, [childrenByParentId, isDescendantOf])
+
+    const normalizeExplicitSelection = useCallback((ids: string[]) => {
+        const normalized = new Set(ids)
+        let changed = true
+
+        while (changed) {
+            changed = false
+
+            for (const node of nodes) {
+                const children = childrenByParentId.get(node.id) ?? []
+                if (children.length === 0) continue
+
+                const allChildrenExplicitlyCovered = children.every((child) => {
+                    if (normalized.has(child.id)) return true
+                    return Array.from(normalized).some((selectedId) => isDescendantOf(child.id, selectedId))
+                })
+
+                if (!allChildrenExplicitlyCovered) continue
+
+                let removedAnyDescendants = false
+                for (const selectedId of Array.from(normalized)) {
+                    if (selectedId !== node.id && isDescendantOf(selectedId, node.id)) {
+                        normalized.delete(selectedId)
+                        removedAnyDescendants = true
+                    }
+                }
+
+                if (!normalized.has(node.id) || removedAnyDescendants) {
+                    normalized.add(node.id)
+                    changed = true
+                }
+            }
+        }
+
+        return sortNodeIdsInTreeOrder(Array.from(normalized))
+    }, [childrenByParentId, isDescendantOf, nodes, sortNodeIdsInTreeOrder])
+
+    const getEffectiveSelectedNodeIds = useCallback((ids: string[]) => {
+        if (ids.includes('virtual-root')) return ['virtual-root']
+
+        const expanded = new Set<string>()
+        for (const nodeId of ids) {
+            expanded.add(nodeId)
+            getDescendantIds(nodeId).forEach((id) => expanded.add(id))
+        }
+
+        let changed = true
+        while (changed) {
+            changed = false
+
+            for (const node of nodes) {
+                if (expanded.has(node.id)) continue
+
+                const children = childrenByParentId.get(node.id) ?? []
+                if (children.length === 0) continue
+
+                const allChildrenSelected = children.every((child) => expanded.has(child.id))
+                if (allChildrenSelected) {
+                    expanded.add(node.id)
+                    changed = true
+                }
+            }
+        }
+
+        return sortNodeIdsInTreeOrder(Array.from(expanded))
+    }, [childrenByParentId, getDescendantIds, nodes, sortNodeIdsInTreeOrder])
+
     const handleNodeToggleSelection = useCallback((nodeId: string) => {
         setSelectedNodeIds(prev => {
-            const isSelected = prev.includes(nodeId)
-            
             if (nodeId === 'virtual-root') {
-                return isSelected ? prev.filter(id => id !== 'virtual-root') : [...prev, 'virtual-root']
+                return prev.includes('virtual-root') ? prev.filter(id => id !== 'virtual-root') : ['virtual-root']
             }
 
-            const getDescendantIds = (parentId: string): string[] => {
-                const children = nodes.filter(n => n.parent_id === parentId)
-                return children.flatMap(c => [c.id, ...getDescendantIds(c.id)])
+            const explicitIds = prev.filter((id) => id !== 'virtual-root')
+            const explicitSet = new Set(explicitIds)
+            const descendantIds = getDescendantIds(nodeId)
+            
+            if (explicitSet.has(nodeId)) {
+                explicitSet.delete(nodeId)
+                explicitSet.delete('virtual-root')
+                descendantIds.forEach((id) => explicitSet.delete(id))
+                return normalizeExplicitSelection(Array.from(explicitSet))
             }
-            const targetIds = [nodeId, ...getDescendantIds(nodeId)]
-            if (isSelected) {
-                // Deselecting: remove node and all its descendants
-                const newSelected = prev.filter(id => !targetIds.includes(id))
-                
-                // Recursively check parents. If a parent has NO remaining selected children, deselect the parent too.
-                const removeEmptyParents = (childId: string, currentSel: string[]): string[] => {
-                    const child = nodes.find(n => n.id === childId)
-                    if (child && child.parent_id) {
-                        const parentId = child.parent_id
-                        const siblingIds = nodes.filter(n => n.parent_id === parentId).map(n => n.id)
-                        const hasSelectedSiblings = siblingIds.some(id => currentSel.includes(id))
-                        if (!hasSelectedSiblings && currentSel.includes(parentId)) {
-                            // Uncheck parent
-                            const nextSel = currentSel.filter(id => id !== parentId)
-                            return removeEmptyParents(parentId, nextSel)
-                        }
-                    }
-                    return currentSel
-                }
-                
-                return removeEmptyParents(nodeId, newSelected)
-            } else {
-                // Selecting: add node and all its descendants
-                const newSelected = [...prev]
-                targetIds.forEach(id => {
-                    if (!newSelected.includes(id)) newSelected.push(id)
-                })
-                
-                // Also select all ascendants (parents) so the tree accurately reflects the checked state
-                const selectParents = (childId: string, currentSel: string[]): string[] => {
-                    const child = nodes.find(n => n.id === childId)
-                    if (child && child.parent_id) {
-                        const parentId = child.parent_id
-                        if (!currentSel.includes(parentId)) {
-                            currentSel.push(parentId)
-                        }
-                        return selectParents(parentId, currentSel)
-                    }
-                    return currentSel
-                }
 
-                return selectParents(nodeId, newSelected)
+            let coveringAncestorId: string | null = null
+            let currentParentId = nodeById.get(nodeId)?.parent_id ?? null
+            while (currentParentId) {
+                if (explicitSet.has(currentParentId)) {
+                    coveringAncestorId = currentParentId
+                    break
+                }
+                currentParentId = nodeById.get(currentParentId)?.parent_id ?? null
             }
+
+            if (coveringAncestorId) {
+                explicitSet.delete(coveringAncestorId)
+                buildSelectionExcludingSubtree(coveringAncestorId, nodeId).forEach((id) => explicitSet.add(id))
+                return normalizeExplicitSelection(Array.from(explicitSet))
+            }
+
+            const visuallySelected = new Set(getEffectiveSelectedNodeIds(explicitIds)).has(nodeId)
+            if (visuallySelected) {
+                descendantIds.forEach((id) => explicitSet.delete(id))
+                explicitSet.delete(nodeId)
+                return normalizeExplicitSelection(Array.from(explicitSet))
+            }
+
+            descendantIds.forEach((id) => explicitSet.delete(id))
+            for (const explicitId of Array.from(explicitSet)) {
+                if (isDescendantOf(explicitId, nodeId)) {
+                    explicitSet.delete(explicitId)
+                }
+            }
+
+            explicitSet.add(nodeId)
+            return normalizeExplicitSelection(Array.from(explicitSet))
         })
-    }, [nodes, setSelectedNodeIds])
+    }, [buildSelectionExcludingSubtree, getDescendantIds, getEffectiveSelectedNodeIds, isDescendantOf, nodeById, normalizeExplicitSelection, setSelectedNodeIds])
+
+    const effectiveSelectedNodeIds = useMemo(
+        () => getEffectiveSelectedNodeIds(selectedNodeIds),
+        [getEffectiveSelectedNodeIds, selectedNodeIds]
+    )
+
+    const orderedExplicitSelectedNodeIds = useMemo(
+        () => sortNodeIdsInTreeOrder(selectedNodeIds),
+        [selectedNodeIds, sortNodeIdsInTreeOrder]
+    )
+
+    const orderedExplicitSelectedNodes = useMemo(() => {
+        return [
+            ...(orderedExplicitSelectedNodeIds.includes('virtual-root') ? [{ id: 'virtual-root', title: project.title, type: 'root' }] : []),
+            ...orderedExplicitSelectedNodeIds
+                .filter((id) => id !== 'virtual-root')
+                .map((id) => nodeById.get(id))
+                .filter(Boolean)
+        ]
+    }, [nodeById, orderedExplicitSelectedNodeIds, project.title])
 
     const handleSceneUpdate = useCallback((updated: Scene) => {
         setScenes((prev: any[]) => prev.map((s: any) => s.id === updated.id ? updated : s))
@@ -473,7 +631,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                             project={project}
                             nodes={nodes}
                             activeNodeId={activeNodeId}
-                            selectedNodeIds={selectedNodeIds}
+                            selectedNodeIds={effectiveSelectedNodeIds}
                             onNodeSelect={(id) => {
                                 handleSceneSelect(id)
                                 if (window.innerWidth < 768) setSidebarOpen(false)
@@ -532,7 +690,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                 setActiveLocations={setActiveLocations}
                                 activeObjects={activeObjects}
                                 setActiveObjects={setActiveObjects}
-                                selectedNodeIds={selectedNodeIds}
+                                selectedNodeIds={orderedExplicitSelectedNodeIds}
                                 onToggleNodeSelection={handleNodeToggleSelection}
                                 allNodes={nodes}
                                 />
@@ -746,10 +904,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                             projectLocations={projectLocations}
                             projectObjects={projectObjects}
                             projectAiFeedback={projectAiFeedback}
-                            selectedNodes={[
-                                ...(selectedNodeIds.includes('virtual-root') ? [{ id: 'virtual-root', title: project.title, type: 'root' }] : []),
-                                ...nodes.filter(n => selectedNodeIds.includes(n.id))
-                            ]}
+                            selectedNodes={orderedExplicitSelectedNodes}
                             allNodes={nodes}
                             allScenes={scenes}
                             projectRelationships={projectRelationships}

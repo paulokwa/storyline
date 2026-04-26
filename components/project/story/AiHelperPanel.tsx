@@ -387,16 +387,205 @@ const MODE_EXPLANATIONS: Record<string, string> = {
     'Add Conflict': 'Introduces new tension, higher stakes, or drama.',
     'Rewrite with Emotion': 'Deepens emotional resonance and character expressions.',
     'Write as Script Scene': 'Generates a new scene in structured screenplay format.',
-    'Review / Chat': 'Ask questions about your story elements or critique your work.'
+    'Review / Chat': 'Ask questions about your story elements or critique your work.',
+    'What happens next?': 'Pushes the scene forward with the most natural next beat.',
+    'More tense': 'Reworks the moment to raise pressure, urgency, and stakes.',
+    'More natural': 'Smooths dialogue and prose so the scene feels more believable.',
+    'Dialogue idea': 'Generates a short exchange that fits the current moment.',
+    'How to end it?': 'Finds a strong closing beat for the scene.'
 }
 
-const PROMPT_TEMPLATES = [
-    { label: 'What happens next?', value: 'What could happen next in this scene?' },
-    { label: 'More tense', value: 'Rewrite this scene to feel more tense and urgent.' },
-    { label: 'More natural', value: 'How could I rewrite this to sound more natural?' },
-    { label: 'Dialogue idea', value: 'Write a short dialogue exchange that could fit here.' },
-    { label: 'How to end it?', value: 'How could I end this scene effectively?' },
-]
+type ScreenplayBlock = {
+    type: 'scene-heading' | 'action' | 'character' | 'parenthetical' | 'dialogue' | 'transition'
+    text: string
+}
+
+function mapScreenplayBlocksToNodes(blocks: ScreenplayBlock[]) {
+    const typeMap: Record<ScreenplayBlock['type'], string> = {
+        'scene-heading': 'screenplaySceneHeading',
+        'action': 'screenplayAction',
+        'character': 'screenplayCharacter',
+        'parenthetical': 'screenplayParenthetical',
+        'dialogue': 'screenplayDialogue',
+        'transition': 'screenplayTransition'
+    }
+
+    return blocks.map((block) => ({
+        type: typeMap[block.type],
+        content: block.text ? [{ type: 'text', text: block.text }] : []
+    }))
+}
+
+function stripMarkdownCodeFences(text: string) {
+    const trimmed = text.trim()
+    if (!trimmed.startsWith('```')) return trimmed
+
+    const match = trimmed.match(/```(?:json|text|md|markdown)?\s*([\s\S]*?)\s*```/)
+    return match ? match[1].trim() : trimmed
+}
+
+function isScreenplaySceneHeading(line: string) {
+    return /^(INT|EXT|INT\/EXT|EXT\/INT|I\/E)\./i.test(line.trim())
+}
+
+function isScreenplayTransition(line: string) {
+    const trimmed = line.trim()
+    return /^[A-Z0-9 '().-]+ TO:$/.test(trimmed) || /^(FADE OUT:|FADE TO:|CUT TO:|SMASH CUT:|MATCH CUT:)$/.test(trimmed)
+}
+
+function isScreenplayParenthetical(line: string) {
+    const trimmed = line.trim()
+    return trimmed.startsWith('(') && trimmed.endsWith(')')
+}
+
+function isLikelyCharacterCue(line: string) {
+    const trimmed = line.trim()
+    if (!trimmed) return false
+    if (isScreenplaySceneHeading(trimmed) || isScreenplayTransition(trimmed) || isScreenplayParenthetical(trimmed)) return false
+    if (trimmed.length > 40) return false
+    if (!/[A-Z]/.test(trimmed)) return false
+
+    const normalized = trimmed.replace(/\s*\(.*\)\s*$/, '')
+    return /^[A-Z0-9 .'\-]+$/.test(normalized) && normalized === normalized.toUpperCase()
+}
+
+function parseScreenplayTextToBlocks(text: string): ScreenplayBlock[] {
+    const lines = stripMarkdownCodeFences(text)
+        .replace(/\r\n/g, '\n')
+        .split('\n')
+        .map((line) => line.replace(/\s+$/g, ''))
+
+    const blocks: ScreenplayBlock[] = []
+    let index = 0
+
+    while (index < lines.length) {
+        const currentLine = lines[index]
+        const trimmed = currentLine.trim()
+
+        if (!trimmed) {
+            index += 1
+            continue
+        }
+
+        if (isScreenplaySceneHeading(trimmed)) {
+            blocks.push({ type: 'scene-heading', text: trimmed.toUpperCase() })
+            index += 1
+            continue
+        }
+
+        if (isScreenplayTransition(trimmed)) {
+            blocks.push({ type: 'transition', text: trimmed.toUpperCase() })
+            index += 1
+            continue
+        }
+
+        if (isLikelyCharacterCue(trimmed)) {
+            blocks.push({ type: 'character', text: trimmed.toUpperCase() })
+            index += 1
+
+            while (index < lines.length) {
+                const nextTrimmed = lines[index].trim()
+
+                if (!nextTrimmed) {
+                    index += 1
+                    break
+                }
+
+                if (isScreenplayParenthetical(nextTrimmed)) {
+                    blocks.push({ type: 'parenthetical', text: nextTrimmed.replace(/^\((.*)\)$/, '$1').trim() })
+                    index += 1
+                    continue
+                }
+
+                if (
+                    isScreenplaySceneHeading(nextTrimmed) ||
+                    isScreenplayTransition(nextTrimmed) ||
+                    isLikelyCharacterCue(nextTrimmed)
+                ) {
+                    break
+                }
+
+                const dialogueLines: string[] = []
+                while (index < lines.length) {
+                    const dialogueTrimmed = lines[index].trim()
+                    if (!dialogueTrimmed) break
+                    if (
+                        isScreenplaySceneHeading(dialogueTrimmed) ||
+                        isScreenplayTransition(dialogueTrimmed) ||
+                        isLikelyCharacterCue(dialogueTrimmed)
+                    ) {
+                        break
+                    }
+                    if (isScreenplayParenthetical(dialogueTrimmed)) break
+
+                    dialogueLines.push(dialogueTrimmed)
+                    index += 1
+                }
+
+                if (dialogueLines.length > 0) {
+                    blocks.push({ type: 'dialogue', text: dialogueLines.join('\n') })
+                    continue
+                }
+
+                break
+            }
+
+            continue
+        }
+
+        const actionLines = [trimmed]
+        index += 1
+
+        while (index < lines.length) {
+            const nextTrimmed = lines[index].trim()
+            if (!nextTrimmed) {
+                index += 1
+                break
+            }
+            if (
+                isScreenplaySceneHeading(nextTrimmed) ||
+                isScreenplayTransition(nextTrimmed) ||
+                isLikelyCharacterCue(nextTrimmed)
+            ) {
+                break
+            }
+
+            actionLines.push(nextTrimmed)
+            index += 1
+        }
+
+        blocks.push({ type: 'action', text: actionLines.join('\n') })
+    }
+
+    return blocks
+}
+
+function parseCompletionToScreenplayNodes(text: string) {
+    const cleanText = stripMarkdownCodeFences(text)
+
+    const repairedJson = attemptJsonRepair(cleanText)
+    if (repairedJson && Array.isArray(repairedJson)) {
+        const jsonBlocks = repairedJson
+            .filter((block) => block && typeof block === 'object' && typeof block.type === 'string')
+            .map((block) => ({
+                type: block.type,
+                text: typeof block.text === 'string' ? block.text : ''
+            }))
+            .filter((block): block is ScreenplayBlock =>
+                ['scene-heading', 'action', 'character', 'parenthetical', 'dialogue', 'transition'].includes(block.type)
+            )
+
+        if (jsonBlocks.length > 0) {
+            return mapScreenplayBlocksToNodes(jsonBlocks)
+        }
+    }
+
+    const parsedBlocks = parseScreenplayTextToBlocks(cleanText)
+    if (parsedBlocks.length === 0) return null
+
+    const hasStructuredCue = parsedBlocks.some((block) => block.type !== 'action')
+    return hasStructuredCue ? mapScreenplayBlocksToNodes(parsedBlocks) : null
+}
 
 export default function AiHelperPanel({
     projectId, projectTitle, sceneText, onInsert,
@@ -433,7 +622,6 @@ export default function AiHelperPanel({
     // Holds the previous response while a new one is loading — avoids blank flash
     const [previousCompletion, setPreviousCompletion] = useState('')
     const [previewOpen, setPreviewOpen] = useState(false)
-    const [promptsOpen, setPromptsOpen] = useState(false)
     const [promptMode, setPromptMode] = useState('Review / Chat')
     const [isPartnerBusy, setIsPartnerBusy] = useState(false)
     const [isCloudLoading, setIsCloudLoading] = useState(false)
@@ -1183,51 +1371,25 @@ export default function AiHelperPanel({
 
     const handleInsert = () => {
         console.log('AI Helper: handleInsert called', { promptMode, completionExist: !!displayedCompletion })
-        if (promptMode === 'Write as Script Scene') {
+        const shouldInsertAsStructuredScreenplay = projectType === 'tv_script' && promptMode !== 'Review / Chat'
+
+        if (shouldInsertAsStructuredScreenplay) {
             try {
-                // 1. Pre-processing: Strip markdown code blocks if present
-                let cleanText = displayedCompletion.trim()
-                if (cleanText.startsWith('```')) {
-                    const match = cleanText.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
-                    if (match) cleanText = match[1]
-                }
-
-                // 2. Parse JSON with salvage logic
-                const blocks = attemptJsonRepair(cleanText)
-                if (blocks && Array.isArray(blocks)) {
-                    console.log('AI Helper: JSON salvaged, mapping to nodes:', blocks.length)
-                    // 3. Node mapping
-                    const typeMap: Record<string, string> = {
-                        'scene-heading': 'screenplaySceneHeading',
-                        'action': 'screenplayAction',
-                        'character': 'screenplayCharacter',
-                        'parenthetical': 'screenplayParenthetical',
-                        'dialogue': 'screenplayDialogue',
-                        'transition': 'screenplayTransition'
-                    }
-
-                    const nodes = blocks.map(block => ({
-                        type: typeMap[block.type] || 'screenplayAction',
-                        content: block.text ? [{ type: 'text', text: block.text }] : []
-                    }))
-
+                const nodes = parseCompletionToScreenplayNodes(displayedCompletion)
+                if (nodes && nodes.length > 0) {
+                    console.log('AI Helper: inserting structured screenplay nodes:', nodes.length)
                     onInsert(nodes)
                     handleClear()
                     return
                 }
             } catch (err) {
-                console.warn('JSON parsing failed for Script Scene, falling back to text:', err)
-                // Fallback to text insertion if JSON is invalid
+                console.warn('Structured screenplay insertion failed, falling back to text:', err)
             }
         }
 
         console.log('AI Helper: Inserting as plain text/HTML')
         onInsert(displayedCompletion)
         handleClear()
-    }
-
-    const handleTemplate = (value: string) => {
-        setPrompt(value)
     }
 
     const handleSaveToFeedback = async () => {
@@ -1655,10 +1817,22 @@ export default function AiHelperPanel({
             finalPrompt = currentPrompt 
                 ? `Continue the scene based on these instructions: ${currentPrompt}${modeRules}`
                 : `Continue the scene.${modeRules}`
+        } else if (promptMode === 'What happens next?') {
+            finalPrompt = currentPrompt
+                ? `Continue the scene with the most natural and compelling next beat.\n\nAdditional user instructions: ${currentPrompt}${modeRules}`
+                : `Continue the scene with the most natural and compelling next beat.${modeRules}`
         } else if (promptMode === 'Improve Scene') {
             finalPrompt = currentPrompt 
                 ? `Continue the scene by improving clarity, flow, and quality.\n\nUser instructions: ${currentPrompt}${modeRules}`
                 : `Continue the scene by improving clarity, flow, and quality.${modeRules}`
+        } else if (promptMode === 'More tense') {
+            finalPrompt = currentPrompt
+                ? `Rewrite or continue this scene so it feels more tense and urgent.\n\nUser instructions: ${currentPrompt}${modeRules}`
+                : `Rewrite or continue this scene so it feels more tense and urgent.${modeRules}`
+        } else if (promptMode === 'More natural') {
+            finalPrompt = currentPrompt
+                ? `Rewrite the scene so the prose and dialogue feel more natural and believable.\n\nUser instructions: ${currentPrompt}${modeRules}`
+                : `Rewrite the scene so the prose and dialogue feel more natural and believable.${modeRules}`
         } else if (promptMode === 'Add Conflict') {
             finalPrompt = currentPrompt 
                 ? `Continue the scene by introducing tension, stakes, or conflict.\n\nUser instructions: ${currentPrompt}${modeRules}`
@@ -1667,6 +1841,14 @@ export default function AiHelperPanel({
             finalPrompt = currentPrompt 
                 ? `Continue the scene by enhancing emotional depth and character expression.\n\nUser instructions: ${currentPrompt}${modeRules}`
                 : `Continue the scene by enhancing emotional depth and character expression.${modeRules}`
+        } else if (promptMode === 'Dialogue idea') {
+            finalPrompt = currentPrompt
+                ? `Write a short dialogue exchange that fits naturally into this scene.\n\nUser instructions: ${currentPrompt}${modeRules}`
+                : `Write a short dialogue exchange that fits naturally into this scene.${modeRules}`
+        } else if (promptMode === 'How to end it?') {
+            finalPrompt = currentPrompt
+                ? `Write an effective ending beat for this scene.\n\nUser instructions: ${currentPrompt}${modeRules}`
+                : `Write an effective ending beat for this scene.${modeRules}`
         } else if (promptMode === 'Write as Script Scene') {
             finalPrompt = `Write a new scene as a script based on these instructions: ${currentPrompt || 'Write a compelling scene.'}
             
@@ -1787,12 +1969,22 @@ export default function AiHelperPanel({
         switch (promptMode) {
             case 'Continue Writing':
                 return "What should happen next? (e.g. 'They find a hidden door')"
+            case 'What happens next?':
+                return "Optional direction... (e.g. 'Make the turn feel surprising but inevitable')"
             case 'Improve Scene':
                 return "Focus on... (e.g. 'making the dialogue snappier' or 'vivid detail')"
+            case 'More tense':
+                return "Optional tension note... (e.g. 'Keep it subtle until the final line')"
+            case 'More natural':
+                return "Optional realism note... (e.g. 'Make the dialogue less formal')"
             case 'Add Conflict':
                 return "Who starts the trouble? (e.g. 'A sudden storm arrives')"
             case 'Rewrite with Emotion':
                 return "What's the mood? (e.g. 'Heavy with grief' or 'Nervous tension')"
+            case 'Dialogue idea':
+                return "Optional dialogue note... (e.g. 'Keep it flirtatious with subtext')"
+            case 'How to end it?':
+                return "Optional ending note... (e.g. 'Land on an unsettling reveal')"
             case 'Write as Script Scene':
                 return "What's the scene? (e.g. 'A tense interrogation in the rain')"
             default:
@@ -1803,9 +1995,14 @@ export default function AiHelperPanel({
     const emptyStateCall = useMemo(() => {
         switch (promptMode) {
             case 'Continue Writing': return "Ready to write?"
+            case 'What happens next?': return "Find the next beat."
             case 'Improve Scene': return "Let's polish this up."
+            case 'More tense': return "Turn up the pressure."
+            case 'More natural': return "Make it ring true."
             case 'Add Conflict': return "Time for some trouble?"
             case 'Rewrite with Emotion': return "Deepen the mood."
+            case 'Dialogue idea': return "Let them talk."
+            case 'How to end it?': return "Land the scene."
             case 'Write as Script Scene': return "Lights, camera, action."
             default: return `How can I help with this ${label.toLowerCase()}?`
         }
@@ -1814,9 +2011,14 @@ export default function AiHelperPanel({
     const emptyStateHint = useMemo(() => {
         switch (promptMode) {
             case 'Continue Writing': return "Let's pick up right where you left off or type a direction below."
+            case 'What happens next?': return "I'll keep the input box free and use this mode to steer the next beat internally."
             case 'Improve Scene': return "I'll help you find the perfect flow. Type a focus if you have one!"
+            case 'More tense': return "I'll raise the scene's pressure without needing a canned prompt in the editor."
+            case 'More natural': return "I'll smooth out the phrasing and dialogue while keeping your intent intact."
             case 'Add Conflict': return "Let's introduce some drama or a sudden twist to pick up the pace."
             case 'Rewrite with Emotion': return "I'll help you capture the emotional heart of this specific moment."
+            case 'Dialogue idea': return "I'll generate a fitting exchange while leaving you room to add your own direction."
+            case 'How to end it?': return "I'll look for a satisfying closing beat and still use any note you add below."
             case 'Write as Script Scene': return "Describe a situation and I'll adapt it into professional script format."
             default: return hint || "Ask for feedback, brainstorm ideas, or just chat about the story."
         }
@@ -1836,8 +2038,8 @@ export default function AiHelperPanel({
             : 'text-red-500'
     const headerStatusLabel = !aiSettings.ai_enabled ? 'disabled' : headerStatus
     const modeOptions = isNovel
-        ? ['Review / Chat', 'Continue Writing', 'Improve Scene', 'Add Conflict', 'Rewrite with Emotion']
-        : ['Review / Chat', 'Write as Script Scene', 'Continue Writing', 'Improve Scene', 'Add Conflict', 'Rewrite with Emotion']
+        ? ['Review / Chat', 'Continue Writing', 'What happens next?', 'Improve Scene', 'More tense', 'More natural', 'Add Conflict', 'Rewrite with Emotion', 'Dialogue idea', 'How to end it?']
+        : ['Review / Chat', 'Write as Script Scene', 'Continue Writing', 'What happens next?', 'Improve Scene', 'More tense', 'More natural', 'Add Conflict', 'Rewrite with Emotion', 'Dialogue idea', 'How to end it?']
     const modeSelectOptions = modeOptions.map((mode) => ({ value: mode, label: mode }))
 
     return (
@@ -1943,6 +2145,9 @@ export default function AiHelperPanel({
                         )}
                     </div>
                 </div>
+                <p className="mt-2 text-[10px] font-medium text-slate-400">
+                    {MODE_EXPLANATIONS[promptMode]}
+                </p>
             </div>
 
             {/* Context Indicator */}
@@ -2650,34 +2855,6 @@ export default function AiHelperPanel({
                         </div>
                     )}
                 </div>
-
-                {/* Prompt templates - Collapsible */}
-                <div className="border-b border-white/70">
-                    <button
-                        type="button"
-                        onClick={() => setPromptsOpen(!promptsOpen)}
-                        className="flex w-full items-center justify-between px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400 transition-colors hover:bg-white/60 hover:text-slate-600 md:py-2"
-                    >
-                        <span>Quick Writing Ideas</span>
-                        {promptsOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
-                    </button>
-                    
-                    {promptsOpen && (
-                        <div className="animate-in slide-in-from-top-1 border-t border-white/70 bg-[rgba(255,255,255,0.5)] px-4 pt-3 pb-3 flex flex-wrap gap-2.5 justify-center duration-300">
-                            {PROMPT_TEMPLATES.map((t) => (
-                                <button
-                                    key={t.label}
-                                    type="button"
-                                    onClick={() => handleTemplate(t.value)}
-                                    className="whitespace-nowrap rounded-full border border-slate-200/80 bg-white/88 px-3 py-1.5 text-[11px] font-medium text-slate-500 shadow-sm transition-all hover:border-indigo-300 hover:bg-white hover:text-indigo-600 active:scale-95"
-                                >
-                                    {t.label}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
                 <div className="px-4 pt-3 pb-4 md:pt-4 md:pb-6">
                     <form onSubmit={handleSubmit} className="space-y-3" suppressHydrationWarning>
                         {isVirtualRootSelected && (
@@ -2777,14 +2954,11 @@ export default function AiHelperPanel({
                             <button
                                 type="button"
                                 onClick={actualLoading ? handleCancelRequest : () => handleSubmit({ preventDefault: () => {} } as any)}
-                                disabled={!actualLoading && (!prompt.trim() && promptMode !== 'Review / Chat')}
                                 className={cn(
                                     "absolute bottom-3.5 right-3.5 p-2 rounded-xl transition-all active:scale-95 flex items-center justify-center min-w-[34px] min-h-[34px]",
                                     actualLoading
                                         ? "bg-rose-500 text-white hover:bg-rose-600 shadow-lg shadow-rose-100 animate-pulse"
-                                        : (prompt.trim() || promptMode === 'Review / Chat')
-                                        ? "bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-100"
-                                        : "bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200"
+                                        : "bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-100"
                                 )}
                                 aria-label={actualLoading ? 'Stop AI request' : 'Send prompt to AI'}
                             >

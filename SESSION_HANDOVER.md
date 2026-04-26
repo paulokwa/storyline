@@ -6,6 +6,47 @@ Agents should update this file before ending a session.
 
 ---
 
+## 2026-04-26 - AI mode consolidation and structure-selection context fixes
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Merged quick writing ideas into the main AI mode selector and removed visible prompt injection for those modes.
+- Kept quick writing steering internal so users can type their own prompt text while still using the selected AI mode.
+- Extended screenplay-mode AI insert behavior so non-chat screenplay responses try to insert as structured screenplay blocks, not just plain text.
+- Fixed the desktop structure tree checkbox collapse bug on act rows.
+- Reworked story-context selection so explicit AI selection is separate from derived tree checkbox visuals.
+- Fixed act/scene selection roll-up behavior so:
+  - selecting an act covers its scenes for AI,
+  - selecting all scenes rolls the act up visually,
+  - deselecting a child scene breaks the act back into explicit scene selections,
+  - reselecting the missing scene collapses the explicit selection back to the act,
+  - clicking a rolled-up act can still deselect child coverage correctly.
+
+### Current status
+
+AI mode selection is consolidated, screenplay insertion is more consistent for screenplay projects, and structure-tree selection now behaves consistently between the tree, AI-ready bar, and AI Partner context.
+
+### Next recommended step
+
+Run an in-browser regression pass on story context selection and screenplay AI insertion:
+- single-scene selection,
+- full-act selection,
+- deselect/reselect one scene under an act,
+- AI-ready chip collapse/expand,
+- insert generated screenplay output into the editor from non-chat modes.
+
+### Risks or warnings
+
+- `components/project/story/AiHelperPanel.tsx`, `components/project/story/StoryTab.tsx`, and `components/project/story/StructureTree.tsx` contain the current uncommitted code changes.
+- Focused eslint checks passed on `StoryTab.tsx` and `StructureTree.tsx`; `AiHelperPanel.tsx` still has a broader pre-existing lint backlog if run without narrowed rules.
+- The screenplay insertion parser for non-chat modes is heuristic when the model does not return JSON, so real UI verification is still important.
+
+---
+
 ## 2026-04-26 - AI partner mode selector changed to dropdown
 
 ### Current branch

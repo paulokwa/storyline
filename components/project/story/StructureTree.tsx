@@ -421,7 +421,7 @@ const NodeItem = React.memo(({
                         {onToggleSelection && (
                             <div 
                                 className={cn(
-                                    "w-4 h-4 border-2 rounded-md flex items-center justify-center transition-all duration-200",
+                                    "w-4 h-4 min-w-4 min-h-4 shrink-0 border-2 rounded-md flex items-center justify-center transition-all duration-200",
                                     isSelected 
                                         ? "bg-indigo-500 border-indigo-500" 
                                         : "border-slate-300 group-hover:border-slate-400"

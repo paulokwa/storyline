@@ -68,6 +68,8 @@ This file tracks tests that need to be done and records confirmed successful tes
 | Test | Status | Tested by | Date tested | Notes |
 |---|---|---|---|---|
 | AI partner mode selector dropdown | Passed | User | 2026-04-26 | User confirmed the horizontal mode button issue is resolved. |
+| AI story-context selection roll-up | Passed | User | 2026-04-26 | User confirmed act/scene selection behavior is now working again after tree and AI-ready bar fixes. |
+| Screenplay AI insert from non-chat modes | Needs retest | - | - | Logic was updated to try structured screenplay insertion beyond `Write as Script Scene`; verify in browser. |
 | BYOK Gemini connection | Not tested | - | - | Confirm user-supplied Gemini key works. |
 | Ollama/local AI connection | Not tested | - | - | Confirm local model connection works if enabled. |
 | App-managed free trial AI usage | Not tested | - | - | Confirm trial mode works for new users. |
@@ -130,5 +132,6 @@ Newest confirmations go at the top.
 
 | Date tested | Tested by | Area | Result | Notes |
 |---|---|---|---|---|
+| 2026-04-26 | User | AI story-context selection roll-up | Passed | User confirmed the deselect/regroup selection issue is fixed. |
 | 2026-04-26 | User | AI partner mode selector dropdown | Passed | User confirmed the issue is resolved. |
 | - | - | - | - | - |

@@ -6,6 +6,24 @@ Keep entries concise. Do not rewrite old decisions unless explicitly instructed.
 
 ---
 
+## 2026-04-26 - Separate explicit AI story-context selection from derived tree checkbox state
+
+Decision:
+Keep the user's explicit story-context selection separate from the structure tree's derived visual checkbox state.
+
+Reason:
+Auto-selecting parent acts when a child scene was chosen made the AI-ready bar misleading and caused full-act context to be sent to AI when the user only intended to select one scene.
+
+Impact:
+- Tree checkboxes can still visually roll up to a parent when all children are selected.
+- AI-ready chips and AI Partner context now reflect the explicit selection model, not just the visual tree state.
+- Explicit selection normalizes back to the parent act when all child scenes are covered, and breaks back into scenes when one is deselected.
+
+Status:
+Approved.
+
+---
+
 ## 2026-04-26 - Add lightweight agent continuity system
 
 Decision:
