@@ -19,14 +19,17 @@ Default branch: `main`
 ## Core Workflow Rules
 
 1. Read `MASTER_BRIEF.md`, `DECISION_LOG.md`, `SESSION_HANDOVER.md`, and `TASK_BOARD.md` before starting work.
-2. Treat this file as the source of truth.
-3. Do not change locked decisions unless explicitly instructed with: `revise the plan`.
-4. Prefer consistency over clever redesign.
-5. If a requested change conflicts with this brief, stop and explain the conflict before editing.
-6. Keep changes focused on the requested task.
-7. Do not silently rewrite architecture, auth, billing, database policies, AI provider logic, or deployment settings.
-8. At the end of each session, update `SESSION_HANDOVER.md` and `TASK_BOARD.md`.
-9. If a meaningful decision was made, append it to `DECISION_LOG.md`.
+2. Treat this file as the source of truth for broad project workflow and agent behaviour.
+3. Use `TASK_BOARD.md` for active tasks and technical debt priorities.
+4. Use `DECISION_LOG.md` for decisions and reasons.
+5. Use `SESSION_HANDOVER.md` for current session status and next-step context.
+6. Do not change locked decisions unless explicitly instructed with: `revise the plan`.
+7. Prefer consistency over clever redesign.
+8. If a requested change conflicts with this brief, stop and explain the conflict before editing.
+9. Keep changes focused on the requested task.
+10. Do not silently rewrite architecture, auth, billing, database policies, AI provider logic, or deployment settings.
+11. At the end of each session, update `SESSION_HANDOVER.md` and `TASK_BOARD.md`.
+12. If a meaningful decision was made, append it to `DECISION_LOG.md`.
 
 ## Locked Decisions
 
@@ -34,35 +37,6 @@ Default branch: `main`
 - Keep project memory simple and readable before adding GitHub Project automation.
 - Use concise session start and session end prompts to force agents to load and update context.
 - Markdown files are preferred because they are visible to all agents and portable across machines.
-- Keep `docs/technical-debt-roadmap.md` as the detailed source for technical debt and reliability work.
-- Keep root continuity files as summaries and working memory, not replacements for detailed docs.
-
-## Current Technical Debt Priorities
-
-Detailed source: `docs/technical-debt-roadmap.md`
-
-### High priority reliability work
-
-- Atomic project scaffolding via Supabase RPC so Project -> Episode -> Act -> Scene creation happens in one transaction.
-- Centralized rate limiting for AI routes instead of in-memory serverless `Map` rate limits.
-- Robust retry and initialization patterns for editor save and project initialization flows.
-- AI trial reconciliation and RPC failure handling for trial grant/finalize/fail flows.
-- AI abuse-control hardening for trial farming, disposable domains, IP/fingerprint heuristics, and suspicious signup friction.
-
-### Medium priority maintainability work
-
-- Unified Supabase type safety using generated `Database` types instead of widespread `any` usage.
-- State management consolidation, likely with Zustand, to reduce prop-drilling and re-render risk.
-- Structure tree performance improvements for large projects.
-- AI trial cost model calibration against real provider usage.
-- Local AI usage logging integrity improvements for Ollama/admin analytics.
-
-### Lower priority future improvements
-
-- Advanced offline / pending sync beyond current `localStorage` fallback.
-- Stronger destructive action guards for high-impact deletes.
-- Writing UX polish such as smoother focus, paper transitions, font sizing, and themes.
-- Backup and asset handling improvements for `.storyline` files.
 
 ## Agent Session Start Prompt
 
@@ -132,10 +106,9 @@ Output the updated sections clearly.
 
 ## Current Phase
 
-Project continuity system is active. Technical debt priorities have been summarized from `docs/technical-debt-roadmap.md` into the root continuity files.
+Project continuity system is active.
 
 ## Open Questions
 
 - Which future project areas should be documented as locked decisions?
 - Should GitHub Projects be added later after the Markdown workflow proves useful?
-- Which high-priority technical debt item should be tackled first?
