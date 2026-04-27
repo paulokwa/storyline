@@ -9,7 +9,7 @@
  * Placement: Library header action area (alongside "Start New Project").
  */
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import { Upload } from 'lucide-react'
 import {
@@ -44,6 +44,16 @@ export default function ImportBackupButton({
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
     const [pendingImport, setPendingImport] = useState<PendingLibraryImport | null>(null)
     const [selectedUpdateProjectId, setSelectedUpdateProjectId] = useState<string>('')
+    const [dismissedThisSession, setDismissedThisSession] = useState(false)
+    const transferGuidanceDismissed = useSyncExternalStore(
+        () => () => undefined,
+        () => {
+            if (typeof window === 'undefined') return false
+            return localStorage.getItem('storyline-library-transfer-guidance-dismissed') === 'true'
+        },
+        () => false
+    )
+    const showTransferReminder = showTransferGuidance && !dismissedThisSession && !transferGuidanceDismissed
 
     function handleClick() {
         setErrorMessage(null)
@@ -213,11 +223,15 @@ export default function ImportBackupButton({
                 </p>
             )}
 
-            {showTransferGuidance && (
+            {showTransferReminder && (
                 <LocalTransferGuidance
                     compact
                     className="w-full md:max-w-xl"
                     cloudSyncHref="/help?q=cloud%20sync"
+                    onDismiss={() => {
+                        setDismissedThisSession(true)
+                        localStorage.setItem('storyline-library-transfer-guidance-dismissed', 'true')
+                    }}
                 />
             )}
 

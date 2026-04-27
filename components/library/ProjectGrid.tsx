@@ -74,6 +74,7 @@ function getAvatarInitials(name: string | null | undefined, fallback = 'U') {
 }
 
 export default function ProjectGrid({ projects, deletedProjects, currentUserId }: { projects: Project[], deletedProjects: Project[], currentUserId: string }) {
+    const transferGuidanceDismissKey = 'storyline-library-transfer-guidance-dismissed'
     const router = useRouter()
     const { theme } = useTheme()
     const isMidnight = theme === 'midnight'
@@ -83,6 +84,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
     const [confirmDeleteDraft, setConfirmDeleteDraft] = useState(false)
     const [view, setView] = useState<'active' | 'trash'>('active')
     const [sortFilter, setSortFilter] = useState<'custom' | 'recent' | 'az'>('custom')
+    const [showTransferGuidance, setShowTransferGuidance] = useState(true)
     const initialMount = useRef(true)
 
     // Load sort preference on mount
@@ -90,6 +92,10 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
         const saved = localStorage.getItem('storyline-library-sort')
         if (saved && (saved === 'custom' || saved === 'recent' || saved === 'az')) {
             setSortFilter(saved as any)
+        }
+
+        if (localStorage.getItem(transferGuidanceDismissKey) === 'true') {
+            setShowTransferGuidance(false)
         }
     }, [])
 
@@ -248,10 +254,16 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                             <Plus className="w-5 h-5" /> Start New Project
                         </Button>
                     </Link>
-                    <LocalTransferGuidance
-                        className="w-full text-left"
-                        cloudSyncHref="/help?q=cloud%20sync"
-                    />
+                    {showTransferGuidance && (
+                        <LocalTransferGuidance
+                            className="w-full text-left"
+                            cloudSyncHref="/help?q=cloud%20sync"
+                            onDismiss={() => {
+                                setShowTransferGuidance(false)
+                                localStorage.setItem(transferGuidanceDismissKey, 'true')
+                            }}
+                        />
+                    )}
                     <div className="w-full">
                         <ImportBackupButton currentUserId={currentUserId} className="w-full md:w-auto" showTransferGuidance={false} />
                     </div>

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useSearchParams } from 'next/navigation'
+import { ArrowLeft } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { HELP_TOPICS, matchHelpTopics, type HelpTopic } from '@/lib/help'
 import { queueWorkspaceTourStart } from '@/lib/project/tour'
@@ -59,6 +60,18 @@ export default function HelpTab({ mode = 'project' }: { mode?: 'project' | 'glob
     <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-[#fbf9f5] custom-scrollbar">
       <div className="mx-auto max-w-6xl p-6 fade-in">
         <div className="rounded-[3rem] bg-white p-10 shadow-xl shadow-slate-200/40 ring-1 ring-slate-100">
+          {mode === 'global' ? (
+            <div className="mb-8">
+              <Link
+                href="/library"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to Library
+              </Link>
+            </div>
+          ) : null}
+
           <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-3xl">
               <div className="mb-8">

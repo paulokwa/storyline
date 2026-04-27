@@ -5,6 +5,36 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-04-27 - Help Center back path and dismissible library reminder
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Added a clear `Back to Library` button to the global Help Center view.
+- Added a dismiss `X` control to the library transfer/cloud-sync reminder card.
+- Persisted reminder dismissal via local storage so it stays hidden after the user closes it.
+- Kept the in-project guidance version unchanged except for shared copy updates.
+- Verified the touched files with `npx tsc --noEmit --pretty false` and focused eslint.
+
+### Current status
+
+The library help path is easier to exit, and the reminder card can now be dismissed cleanly instead of staying on screen indefinitely.
+
+### Next recommended step
+
+Browser-check the reminder dismiss flow and the global Help Center return path:
+- open `/help?q=cloud sync` and confirm `Back to Library` is obvious and works
+- dismiss the library reminder and refresh
+- confirm the reminder stays hidden until local storage is cleared
+
+### Risks or warnings
+
+- Dismissal persistence is browser-local by design; it will not sync across devices or browsers.
+
+---
 ## 2026-04-27 - Library-accessible Help Center for cloud sync guidance
 
 ### Current branch
