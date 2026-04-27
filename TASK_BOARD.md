@@ -21,6 +21,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Verify centralized AI rate limiting across helper, scene analyzer, and import detect flows.
 - Browser-check the new library Help Center and cloud sync guidance flow.
 - Make the guided project creation “story tone” step dynamic based on AI availability: if AI is enabled, AI-oriented wording such as “This guides future AI suggestions” is acceptable; if AI is disabled/unavailable for the account, remove or reword AI references so the page explains tone as project metadata/writing guidance rather than an AI feature.
+- Fix library project-card delete confirmation layout on tablet widths: on Lenovo Tab M11 / iPad Air / iPad mini style viewports, the inline “Delete? / Cancel / Delete” confirmation row is cut off at the card edge. Make the confirmation responsive so all actions remain visible and tappable, including incomplete setup cards and normal project cards.
 
 ## Next
 
