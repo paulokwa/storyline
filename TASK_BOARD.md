@@ -20,6 +20,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Audit local/cloud feature boundaries, wording, and mode-specific UI behavior.
 - Verify centralized AI rate limiting across helper, scene analyzer, and import detect flows.
 - Browser-check the new library Help Center and cloud sync guidance flow.
+- Make the guided project creation “story tone” step dynamic based on AI availability: if AI is enabled, AI-oriented wording such as “This guides future AI suggestions” is acceptable; if AI is disabled/unavailable for the account, remove or reword AI references so the page explains tone as project metadata/writing guidance rather than an AI feature.
 
 ## Next
 
