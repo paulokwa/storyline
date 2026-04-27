@@ -276,14 +276,14 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
 
     return (
         <TooltipProvider>
-            <div className="library-grid-shell max-w-[1440px] mx-auto px-6 py-16 md:py-24">
-                <div className={cn("flex flex-col md:flex-row md:items-end justify-between gap-8 mb-20 pb-12", isMidnight ? "border-b border-slate-700/50" : "border-b border-slate-100")}>
-                    <div className="space-y-4">
+            <div className="library-grid-shell max-w-[1440px] mx-auto px-5 py-12 sm:px-6 sm:py-16 lg:py-24">
+                <div className={cn("flex flex-col gap-8 mb-14 pb-10 lg:flex-row lg:items-end lg:justify-between lg:gap-12 lg:mb-20 lg:pb-12", isMidnight ? "border-b border-slate-700/50" : "border-b border-slate-100")}>
+                    <div className="max-w-2xl space-y-4">
                         <motion.h1 
                             key={view}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className={cn("text-5xl md:text-7xl font-serif tracking-tight leading-tight", isMidnight ? "text-slate-100" : "text-slate-800")}
+                            className={cn("text-4xl sm:text-5xl xl:text-7xl font-serif tracking-tight leading-[0.92]", isMidnight ? "text-slate-100" : "text-slate-800")}
                         >
                             {view === 'active' ? (
                                 <>The Manuscript<br /><span className={isMidnight ? "text-slate-500" : "text-slate-400"}>Archive</span></>
@@ -291,20 +291,21 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                                 <>The Recovery<br /><span className={isMidnight ? "text-red-300/80" : "text-red-400"}>Vault</span></>
                             )}
                         </motion.h1>
-                        <p className={cn("text-lg max-w-sm font-medium", isMidnight ? "text-slate-400" : "text-slate-500")}>
+                        <p className={cn("text-base sm:text-lg max-w-md font-medium", isMidnight ? "text-slate-400" : "text-slate-500")}>
                             {view === 'active' 
                                 ? "Your creative sanctuary. Select a project below or start a new journey."
                                 : "Recover deleted projects here. Items are kept for 60 days before permanent deletion."
                             }
                         </p>
                     </div>
-                    <div className="w-full md:w-auto flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center md:justify-end sm:gap-4">
-                        <div className="flex items-stretch gap-3 w-full md:w-auto sm:gap-4">
-                            <div className={cn("p-1.5 rounded-full flex gap-1 min-w-0 flex-1 md:flex-none", isMidnight ? "bg-slate-800/80 border border-slate-700/60" : "bg-slate-100")}>
+                    <div className="w-full lg:ml-auto lg:max-w-3xl">
+                        <div className="flex flex-col gap-3 sm:gap-4 lg:items-end">
+                            <div className="flex items-stretch gap-3 w-full lg:w-auto sm:gap-4">
+                                <div className={cn("p-1.5 rounded-full flex gap-1 min-w-0 flex-1 lg:flex-none", isMidnight ? "bg-slate-800/80 border border-slate-700/60" : "bg-slate-100")}>
                                 <button 
                                     onClick={() => setView('active')}
                                     className={cn(
-                                        "px-5 sm:px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all flex-1 md:flex-none",
+                                        "px-5 sm:px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all flex-1 lg:flex-none",
                                         view === 'active'
                                             ? (isMidnight ? "bg-slate-700/90 text-slate-100 shadow-sm" : "bg-white text-slate-800 shadow-sm")
                                             : (isMidnight ? "text-slate-400 hover:text-slate-200" : "text-slate-400 hover:text-slate-600")
@@ -315,7 +316,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                                 <button 
                                     onClick={() => setView('trash')}
                                     className={cn(
-                                        "px-5 sm:px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 flex-1 md:flex-none",
+                                        "px-5 sm:px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 flex-1 lg:flex-none",
                                         view === 'trash'
                                             ? (isMidnight ? "bg-slate-700/90 text-red-300 shadow-sm" : "bg-white text-red-500 shadow-sm")
                                             : (isMidnight ? "text-slate-400 hover:text-red-300" : "text-slate-400 hover:text-red-400")
@@ -341,7 +342,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                                 )}>
                                     <ArrowUpDown className="w-4 h-4" />
                                     <span className="sr-only sm:not-sr-only sm:inline">Sort</span>
-                                    <span className="hidden md:inline">: {sortFilter === 'custom' ? 'Custom' : sortFilter === 'recent' ? 'Recent' : 'A-Z'}</span>
+                                    <span className="hidden lg:inline">: {sortFilter === 'custom' ? 'Custom' : sortFilter === 'recent' ? 'Recent' : 'A-Z'}</span>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className={cn("w-56 rounded-3xl shadow-2xl p-2 backdrop-blur-xl", isMidnight ? "border-slate-700/60 bg-[#182239]/96" : "border-stone-100 bg-white/80")}>
                                     <DropdownMenuItem onClick={() => setSortFilter('custom')} className={cn("gap-3 text-xs font-bold uppercase tracking-widest py-4 rounded-2xl cursor-pointer transition-colors", isMidnight ? "hover:bg-white/6 text-slate-300" : "hover:bg-slate-50 text-slate-600")}>
@@ -355,17 +356,20 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
+                            </div>
+
+                            <div className="flex w-full flex-col gap-3 sm:gap-4 lg:w-auto lg:flex-row lg:flex-wrap lg:justify-end">
+                                <ImportBackupButton currentUserId={currentUserId} />
+
+                                <Link href="/new" className="w-full lg:w-auto">
+                                    <Button className="sanctuary-btn-primary h-14 w-full lg:w-auto justify-center px-5 sm:px-8 rounded-full text-sm sm:text-base font-semibold gap-2 sm:gap-3 shadow-xl hover:shadow-primary/20">
+                                        <Plus className="w-5 h-5" />
+                                        <span className="sm:hidden">New Project</span>
+                                        <span className="hidden sm:inline">Start New Project</span>
+                                    </Button>
+                                </Link>
+                            </div>
                         </div>
-
-                        <ImportBackupButton currentUserId={currentUserId} />
-
-                        <Link href="/new" className="w-full md:w-auto">
-                            <Button className="sanctuary-btn-primary h-14 w-full md:w-auto justify-center px-5 sm:px-8 rounded-full text-sm sm:text-base font-semibold gap-2 sm:gap-3 shadow-xl hover:shadow-primary/20">
-                                <Plus className="w-5 h-5" />
-                                <span className="sm:hidden">New Project</span>
-                                <span className="hidden sm:inline">Start New Project</span>
-                            </Button>
-                        </Link>
                     </div>
                 </div>
 

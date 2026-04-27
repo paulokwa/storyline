@@ -2118,7 +2118,7 @@ export default function AiHelperPanel({
                 data-tour="ai-context-strip"
                 className="ai-helper-context shrink-0 overflow-hidden border-b border-[#e2ddd3] bg-[rgba(250,248,243,0.92)] md:hidden"
             >
-                <div className="px-4 py-1.5 space-y-2">
+                <div className="px-4 py-1.5">
                     <div className="flex items-center gap-3">
                         <button
                             type="button"
@@ -2137,32 +2137,34 @@ export default function AiHelperPanel({
                             {contextManagerOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                         </button>
 
-                        {selectedNodes.length > 0 && (
-                            <div className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-indigo-200/70 bg-indigo-50/90 px-2.5 py-1 text-[10px] font-medium text-indigo-700 shadow-sm">
-                                <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
-                                <span className="truncate">{storySelectionLabel}</span>
+                        <div className="min-w-0 flex-1 overflow-x-auto no-scrollbar">
+                            <div className="flex min-w-max items-center gap-2 pr-1">
+                                {selectedNodes.length > 0 && (
+                                    <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-indigo-200/70 bg-indigo-50/90 px-2.5 py-1 text-[10px] font-medium text-indigo-700 shadow-sm">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
+                                        <span className="truncate">{storySelectionLabel}</span>
+                                    </div>
+                                )}
+
+                                {contextSummaryItems.map((item) => {
+                                    const Icon = item.icon
+                                    return (
+                                        <div
+                                            key={item.key}
+                                            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200/70 bg-white/85 px-2.5 py-1 text-[10px] font-medium text-slate-600 shadow-sm"
+                                        >
+                                            <Icon className={cn("h-3 w-3", item.iconClassName)} />
+                                            <span>{item.title}</span>
+                                            <span className="text-slate-400">{item.count}</span>
+                                        </div>
+                                    )
+                                })}
+
+                                {contextSummaryItems.length === 0 && selectedNodes.length === 0 && (
+                                    <div className="text-[10px] italic text-slate-300 shrink-0">No specific items linked</div>
+                                )}
                             </div>
-                        )}
-                    </div>
-
-                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-                        {contextSummaryItems.map((item) => {
-                            const Icon = item.icon
-                            return (
-                                <div
-                                    key={item.key}
-                                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200/70 bg-white/85 px-2.5 py-1 text-[10px] font-medium text-slate-600 shadow-sm"
-                                >
-                                    <Icon className={cn("h-3 w-3", item.iconClassName)} />
-                                    <span>{item.title}</span>
-                                    <span className="text-slate-400">{item.count}</span>
-                                </div>
-                            )
-                        })}
-
-                        {contextSummaryItems.length === 0 && selectedNodes.length === 0 && (
-                            <div className="text-[10px] italic text-slate-300 shrink-0">No specific items linked</div>
-                        )}
+                        </div>
                     </div>
                 </div>
                 {contextManagerOpen && (

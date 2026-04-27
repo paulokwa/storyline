@@ -92,7 +92,6 @@ type ProjectMemberSummary = {
 
 const TABS = [
     { slug: 'story', label: 'Story', icon: BookOpen },
-    { slug: 'help', label: 'Help', icon: HelpCircle },
     { slug: 'ai', label: 'AI Partner', icon: Sparkles },
     { slug: 'archive', label: 'AI Memory', icon: Bookmark },
     { slug: 'characters', label: 'Characters', icon: Users },

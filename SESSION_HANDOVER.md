@@ -5,6 +5,37 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-04-27 - Removed in-project Help tab from visible nav
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Adjusted the library header layout so tablets keep a stacked, less crowded composition before switching to desktop layout.
+- Reworked the AI Partner mobile context strip so the fixed `Context` control and horizontally scrollable linked-item chips share one row.
+- Removed the visible `Help` tab from the in-project tab bar.
+- Kept the separate help icon button and internal help routes/pages intact.
+- Verified the change with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+The library and AI Partner have narrower-screen layout improvements in place, and project help is still reachable from the dedicated help icon without taking up a full tab in the main project navigation.
+
+### Next recommended step
+
+Do a quick browser check:
+- confirm the library header no longer breaks awkwardly on tablet widths
+- confirm the AI Partner mobile context row scrolls cleanly without wrapping
+- confirm the Help tab no longer appears in the tab row
+- confirm the help icon still opens `/project/[id]/help`
+
+### Risks or warnings
+
+- Focused eslint on `components/project/ProjectShell.tsx` still reports pre-existing lint issues unrelated to this nav cleanup.
+
+---
 ## 2026-04-27 - Help Center back path and dismissible library reminder
 
 ### Current branch
