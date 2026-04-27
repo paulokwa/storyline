@@ -5,6 +5,39 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-04-27 - Library-accessible Help Center for cloud sync guidance
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Reused the existing Help Center pattern instead of creating a disconnected cloud-sync explainer page.
+- Added a library-accessible `/help` route inside the authenticated app shell.
+- Added a new cloud sync help topic with plain-language copy covering local-only projects, cross-device access, and how to enable cloud sync.
+- Routed library `Learn about Cloud Sync` links to the Help Center with the cloud-sync query prefilled.
+- Added a `Help Center` entry to the main app-nav dropdown.
+
+### Current status
+
+The library now sends users to actual cloud-sync guidance instead of account settings. The same Help Center pattern is available from both the library and project space.
+
+### Next recommended step
+
+Run a browser smoke test:
+- click `Learn about Cloud Sync` from the empty library state
+- click it from the import backup guidance
+- confirm `/help?q=cloud sync` opens with the cloud-sync topic visible
+- confirm the nav dropdown `Help Center` link works
+- confirm project help still behaves normally inside `/project/[id]/help`
+
+### Risks or warnings
+
+- `npx tsc --noEmit --pretty false` passed.
+- Focused eslint still reports pre-existing warnings/errors in older files like `ProjectGrid.tsx`; this task did not add a new help-flow lint failure.
+
+---
 ## 2026-04-27 - Centralized AI route rate limiting
 
 ### Current branch

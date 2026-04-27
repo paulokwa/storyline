@@ -250,7 +250,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                     </Link>
                     <LocalTransferGuidance
                         className="w-full text-left"
-                        cloudSyncHref="/settings"
+                        cloudSyncHref="/help?q=cloud%20sync"
                     />
                     <div className="w-full">
                         <ImportBackupButton currentUserId={currentUserId} className="w-full md:w-auto" showTransferGuidance={false} />

@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { isAdminEmail } from '@/lib/admin'
 import { 
     PenLine, LogOut, Settings as SettingsIcon, 
-    Download, Users, Settings2, BarChart3, Mail, Shield, ArchiveRestore
+    Download, Users, Settings2, BarChart3, Mail, Shield, ArchiveRestore, HelpCircle
 } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import {
@@ -206,6 +206,16 @@ export default function AppNav({ user }: { user: User }) {
                                     <DropdownMenuSeparator className={`my-1.5 ${isMidnight ? 'bg-slate-700/60' : 'bg-slate-100'}`} />
                                 </>
                             )}
+
+                            <DropdownMenuItem 
+                                onClick={() => router.push('/help')}
+                                className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
+                                    isMidnight ? 'text-slate-300 focus:text-[#dbe5ff] focus:bg-white/8' : 'text-slate-600 focus:text-[#546354] focus:bg-[#546354]/5'
+                                }`}
+                            >
+                                <HelpCircle className="w-4 h-4" />
+                                <span className="font-semibold text-sm">Help Center</span>
+                            </DropdownMenuItem>
 
                             <DropdownMenuItem 
                                 onClick={() => router.push('/settings')}

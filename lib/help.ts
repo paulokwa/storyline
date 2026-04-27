@@ -10,6 +10,20 @@ export type HelpTopic = {
 
 export const HELP_TOPICS: HelpTopic[] = [
   {
+    id: 'cloud-sync',
+    title: 'How does Cloud Sync work?',
+    summary: 'Understand what cloud sync is, when to use it, and how to turn it on for one project.',
+    answer:
+      'Cloud Sync makes one specific project available on your other devices and unlocks sharing features for that project.\n\nHere is the simple version:\n- A local project lives only on the device where you created it.\n- Turning on Cloud Sync uploads that project so you can open it elsewhere with the same account.\n- This does not happen automatically for every project. You choose it per project.\n\nHow to turn it on:\n1. Open the project you want to use on other devices.\n2. Open Project Settings.\n3. Choose Enable Cloud & Collaboration.\n4. Confirm the upload.\n\nWhat happens next:\n- Your project is copied to the cloud for cross-device access.\n- Your local version stays behind as a backup.\n- Collaboration tools like sharing and viewer feedback become available for that cloud-synced project.\n\nIf you do not want cloud sync:\nUse Export Backup on one device, then Import Backup on the other. That keeps the project local-only while still letting you move it manually.',
+    keywords: ['cloud sync', 'sync', 'devices', 'another device', 'backup', 'local project', 'collaboration', 'enable cloud', 'upload to cloud'],
+    relatedRoutes: [],
+    sampleQuestions: [
+      'How do I enable cloud sync?',
+      'Why is my project only on this device?',
+      'What is the difference between local and cloud sync?'
+    ]
+  },
+  {
     id: 'getting-started',
     title: 'Getting started with Storyline',
     summary: 'Quick overview of the main project tabs and how to begin your story.',

@@ -180,6 +180,7 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 |---|---|---|---|---|
 | Screenplay visual references panel | Needs retest | - | - | Verify labels, attach/remove flow, refresh persistence. |
 | Book/prose inline illustration regression | Needs retest | - | - | Confirm Insert Illustration and Gallery behavior remain unchanged. |
+| Library cloud sync help flow | Needs retest | - | - | Verify library guidance opens `/help` with clear cloud sync instructions and nav Help Center remains reachable. |
 | Tablet portrait layout | Not tested | - | - | Confirm important views do not cut off. |
 | Mobile/narrow screen layout | Not tested | - | - | Confirm core flows remain usable. |
 | Desktop layout | Not tested | - | - | Confirm normal working layout. |

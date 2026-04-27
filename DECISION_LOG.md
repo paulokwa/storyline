@@ -6,6 +6,24 @@ Keep entries concise. Do not rewrite old decisions unless explicitly instructed.
 
 ---
 
+## 2026-04-27 - Reuse the Help Center for cloud sync guidance instead of a separate explainer page
+
+Decision:
+Expose cloud-sync guidance through the existing Help Center and make that Help Center reachable from the library and main app nav, instead of building a disconnected standalone explainer page.
+
+Reason:
+Users need cloud-sync guidance before opening a project, but duplicating help into a one-off page would fragment navigation and copy. Reusing the Help Center keeps answers searchable, consistent, and easier to maintain.
+
+Impact:
+- The library can send users to `/help?q=cloud sync`.
+- The same help system now serves both project-scoped and library-scoped entry points.
+- Cloud sync guidance is written in user-facing language and no longer depends on the user discovering the project settings modal first.
+
+Status:
+Approved.
+
+---
+
 ## 2026-04-27 - Centralize AI throttling via existing usage-event infrastructure first
 
 Decision:

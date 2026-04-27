@@ -18,8 +18,8 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Run a broader pre-launch regression pass across core project flow, import/export, local/cloud behavior, AI availability states, collaboration, tablet/mobile layout, and onboarding tours.
 - Audit app typography and contrast, especially grey text that may cause eye strain.
 - Audit local/cloud feature boundaries, wording, and mode-specific UI behavior.
-- Product-manager task: fix the library-page “Learn about Cloud Sync” flow. Current card correctly explains that local projects stay on the device and can be moved via backup/import or cloud sync, but the button goes to account settings, which does not explain project-specific cloud enabling. Decide whether to create a dedicated Cloud Sync explainer/help page or update settings/account copy, then route the button to useful guidance with clear per-project enable instructions.
 - Verify centralized AI rate limiting across helper, scene analyzer, and import detect flows.
+- Browser-check the new library Help Center and cloud sync guidance flow.
 
 ## Next
 
@@ -88,6 +88,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Clarified prose scene gallery wording while preserving screenplay visual reference labels.
 - Removed the empty collaborator avatar pill from solo projects while preserving shared-project collaborator avatars.
 - Replaced per-instance AI throttling with a shared `ai_usage_events`-backed rate limiter for helper, scene analyzer, and AI import detect routes.
+- Reused the Help Center for cloud sync guidance and made it accessible from the library and app nav.
 - Added root-level continuity files.
 - Added session start prompt.
 - Added session end prompt.

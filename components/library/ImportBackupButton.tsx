@@ -217,7 +217,7 @@ export default function ImportBackupButton({
                 <LocalTransferGuidance
                     compact
                     className="w-full md:max-w-xl"
-                    cloudSyncHref="/settings"
+                    cloudSyncHref="/help?q=cloud%20sync"
                 />
             )}
 
