@@ -210,6 +210,7 @@ Newest confirmations go at the top.
 
 | 2026-04-26 | User | Solo project collaborator header empty state | Passed | User confirmed the empty collaborator pill/blip no longer appears on solo projects. |
 | 2026-04-26 | User | Prose scene gallery wording | Passed | User confirmed the wording cleanup is resolved. |
+| 2026-04-27 | AI agent | TypeScript compile after AI context preview footer move | Passed | `npx tsc --noEmit --pretty false` passed after moving the AI context inspector behind an icon-only footer control and floating panel. |
 | 2026-04-27 | AI agent | TypeScript compile after Help tab removal | Passed | `npx tsc --noEmit --pretty false` passed after removing the visible Help tab from `ProjectShell` while keeping the help icon and route intact. |
 | 2026-04-27 | AI agent | TypeScript compile after centralized AI rate limiting | Passed | `npx tsc --noEmit --pretty false` passed after wiring the shared limiter into the three AI endpoints. |
 | 2026-04-26 | AI agent | TypeScript compile | Passed | `npx tsc --noEmit` passed after session changes. |

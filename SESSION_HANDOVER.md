@@ -5,6 +5,35 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-04-27 - AI context preview hidden behind footer inspector
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Removed the always-visible `What the AI is noticing` bar from the AI Partner footer area.
+- Replaced it with an icon-only inspector control beside the footer note so it no longer reserves response space on mobile.
+- Kept the developer-facing context preview available as a floating panel with a clear close button.
+- Verified the change with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+The AI context/debug preview is still available when needed, but it now stays out of the way unless the user intentionally opens it.
+
+### Next recommended step
+
+Do a quick browser check in AI Partner:
+- confirm the footer icon feels discoverable without being noisy
+- confirm the floating context panel opens and closes cleanly on mobile
+- confirm the response area gets more vertical room when the inspector is closed
+
+### Risks or warnings
+
+- Focused eslint on `components/project/story/AiHelperPanel.tsx` still reports the large pre-existing lint backlog in that file.
+
+---
 ## 2026-04-27 - Removed in-project Help tab from visible nav
 
 ### Current branch

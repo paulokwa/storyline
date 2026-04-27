@@ -2546,25 +2546,29 @@ export default function AiHelperPanel({
                 )}
             </div>
             {/* Input Area */}
-            <div className="z-10 border-t border-[#ddd8ce] bg-[linear-gradient(180deg,rgba(245,244,239,0.9)_0%,rgba(251,249,245,0.96)_100%)]">
-                {/* Context Preview */}
-                <div className="border-b border-white/70">
-                    <button
-                        type="button"
-                        onClick={() => setPreviewOpen(!previewOpen)}
-                        className="flex w-full items-center justify-between px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400 transition-colors hover:bg-white/60 hover:text-slate-600 md:py-2"
-                    >
-                        <span>What the AI is noticing</span>
-                        {previewOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
-                    </button>
-                    
-                    {previewOpen && (
-                        <div className="max-h-80 overflow-y-auto border-t border-white/70 bg-[rgba(255,255,255,0.5)] px-4 py-3 text-[11px] font-mono whitespace-pre-wrap text-slate-600 space-y-4 overscroll-contain touch-auto custom-scrollbar md:max-h-64">
+            <div className="relative z-10 border-t border-[#ddd8ce] bg-[linear-gradient(180deg,rgba(245,244,239,0.9)_0%,rgba(251,249,245,0.96)_100%)]">
+                {previewOpen && (
+                    <div className="absolute inset-x-4 bottom-full z-20 mb-3 rounded-[1.6rem] border border-[#ddd8ce] bg-[rgba(251,249,245,0.98)] shadow-[0_20px_60px_rgba(15,23,42,0.16)] backdrop-blur md:left-4 md:right-4">
+                        <div className="flex items-center justify-between border-b border-[#ece6d9] px-4 py-3">
+                            <div>
+                                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">AI Context Preview</p>
+                                <p className="mt-1 text-xs text-slate-500">A developer-style view of what the AI can currently use.</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setPreviewOpen(false)}
+                                className="rounded-full border border-slate-200 bg-white p-2 text-slate-400 transition-colors hover:text-slate-700"
+                                aria-label="Close AI context preview"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+                        <div className="max-h-80 overflow-y-auto px-4 py-3 text-[11px] font-mono whitespace-pre-wrap text-slate-600 space-y-4 overscroll-contain touch-auto custom-scrollbar md:max-h-64">
                             <div>
                                 <div className="font-bold text-slate-400 mb-1">{label.toUpperCase()}:</div>
                                 <div className="italic bg-white p-2 border border-slate-100 rounded-lg">{sceneTextRef.current.slice(-1000) || '(empty)'}</div>
                             </div>
-                            
+
                             {linkedCharacters.length > 0 && (
                                 <div>
                                     <div className="font-bold text-slate-400 mb-1">CHARACTERS:</div>
@@ -2654,7 +2658,7 @@ export default function AiHelperPanel({
                                 ]
                                 const ties = projectRelationships.filter(r => relevantIds.includes(r.source_id) && relevantIds.includes(r.target_id)).slice(0, 5)
                                 if (ties.length === 0) return null
-                                
+
                                 return (
                                     <div className="animate-in fade-in slide-in-from-top-1 duration-500">
                                         <div className="font-bold text-indigo-400 mb-1">WORLD TIES ({label} Relevant):</div>
@@ -2664,7 +2668,7 @@ export default function AiHelperPanel({
                                                 const target = [...linkedCharacters, ...linkedLocations, ...linkedObjects].find(e => e.id === t.target_id)
                                                 return (
                                                     <li key={t.id}>
-                                                        <span className="font-bold not-italic">{source?.name || 'Unknown'}</span> 
+                                                        <span className="font-bold not-italic">{source?.name || 'Unknown'}</span>
                                                         {t.is_symmetrical ? ' and ' : ` is ${t.relation_label} to `}
                                                         <span className="font-bold not-italic">{target?.name || 'Unknown'}</span>
                                                         {t.is_symmetrical && ` are ${t.relation_label}`}
@@ -2681,8 +2685,8 @@ export default function AiHelperPanel({
                                     <div className="font-bold text-slate-400 mb-1 flex items-center justify-between">
                                         <span>STORY CONTEXT ({storySelectionContext.length} scenes):</span>
                                         {onClearSelection && (
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); onClearSelection() }} 
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onClearSelection() }}
                                                 className="text-indigo-500 hover:text-indigo-600 transition-colors"
                                             >
                                                 Clear
@@ -2705,8 +2709,8 @@ export default function AiHelperPanel({
                                 </div>
                             )}
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
                 <div className="px-4 pt-3 pb-3 md:pt-4 md:pb-2">
                     <form onSubmit={handleSubmit} className="space-y-3" suppressHydrationWarning>
                         {isVirtualRootSelected && (
@@ -2714,7 +2718,7 @@ export default function AiHelperPanel({
                                 <div className="flex items-start gap-2 text-[10px] leading-snug">
                                     <Sparkles className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                                     <p>
-                                        You've selected the <strong>Entire Project</strong>. 
+                                        You&apos;ve selected the <strong>Entire Project</strong>. 
                                         {projectContextMode === 'default' && " To keep responses fast, I've loaded the first 10 scenes."}
                                         {projectContextMode === 'expanded' && " AI is using an expanded context (up to 50 scenes)."}
                                         {projectContextMode === 'full' && " AI is using the entire project context."}
@@ -2821,8 +2825,30 @@ export default function AiHelperPanel({
                                 )}
                             </button>
                         </div>
-                        <div className="mt-2 text-center text-[10px] text-slate-400">
-                            AI only receives the text you send when you use an AI feature. Your project storage mode does not change.
+                        <div className="mt-2 flex items-center justify-between gap-3">
+                            <div className="text-[10px] text-slate-400">
+                                AI only receives the text you send when you use an AI feature. Your project storage mode does not change.
+                            </div>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        type="button"
+                                        onClick={() => setPreviewOpen(!previewOpen)}
+                                        className={cn(
+                                            "shrink-0 rounded-full border p-2 transition-all",
+                                            previewOpen
+                                                ? "border-indigo-200 bg-indigo-50 text-indigo-600 shadow-sm"
+                                                : "border-slate-200 bg-white/85 text-slate-400 hover:border-slate-300 hover:text-slate-600"
+                                        )}
+                                        aria-label={previewOpen ? 'Hide AI context preview' : 'Show AI context preview'}
+                                    >
+                                        {previewOpen ? <ChevronDown className="h-4 w-4" /> : <Info className="h-4 w-4" />}
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                    {previewOpen ? 'Hide AI context preview' : 'Inspect what the AI can currently use'}
+                                </TooltipContent>
+                            </Tooltip>
                         </div>
 
                     </form>
