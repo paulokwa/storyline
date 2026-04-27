@@ -6,6 +6,7 @@ import {
     estimateTokensFromChars,
     estimateTrialReserveMicros,
 } from '@/lib/ai/trial'
+import { enforceAiRateLimit } from '@/lib/ai/rate-limit'
 import { logUsageEvent } from '@/lib/ai/trial-server'
 import { getRequestContext } from '@/lib/server/request-context'
 
@@ -14,14 +15,21 @@ export const maxDuration = 30
 const MIN_CHARS = 50
 const MAX_CHARS = 12_000
 const RATE_LIMIT_MS = 10_000 // 10 seconds between requests per user
+const lastRequestAt = {
+    get: (...args: [string]) => {
+        void args
+        return Number.NEGATIVE_INFINITY
+    },
+    set: (...args: [string, number]) => {
+        void args
+    },
+}
 
 // ---------------------------------------------------------------------------
 // In-memory rate limit store
 // Key: user.id → timestamp of last accepted request
 // Note: resets on serverless cold start — acceptable for this use case.
 // ---------------------------------------------------------------------------
-const lastRequestAt = new Map<string, number>()
-
 const SYSTEM_PROMPT = `You are a professional fiction editor and writing coach.
 Analyze the scene excerpt provided inside the <scene> tags and return ONLY a valid JSON object with exactly these fields:
 - "summary": A concise 2-3 sentence description of what happens in the scene.
@@ -134,6 +142,31 @@ export async function POST(req: Request) {
             })
         }
 
+        const rateLimit = await enforceAiRateLimit({
+            userId: user.id,
+            requestKey,
+            endpoint: 'analyze_scene',
+            billingMode: runtime.billingMode,
+            provider: ai_provider,
+            model: runtime.model,
+            inputChars: trimmed.length,
+            normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
+            ipAddress: requestContext.ipAddress,
+            deviceFingerprint: requestContext.deviceFingerprint,
+            userAgent: requestContext.userAgent,
+            metadata,
+            minIntervalMs: RATE_LIMIT_MS,
+        })
+
+        if (!rateLimit.ok) {
+            return new Response('RATE_LIMITED', {
+                status: 429,
+                headers: {
+                    'Retry-After': String(rateLimit.retryAfterSeconds),
+                },
+            })
+        }
+
         const reserveResult = await supabase.rpc('reserve_ai_trial_usage', {
             p_user_id: user.id,
             p_request_key: requestKey,
@@ -164,6 +197,32 @@ export async function POST(req: Request) {
                 reserveData?.status === 'exhausted' ? 'TRIAL_EXHAUSTED' : (reserveData?.reason || 'TRIAL_UNAVAILABLE'),
                 { status: reserveData?.status === 'exhausted' ? 402 : 403 }
             )
+        }
+    } else {
+        const rateLimit = await enforceAiRateLimit({
+            userId: user.id,
+            requestKey,
+            endpoint: 'analyze_scene',
+            billingMode: runtime.billingMode,
+            provider: ai_provider,
+            model: runtime.model,
+            inputChars: trimmed.length,
+            normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
+            ipAddress: requestContext.ipAddress,
+            deviceFingerprint: requestContext.deviceFingerprint,
+            userAgent: requestContext.userAgent,
+            metadata,
+            minIntervalMs: RATE_LIMIT_MS,
+            recordAcceptedRequest: true,
+        })
+
+        if (!rateLimit.ok) {
+            return new Response('RATE_LIMITED', {
+                status: 429,
+                headers: {
+                    'Retry-After': String(rateLimit.retryAfterSeconds),
+                },
+            })
         }
     }
 

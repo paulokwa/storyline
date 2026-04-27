@@ -6,6 +6,24 @@ Keep entries concise. Do not rewrite old decisions unless explicitly instructed.
 
 ---
 
+## 2026-04-27 - Centralize AI throttling via existing usage-event infrastructure first
+
+Decision:
+Implement the first pass of centralized AI route rate limiting by reusing `ai_usage_events` and the existing admin Supabase client, instead of adding new Redis/Upstash infrastructure immediately.
+
+Reason:
+The repository already records AI usage centrally. Reusing that path allows a minimal, low-risk improvement that works across instances without introducing new secrets, dependencies, or schema changes.
+
+Impact:
+- `/api/ai`, `/api/ai/analyze-scene`, and `/api/import/ai-detect` now throttle against shared database-backed request history.
+- Blocked requests are recorded centrally with `rate_limited` metadata.
+- The solution is improved but not fully atomic; a stricter infra-backed limiter can still replace it later if needed.
+
+Status:
+Approved.
+
+---
+
 ## 2026-04-26 - Screenplay visuals stay as scene references, not manuscript images
 
 Decision:

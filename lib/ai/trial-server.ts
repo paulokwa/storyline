@@ -4,7 +4,7 @@ import type { BillingMode } from '@/lib/ai/modes'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Json } from '@/lib/supabase/types'
 
-type TrialEndpoint = 'ai_helper' | 'analyze_scene' | 'import_ai_detect'
+export type TrialEndpoint = 'ai_helper' | 'analyze_scene' | 'import_ai_detect'
 
 export function getAppManagedOpenAiApiKey() {
     return process.env.APP_MANAGED_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY ?? null

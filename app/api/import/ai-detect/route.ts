@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { DEFAULT_OPENAI_MODEL, extractOpenAiOutputText } from '@/lib/ai/providers'
+import { enforceAiRateLimit } from '@/lib/ai/rate-limit'
 import { getAiRuntimeState } from '@/lib/ai/runtime'
 import { getRequestContext } from '@/lib/server/request-context'
 import { logUsageEvent } from '@/lib/ai/trial-server'
@@ -10,6 +11,7 @@ const MAX_CHARS = 1000000 // 1M chars ~ 180k words
 const MAX_CHUNKS = 15
 const CHUNK_SIZE = 150000 // ~30k words per AI pass
 const OVERLAP = 15000     // 10% overlap
+const RATE_LIMIT_MS = 30_000
 
 export async function POST(req: NextRequest) {
     try {
@@ -64,6 +66,32 @@ export async function POST(req: NextRequest) {
 
         if (runtime.provider !== 'gemini' && runtime.provider !== 'openai') {
             return NextResponse.json({ error: 'AI import detection currently requires Gemini or OpenAI as your active cloud provider.' }, { status: 400 })
+        }
+
+        const rateLimit = await enforceAiRateLimit({
+            userId: user.id,
+            requestKey,
+            endpoint: 'import_ai_detect',
+            billingMode: runtime.billingMode,
+            provider: runtime.provider,
+            model: runtime.model,
+            inputChars: text.length,
+            normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
+            ipAddress: requestContext.ipAddress,
+            deviceFingerprint: requestContext.deviceFingerprint,
+            userAgent: requestContext.userAgent,
+            metadata,
+            minIntervalMs: RATE_LIMIT_MS,
+            recordAcceptedRequest: true,
+        })
+
+        if (!rateLimit.ok) {
+            return NextResponse.json({ error: 'RATE_LIMITED' }, {
+                status: 429,
+                headers: {
+                    'Retry-After': String(rateLimit.retryAfterSeconds),
+                },
+            })
         }
 
         // Partitioning

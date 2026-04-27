@@ -19,12 +19,11 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Audit app typography and contrast, especially grey text that may cause eye strain.
 - Audit local/cloud feature boundaries, wording, and mode-specific UI behavior.
 - Product-manager task: fix the library-page “Learn about Cloud Sync” flow. Current card correctly explains that local projects stay on the device and can be moved via backup/import or cloud sync, but the button goes to account settings, which does not explain project-specific cloud enabling. Decide whether to create a dedicated Cloud Sync explainer/help page or update settings/account copy, then route the button to useful guidance with clear per-project enable instructions.
-- Choose the first high-priority technical debt item to tackle.
+- Verify centralized AI rate limiting across helper, scene analyzer, and import detect flows.
 
 ## Next
 
 - Atomic project scaffolding via Supabase RPC.
-- Centralized rate limiting for AI routes.
 - Robust retry and initialization patterns for editor save and project initialization flows.
 - AI trial reconciliation and RPC failure handling.
 - AI abuse-controls hardening.
@@ -88,6 +87,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Fixed story-context selection so tree visuals, explicit AI selection, and AI-ready chip roll-up behave consistently.
 - Clarified prose scene gallery wording while preserving screenplay visual reference labels.
 - Removed the empty collaborator avatar pill from solo projects while preserving shared-project collaborator avatars.
+- Replaced per-instance AI throttling with a shared `ai_usage_events`-backed rate limiter for helper, scene analyzer, and AI import detect routes.
 - Added root-level continuity files.
 - Added session start prompt.
 - Added session end prompt.

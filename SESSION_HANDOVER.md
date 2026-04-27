@@ -5,6 +5,38 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-04-27 - Centralized AI route rate limiting
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Chose the first high-priority technical debt item from the board: centralized AI route rate limiting.
+- Added a shared server-side limiter that reads and records request activity through `ai_usage_events` instead of relying on per-instance memory.
+- Wired the limiter into `/api/ai`, `/api/ai/analyze-scene`, and `/api/import/ai-detect`.
+- Preserved trial reservation flow by rate limiting trial requests before reservation but after trial status checks.
+- Verified the touched code with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+AI helper, scene analysis, and AI import detect now use a centralized Supabase-backed request history for throttling. This is a meaningful improvement over the old in-memory approach for distributed/serverless instances.
+
+### Next recommended step
+
+Run a real regression on rate limiting behavior:
+- trigger repeated helper requests and confirm `429` plus `Retry-After`
+- repeat for scene analyzer
+- repeat for AI import detect
+- verify trial-exhausted users still get trial-specific messaging rather than `RATE_LIMITED`
+
+### Risks or warnings
+
+- The new limiter uses a read-then-write pattern against `ai_usage_events`, so it is centralized but not perfectly atomic under near-simultaneous races.
+- `npm run lint` still has pre-existing `no-explicit-any` failures in these older route files; the focused change did not resolve that backlog.
+
+---
 ## 2026-04-26 - Scene gallery wording and empty collaborator pill cleanup
 
 ### Current branch

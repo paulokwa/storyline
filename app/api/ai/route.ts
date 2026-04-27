@@ -13,10 +13,12 @@ import {
     estimateTrialReserveMicros,
     getTrialStatusMessage,
 } from '@/lib/ai/trial'
+import { enforceAiRateLimit } from '@/lib/ai/rate-limit'
 import { logUsageEvent } from '@/lib/ai/trial-server'
 import { getRequestContext } from '@/lib/server/request-context'
 
 export const maxDuration = 30
+const RATE_LIMIT_MS = 4_000
 
 const SYSTEM_PROMPTS: Record<string, string> = {
     ideas: `You are a creative writing assistant helping a beginner writer. 
@@ -318,6 +320,31 @@ export async function POST(req: Request) {
             })
         }
 
+        const rateLimit = await enforceAiRateLimit({
+            userId: user.id,
+            requestKey,
+            endpoint: 'ai_helper',
+            billingMode: runtime.billingMode,
+            provider: providerName,
+            model: runtime.model,
+            inputChars: userMessage.length,
+            normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
+            ipAddress: requestContext.ipAddress,
+            deviceFingerprint: requestContext.deviceFingerprint,
+            userAgent: requestContext.userAgent,
+            metadata,
+            minIntervalMs: RATE_LIMIT_MS,
+        })
+
+        if (!rateLimit.ok) {
+            return new Response('RATE_LIMITED', {
+                status: 429,
+                headers: {
+                    'Retry-After': String(rateLimit.retryAfterSeconds),
+                },
+            })
+        }
+
         const reservedMicros = estimateTrialReserveMicros({
             endpoint: 'ai_helper',
             inputChars: userMessage.length,
@@ -350,6 +377,32 @@ export async function POST(req: Request) {
                 reserveData?.status === 'exhausted' ? 'TRIAL_EXHAUSTED' : (reserveData?.reason || 'TRIAL_UNAVAILABLE'),
                 { status: reserveData?.status === 'exhausted' ? 402 : 403 }
             )
+        }
+    } else {
+        const rateLimit = await enforceAiRateLimit({
+            userId: user.id,
+            requestKey,
+            endpoint: 'ai_helper',
+            billingMode: runtime.billingMode,
+            provider: providerName,
+            model: runtime.model,
+            inputChars: userMessage.length,
+            normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
+            ipAddress: requestContext.ipAddress,
+            deviceFingerprint: requestContext.deviceFingerprint,
+            userAgent: requestContext.userAgent,
+            metadata,
+            minIntervalMs: RATE_LIMIT_MS,
+            recordAcceptedRequest: true,
+        })
+
+        if (!rateLimit.ok) {
+            return new Response('RATE_LIMITED', {
+                status: 429,
+                headers: {
+                    'Retry-After': String(rateLimit.retryAfterSeconds),
+                },
+            })
         }
     }
 
