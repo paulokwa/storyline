@@ -298,31 +298,31 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                             }
                         </p>
                     </div>
-                    <div className="w-full lg:ml-auto lg:max-w-3xl">
-                        <div className="flex flex-col gap-3 sm:gap-4 lg:items-end">
-                            <div className="flex items-stretch gap-3 w-full lg:w-auto sm:gap-4">
-                                <div className={cn("p-1.5 rounded-full flex gap-1 min-w-0 flex-1 lg:flex-none", isMidnight ? "bg-slate-800/80 border border-slate-700/60" : "bg-slate-100")}>
-                                <button 
-                                    onClick={() => setView('active')}
-                                    className={cn(
-                                        "px-5 sm:px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all flex-1 lg:flex-none",
-                                        view === 'active'
-                                            ? (isMidnight ? "bg-slate-700/90 text-slate-100 shadow-sm" : "bg-white text-slate-800 shadow-sm")
-                                            : (isMidnight ? "text-slate-400 hover:text-slate-200" : "text-slate-400 hover:text-slate-600")
-                                    )}
-                                >
-                                    Active
-                                </button>
-                                <button 
-                                    onClick={() => setView('trash')}
-                                    className={cn(
-                                        "px-5 sm:px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 flex-1 lg:flex-none",
-                                        view === 'trash'
-                                            ? (isMidnight ? "bg-slate-700/90 text-red-300 shadow-sm" : "bg-white text-red-500 shadow-sm")
-                                            : (isMidnight ? "text-slate-400 hover:text-red-300" : "text-slate-400 hover:text-red-400")
-                                    )}
-                                >
-                                    Trash
+                    <div className="w-full lg:ml-auto lg:max-w-4xl">
+                        <div className="flex flex-col gap-6 lg:items-end">
+                            <div className="flex flex-wrap items-center justify-end gap-3 w-full lg:w-auto sm:gap-4">
+                                <div className={cn("p-1.5 rounded-full flex gap-1 min-w-0", isMidnight ? "bg-slate-800/80 border border-slate-700/60" : "bg-slate-100")}>
+                                    <button 
+                                        onClick={() => setView('active')}
+                                        className={cn(
+                                            "px-5 sm:px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all",
+                                            view === 'active'
+                                                ? (isMidnight ? "bg-slate-700/90 text-slate-100 shadow-sm" : "bg-white text-slate-800 shadow-sm")
+                                                : (isMidnight ? "text-slate-400 hover:text-slate-200" : "text-slate-400 hover:text-slate-600")
+                                        )}
+                                    >
+                                        Active
+                                    </button>
+                                    <button 
+                                        onClick={() => setView('trash')}
+                                        className={cn(
+                                            "px-5 sm:px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2",
+                                            view === 'trash'
+                                                ? (isMidnight ? "bg-slate-700/90 text-red-300 shadow-sm" : "bg-white text-red-500 shadow-sm")
+                                                : (isMidnight ? "text-slate-400 hover:text-red-300" : "text-slate-400 hover:text-red-400")
+                                        )}
+                                    >
+                                        Trash
                                     {deletedProjects.length > 0 && (
                                         <span className="w-5 h-5 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-[10px]">
                                             {deletedProjects.length}
@@ -358,14 +358,13 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                             </DropdownMenu>
                             </div>
 
-                            <div className="flex w-full flex-col gap-3 sm:gap-4 lg:w-auto lg:flex-row lg:flex-wrap lg:justify-end">
+                            <div className="flex w-full flex-col gap-3 sm:gap-4 lg:w-auto lg:flex-row lg:items-center">
                                 <ImportBackupButton currentUserId={currentUserId} />
 
                                 <Link href="/new" className="w-full lg:w-auto">
-                                    <Button className="sanctuary-btn-primary h-14 w-full lg:w-auto justify-center px-5 sm:px-8 rounded-full text-sm sm:text-base font-semibold gap-2 sm:gap-3 shadow-xl hover:shadow-primary/20">
+                                    <Button className="sanctuary-btn-primary h-14 w-full lg:w-auto justify-center px-6 sm:px-10 rounded-full text-sm sm:text-base font-bold gap-2 sm:gap-3 shadow-xl hover:shadow-primary/20 active:scale-[0.98] transition-all">
                                         <Plus className="w-5 h-5" />
-                                        <span className="sm:hidden">New Project</span>
-                                        <span className="hidden sm:inline">Start New Project</span>
+                                        <span>Start New Project</span>
                                     </Button>
                                 </Link>
                             </div>
@@ -744,10 +743,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                                                     "transition-all duration-200 p-2 rounded-lg",
                                                     hasCover 
                                                         ? "text-white/60 hover:text-white hover:bg-white/10" 
-                                                        : cn(
-                                                            "text-slate-400 hover:text-primary hover:bg-primary/5",
-                                                            !isTouch && "opacity-0 group-hover:opacity-100"
-                                                        )
+                                                        : "text-slate-400 hover:text-primary hover:bg-primary/5"
                                                 )}
                                                 title="Edit project details"
                                             >
@@ -759,10 +755,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                                                     "transition-all duration-200 p-2 rounded-lg",
                                                     hasCover 
                                                         ? "text-white/60 hover:text-white hover:bg-white/10" 
-                                                        : cn(
-                                                            "text-slate-400 hover:text-primary hover:bg-primary/5",
-                                                            !isTouch && "opacity-0 group-hover:opacity-100"
-                                                        )
+                                                        : "text-slate-400 hover:text-primary hover:bg-primary/5"
                                                 )}
                                                 title="Change Cover"
                                             >
@@ -776,10 +769,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                                             "transition-all duration-200 p-2 rounded-lg",
                                             hasCover 
                                                 ? "text-white/60 hover:text-red-400 hover:bg-red-500/10" 
-                                                : cn(
-                                                    "text-slate-400 hover:text-red-500 hover:bg-red-50",
-                                                    !isTouch && "opacity-0 group-hover:opacity-100"
-                                                )
+                                                : "text-slate-400 hover:text-red-500 hover:bg-red-50"
                                         )}
                                     >
                                         <Trash2 className="w-5 h-5" />

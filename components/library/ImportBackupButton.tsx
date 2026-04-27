@@ -219,16 +219,16 @@ export default function ImportBackupButton({
                 disabled={isLoading}
                 id="library-import-backup-btn"
                 className={cn(
-                    'h-14 w-full md:w-auto flex items-center justify-center gap-2 sm:gap-3 px-5 sm:px-8',
-                    'rounded-full text-sm sm:text-base font-semibold transition-all',
-                    'border border-slate-200 bg-white text-slate-600',
-                    'hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800',
-                    'disabled:opacity-60 disabled:cursor-not-allowed',
+                    'h-14 w-full lg:w-auto flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-10',
+                    'rounded-full text-sm sm:text-base font-bold transition-all duration-300',
+                    'border-2 border-slate-200/60 bg-white/50 text-slate-600 backdrop-blur-sm',
+                    'hover:bg-white hover:border-slate-300 hover:text-slate-900 hover:shadow-lg hover:shadow-slate-200/40',
+                    'active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed',
                     className
                 )}
                 aria-label="Import a .storyline backup file"
             >
-                <Upload className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Upload className="w-5 h-5 transition-transform group-hover:scale-110" />
                 <span className="sm:hidden">Import</span>
                 <span className="hidden sm:inline">
                     {isLoading

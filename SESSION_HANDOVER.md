@@ -450,3 +450,15 @@ Verify the alignment with a project that has a very short title and no descripti
 ### Risks or warnings
 
 - If a project title is extremely long, it will be truncated at 2 lines. This is a deliberate design constraint to maintain grid stability.
+
+---
+## 2026-04-27 - Permanent Desktop Action Buttons
+
+### What was completed
+
+- **Standardized Action Visibility**: Removed the 'hover-only' constraint for Edit, Palette, and Trash buttons on desktop for cards without cover art.
+- **UI Consistency**: Action buttons are now permanently visible on all cards regardless of whether they have a cover image, matching the user's preference for a stable, non-shifting interface.
+
+### Next recommended step
+
+Verify that the permanent icons don't clutter the view too much on smaller desktop screens (though the current spacing looks solid).

@@ -221,3 +221,38 @@ Impact:
 
 Status:
 Approved.
+
+---
+
+## 2026-04-27 - Unify library header primary actions
+
+Decision:
+Refactored the Library header to group 'Start New Project' and 'Import Backup' into a unified horizontal row on desktop and synchronized their dimensions/breakpoints.\n
+
+Reason:
+The previous layout had mismatched breakpoints and varying widths for the primary and secondary actions, leading to a 'jagged' or 'messy' appearance on mid-sized viewports. By standardizing on \lg:w-auto\ for both buttons and matching their horizontal padding (\px-10\ on desktop), the UI now feels more intentional and balanced. Refined the 'Import Backup' button to a premium secondary style (border-2 with backdrop-blur) to complement the primary filled button.\n
+
+Impact:
+- Symmetrical action buttons on desktop.
+- Consistent horizontal grouping of 'Filter' vs 'Action' rows.
+- Improved visual hierarchy between primary and secondary buttons.
+
+Status:
+Approved.
+
+---
+
+## 2026-04-27 - Permanent visibility for project action buttons on desktop
+
+Decision:
+Made project action buttons (Edit, Palette, Trash) permanently visible on desktop for all cards, removing the previous 'hover-only' behavior for cards without cover art.\n
+
+Reason:
+User requested consistent visibility across all cards on desktop. Previously, cards without cover art relied on a hover state (\group-hover:opacity-100\) which felt inconsistent compared to cards with cover art (where icons were always visible). Standardizing this improves discoverability and creates a more stable UI.\n
+
+Impact:
+- Action buttons are always visible on desktop viewports.
+- Improved UI consistency between 'Cover' and 'Non-Cover' cards.\n
+
+Status:
+Approved.
