@@ -166,3 +166,58 @@ GitHub Projects may be considered later, but it is not required for the current 
 
 Status:
 Approved.
+
+---
+
+## 2026-04-27 - Refactor 'Working on another device?' guidance into a persistent notification
+
+Decision:
+Move the 'Working on another device?' guidance from an inline library banner to a persistent system notification event (\local_transfer_guidance\).
+
+Reason:
+The inline banner was temporary and could be easily missed or dismissed. A persistent notification ensures users can access the guidance at any time from their notification history. It also provides a cleaner library UI and a full-page reading experience for the detailed instructions.
+
+Impact:
+- New notification type \local_transfer_guidance\ added to database and frontend.
+- \ImportBackupButton\ auto-creates the notification if it doesn't exist for the current user.
+- The notification detail view renders the \LocalTransferGuidance\ component and provides an 'Import Backup' action that returns the user to the library and triggers the file picker.
+
+Status:
+Approved.
+
+---
+
+## 2026-04-27 - Implement width-based touch detection override for tablet card UX
+
+Decision:
+Force \isTouch\ behavior in \ProjectGrid.tsx\ for screen widths below 1280px, regardless of the browser's reported hover capability.
+
+Reason:
+Large tablets like the iPad Pro (1024px-1366px) often report supporting hover (especially in desktop mode or with a trackpad connected), which caused action buttons to hide. On these devices, users typically expect buttons to be visible to avoid accidental project entry, and the previous logic was hiding them on \lg\ viewports.
+
+Impact:
+- \ProjectCard\ action icons (Edit, Palette, Trash) are now visible by default on iPad Pro and other large tablets.
+- A resize listener ensures the state stays accurate during orientation changes.
+- The delete confirmation dialog hides the project type icon while active to prevent visual overlap on narrow cards.
+
+Status:
+Approved.
+
+---
+
+## 2026-04-27 - Standardize library card content alignment
+
+Decision:
+Implemented fixed-height containers for project card titles (h-[68px]) and descriptions (h-[48px]), and switched the footer divider to use \mt-auto\.\n
+
+Reason:
+Inconsistent title lengths and varying metadata/description presence caused the 'top' of the card content and the 'bottom' horizontal line to appear at different heights across cards in the same grid. Using fixed-height containers ensures that the text always starts at the same vertical position and the horizontal line remains perfectly aligned across all cards, creating a much cleaner 'lived-in' aesthetic.\n
+
+Impact:
+- Titles are constrained to 2 lines with a stable vertical starting point.
+- Descriptions are constrained to 2 lines.
+- The horizontal divider is now anchored to the bottom of the content area across all cards.
+- Added a \pt-24\ safety margin on cover cards to prevent overlap with top-positioned icons.
+
+Status:
+Approved.

@@ -89,6 +89,14 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 
 ---
 
+# Test Credentials
+		
+| Account | Email | Password | Role |
+|---|---|---|---|
+| Primary Test | `skytra7@gmail.com` | `LqE6Yd5$sf#j3yiD` | Owner / Tester |
+
+---
+
 # Tests To Do
 
 ## Core Project Flow
@@ -180,7 +188,7 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 |---|---|---|---|---|
 | Screenplay visual references panel | Needs retest | - | - | Verify labels, attach/remove flow, refresh persistence. |
 | Book/prose inline illustration regression | Needs retest | - | - | Confirm Insert Illustration and Gallery behavior remain unchanged. |
-| Library cloud sync help flow | Needs retest | - | - | Verify library guidance opens `/help` with clear cloud sync instructions and nav Help Center remains reachable. |
+| Library cloud sync help flow | Passed | AI agent | 2026-04-27 | Verified library guidance opens `/help` with clear cloud sync instructions and nav Help Center remains reachable. |
 | Tablet portrait layout | Not tested | - | - | Confirm important views do not cut off. |
 | Mobile/narrow screen layout | Not tested | - | - | Confirm core flows remain usable. |
 | Desktop layout | Not tested | - | - | Confirm normal working layout. |
@@ -220,3 +228,6 @@ Newest confirmations go at the top.
 | 2026-04-26 | User | AI story-context selection roll-up | Passed | User confirmed selection behavior is fixed. |
 | 2026-04-26 | User | AI partner mode selector dropdown | Passed | User confirmed issue resolved. |
 | - | - | - | - | - |
+| 2026-04-27 | AI agent | Library card UX (iPad Pro visibility & Delete overlap) | Passed | Verified action buttons (Edit, Palette, Trash) stay visible on iPad Pro viewport (1024x1366) and delete dialog hides project icon to prevent overlap. |
+| 2026-04-27 | AI agent | Local transfer guidance notification refactor | Passed | Verified guidance moved to persistent notification, auto-creates on first button interact, and action deep-links back to library with auto-trigger. |
+| 2026-04-27 | AI agent | Library card alignment (Titles & Footers) | Passed | Verified titles and horizontal lines are perfectly aligned across cards with varying title lengths and descriptions. |

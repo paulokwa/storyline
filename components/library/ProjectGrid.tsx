@@ -265,7 +265,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                         />
                     )}
                     <div className="w-full">
-                        <ImportBackupButton currentUserId={currentUserId} className="w-full md:w-auto" showTransferGuidance={false} />
+                        <ImportBackupButton currentUserId={currentUserId} className="w-full md:w-auto" />
                     </div>
                 </div>
             </div>
@@ -394,7 +394,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                                 {(provided) => (
                                     <motion.div 
                                         layout
-                                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8"
                                         {...provided.droppableProps}
                                         ref={provided.innerRef}
                                     >
@@ -413,39 +413,43 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                                                                 <Sparkles className="w-7 h-7" />
                                                             </div>
                                                             <div className="relative z-30 flex items-center gap-2 pointer-events-auto">
-                                                                <Badge variant="default" className="bg-primary/10 text-primary border-none text-[9px] uppercase tracking-widest px-3 py-1 font-bold">
-                                                                    Incomplete Setup
-                                                                </Badge>
+                                                                {!confirmDeleteDraft && (
+                                                                    <Badge variant="default" className="bg-primary/10 text-primary border-none text-[9px] uppercase tracking-widest px-3 py-1 font-bold shrink-0">
+                                                                        Incomplete Setup
+                                                                    </Badge>
+                                                                )}
                                                                 {confirmDeleteDraft ? (
                                                                     <div
                                                                         onClick={e => e.preventDefault()}
-                                                                        className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200"
+                                                                        className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 animate-in fade-in slide-in-from-right-2 duration-200 bg-white/80 dark:bg-black/40 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-black/5 dark:border-white/10 shadow-sm"
                                                                     >
-                                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-red-400">
+                                                                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mr-0.5">
                                                                             Delete?
                                                                         </span>
-                                                                        <button
-                                                                            type="button"
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            className="h-7 px-2 text-[10px] text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
                                                                             onClick={e => {
                                                                                 e.preventDefault()
                                                                                 e.stopPropagation()
                                                                                 setConfirmDeleteDraft(false)
                                                                             }}
-                                                                            className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 transition-colors"
                                                                         >
                                                                             Cancel
-                                                                        </button>
-                                                                        <button
-                                                                            type="button"
+                                                                        </Button>
+                                                                        <Button
+                                                                            variant="destructive"
+                                                                            size="sm"
+                                                                            className="h-7 px-3 text-[10px] bg-red-500 hover:bg-red-600 text-white rounded-lg shadow-sm font-bold transition-all active:scale-95"
                                                                             onClick={e => {
                                                                                 e.preventDefault()
                                                                                 e.stopPropagation()
                                                                                 clearDraft()
                                                                             }}
-                                                                            className="px-3 py-1 text-[10px] font-bold bg-red-500 hover:bg-red-600 text-white rounded-full uppercase tracking-wider transition-colors shadow-lg"
                                                                         >
                                                                             Delete
-                                                                        </button>
+                                                                        </Button>
                                                                     </div>
                                                                 ) : (
                                                                     <button
@@ -558,9 +562,21 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
     const [isEditingCover, setIsEditingCover] = useState(false)
     const [isSettingsOpen, setIsSettingsOpen] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
+    const [isTouch, setIsTouch] = useState(false)
 
     useEffect(() => {
         setIsMounted(true)
+        const touchMediaQuery = window.matchMedia('(hover: none)')
+        const checkTouch = () => {
+            setIsTouch(touchMediaQuery.matches || window.innerWidth < 1280)
+        }
+        checkTouch()
+        touchMediaQuery.addEventListener('change', checkTouch)
+        window.addEventListener('resize', checkTouch)
+        return () => {
+            touchMediaQuery.removeEventListener('change', checkTouch)
+            window.removeEventListener('resize', checkTouch)
+        }
     }, [])
 
     const hasCover = !!project.cover_url
@@ -640,11 +656,12 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                 hasCover ? "p-8 justify-end" : ""
             )}>
                 <div className={cn(
-                    "mb-8 flex items-start justify-between gap-4 sm:gap-5",
+                    "mb-12 flex items-start justify-between gap-4 sm:gap-5 min-h-[44px]",
                     hasCover ? "absolute top-8 left-8 right-8" : ""
                 )}>
                     <div className={cn(
-                        "flex min-w-0 items-center sm:gap-4",
+                        "flex min-w-0 items-center sm:gap-4 transition-opacity duration-200",
+                        confirmDelete ? "opacity-0 pointer-events-none" : "opacity-100",
                         hasDragHandle ? "gap-2.5" : "gap-3"
                     )}>
                         {hasDragHandle && (
@@ -653,7 +670,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                                     {...dragHandleProps}
                                     className={cn(
                                         "pointer-events-auto rounded-xl p-2 transition-all cursor-grab active:cursor-grabbing sm:p-2.5",
-                                        hasCover ? "bg-white/10 text-white/40 hover:text-white" : "text-slate-300 hover:text-slate-500"
+                                        hasCover ? "bg-white/10 text-white/40 hover:text-white" : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
                                     )}
                                     aria-label="Reorder project"
                                 >
@@ -673,34 +690,47 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                     </div>
 
                     {project.role === 'owner' && (
-                        <div className="relative z-30 pointer-events-auto">
+                        <div className="relative z-30 pointer-events-auto h-11 flex items-center justify-end flex-1 min-w-0">
                             {confirmDelete ? (
-                                <div
-                                    onClick={e => e.preventDefault()}
-                                    className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200"
-                                >
-                                    <span className={cn("text-[10px] font-bold uppercase tracking-wider", hasCover ? "text-white/60" : "text-red-400")}>
-                                        {mode === 'active' ? 'Delete?' : 'Destroy?'}
-                                    </span>
-                                    <button
+                                <div className={cn(
+                                    "absolute right-0 top-0 flex items-center gap-2 p-1.5 rounded-xl animate-in fade-in zoom-in duration-200 shadow-2xl border min-w-[140px] sm:min-w-[160px] justify-between",
+                                    hasCover 
+                                        ? "bg-black/95 backdrop-blur-xl border-white/20" 
+                                        : "bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-slate-200 dark:border-slate-800"
+                                )}>
+                                    <button 
                                         onClick={e => { e.preventDefault(); e.stopPropagation(); setConfirmDelete(false) }}
-                                        className={cn("px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors", hasCover ? "text-white/40 hover:text-white" : "text-slate-400 hover:text-slate-600")}
+                                        className={cn(
+                                            "px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors rounded-lg",
+                                            hasCover 
+                                                ? "text-white/60 hover:text-white" 
+                                                : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                                        )}
                                     >Cancel</button>
                                     <button
                                         onClick={handleDelete}
                                         disabled={isActionInProgress}
-                                        className="px-3 py-1 text-[10px] font-bold bg-red-500 hover:bg-red-600 text-white rounded-full uppercase tracking-wider transition-colors shadow-lg disabled:opacity-50"
+                                        className="px-4 py-1 text-[10px] font-bold bg-red-500 hover:bg-red-600 text-white rounded-lg uppercase tracking-wider transition-all shadow-md disabled:opacity-50 active:scale-95"
                                     >{isActionInProgress ? '...' : (mode === 'active' ? 'Delete' : 'Destroy')}</button>
                                 </div>
                             ) : (
-                                <div className="flex shrink-0 items-center gap-2.5 sm:gap-3">
+                                <motion.div 
+                                    className="flex shrink-0 items-center gap-1.5 sm:gap-2"
+                                    initial={!isMounted || isTouch ? false : { opacity: 0, x: 10 }}
+                                    animate={isMounted && isTouch ? { opacity: 1, x: 0 } : undefined}
+                                    whileInView={!isTouch ? { opacity: 1, x: 0 } : undefined}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.4, delay: 0.1 }}
+                                >
                                     {mode === 'trash' && (
                                         <button
                                             onClick={handleRestore}
                                             disabled={isActionInProgress}
                                             className={cn(
-                                                "p-2.5 rounded-xl transition-all shadow-sm",
-                                                hasCover ? "bg-white/10 backdrop-blur-md text-white/60 hover:text-white hover:bg-white/20 border border-white/10" : "text-slate-400 hover:text-primary hover:bg-primary/10"
+                                                "p-2 rounded-lg transition-all",
+                                                hasCover 
+                                                    ? "text-white/60 hover:text-white hover:bg-white/10" 
+                                                    : "text-slate-400 hover:text-primary hover:bg-primary/5"
                                             )}
                                         >
                                             <Sparkles className="w-5 h-5" />
@@ -711,10 +741,13 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                                             <button
                                                 onClick={e => { e.preventDefault(); e.stopPropagation(); setIsSettingsOpen(true) }}
                                                 className={cn(
-                                                    "transition-all duration-300 p-2.5 rounded-xl shadow-sm",
+                                                    "transition-all duration-200 p-2 rounded-lg",
                                                     hasCover 
-                                                        ? "bg-white/10 backdrop-blur-md text-white/40 hover:text-white hover:bg-white/30 border border-white/10" 
-                                                        : "opacity-0 group-hover:opacity-100 text-slate-300 hover:text-primary hover:bg-primary/10"
+                                                        ? "text-white/60 hover:text-white hover:bg-white/10" 
+                                                        : cn(
+                                                            "text-slate-400 hover:text-primary hover:bg-primary/5",
+                                                            !isTouch && "opacity-0 group-hover:opacity-100"
+                                                        )
                                                 )}
                                                 title="Edit project details"
                                             >
@@ -723,10 +756,13 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                                             <button
                                                 onClick={e => { e.preventDefault(); e.stopPropagation(); setIsEditingCover(true) }}
                                                 className={cn(
-                                                    "transition-all duration-300 p-2.5 rounded-xl shadow-sm",
+                                                    "transition-all duration-200 p-2 rounded-lg",
                                                     hasCover 
-                                                        ? "bg-white/10 backdrop-blur-md text-white/40 hover:text-white hover:bg-white/30 border border-white/10" 
-                                                        : "opacity-0 group-hover:opacity-100 text-slate-300 hover:text-primary hover:bg-primary/10"
+                                                        ? "text-white/60 hover:text-white hover:bg-white/10" 
+                                                        : cn(
+                                                            "text-slate-400 hover:text-primary hover:bg-primary/5",
+                                                            !isTouch && "opacity-0 group-hover:opacity-100"
+                                                        )
                                                 )}
                                                 title="Change Cover"
                                             >
@@ -737,31 +773,40 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                                     <button
                                         onClick={e => { e.preventDefault(); e.stopPropagation(); setConfirmDelete(true) }}
                                         className={cn(
-                                            "transition-all duration-300 p-2.5 rounded-xl shadow-sm",
+                                            "transition-all duration-200 p-2 rounded-lg",
                                             hasCover 
-                                                ? "bg-white/10 backdrop-blur-md text-white/40 hover:text-red-400 hover:bg-red-500/20 border border-white/10" 
-                                                : cn("transition-all duration-300 p-2.5 rounded-xl", mode === 'active' ? "opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 hover:bg-red-50" : "text-slate-300 hover:text-red-600 hover:bg-red-50")
+                                                ? "text-white/60 hover:text-red-400 hover:bg-red-500/10" 
+                                                : cn(
+                                                    "text-slate-400 hover:text-red-500 hover:bg-red-50",
+                                                    !isTouch && "opacity-0 group-hover:opacity-100"
+                                                )
                                         )}
                                     >
                                         <Trash2 className="w-5 h-5" />
                                     </button>
-                                </div>
+                                </motion.div>
                             )}
                         </div>
                     )}
                 </div>
 
-                <div className={cn("space-y-3", hasCover && "mt-auto")}>
-                    <h3 className={cn(
-                        "text-2xl font-serif leading-snug transition-colors duration-500",
-                        hasCover ? "text-white" : "text-slate-800 group-hover:text-primary"
-                    )}>
-                        {project.title}
-                    </h3>
+                <div className={cn(
+                    "flex flex-col flex-1", 
+                    hasCover && "mt-auto pt-24"
+                )}>
+                    {/* Title Container - Fixed height to align metadata below */}
+                    <div className="h-[68px] flex items-start mb-2 overflow-hidden">
+                        <h3 className={cn(
+                            "text-2xl font-serif leading-snug transition-colors duration-500 line-clamp-2",
+                            hasCover ? "text-white" : "text-slate-800 group-hover:text-primary"
+                        )}>
+                            {project.title}
+                        </h3>
+                    </div>
 
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-4">
                         <span className={cn(
-                            "text-[10px] font-bold uppercase tracking-[0.2em] px-2.5 py-1 rounded-md transition-colors border",
+                            "text-[10px] font-bold uppercase tracking-[0.2em] px-2.5 py-1 rounded-md transition-colors border shrink-0",
                             hasCover 
                                 ? "bg-white/5 backdrop-blur-md text-white/70 border-white/10 group-hover:bg-white/10" 
                                 : "bg-slate-50 text-slate-400 border-transparent group-hover:bg-primary/5 group-hover:text-primary/60"
@@ -771,7 +816,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                         
                         {project.role === 'owner' && (
                              <Badge variant="outline" className={cn(
-                                 "text-[9px] uppercase tracking-wider py-0 px-2 font-bold",
+                                 "text-[9px] uppercase tracking-wider py-0 px-2 font-bold shrink-0",
                                  hasCover ? "border-white/20 text-white/60 bg-white/5 backdrop-blur-md" : "border-amber-100 text-amber-600 bg-amber-50/30"
                              )}>
                                 Owner
@@ -779,14 +824,14 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                         )}
                         {isLocalProject ? (
                              <Badge variant="outline" className={cn(
-                                 "text-[9px] uppercase tracking-wider py-0 px-2 font-bold",
+                                 "text-[9px] uppercase tracking-wider py-0 px-2 font-bold shrink-0",
                                  hasCover ? "border-white/20 text-white/60 bg-white/5 backdrop-blur-md" : "border-emerald-100 text-emerald-600 bg-emerald-50/30"
                              )}>
                                 Local Only
                             </Badge>
                         ) : (
                             <Badge variant="outline" className={cn(
-                                "text-[9px] uppercase tracking-wider py-0 px-2 font-bold",
+                                "text-[9px] uppercase tracking-wider py-0 px-2 font-bold shrink-0",
                                 hasCover ? "border-white/20 text-white/60 bg-white/5 backdrop-blur-md" : "border-sky-100 text-sky-600 bg-sky-50/30"
                             )}>
                                 Cloud Sync
@@ -794,28 +839,31 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                         )}
 
                         <span className={cn(
-                            "text-xs font-medium flex items-center gap-1.5",
-                            hasCover ? "text-white/80" : "text-slate-400"
+                            "text-xs font-medium flex items-center gap-1.5 whitespace-nowrap",
+                            hasCover ? "text-white/80" : "text-slate-500"
                         )}>
-                            <Clock className={cn("w-3.5 h-3.5", hasCover ? "text-white/70" : "text-slate-400")} />
-                            <span className={cn("font-medium", hasCover ? "text-white/70" : "text-slate-400")}>Last accessed:</span>
-                            {isMounted ? <span className={cn(hasCover ? "text-white/80" : "text-slate-500")}>{formatDistanceToNow(project.last_accessed_at || new Date().toISOString()) + ' ago'}</span> : '...'}
+                            <Clock className={cn("w-3.5 h-3.5", hasCover ? "text-white/70" : "text-slate-500")} />
+                            <span className={cn("font-medium", hasCover ? "text-white/70" : "text-slate-500")}>Last accessed:</span>
+                            {isMounted ? <span className={cn(hasCover ? "text-white/80" : "text-slate-600")}>{formatDistanceToNow(project.last_accessed_at || new Date().toISOString()) + ' ago'}</span> : '...'}
                         </span>
                     </div>
 
-                    {cardDescription && (
-                        <p className={cn(
-                            "mt-6 text-sm leading-relaxed line-clamp-2 italic font-serif transition-colors duration-500",
-                            hasCover ? "text-white/60 group-hover:text-white/80" : "text-slate-500"
-                        )}>
-                            &ldquo;{cardDescription}&rdquo;
-                        </p>
-                    )}
+                    {/* Description Container - Fixed height to align footer divider */}
+                    <div className="h-[48px] flex items-start overflow-hidden">
+                        {cardDescription && (
+                            <p className={cn(
+                                "text-sm leading-relaxed line-clamp-2 italic font-serif transition-colors duration-500",
+                                hasCover ? "text-white/60 group-hover:text-white/80" : "text-slate-500"
+                            )}>
+                                &ldquo;{cardDescription}&rdquo;
+                            </p>
+                        )}
+                    </div>
                 </div>
 
                 <div className={cn(
-                    "mt-10 pt-6 flex items-center justify-between",
-                    hasCover ? "border-t border-white/10" : "border-t border-slate-50"
+                    "mt-auto pt-6 flex items-center justify-between",
+                    hasCover ? "border-t border-white/10" : "border-t border-slate-100"
                 )}>
                     <div className="flex items-center gap-4">
                         {isShared && mode === 'active' ? (
@@ -825,7 +873,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                                         <TooltipTrigger>
                                             <Avatar className={cn(
                                                 "w-7 h-7 border-2 ring-2 ring-white",
-                                                hasCover ? "border-black/50 ring-white/10" : "border-white ring-slate-50",
+                                                hasCover ? "border-black/50 ring-white/10" : "border-white ring-slate-100",
                                                 "transition-transform hover:scale-110 hover:z-30 cursor-default"
                                             )}>
                                                 <AvatarImage src={member.avatar_url || undefined} />
@@ -846,7 +894,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                                 {visibleMembers.length > 4 && (
                                     <div className={cn(
                                         "w-7 h-7 rounded-full flex items-center justify-center border-2 text-[8px] font-bold z-0",
-                                        hasCover ? "bg-white/10 border-black/50 text-white" : "bg-slate-50 border-white text-slate-400"
+                                        hasCover ? "bg-white/10 border-black/50 text-white" : "bg-slate-100 border-white text-slate-500"
                                     )}>
                                         +{visibleMembers.length - 4}
                                     </div>
@@ -860,7 +908,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                                         Deleted {isMounted ? formatDistanceToNow(project.deleted_at) + ' ago' : '...'}
                                     </span>
                                 ) : (
-                                    <span className={cn(hasCover ? "text-white/70" : "text-slate-400")}>Private Draft</span>
+                                    <span className={cn(hasCover ? "text-white/70" : "text-slate-500")}>Private Draft</span>
                                 )}
                             </span>
                         )}
@@ -870,7 +918,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                             "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-700 transform group-hover:rotate-[-45deg] shadow-lg",
                             hasCover 
                                 ? "bg-white/10 backdrop-blur-md text-white/50 group-hover:bg-white group-hover:text-primary" 
-                                : "bg-slate-50 text-slate-300 group-hover:bg-primary group-hover:text-white"
+                                : "bg-slate-100 text-slate-400 group-hover:bg-primary group-hover:text-white"
                         )}>
                             <ChevronRight className="w-5 h-5" />
                         </div>

@@ -220,3 +220,49 @@ Add a short entry using this format:
 
 - Risks, warnings, or follow-up
 ```
+
+## Issue: Action icons hidden on iPad Pro / Large Tablets
+
+### Symptoms
+
+- Edit, Palette, and Trash icons on library project cards are invisible on iPad Pro or other large tablets.
+- The icons only appear on smaller mobile devices or on desktop hover.
+
+### Cause
+
+- Tablets often report supporting hover (especially in desktop Safari mode), but users interact via touch. The logic was hiding buttons on 'lg' viewports (>= 1024px) assuming a mouse-driven hover environment, which applies to iPad Pro.
+
+### Fix
+
+- Implement a width-based override for touch detection. Treat any device with a viewport width < 1280px as a touch device for the purpose of icon visibility, forcing them to be always visible.
+- Use a resize listener to handle orientation changes (e.g., rotating from portrait to landscape).
+
+### Verification
+
+- Verified via browser simulation using iPad Pro dimensions (1024x1366) and confirming icons remain visible without hover.
+
+### Notes
+
+- 1280px was chosen to cover the 1366px landscape width of the iPad Pro while still allowing 'hover-to-reveal' on standard desktop monitors (typically 1440px or 1920px).
+
+---
+
+## Issue: Delete confirmation touches project type icon
+
+### Symptoms
+
+- On narrow cards or tablets, the 'Cancel / Delete' dialog in the library overlaps or touches the project type icon on the left.
+
+### Cause
+
+- The dialog was positioned absolutely but the header layout was still trying to accommodate both the icon and the dialog in a shared horizontal space.
+
+### Fix
+
+- Hide the project type icon (opacity-0) whenever 'confirmDelete' is true to clear the space for the dialog.
+- Ensure the dialog is anchored to the right edge with a safe background contrast (\g-white/95\ or \g-black/95\).
+
+### Verification
+
+- Confirmed via browser testing that the icon disappears when the delete flow starts, providing a clean UI for the confirmation buttons.
+

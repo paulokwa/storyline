@@ -37,6 +37,15 @@ Default branch: `main`
 17. After completing session-end updates, commit and push the changes to GitHub unless the user explicitly says not to, there are no changes to commit, or the agent/tool does not have Git/GitHub write access. If unable to commit or push, say so clearly and provide the exact files that still need committing.
 18. Do not edit `MASTER_BRIEF.md` unless the user explicitly asks for the Master Brief itself to be changed.
 
+## Test Credentials
+
+These credentials are used for testing the application in this environment.
+
+- **Email**: `skytra7@gmail.com`
+- **Password**: `LqE6Yd5$sf#j3yiD`
+
+See `TESTING.md` for more details on test accounts.
+
 ## Supporting Reference Docs
 
 - `docs/technical-debt-roadmap.md` is a deeper reference file for reliability and technical debt issues. It explains why certain items matter and gives implementation guidance. It is not the active task list; use `TASK_BOARD.md` for active priorities and `TESTING.md` for verification.

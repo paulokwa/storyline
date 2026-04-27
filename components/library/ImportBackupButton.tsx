@@ -9,9 +9,10 @@
  * Placement: Library header action area (alongside "Start New Project").
  */
 
-import { useRef, useState, useSyncExternalStore } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Upload } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 import {
     parseBackupFile,
     importLocalBackup,
@@ -20,9 +21,8 @@ import {
     type LibraryImportOptions,
 } from '@/lib/backup/import-local-backup'
 import { BACKUP_FILE_EXTENSION, type StorylineBackup } from '@/lib/backup/backup-format'
-import { getProjectTypeLabel } from '@/lib/constants'
 import { cn } from '@/lib/utils'
-import LocalTransferGuidance from '@/components/project/local/LocalTransferGuidance'
+import { getProjectTypeLabel } from '@/lib/constants'
 
 type PendingLibraryImport = {
     backup: StorylineBackup
@@ -32,28 +32,64 @@ type PendingLibraryImport = {
 export default function ImportBackupButton({
     currentUserId,
     className,
-    showTransferGuidance = true,
 }: {
     currentUserId: string
     className?: string
-    showTransferGuidance?: boolean
 }) {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const inputRef = useRef<HTMLInputElement>(null)
     const [status, setStatus] = useState<'idle' | 'reading' | 'importing' | 'error'>('idle')
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
     const [pendingImport, setPendingImport] = useState<PendingLibraryImport | null>(null)
     const [selectedUpdateProjectId, setSelectedUpdateProjectId] = useState<string>('')
-    const [dismissedThisSession, setDismissedThisSession] = useState(false)
-    const transferGuidanceDismissed = useSyncExternalStore(
-        () => () => undefined,
-        () => {
-            if (typeof window === 'undefined') return false
-            return localStorage.getItem('storyline-library-transfer-guidance-dismissed') === 'true'
-        },
-        () => false
-    )
-    const showTransferReminder = showTransferGuidance && !dismissedThisSession && !transferGuidanceDismissed
+
+    // Handle '?action=import' from notifications
+    useEffect(() => {
+        if (searchParams?.get('action') === 'import') {
+            // Remove the param from URL to avoid re-triggering
+            const params = new URLSearchParams(searchParams.toString())
+            params.delete('action')
+            const newQuery = params.toString()
+            router.replace(`/library${newQuery ? `?${newQuery}` : ''}`)
+            
+            // Trigger the click
+            handleClick()
+        }
+    }, [searchParams, router])
+
+    // Ensure the "Transfer Guidance" notification exists
+    useEffect(() => {
+        if (!currentUserId) return
+
+        const checkAndCreateNotification = async () => {
+            const storageKey = `storyline-notified-transfer-${currentUserId}`
+            if (localStorage.getItem(storageKey)) return
+
+            const supabase = createClient()
+            
+            // Check if it already exists in DB
+            const { count } = await supabase
+                .from('notifications')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', currentUserId)
+                .eq('type', 'local_transfer_guidance')
+
+            if (count === 0) {
+                await supabase.from('notifications').insert({
+                    user_id: currentUserId,
+                    type: 'local_transfer_guidance',
+                    title: 'Working on another device?',
+                    summary: 'Learn how to transfer your local projects between devices or enable cloud sync.',
+                    body: 'Local projects stay on the device where they were created. To use a project on this device, export a backup from your other device and import it here. You can also enable cloud sync for projects you want available across devices.',
+                })
+            }
+
+            localStorage.setItem(storageKey, 'true')
+        }
+
+        void checkAndCreateNotification()
+    }, [currentUserId])
 
     function handleClick() {
         setErrorMessage(null)
@@ -223,17 +259,6 @@ export default function ImportBackupButton({
                 </p>
             )}
 
-            {showTransferReminder && (
-                <LocalTransferGuidance
-                    compact
-                    className="w-full md:max-w-xl"
-                    cloudSyncHref="/help?q=cloud%20sync"
-                    onDismiss={() => {
-                        setDismissedThisSession(true)
-                        localStorage.setItem('storyline-library-transfer-guidance-dismissed', 'true')
-                    }}
-                />
-            )}
 
             {pendingImport && (
                 <div

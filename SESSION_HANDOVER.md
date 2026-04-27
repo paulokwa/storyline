@@ -388,3 +388,65 @@ Use the session start prompt from `MASTER_BRIEF.md` at the beginning of the next
 - These files are only useful if agents are instructed to read and update them.
 - Do not let agents rewrite these files aggressively; updates should be concise and additive.
 - More detailed product decisions still need to be added over time.
+
+---
+## 2026-04-27 - Notification Refactor & Library UX Polish
+
+### Current branch
+
+\main\ ocean
+
+### What was completed
+
+- **Notification System Expansion**: Refactored the 'Working on another device?' guidance into a persistent system notification event (\local_transfer_guidance\).
+  - Added support for the new notification type in the database and frontend logic.
+  - Implemented auto-creation logic in \ImportBackupButton.tsx\ (ensuring it exists exactly once per user).
+  - Created a full-page detail view for the guidance, integrated with the notification system.
+  - Added a deep-link action that returns the user to the library and automatically triggers the backup flow via \?action=import\.
+- **Library Card UX Refinements**: 
+  - Restored the 'floating' icon aesthetic for project cards (removed borders/backgrounds) per user feedback.
+  - Fixed tablet/iPad Pro visibility: Action buttons (Edit, Palette, Trash) are now visible by default on viewports < 1280px, even if the browser reports hover support.
+  - Unified action button visibility logic to prevent inconsistencies (e.g., Palette missing while Trash was visible).
+  - Improved the delete confirmation dialog: It now clears the project type icon by hiding it when active, preventing visual overlap on narrow cards.
+  - Anchored the delete dialog to the right edge with high-contrast backgrounds for better legibility.
+  - Added a resize listener to maintain correct visibility during tablet orientation changes.
+
+### Current status
+
+The library UX is significantly more robust for mobile and tablet users. Accidental navigation is prevented by visible action buttons, and the transfer guidance is now a first-class citizen of the notification system rather than a dismissible banner.
+
+### Next recommended step
+
+Implement the dynamic 'Story Tone' step in the project creation flow: check AI availability and reword the 'Story Tone' step to be metadata-only if AI is disabled or unavailable for the account. Target file: \components/library/CreateProjectModal.tsx\.
+
+### Risks or warnings
+
+- The \isTouch\ detection logic relies on a 1280px threshold to capture iPad Pro landscape (1366px is \xl\, so 1280px covers the common 'large tablet' range). If a desktop user has a very small browser window, icons will be visible by default.
+- Notification auto-creation uses \localStorage\ to prevent redundant DB calls; clear \storyline-notified-transfer-[id]\ when testing across accounts.
+
+---
+## 2026-04-27 - Library Card Alignment & Uniformity
+
+### Current branch
+
+\main\ ocean
+
+### What was completed
+
+- **Standardized Card Alignment**: Resolved the 'uneven titles' and 'shifting horizontal lines' reported in the library grid.
+  - Implemented fixed-height containers for titles (\h-[68px]\) and descriptions (\h-[48px]\) with \items-start\ and \line-clamp-2\.
+  - This ensures that whether a title is 1 or 2 lines, it always occupies the same vertical footprint and starts at the same height.
+  - Switched the footer divider from relative margin (\mt-10\) to automatic margin (\mt-auto\), anchoring it to the bottom of the content area for perfect alignment across the grid.
+  - Added a \pt-24\ safety margin on cover cards to prevent titles from ever touching the top-anchored header icons.
+
+### Current status
+
+The library cards now look perfectly uniform in the grid, even with varying title lengths and project metadata.
+
+### Next recommended step
+
+Verify the alignment with a project that has a very short title and no description vs one with a long title and full description.
+
+### Risks or warnings
+
+- If a project title is extremely long, it will be truncated at 2 lines. This is a deliberate design constraint to maintain grid stability.

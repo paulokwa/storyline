@@ -1,5 +1,5 @@
 import type { Tables } from '@/lib/supabase/types'
-import { MessageSquare, Sparkles, Users, type LucideIcon } from 'lucide-react'
+import { MessageSquare, Sparkles, Users, HardDrive, type LucideIcon } from 'lucide-react'
 
 export type NotificationRecord = Tables<'notifications'>
 
@@ -64,6 +64,7 @@ export const NOTIFICATION_ICONS: Record<NotificationRecord['type'], LucideIcon> 
     collaborator_feedback: MessageSquare,
     project_shared: Users,
     project_role_changed: Users,
+    local_transfer_guidance: HardDrive,
 }
 
 export function getNotificationDisplayTitle(notification: NotificationRecord, pathname?: string | null, resolvedLocationLabel?: string | null) {
@@ -102,6 +103,10 @@ export function getNotificationTargetHref(notification: NotificationRecord, path
         return `/project/${notification.project_id}/story?${params.toString()}`
     }
 
+    if (notification.type === 'local_transfer_guidance') {
+        return '/notifications/' + notification.id
+    }
+
     return notification.link_href || null
 }
 
@@ -112,6 +117,10 @@ export function getNotificationActionLabel(notification: NotificationRecord, pat
 
     if (notification.type === 'welcome') {
         return 'Open welcome guide'
+    }
+
+    if (notification.type === 'local_transfer_guidance') {
+        return 'Read guidance'
     }
 
     if (notification.type === 'collaborator_feedback' && isViewingNotificationProject(notification, pathname)) {

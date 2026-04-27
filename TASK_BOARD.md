@@ -21,7 +21,6 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Verify centralized AI rate limiting across helper, scene analyzer, and import detect flows.
 - Browser-check the new library Help Center and cloud sync guidance flow.
 - Make the guided project creation “story tone” step dynamic based on AI availability: if AI is enabled, AI-oriented wording such as “This guides future AI suggestions” is acceptable; if AI is disabled/unavailable for the account, remove or reword AI references so the page explains tone as project metadata/writing guidance rather than an AI feature.
-- Fix library project-card delete confirmation layout on tablet widths: on Lenovo Tab M11 / iPad Air / iPad mini style viewports, the inline “Delete? / Cancel / Delete” confirmation row is cut off at the card edge. Make the confirmation responsive so all actions remain visible and tappable, including incomplete setup cards and normal project cards.
 - Add consistent loading-state UX for slow pages and actions: use no visible loader for near-instant loads, skeleton placeholders for short waits, and subtle branded loading feedback for longer waits such as a pen-writing/book-glow/Storyline mark animation. For unusually long loads, show reassuring copy such as “Still loading your projects…” and “Your work is safe,” especially on Library, Project Open, Project Creation, Import, and Cloud/AI settings flows. Keep this as a trust-building UX layer while separately investigating actual performance causes such as Netlify cold starts, Supabase latency, slow queries, image sizes, pagination, or client-side data waterfalls.
 
 ## Next
@@ -97,3 +96,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Added session end prompt.
 - Added initial decision log entries.
 - Summarized `docs/technical-debt-roadmap.md` into the root continuity files.
+- Refined mobile project card UX: Action buttons (Edit, Palette, Trash) are now always visible on touch viewports (including iPad Pro via a <1280px override) to prevent accidental project entry, with added entrance animations and increased metadata contrast.
+- Fixed library project-card delete confirmation layout: Dialog now clears the project type icon by hiding it when active, preventing visual overlap on narrow viewports/tablets.
+- Standardized library card content alignment: Titles and descriptions now use fixed-height containers to ensure uniform layout and perfectly aligned horizontal lines across the grid.
+- Refactored "Working on another device?" guidance from an inline library banner to a persistent system notification event with a full detail view.

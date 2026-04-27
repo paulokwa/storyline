@@ -14,6 +14,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/components/providers/ThemeProvider'
+import LocalTransferGuidance from '@/components/project/local/LocalTransferGuidance'
+import { Upload } from 'lucide-react'
 
 export default function NotificationDetailClient({
     notification,
@@ -90,21 +92,34 @@ export default function NotificationDetailClient({
                             <h1 className="mt-2 font-serif text-3xl leading-tight">{getNotificationDisplayTitle(notification, pathname)}</h1>
                         </div>
 
-                        {notification.summary && (
-                            <p className={cn('text-base leading-7', isMidnight ? 'text-slate-300' : 'text-slate-600')}>
-                                {notification.summary}
-                            </p>
-                        )}
+                        {notification.type === 'local_transfer_guidance' ? (
+                            <LocalTransferGuidance
+                                className="!max-w-full mt-4"
+                                cloudSyncHref="/settings"
+                                onImportBackup={() => {
+                                    // Navigate to library and trigger import
+                                    router.push('/library?action=import')
+                                }}
+                            />
+                        ) : (
+                            <>
+                                {notification.summary && (
+                                    <p className={cn('text-base leading-7', isMidnight ? 'text-slate-300' : 'text-slate-600')}>
+                                        {notification.summary}
+                                    </p>
+                                )}
 
-                        {notification.body && (
-                            <div className={cn(
-                                'rounded-[1.5rem] border px-5 py-4 text-sm leading-7 whitespace-pre-line',
-                                isMidnight
-                                    ? 'border-slate-700/60 bg-slate-950/40 text-slate-200'
-                                    : 'border-slate-200 bg-slate-50 text-slate-700'
-                            )}>
-                                {notification.body}
-                            </div>
+                                {notification.body && (
+                                    <div className={cn(
+                                        'rounded-[1.5rem] border px-5 py-4 text-sm leading-7 whitespace-pre-line',
+                                        isMidnight
+                                            ? 'border-slate-700/60 bg-slate-950/40 text-slate-200'
+                                            : 'border-slate-200 bg-slate-50 text-slate-700'
+                                    )}>
+                                        {notification.body}
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

@@ -1735,6 +1735,7 @@ export type Database = {
         | "collaborator_feedback"
         | "project_shared"
         | "project_role_changed"
+        | "local_transfer_guidance"
       project_role: "owner" | "editor" | "viewer"
     }
     CompositeTypes: {
@@ -1868,6 +1869,7 @@ export const Constants = {
         "collaborator_feedback",
         "project_shared",
         "project_role_changed",
+        "local_transfer_guidance",
       ],
       project_role: ["owner", "editor", "viewer"],
     },
