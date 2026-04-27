@@ -18,6 +18,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Run a broader pre-launch regression pass across core project flow, import/export, local/cloud behavior, AI availability states, collaboration, tablet/mobile layout, and onboarding tours.
 - Audit app typography and contrast, especially grey text that may cause eye strain.
 - Audit local/cloud feature boundaries, wording, and mode-specific UI behavior.
+- Product-manager task: fix the library-page “Learn about Cloud Sync” flow. Current card correctly explains that local projects stay on the device and can be moved via backup/import or cloud sync, but the button goes to account settings, which does not explain project-specific cloud enabling. Decide whether to create a dedicated Cloud Sync explainer/help page or update settings/account copy, then route the button to useful guidance with clear per-project enable instructions.
 - Choose the first high-priority technical debt item to tackle.
 
 ## Next
