@@ -33,7 +33,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Audit app-wide AI terminology and decide whether to use AI, Assistant, Muse, or another label consistently.
 - Improve inline image insertion discoverability in prose/book mode.
 - Update feature/showcase page after a root-and-branch feature audit.
-- Rework help menu/page near launch after major feature changes settle.
+- Rework help menu/page near launch after major feature changes settle; follow the detailed two-phase audit and rewrite process in `docs/technical-debt-roadmap.md` under "Help System Feature Audit & Rewrite" instead of asking AI to simply improve the page.
 - Run pre-launch security audit covering input sanitization, auth flows, exposed secrets, personal emails, repo references, and deployment settings.
 - Use the session end prompt to update `SESSION_HANDOVER.md`, `TASK_BOARD.md`, and `TESTING.md` after each coding session.
 
