@@ -66,6 +66,18 @@ This document tracks identified architectural risks, technical debt, and reliabi
 *   **Suggested Implementation**: Validate active mode before accepting local usage logs, deduplicate more aggressively, and clearly separate analytics-grade data from billing-grade data in admin views.
 *   **Priority**: Medium
 
+### 6. Help System Feature Audit & Rewrite
+*   **Why it matters**: The current Help page likely focuses on obvious features and may miss hidden, advanced, or mode-specific functionality (local/cloud, AI, collaboration, backup, screenplay vs prose).
+*   **Risk if ignored**: Users cannot discover key features, leading to confusion, underuse of capabilities, and increased support burden.
+*   **Suggested Implementation**: Perform a two-phase process:
+    *   **Phase 1: Full Feature Audit** — Scan the entire codebase and extract every user-facing feature, including hidden behaviors, edge cases, role-based restrictions, and mode-specific functionality.
+    *   **Phase 2: Help System Rewrite** — Convert the full feature inventory into a structured, searchable Help Center covering all features with clear "what it does," "where to find it," and "how to use it" guidance.
+*   **Constraints**:
+    *   Do not begin until core features have stabilized.
+    *   Do not allow AI to skip the audit phase.
+    *   Require a final coverage check ensuring every feature is documented.
+*   **Priority**: Medium
+
 ## Lower Priority / Future Enhancements
 
 ### 1. Advanced Offline / Pending Sync
