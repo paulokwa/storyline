@@ -72,6 +72,7 @@ This document tracks identified architectural risks, technical debt, and reliabi
 *   **Suggested Implementation**: Perform a two-phase process:
     *   **Phase 1: Full Feature Audit** — Scan the entire codebase and extract every user-facing feature, including hidden behaviors, edge cases, role-based restrictions, and mode-specific functionality.
     *   **Phase 2: Help System Rewrite** — Convert the full feature inventory into a structured, searchable Help Center covering all features with clear "what it does," "where to find it," and "how to use it" guidance.
+*   **Failure Condition**: If Phase 1 does not produce a comprehensive feature inventory, Phase 2 must not proceed.
 *   **Constraints**:
     *   Do not begin until core features have stabilized.
     *   Do not allow AI to skip the audit phase.
