@@ -285,22 +285,22 @@ export default function ProjectShell({
                             />
                         )}
                         
+                        <ExportModal 
+                            open={exportModalOpen} 
+                            onOpenChange={setExportModalOpen} 
+                            projectId={project.id}
+                            projectTitle={project.title ?? 'Untitled'}
+                            projectType={project.type as any}
+                            role={role}
+                            allowCollaboratorExports={project.allow_collaborator_exports ?? false}
+                            onOpenSettings={() => {
+                                setExportModalOpen(false)
+                                setSettingsModalOpen(true)
+                            }}
+                        />
+
                         {!isLocalOnly && (
                             <>
-                                <ExportModal 
-                                    open={exportModalOpen} 
-                                    onOpenChange={setExportModalOpen} 
-                                    projectId={project.id}
-                                    projectTitle={project.title ?? 'Untitled'}
-                                    projectType={project.type as any}
-                                    role={role}
-                                    allowCollaboratorExports={project.allow_collaborator_exports ?? false}
-                                    onOpenSettings={() => {
-                                        setExportModalOpen(false)
-                                        setSettingsModalOpen(true)
-                                    }}
-                                />
-
                                 <ShareModal
                                     open={shareModalOpen}
                                     onOpenChange={setShareModalOpen}
@@ -565,16 +565,7 @@ function ProjectShellInner({
     useEffect(() => {
         setActions({
             export: () => {
-                if (isLocalOnly) {
-                    // Local-only projects: trigger a .storyline backup download
-                    void exportLocalBackup(project.id).then(({ wordCount }) => {
-                        recordBackupComplete(project.id, wordCount)
-                    }).catch((err) => {
-                        console.error('[ProjectShell] Local backup export failed:', err)
-                    })
-                } else {
-                    setExportModalOpen(true)
-                }
+                setExportModalOpen(true)
             },
             save: isLocalOnly ? handleSaveProject : undefined,
             saveAs: isLocalOnly ? handleSaveProjectAs : undefined,

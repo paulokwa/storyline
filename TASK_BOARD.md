@@ -105,5 +105,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
   - Implemented `Ctrl+S` / `Cmd+S` keyboard shortcuts for manual saving.
   - Integrated disk-link status (filename, last save time) into the navigation dropdown.
   - Rebranded manuscript export to "Export Manuscript..." to distinguish from native file saving.
+  - Fixed "Export Manuscript" regression where local projects triggered a raw download instead of the export modal.
+  - Added full IndexedDB support to the manuscript export payload generator.
   - Fixed a critical bug where `ProjectShell.tsx` was passing the project ID instead of content to the save utility.
   - Ensured sanitization of browser-specific file handles in exported files.

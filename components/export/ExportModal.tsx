@@ -16,7 +16,7 @@ import {
     FileText, 
     Code, 
     Files, 
-    Download, 
+    Download, DownloadCloud, 
     Settings2, 
     Eye,
     CheckCircle2,
@@ -39,6 +39,8 @@ import { toPdf } from '@/lib/export/toPdf'
 import { ExportMetadata } from '@/lib/export/buildExportPayload'
 import { createClient } from '@/lib/supabase/client'
 import { useTheme } from '@/components/providers/ThemeProvider'
+import { isLocalProjectId } from '@/lib/persistence/project-mode'
+import { getLocalProject } from '@/lib/persistence/local-projects'
 
 interface ExportModalProps {
     open: boolean
@@ -89,15 +91,22 @@ export default function ExportModal({
         
         async function fetchStats() {
             try {
-                const supabase = createClient()
-                const { data: project } = await supabase
-                    .from('projects')
-                    .select('export_metadata')
-                    .eq('id', projectId)
-                    .single()
-                
-                if (project?.export_metadata) {
-                    setMetadata(project.export_metadata as ExportMetadata)
+                if (isLocalProjectId(projectId)) {
+                    const localProject = await getLocalProject(projectId)
+                    if (localProject?.export_metadata) {
+                        setMetadata(localProject.export_metadata as ExportMetadata)
+                    }
+                } else {
+                    const supabase = createClient()
+                    const { data: project } = await supabase
+                        .from('projects')
+                        .select('export_metadata')
+                        .eq('id', projectId)
+                        .single()
+                    
+                    if (project?.export_metadata) {
+                        setMetadata(project.export_metadata as ExportMetadata)
+                    }
                 }
 
                 if (!canExport) {
@@ -166,7 +175,7 @@ export default function ExportModal({
             onOpenChange(false)
         } catch (error) {
             console.error('Export failed:', error)
-            alert('Failed to export project. Please try again.')
+            alert('Failed to Export Manuscript. Please try again.')
         } finally {
             setLoading(false)
         }
@@ -195,9 +204,9 @@ export default function ExportModal({
                 )}>
                     <DialogTitle className="text-xl sm:text-2xl font-serif text-[#31332f] flex items-center gap-3">
                         <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-                            <Download className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
+                            <DownloadCloud className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
                         </div>
-                        Export Project
+                        Export Manuscript
                     </DialogTitle>
                     <DialogDescription className="text-xs sm:text-sm text-slate-500 font-sans mt-2">
                         Collect your work into a single file for sharing or publishing.
@@ -286,7 +295,7 @@ export default function ExportModal({
                                 onClick={onOpenSettings}
                                 className="text-[10px] font-sans tracking-wide uppercase text-amber-600 font-bold hover:text-amber-700 transition-colors"
                             >
-                                Edit metadata
+                                Edit Metadata
                             </button>
                         </div>
                         <div className="p-4 rounded-2xl bg-white border border-[#f0eee9] space-y-3">

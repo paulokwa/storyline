@@ -18,6 +18,7 @@ Agents should update this file before ending a session.
   - Library: "Import Backup" -> "Open Project File".
   - Project Menu: Added "Save Project" and "Save As...".
   - Project Menu: "Export Project" -> "Export Manuscript...".
+- **Local Export Support**: Resolved a regression where local projects bypassed the Export Modal. Added logic to `buildExportPayload` and `ExportModal` to fetch manuscript data from IndexedDB.
 - **Shortcuts**: Registered `Ctrl+S` / `Cmd+S` for manual disk saving (local projects only).
 - **Status Metadata**: Navigation dropdown now shows linked filename and "Saved X minutes ago" timestamp.
 - **Data Integrity**:

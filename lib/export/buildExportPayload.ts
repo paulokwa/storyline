@@ -1,6 +1,11 @@
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
 import { normalizeContent } from './normalize'
+import { isLocalProjectId } from '@/lib/persistence/project-mode'
+import { 
+    requireLocalProject,
+} from '@/lib/persistence/local-projects'
+import { LOCAL_STORE_NAMES, getLocalRecordsByProjectId } from '@/lib/persistence/local-db'
 
 export type ExportNode = {
     id: string
@@ -43,6 +48,40 @@ export interface ExportOptions {
 }
 
 export async function buildExportPayload(projectId: string): Promise<ExportPayload> {
+    const isLocal = isLocalProjectId(projectId)
+
+    if (isLocal) {
+        // Handle local-only project
+        const project = await requireLocalProject(projectId)
+        const [nodes, scenes] = await Promise.all([
+            getLocalRecordsByProjectId<any>(LOCAL_STORE_NAMES.structureNodes, projectId),
+            getLocalRecordsByProjectId<any>(LOCAL_STORE_NAMES.scenes, projectId)
+        ])
+
+        const activeNodes = nodes
+            .filter((n: any) => n.deleted_at == null)
+            .sort((a: any, b: any) => a.order_index - b.order_index)
+        
+        const activeScenes = scenes.filter((s: any) => s.deleted_at == null)
+        const sceneMap = new Map(activeScenes.map((s: any) => [s.node_id as string, s.content]))
+
+        const exportNodes: ExportNode[] = activeNodes.map((node: any) => ({
+            id: node.id,
+            type: node.type as any,
+            title: node.title,
+            order_index: node.order_index,
+            content: normalizeContent(sceneMap.get(node.id))
+        }))
+
+        return {
+            projectTitle: project.title ?? 'Untitled',
+            projectType: project.type as any,
+            nodes: exportNodes,
+            metadata: project.export_metadata as ExportMetadata
+        }
+    }
+
+    // Cloud project (Supabase)
     const supabase = createClient()
 
     // 1. Fetch project
@@ -63,16 +102,19 @@ export async function buildExportPayload(projectId: string): Promise<ExportPaylo
 
     if (!nodes) return { projectTitle: project.title, projectType: project.type as any, nodes: [] }
 
+    const activeNodes = nodes.filter(n => n.deleted_at == null)
+
     // 3. Fetch all scenes content
     const { data: scenes } = await supabase
         .from('scenes')
-        .select('node_id, content')
+        .select('node_id, content, deleted_at')
         .eq('project_id', projectId) as { data: any[] | null }
 
-    const sceneMap = new Map((scenes || []).map(s => [s.node_id as string, s.content]))
+    const activeScenes = (scenes || []).filter(s => s.deleted_at == null)
+    const sceneMap = new Map(activeScenes.map(s => [s.node_id as string, s.content]))
 
     // 4. Combine into a flat list of nodes in order
-    const exportNodes: ExportNode[] = nodes.map(node => ({
+    const exportNodes: ExportNode[] = activeNodes.map(node => ({
         id: node.id,
         type: node.type as any,
         title: node.title,
