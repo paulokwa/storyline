@@ -146,7 +146,12 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 | Permission Handling | Not tested | - | - | Verify permission prompt after refresh. |
 | Download Fallback | Not tested | - | - | Verify Safari/Firefox triggers download. |
 | Cloud Gating | Not tested | - | - | Verify cloud projects do NOT show Save actions. |
-| Export Manuscript Rename | Not tested | - | - | Verify "Export Manuscript..." opens export modal. |
+| Export Manuscript Rename | Not tested | - | - | Verify "Export Manuscript..." opens the in-app export modal, not the .storyline Save As/system file dialog. |
+| Local Export Manuscript - Markdown | Not tested | - | - | From a local project, open Export Manuscript, choose Markdown, generate export, and confirm output is manuscript content, not a `.storyline` project file. |
+| Local Export Manuscript - DOCX | Not tested | - | - | From a local project, open Export Manuscript, choose MS Word/DOCX, generate export, and confirm output is manuscript content. |
+| Local Export Manuscript - EPUB/PDF | Not tested | - | - | From a local project, test EPUB and PDF export if implemented, and confirm output is manuscript content. |
+| Cloud Export Manuscript Regression | Not tested | - | - | From a cloud project, confirm Export Manuscript still opens the in-app export modal and exports normal manuscript formats. |
+| Save As vs Export Separation | Not tested | - | - | Confirm Save As saves a native `.storyline` file, while Export Manuscript opens the format-selection modal before any file save/download. |
 | Sanitization Check | Not tested | - | - | Verify sensitive metadata is stripped from file. |
 
 ## AI Features
