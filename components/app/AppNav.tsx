@@ -309,38 +309,6 @@ export default function AppNav({ user }: { user: User }) {
                             
                             <DropdownMenuSeparator className={`my-1.5 ${isMidnight ? 'bg-slate-700/60' : 'bg-slate-100'}`} />
 
-                            <div className="px-3 py-1 mb-1">
-                                <p className={`text-[10px] uppercase tracking-widest font-bold ${isMidnight ? 'text-slate-500' : 'text-slate-300'}`}>Legal</p>
-                            </div>
-
-                            <DropdownMenuItem 
-                                onClick={() => router.push('/terms')}
-                                className={`rounded-xl px-3 py-2.5 transition-colors cursor-pointer gap-3 ${
-                                    isMidnight ? 'text-slate-400 hover:text-slate-100 hover:bg-white/6' : 'text-slate-500 hover:text-slate-800'
-                                }`}
-                            >
-                                <span className="text-sm">Terms of Service</span>
-                            </DropdownMenuItem>
-
-                            <DropdownMenuItem 
-                                onClick={() => router.push('/privacy')}
-                                className={`rounded-xl px-3 py-2.5 transition-colors cursor-pointer gap-3 ${
-                                    isMidnight ? 'text-slate-400 hover:text-slate-100 hover:bg-white/6' : 'text-slate-500 hover:text-slate-800'
-                                }`}
-                            >
-                                <span className="text-sm">Privacy Policy</span>
-                            </DropdownMenuItem>
-
-                            <DropdownMenuItem 
-                                onClick={() => router.push('/ai-disclaimer')}
-                                className={`rounded-xl px-3 py-2.5 transition-colors cursor-pointer gap-3 ${
-                                    isMidnight ? 'text-slate-400 hover:text-slate-100 hover:bg-white/6' : 'text-slate-500 hover:text-slate-800'
-                                }`}
-                            >
-                                <span className="text-sm">AI Disclaimer</span>
-                            </DropdownMenuItem>
-                            
-                            <DropdownMenuSeparator className={`my-1.5 ${isMidnight ? 'bg-slate-700/60' : 'bg-slate-100'}`} />
                             
                             <DropdownMenuItem 
                                 onClick={handleSignOut}
