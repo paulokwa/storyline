@@ -138,7 +138,6 @@ export async function clearRecoveryTrash(input: {
         .filter((comment) => comment.can_permanently_delete)
         .map((comment) => comment.id)
 
-    for (const commentId of commentIds) {
-        await permanentlyDeleteComment(supabase as never, commentId)
-    }
+    await Promise.all(commentIds.map((commentId) => permanentlyDeleteComment(supabase as never, commentId)))
+
 }
