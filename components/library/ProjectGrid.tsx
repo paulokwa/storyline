@@ -46,7 +46,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from '@/components/providers/ThemeProvider'
 import { destroyLocalProject, listLocalProjects, restoreLocalProject, softDeleteLocalProject, updateLocalProject } from '@/lib/persistence/local-projects'
 import { isLocalProjectId } from '@/lib/persistence/project-mode'
-import ImportBackupButton from '@/components/library/ImportBackupButton'
+import OpenProjectButton from '@/components/library/OpenProjectButton'
 import LocalTransferGuidance from '@/components/project/local/LocalTransferGuidance'
 
 // Explicitly extend the Project type with fields added via recent migrations
@@ -265,7 +265,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                         />
                     )}
                     <div className="w-full">
-                        <ImportBackupButton currentUserId={currentUserId} className="w-full md:w-auto" />
+                        <OpenProjectButton currentUserId={currentUserId} className="w-full md:w-auto" />
                     </div>
                 </div>
             </div>
@@ -359,7 +359,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                             </div>
 
                             <div className="flex w-full flex-col gap-3 sm:gap-4 lg:w-auto lg:flex-row lg:items-center">
-                                <ImportBackupButton currentUserId={currentUserId} />
+                                <OpenProjectButton currentUserId={currentUserId} />
 
                                 <Link href="/new" className="w-full lg:w-auto">
                                     <Button className="sanctuary-btn-primary h-14 w-full lg:w-auto justify-center px-6 sm:px-10 rounded-full text-sm sm:text-base font-bold gap-2 sm:gap-3 shadow-xl hover:shadow-primary/20 active:scale-[0.98] transition-all">
@@ -735,7 +735,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                                             <Sparkles className="w-5 h-5" />
                                         </button>
                                     )}
-                                    {mode === 'active' && !isLocalProject && (
+                                    {mode === 'active' && (
                                         <>
                                             <button
                                                 onClick={e => { e.preventDefault(); e.stopPropagation(); setIsSettingsOpen(true) }}
@@ -920,26 +920,24 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                 <div className="absolute top-0 right-0 w-32 h-32 rounded-full -mr-16 -mt-16 transition-all duration-700 bg-stone-50/50 group-hover:bg-primary/5" />
             )}
 
-            {!isLocalProject && (
-                <>
-                    <CoverEditModal 
-                        project={{
-                            id: project.id,
-                            title: project.title || '',
-                            cover_url: project.cover_url || ''
-                        }}
-                        isOpen={isEditingCover}
-                        onOpenChange={setIsEditingCover}
-                    />
+            <CoverEditModal 
+                project={{
+                    id: project.id,
+                    title: project.title || '',
+                    cover_url: project.cover_url || ''
+                }}
+                isLocalProject={isLocalProject}
+                isOpen={isEditingCover}
+                onOpenChange={setIsEditingCover}
+                onLocalProjectChange={onLocalProjectChange}
+            />
 
-                    <ProjectSettingsModal
-                        open={isSettingsOpen}
-                        onOpenChange={setIsSettingsOpen}
-                        project={project}
-                        role={project.role ?? 'owner'}
-                    />
-                </>
-            )}
+            <ProjectSettingsModal
+                open={isSettingsOpen}
+                onOpenChange={setIsSettingsOpen}
+                project={project}
+                role={project.role ?? 'owner'}
+            />
         </div>
     )
 }

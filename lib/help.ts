@@ -14,7 +14,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     title: 'How does Cloud Sync work?',
     summary: 'Understand what cloud sync is, when to use it, and how to turn it on for one project.',
     answer:
-      'Cloud Sync makes one specific project available on your other devices and unlocks sharing features for that project.\n\nHere is the simple version:\n- A local project lives only on the device where you created it.\n- Turning on Cloud Sync uploads that project so you can open it elsewhere with the same account.\n- This does not happen automatically for every project. You choose it per project.\n\nHow to turn it on:\n1. Open the project you want to use on other devices.\n2. Open Project Settings.\n3. Choose Enable Cloud & Collaboration.\n4. Confirm the upload.\n\nWhat happens next:\n- Your project is copied to the cloud for cross-device access.\n- Your local version stays behind as a backup.\n- Collaboration tools like sharing and viewer feedback become available for that cloud-synced project.\n\nIf you do not want cloud sync:\nUse Export Backup on one device, then Import Backup on the other. That keeps the project local-only while still letting you move it manually.',
+      'Cloud Sync makes one specific project available on your other devices and unlocks sharing features for that project.\n\nHere is the simple version:\n- A local project lives only on the device where you created it.\n- Turning on Cloud Sync uploads that project so you can open it elsewhere with the same account.\n- This does not happen automatically for every project. You choose it per project.\n\nHow to turn it on:\n1. Open the project you want to use on other devices.\n2. Open Project Settings.\n3. Choose Enable Cloud & Collaboration.\n4. Confirm the upload.\n\nWhat happens next:\n- Your project is copied to the cloud for cross-device access.\n- Your local version stays behind as a backup.\n- Collaboration tools like sharing and viewer feedback become available for that cloud-synced project.\n\nIf you do not want cloud sync:\nUse Save As... to create a .storyline file on one device, then use Open Project File on the other. That keeps the project local-only while still letting you move it manually.',
     keywords: ['cloud sync', 'sync', 'devices', 'another device', 'backup', 'local project', 'collaboration', 'enable cloud', 'upload to cloud'],
     relatedRoutes: [],
     sampleQuestions: [
@@ -148,14 +148,14 @@ export const HELP_TOPICS: HelpTopic[] = [
     sampleQuestions: ['How do I upload images?', 'Where do I manage project assets?', 'How do I attach an image to a scene?']
   },
   {
-    id: 'export-project',
-    title: 'How do I export my project?',
-    summary: 'Export your story contents for backup or external editing.',
+    id: 'export-manuscript',
+    title: 'How do I export my manuscript?',
+    summary: 'Export your story contents as a document for publishing or sharing.',
     answer:
-      'Use the Export option from the project header menu to download your story and project data. This is useful for backups or moving your work into another writing tool.',
-    keywords: ['export', 'download', 'backup', 'save', 'share'],
+      'Use the Export Manuscript... option from the project header menu to download your story in formats like DOCX, PDF, or Plain Text. This is useful for sharing your work or preparing it for publication.',
+    keywords: ['export', 'manuscript', 'download', 'docx', 'pdf', 'publish'],
     relatedRoutes: ['/story', '/settings'],
-    sampleQuestions: ['How do I export my story?', 'Can I download my project?', 'How do I save a backup?']
+    sampleQuestions: ['How do I export my story?', 'Can I download my manuscript?', 'How do I export to Word?']
   },
   {
     id: 'project-recovery',

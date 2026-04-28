@@ -1,10 +1,10 @@
 'use client'
 
 /**
- * Phase 3 – Backup System: Import Backup Button
+ * Phase 3 – Backup System: Open Project Button
  *
- * A standalone component that renders a file picker trigger for importing
- * a `.storyline` backup. On success, navigates to the newly created project.
+ * A standalone component that renders a file picker trigger for opening
+ * a `.storyline` project file. On success, navigates to the newly created/updated project.
  *
  * Placement: Library header action area (alongside "Start New Project").
  */
@@ -29,7 +29,7 @@ type PendingLibraryImport = {
     options: LibraryImportOptions
 }
 
-export default function ImportBackupButton({
+export default function OpenProjectButton({
     currentUserId,
     className,
 }: {
@@ -39,14 +39,14 @@ export default function ImportBackupButton({
     const router = useRouter()
     const searchParams = useSearchParams()
     const inputRef = useRef<HTMLInputElement>(null)
-    const [status, setStatus] = useState<'idle' | 'reading' | 'importing' | 'error'>('idle')
+    const [status, setStatus] = useState<'idle' | 'reading' | 'opening' | 'error'>('idle')
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
     const [pendingImport, setPendingImport] = useState<PendingLibraryImport | null>(null)
     const [selectedUpdateProjectId, setSelectedUpdateProjectId] = useState<string>('')
 
-    // Handle '?action=import' from notifications
+    // Handle '?action=open' from notifications
     useEffect(() => {
-        if (searchParams?.get('action') === 'import') {
+        if (searchParams?.get('action') === 'open') {
             // Remove the param from URL to avoid re-triggering
             const params = new URLSearchParams(searchParams.toString())
             params.delete('action')
@@ -81,7 +81,7 @@ export default function ImportBackupButton({
                     type: 'local_transfer_guidance',
                     title: 'Working on another device?',
                     summary: 'Learn how to transfer your local projects between devices or enable cloud sync.',
-                    body: 'Local projects stay on the device where they were created. To use a project on this device, export a backup from your other device and import it here. You can also enable cloud sync for projects you want available across devices.',
+                    body: 'Local projects stay on the device where they were created. To use a project on this device, save it as a .storyline file on your other device and open it here. You can also enable cloud sync for projects you want available across devices.',
                 })
             }
 
@@ -130,7 +130,7 @@ export default function ImportBackupButton({
             return
         }
 
-        setStatus('importing')
+        setStatus('opening')
         const result = await importLocalBackup(parsed.data, currentUserId)
 
         if (!result.ok) {
@@ -152,7 +152,7 @@ export default function ImportBackupButton({
         )
         if (!selectedProject) return
 
-        setStatus('importing')
+        setStatus('opening')
         setErrorMessage(null)
 
         const result = await restoreLocalBackup(
@@ -177,7 +177,7 @@ export default function ImportBackupButton({
     async function handleCreateCopy() {
         if (!pendingImport) return
 
-        setStatus('importing')
+        setStatus('opening')
         setErrorMessage(null)
 
         const result = await importLocalBackup(
@@ -204,7 +204,7 @@ export default function ImportBackupButton({
         setSelectedUpdateProjectId('')
     }
 
-    const isLoading = status === 'reading' || status === 'importing'
+    const isLoading = status === 'reading' || status === 'opening'
     const selectedProject = pendingImport?.options.sameTypeProjects.find(
         (project) => project.id === selectedUpdateProjectId
     ) ?? null
@@ -217,7 +217,7 @@ export default function ImportBackupButton({
             <button
                 onClick={handleClick}
                 disabled={isLoading}
-                id="library-import-backup-btn"
+                id="library-open-project-btn"
                 className={cn(
                     'h-14 w-full lg:w-auto flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-10',
                     'rounded-full text-sm sm:text-base font-bold transition-all duration-300',
@@ -226,16 +226,16 @@ export default function ImportBackupButton({
                     'active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed',
                     className
                 )}
-                aria-label="Import a .storyline backup file"
+                aria-label="Open a .storyline project file"
             >
                 <Upload className="w-5 h-5 transition-transform group-hover:scale-110" />
-                <span className="sm:hidden">Import</span>
+                <span className="sm:hidden">Open</span>
                 <span className="hidden sm:inline">
                     {isLoading
                         ? status === 'reading'
                             ? 'Reading file…'
-                            : 'Importing…'
-                        : 'Import Backup'}
+                            : 'Opening…'
+                        : 'Open Project File'}
                 </span>
             </button>
 
@@ -272,13 +272,13 @@ export default function ImportBackupButton({
                             id="library-import-conflict-title"
                             className="text-lg font-semibold text-slate-900"
                         >
-                            Import {importedProjectTypeLabel} backup
+                            Open {importedProjectTypeLabel} file
                         </h2>
                         <p className="mt-3 text-sm leading-6 text-slate-600">
-                            This backup is for <span className="font-semibold text-slate-900">{pendingImport.options.backupBaseTitle}</span>. You can update an existing {importedProjectTypeLabel.toLowerCase()} or create a separate imported copy.
+                            This file is for <span className="font-semibold text-slate-900">{pendingImport.options.backupBaseTitle}</span>. You can update an existing {importedProjectTypeLabel.toLowerCase()} or create a separate copy.
                         </p>
                         <p className="mt-2 text-sm leading-6 text-slate-600">
-                            Updating will replace the selected project&apos;s current local content with this backup. This cannot be undone unless you have another backup.
+                            Updating will replace the selected project&apos;s current local content with the content from this file. This cannot be undone.
                         </p>
                         <div className="mt-6 flex flex-col gap-3">
                             <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
@@ -310,7 +310,7 @@ export default function ImportBackupButton({
                                 disabled={isLoading}
                                 className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                Create new copy as {pendingImport.options.nextCopyTitle}
+                                Open as a new copy: {pendingImport.options.nextCopyTitle}
                             </button>
                             <button
                                 type="button"

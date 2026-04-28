@@ -5,6 +5,136 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-04-27 - Local project .storyline file workflow (Save/Save As/Open)
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- **Manual Save / Save As / Open**: Implemented desktop-like file management for local-only projects using the File System Access API.
+- **Rebranding**:
+  - Library: "Import Backup" -> "Open Project File".
+  - Project Menu: Added "Save Project" and "Save As...".
+  - Project Menu: "Export Project" -> "Export Manuscript...".
+- **Shortcuts**: Registered `Ctrl+S` / `Cmd+S` for manual disk saving (local projects only).
+- **Status Metadata**: Navigation dropdown now shows linked filename and "Saved X minutes ago" timestamp.
+- **Data Integrity**:
+  - Fixed a bug where `ProjectShell.tsx` was passing project IDs instead of content to the save utility.
+  - Ensured `.storyline` files are sanitized (browser handles/metadata stripped) during export.
+- **Verification**: `npx tsc` and `npm run lint` passed (after reordering variable declarations in `ProjectShell.tsx`).
+
+### Current status
+
+Implementation is complete, but **manual browser smoke testing is required** to verify native file-system behavior and permission handling.
+
+### Next recommended step
+
+Run the manual browser smoke-test checklist (see `TESTING.md` or below).
+
+### Risks or warnings
+
+- File System Access API support varies by browser; verify the download fallback in Safari/Firefox.
+- Permission revocation on refresh: confirm the "permission needed" toast and flow work correctly.
+
+---
+## 2026-04-27 - Guided Story Tone copy now respects AI availability
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Picked the `TASK_BOARD.md` item for the guided project creation `Story Tone` step.
+- Updated the new-project flow to read the current user's `ai_enabled` setting from `user_api_keys`.
+- Passed that state into `GuidedFlow.tsx` and made the `Story Tone` hint dynamic:
+  - AI enabled: AI-oriented wording remains.
+  - AI disabled/unavailable: the step is described as project atmosphere/style guidance instead of an AI feature.
+- Verified the touched code with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+The guided `Story Tone` step now matches the user's actual AI state instead of always implying AI is active.
+
+### Next recommended step
+
+Browser-check the guided project creation flow:
+- open `/new`
+- verify the `Story Tone` step uses AI wording when AI is enabled
+- verify it switches to non-AI wording when AI is disabled for the account
+- confirm the rest of the guided flow still persists drafts and completes normally
+
+### Risks or warnings
+
+- Verification in this session was compile-only; browser validation is still needed for the copy swap under both account states.
+
+---
+## 2026-04-27 - Local/cloud boundary messaging tightened
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Audited local/cloud boundary behavior across library and project-entry surfaces after the local cover-edit fix.
+- Identified a concrete mismatch in local project settings: the UI already supports `Enable Cloud & Collaboration`, but some local-only messaging still implied that collaboration-related cloud behavior was a future update.
+- Updated `ProjectSettingsModal.tsx` so local collaboration toasts now point users to the existing migration action.
+- Changed the settings-level `Learn about Cloud Sync` action to open the Help Center instead of the migration confirmation dialog.
+- Added an `Open Project Settings` action to the local project education modal in `ProjectShell.tsx` so users are given a real next step when told they can enable cloud sync.
+- Verified the touched code with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+The local/cloud boundary copy is more honest and the local education flow now exposes actual paths for both learning about cloud sync and enabling it.
+
+### Next recommended step
+
+Run a browser smoke test on local project entry and settings:
+- create or open a local-only project and confirm the first-run local education modal offers backup plus project settings
+- open local project settings and confirm `Enable Cloud & Collaboration` is visible
+- click `Learn about Cloud Sync` and confirm it opens `/help?q=cloud sync`
+- click a locked collaboration toggle and confirm the toast points to the existing migration action rather than implying the feature is unavailable
+
+### Risks or warnings
+
+- Verification in this session was compile-only; browser validation is still needed for the modal flow and help navigation.
+
+---
+## 2026-04-27 - Local library cover editing restored
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Investigated why local-only library cards were missing the pencil and palette actions.
+- Confirmed the issue was a UI gate in `ProjectGrid.tsx`, not a fundamental local-project metadata limitation.
+- Restored local owner access to project settings and cover editing from the library.
+- Updated `CoverEditModal.tsx` so local cover saves go through `updateLocalProject(...)` and local uploaded files are persisted as data URLs, matching the local project creation flow.
+- Verified the touched code with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+Local-only projects should now expose the same library-card metadata and cover editing entry points as cloud projects, while still keeping uploaded local cover files on-device.
+
+### Next recommended step
+
+Run a browser smoke test on the library:
+- create or open a local-only project card and confirm the pencil and palette buttons are visible
+- update a local project title from the library and confirm it persists
+- change a local cover using a theme cover, custom URL, and uploaded file
+- refresh the library and confirm the updated cover remains visible
+- if needed, migrate a local project with a custom cover to cloud and confirm the resulting cloud cover behavior is acceptable
+
+### Risks or warnings
+
+- Verification in this session was compile-only; browser validation is still needed for the local cover upload and refresh path.
+
+---
 ## 2026-04-27 - AI context preview hidden behind footer inspector
 
 ### Current branch

@@ -266,3 +266,105 @@ Add a short entry using this format:
 
 - Confirmed via browser testing that the icon disappears when the delete flow starts, providing a clean UI for the confirmation buttons.
 
+---
+
+## Issue: Local library cards hide edit and cover controls
+
+### Symptoms
+
+- Local-only projects in the library do not show the pencil or palette actions.
+- Owners cannot update local project metadata or cover art from the library card.
+- Cloud projects still show both actions normally.
+
+### Cause
+
+- `ProjectGrid.tsx` explicitly gated the library card edit actions behind `!isLocalProject`.
+- `CoverEditModal.tsx` only persisted cover changes through `supabase.from('projects').update(...)`, so it had no local-only save path.
+
+### Fix
+
+- Allow owners to open project settings and cover editing for local library cards too.
+- Persist local cover changes with `updateLocalProject(...)`.
+- Reuse the existing deferred local-cover flow: keep uploaded files client-side until save, then convert them to a data URL for local project storage.
+
+### Verification
+
+- `npx tsc --noEmit --pretty false`
+
+### Notes
+
+- Local uploaded covers remain device-local until the user enables cloud sync.
+- Browser validation is still needed for the local upload, refresh, and local-to-cloud migration path.
+
+---
+
+## Issue: Local settings mention cloud sync but hide the real next step
+
+### Symptoms
+
+- Local-only project settings say collaboration needs cloud sync, but the toast implies it is a future feature.
+- Local education prompts tell users to enable cloud sync without offering a direct path into project settings.
+- `Learn about Cloud Sync` inside project settings opens a migration confirmation instead of actual guidance.
+
+### Cause
+
+- Local-mode copy drifted after cloud migration support was added.
+- Settings/help affordances were not updated to match the working `Enable Cloud & Collaboration` flow.
+
+### Fix
+
+- Update local-only collaboration toast copy to point users at the existing `Enable Cloud & Collaboration` action.
+- Route `Learn about Cloud Sync` from project settings to the Help Center instead of the migration confirm dialog.
+- Add an `Open Project Settings` action to the local project education modal.
+
+### Verification
+
+- `npx tsc --noEmit --pretty false`
+
+### Notes
+
+- Browser verification is still needed to confirm the modal-to-settings flow feels clear in practice.
+
+---
+
+## Issue: "Permission Required" toast when saving a local project
+
+### Symptoms
+
+- User clicks "Save Project" or presses `Ctrl+S`.
+- A toast message appears saying "Permission required to write to file" or similar.
+- The file is not updated.
+
+### Cause
+
+- The browser (Chrome/Edge) revokes write permission for local file handles on page refresh or after a period of inactivity for security reasons.
+
+### Fix
+
+- Click "Save Project" again. The browser should trigger a native permission prompt (e.g., "Allow this site to save changes?"). Once granted, saving will work for the remainder of the session.
+
+### Notes
+
+- This is a built-in security feature of the File System Access API. We cannot bypass it, but the app is designed to re-trigger the permission picker on next interaction.
+
+---
+
+## Issue: Local project disk link is missing after clearing browser cache
+
+### Symptoms
+
+- A local project that was previously linked to a `.storyline` file on disk no longer shows the filename in the navigation dropdown.
+- "Save Project" triggers a "Save As" picker instead of updating the existing file.
+
+### Cause
+
+- Clearing browser site data or IndexedDB deletes the `storyline_file_handle` stored in the local project row.
+
+### Fix
+
+- Use "Save As..." to re-link the project to the existing file, or use "Open Project File" from the Library to reload it from disk (which will re-establish the link).
+
+### Notes
+
+- The project content itself remains safe in IndexedDB (unless the user explicitly deleted it); only the link to the external `.storyline` file is lost.
+

@@ -105,7 +105,7 @@ export default function ProjectSettingsModal({
     const handleLockedSettingClick = () => {
         if (!isLocalOnly) return
         toast.info("Cloud required", {
-            description: "Collaboration features require enabling cloud sync. This will be available in a later update.",
+            description: "Collaboration features require enabling cloud sync for this project. Use Enable Cloud & Collaboration above when you're ready.",
             duration: 5000,
         })
     }
@@ -483,8 +483,11 @@ export default function ProjectSettingsModal({
 
                                             <LocalTransferGuidance
                                                 compact
-                                                onImportBackup={onOpenRestore}
-                                                onLearnAboutCloudSync={() => setShowMigrationConfirm(true)}
+                                                onOpenProjectFile={onOpenRestore}
+                                                onLearnAboutCloudSync={() => {
+                                                    onOpenChange(false)
+                                                    router.push('/help?q=cloud%20sync')
+                                                }}
                                             />
                                         </div>
                                     )}

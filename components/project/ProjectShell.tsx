@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
@@ -66,6 +66,13 @@ import type { ProjectStorageMode } from '@/lib/persistence/project-mode'
 import { updateLocalProject } from '@/lib/persistence/local-projects'
 import { exportLocalBackup } from '@/lib/backup/export-local-backup'
 import { recordBackupComplete } from '@/lib/backup/backup-reminder'
+import { 
+    saveProjectContent, 
+    getNewStorylineFileHandle, 
+} from '@/lib/backup/file-system'
+import { buildLocalBackup } from '@/lib/backup/export-local-backup'
+import { BACKUP_FILE_EXTENSION } from '@/lib/backup/backup-format'
+import { toast } from 'sonner'
 import {
     Tooltip,
     TooltipContent,
@@ -442,6 +449,119 @@ function ProjectShellInner({
     const supportsAssets = true
     const sceneAssetsLabel = project.type === 'tv_script' ? 'Visual References' : 'Gallery'
     const visibleTabs = isLocalOnly ? LOCAL_ONLY_TABS : TABS
+    const { commentsPanelOpen, setCommentsPanelOpen } = useComments()
+    
+    // Responsive checks
+    const isMobile = useMediaQuery('(max-width: 768px)')
+
+
+
+
+
+    const [isSavingToDisk, setIsSavingToDisk] = useState(false)
+
+    const handleSaveProject = useCallback(async () => {
+        if (!isLocalOnly || isSavingToDisk) return
+        setIsSavingToDisk(true)
+
+        try {
+            // Build the project backup JSON
+            const backup = await buildLocalBackup(project.id)
+            const json = JSON.stringify(backup, null, 2)
+            
+            const result = await saveProjectContent(json, {
+                fileName: project.linked_file_name || `${project.title || 'untitled'}${BACKUP_FILE_EXTENSION}`,
+                handle: project.storyline_file_handle
+            })
+            
+            if (result && result.ok) {
+                const updatedFields: any = {
+                    last_file_save_at: new Date().toISOString()
+                }
+                
+                if (result.handle) {
+                    updatedFields.storyline_file_handle = result.handle
+                    updatedFields.linked_file_name = result.fileName
+                }
+
+                await updateLocalProject(project.id, updatedFields)
+                
+                toast.success(result.savedToHandle 
+                    ? `Project saved to ${result.fileName}`
+                    : "Project downloaded as .storyline file"
+                )
+            } else if (result) {
+                if (result.reason === 'permission_denied') {
+                    toast.error("Storyline could not access the linked file. Use Save As to choose a file again.")
+                } else if (result.reason === 'permission_lost') {
+                    toast.error("Storyline needs permission to save to this file again.")
+                } else if (result.reason !== 'cancelled') {
+                    toast.error(`Save failed: ${result.reason}`)
+                }
+            }
+        } catch (err) {
+            console.error('[ProjectShell] Manual save failed:', err)
+            toast.error("An unexpected error occurred while saving.")
+        } finally {
+            setIsSavingToDisk(false)
+        }
+    }, [isLocalOnly, isSavingToDisk, project.id, project.storyline_file_handle])
+
+    const handleSaveProjectAs = useCallback(async () => {
+        if (!isLocalOnly || isSavingToDisk) return
+        setIsSavingToDisk(true)
+
+        try {
+            // Build the project backup JSON
+            const backup = await buildLocalBackup(project.id)
+            const json = JSON.stringify(backup, null, 2)
+
+            const result = await saveProjectContent(json, {
+                fileName: `${project.title || 'untitled'}${BACKUP_FILE_EXTENSION}`,
+                handle: null // Force a new handle
+            })
+
+            if (result && result.ok) {
+                const updatedFields = {
+                    storyline_file_handle: result.handle || null,
+                    linked_file_name: result.fileName,
+                    last_file_save_at: new Date().toISOString()
+                }
+                await updateLocalProject(project.id, updatedFields)
+                toast.success(result.savedToHandle 
+                    ? `Project linked to ${result.fileName} and saved`
+                    : "Project saved and downloaded"
+                )
+            } else if (result && result.reason !== 'cancelled') {
+                toast.error(`Save As failed: ${result.reason}`)
+            }
+        } catch (err) {
+            console.error('[ProjectShell] Save As failed:', err)
+            toast.error("An unexpected error occurred while saving.")
+        } finally {
+            setIsSavingToDisk(false)
+        }
+    }, [isLocalOnly, isSavingToDisk, project.id, project.title])
+
+    // Global keyboard shortcut for Save (Ctrl+S / Cmd+S)
+    useEffect(() => {
+        if (!isLocalOnly) return
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault()
+                if (project.storyline_file_handle) {
+                    handleSaveProject()
+                } else {
+                    handleSaveProjectAs()
+                }
+            }
+        }
+
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [isLocalOnly, project.storyline_file_handle, handleSaveProject, handleSaveProjectAs])
+
     useEffect(() => {
         setActions({
             export: () => {
@@ -456,6 +576,8 @@ function ProjectShellInner({
                     setExportModalOpen(true)
                 }
             },
+            save: isLocalOnly ? handleSaveProject : undefined,
+            saveAs: isLocalOnly ? handleSaveProjectAs : undefined,
             share: () => {
                 if (!isLocalOnly) setShareModalOpen(true)
             },
@@ -471,17 +593,11 @@ function ProjectShellInner({
             exportDisabledReason: canExport
                 ? null
                 : 'The owner has disabled exports for collaborators.',
+            linkedFileName: project.linked_file_name,
+            lastFileSaveAt: project.last_file_save_at,
         })
         return () => setActions(null)
-    }, [canExport, canShare, isLocalOnly, project.id, router, setActions, setExportModalOpen, setShareModalOpen, setSettingsModalOpen, setRestoreModalOpen])
-    const { commentsPanelOpen, setCommentsPanelOpen } = useComments()
-    
-    // Responsive checks
-    const isMobile = useMediaQuery('(max-width: 768px)')
-
-
-
-
+    }, [canExport, canShare, isLocalOnly, project.id, project.linked_file_name, project.last_file_save_at, router, setActions, setExportModalOpen, setShareModalOpen, setSettingsModalOpen, setRestoreModalOpen, handleSaveProject, handleSaveProjectAs])
 
     const handleDismissStructureHint = (e?: React.MouseEvent) => {
         if (e) {

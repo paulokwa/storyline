@@ -7,8 +7,10 @@ import { createClient } from '@/lib/supabase/client'
 import { isAdminEmail } from '@/lib/admin'
 import { 
     PenLine, LogOut, Settings as SettingsIcon, 
-    Download, Users, Settings2, BarChart3, Mail, Shield, ArchiveRestore, HelpCircle
+    Download, Users, Settings2, BarChart3, Mail, Shield, ArchiveRestore, HelpCircle,
+    Save, FilePlus
 } from 'lucide-react'
+import { formatDistanceToNow } from '@/lib/time'
 import type { User } from '@supabase/supabase-js'
 import {
     DropdownMenu,
@@ -59,7 +61,20 @@ export default function AppNav({ user }: { user: User }) {
     }
 
     const displayName = (user.user_metadata?.display_name as string) || user.email?.split('@')[0] || 'Writer'
-    const { exportAction, restoreAction, shareAction, settingsAction, statsAction, canShare, canExport, exportDisabledReason } = useProjectActionsStore()
+    const { 
+        exportAction, 
+        saveAction,
+        saveAsAction,
+        restoreAction, 
+        shareAction, 
+        settingsAction, 
+        statsAction, 
+        canShare, 
+        canExport, 
+        exportDisabledReason,
+        linkedFileName,
+        lastFileSaveAt
+    } = useProjectActionsStore()
 
     return (
         <nav className={`app-nav-shell sticky top-0 z-40 shrink-0 px-4 sm:px-6 lg:px-8 ${
@@ -139,6 +154,46 @@ export default function AppNav({ user }: { user: User }) {
                             {/* Project-specific items managed via state */}
                             {exportAction && (
                                 <>
+                                    {/* Local Disk Saving */}
+                                    {saveAction && (
+                                        <DropdownMenuItem 
+                                            onClick={saveAction}
+                                            className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
+                                                isMidnight ? 'text-slate-300 focus:text-indigo-200 focus:bg-white/8' : 'text-slate-600 focus:text-indigo-600 focus:bg-indigo-50'
+                                            }`}
+                                        >
+                                            <Save className="w-4 h-4" />
+                                            <div className="flex flex-col overflow-hidden">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-semibold text-sm">Save Project</span>
+                                                    <span className="text-[9px] opacity-40 font-bold uppercase tracking-widest">Ctrl+S</span>
+                                                </div>
+                                                {linkedFileName && (
+                                                    <span className="text-[10px] opacity-60 truncate max-w-[180px]">
+                                                        Linked: {linkedFileName}
+                                                    </span>
+                                                )}
+                                                {lastFileSaveAt && (
+                                                    <span className="text-[9px] opacity-40 italic">
+                                                        Saved {formatDistanceToNow(lastFileSaveAt)}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </DropdownMenuItem>
+                                    )}
+
+                                    {saveAsAction && (
+                                        <DropdownMenuItem 
+                                            onClick={saveAsAction}
+                                            className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
+                                                isMidnight ? 'text-slate-300 focus:text-indigo-200 focus:bg-white/8' : 'text-slate-600 focus:text-indigo-600 focus:bg-indigo-50'
+                                            }`}
+                                        >
+                                            <FilePlus className="w-4 h-4" />
+                                            <span className="font-semibold text-sm">Save As...</span>
+                                        </DropdownMenuItem>
+                                    )}
+
                                     <DropdownMenuItem 
                                         onClick={exportAction}
                                         disabled={!canExport}
@@ -151,7 +206,7 @@ export default function AppNav({ user }: { user: User }) {
                                     >
                                         <Download className="w-4 h-4" />
                                         <span className="font-semibold text-sm">
-                                            {canExport ? 'Export Project' : 'Export Disabled by Owner'}
+                                            {canExport ? 'Export Manuscript...' : 'Export Disabled by Owner'}
                                         </span>
                                     </DropdownMenuItem>
                                     

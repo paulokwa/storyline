@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 
 type LocalTransferGuidanceProps = {
     className?: string
-    onImportBackup?: () => void
+    onOpenProjectFile?: () => void
     cloudSyncHref?: string
     onLearnAboutCloudSync?: () => void
     compact?: boolean
@@ -16,7 +16,7 @@ type LocalTransferGuidanceProps = {
 
 export default function LocalTransferGuidance({
     className,
-    onImportBackup,
+    onOpenProjectFile,
     cloudSyncHref,
     onLearnAboutCloudSync,
     compact = false,
@@ -48,21 +48,21 @@ export default function LocalTransferGuidance({
                 <div className="min-w-0">
                     <h3 className="text-lg font-semibold text-slate-900">Working on another device?</h3>
                     <p className="mt-2 text-sm leading-6 text-slate-600">
-                        Local projects stay on the device where they were created. To use a project on this device, export a backup from your other device and import it here. You can also enable cloud sync for projects you want available across devices.
+                        Local projects stay on the device where they were created. To use a project on this device, save it as a .storyline file on your other device and open it here. You can also enable cloud sync for projects you want available across devices.
                     </p>
                 </div>
             </div>
 
             <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-                {onImportBackup && (
+                {onOpenProjectFile && (
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={onImportBackup}
+                        onClick={onOpenProjectFile}
                         className="h-11 rounded-full border-slate-200 bg-white/85 px-5 text-slate-700 hover:bg-white"
                     >
                         <Upload className="mr-2 h-4 w-4" />
-                        Import Backup
+                        Open Project File
                     </Button>
                 )}
 

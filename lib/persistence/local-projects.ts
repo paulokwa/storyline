@@ -28,6 +28,9 @@ export type LocalProjectRow = ProjectRow & {
     is_local: true
     storage_mode: 'local-only'
     migrated_to_cloud_project_id?: string | null
+    storyline_file_handle?: FileSystemFileHandle | null
+    linked_file_name?: string | null
+    last_file_save_at?: string | null
 }
 
 type LocalSceneWithLinks = SceneRow & {
@@ -75,6 +78,9 @@ function createLocalProjectRow(input: CreateLocalProjectInput, blueprint: Projec
         is_local: true,
         storage_mode: 'local-only',
         migrated_to_cloud_project_id: null,
+        storyline_file_handle: null,
+        linked_file_name: null,
+        last_file_save_at: null,
     }
 }
 
@@ -191,7 +197,15 @@ export async function listLocalProjects() {
     })
 }
 
-export async function updateLocalProject(projectId: string, updates: ProjectUpdate & { migrated_to_cloud_project_id?: string | null }) {
+export async function updateLocalProject(
+    projectId: string, 
+    updates: ProjectUpdate & { 
+        migrated_to_cloud_project_id?: string | null;
+        storyline_file_handle?: FileSystemFileHandle | null;
+        linked_file_name?: string | null;
+        last_file_save_at?: string | null;
+    }
+) {
     const project = await requireLocalProject(projectId)
     const nextProject: LocalProjectRow = {
         ...project,

@@ -135,6 +135,20 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 | Restore from backup (cloud) | Not tested | - | - | Confirm behavior or absence is intentional. |
 | Backup reminder trigger | Needs retest | - | - | User has not seen reminder trigger despite word growth. |
 
+## .storyline File Workflow (Save/Save As/Open)
+
+| Test | Status | Tested by | Date tested | Notes |
+|---|---|---|---|---|
+| Open Project File (Library) | Not tested | - | - | Verify selecting a `.storyline` file loads it. |
+| Open Conflict (Library) | Not tested | - | - | Verify conflict modal (New Copy / Update / Cancel). |
+| Save Project (Local) | Not tested | - | - | Verify `Ctrl+S` updates the linked file on disk. |
+| Save As (Local) | Not tested | - | - | Verify Menu > Save As triggers a new picker. |
+| Permission Handling | Not tested | - | - | Verify permission prompt after refresh. |
+| Download Fallback | Not tested | - | - | Verify Safari/Firefox triggers download. |
+| Cloud Gating | Not tested | - | - | Verify cloud projects do NOT show Save actions. |
+| Export Manuscript Rename | Not tested | - | - | Verify "Export Manuscript..." opens export modal. |
+| Sanitization Check | Not tested | - | - | Verify sensitive metadata is stripped from file. |
+
 ## AI Features
 
 | Test | Status | Tested by | Date tested | Notes |
@@ -218,6 +232,9 @@ Newest confirmations go at the top.
 
 | 2026-04-26 | User | Solo project collaborator header empty state | Passed | User confirmed the empty collaborator pill/blip no longer appears on solo projects. |
 | 2026-04-26 | User | Prose scene gallery wording | Passed | User confirmed the wording cleanup is resolved. |
+| 2026-04-27 | AI agent | TypeScript compile after guided Story Tone AI-availability fix | Passed | `npx tsc --noEmit --pretty false` passed after making guided `Story Tone` copy dynamic based on the user's `ai_enabled` setting. |
+| 2026-04-27 | AI agent | TypeScript compile after local/cloud boundary messaging fix | Passed | `npx tsc --noEmit --pretty false` passed after correcting local settings cloud-sync guidance and adding a direct Project Settings path from the local education modal. |
+| 2026-04-27 | AI agent | TypeScript compile after local library cover-edit fix | Passed | `npx tsc --noEmit --pretty false` passed after restoring local library edit/cover actions and adding local cover persistence in `CoverEditModal`. |
 | 2026-04-27 | AI agent | TypeScript compile after AI context preview footer move | Passed | `npx tsc --noEmit --pretty false` passed after moving the AI context inspector behind an icon-only footer control and floating panel. |
 | 2026-04-27 | AI agent | TypeScript compile after Help tab removal | Passed | `npx tsc --noEmit --pretty false` passed after removing the visible Help tab from `ProjectShell` while keeping the help icon and route intact. |
 | 2026-04-27 | AI agent | TypeScript compile after centralized AI rate limiting | Passed | `npx tsc --noEmit --pretty false` passed after wiring the shared limiter into the three AI endpoints. |

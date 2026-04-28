@@ -94,11 +94,17 @@ export async function buildLocalBackup(projectId: string): Promise<StorylineBack
         listLocalComments(projectId), // already filters to active-only
     ])
 
+    // Sanitize project metadata (strip local-only file system handles/paths)
+    const sanitizedProject = { ...project }
+    delete sanitizedProject.storyline_file_handle
+    delete sanitizedProject.linked_file_name
+    delete sanitizedProject.last_file_save_at
+
     return {
         version: BACKUP_FORMAT_VERSION,
         exported_at: new Date().toISOString(),
         app_version: process.env.NEXT_PUBLIC_APP_VERSION ?? '1.0.0',
-        project,
+        project: sanitizedProject,
         structure_nodes: allNodes.filter((n) => n.deleted_at == null),
         scenes: allScenes.filter((s) => s.deleted_at == null),
         characters: allCharacters.filter((c) => c.deleted_at == null),

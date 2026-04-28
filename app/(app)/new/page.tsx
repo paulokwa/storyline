@@ -45,6 +45,7 @@ export default function NewProjectPage() {
     const [creating, setCreating] = useState(false)
     const [preferredStorageMode, setPreferredStorageMode] = useState<PreferredStorageMode>('local')
     const [selectedStorageMode, setSelectedStorageMode] = useState<PreferredStorageMode>('local')
+    const [isAiEnabled, setIsAiEnabled] = useState(false)
     const storageSelectionTouchedRef = useRef(false)
 
     // Draft Persistence
@@ -79,15 +80,23 @@ export default function NewProjectPage() {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user || cancelled) return
 
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('preferred_storage_mode')
-                .eq('id', user.id)
-                .maybeSingle()
+            const [{ data: profile }, { data: aiSettings }] = await Promise.all([
+                supabase
+                    .from('profiles')
+                    .select('preferred_storage_mode')
+                    .eq('id', user.id)
+                    .maybeSingle(),
+                supabase
+                    .from('user_api_keys')
+                    .select('ai_enabled')
+                    .eq('user_id', user.id)
+                    .maybeSingle(),
+            ])
 
             if (!cancelled) {
                 const profileStorageMode: PreferredStorageMode = profile?.preferred_storage_mode === 'cloud' ? 'cloud' : 'local'
                 setPreferredStorageMode(profileStorageMode)
+                setIsAiEnabled(!!aiSettings?.ai_enabled)
                 if (!storageSelectionTouchedRef.current) {
                     setSelectedStorageMode(profileStorageMode)
                 }
@@ -285,6 +294,7 @@ export default function NewProjectPage() {
                                 onBack={() => setStep('start_mode')}
                                 creating={creating}
                                 creatingLabel={creatingLabel}
+                                isAiEnabled={isAiEnabled}
                             />
                         )}
 

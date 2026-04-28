@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { updateLocalProject } from '@/lib/persistence/local-projects'
 import {
     Dialog,
     DialogContent,
@@ -21,25 +22,65 @@ interface CoverEditModalProps {
         title: string
         cover_url: string | null
     }
+    isLocalProject?: boolean
     isOpen: boolean
     onOpenChange: (open: boolean) => void
+    onLocalProjectChange?: () => Promise<void>
 }
 
-export default function CoverEditModal({ project, isOpen, onOpenChange }: CoverEditModalProps) {
+function readFileAsDataUrl(file: File) {
+    return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+            if (typeof reader.result === 'string') {
+                resolve(reader.result)
+                return
+            }
+
+            reject(new Error('Failed to read cover image.'))
+        }
+        reader.onerror = () => reject(reader.error ?? new Error('Failed to read cover image.'))
+        reader.readAsDataURL(file)
+    })
+}
+
+export default function CoverEditModal({
+    project,
+    isLocalProject = false,
+    isOpen,
+    onOpenChange,
+    onLocalProjectChange,
+}: CoverEditModalProps) {
     const router = useRouter()
     const [coverUrl, setCoverUrl] = useState(project.cover_url || '')
+    const [pendingCoverFile, setPendingCoverFile] = useState<File | null>(null)
     const [saving, setSaving] = useState(false)
     const supabase = createClient()
+
+    useEffect(() => {
+        if (!isOpen) return
+        setCoverUrl(project.cover_url || '')
+        setPendingCoverFile(null)
+    }, [isOpen, project.cover_url])
 
     async function handleSave() {
         try {
             setSaving(true)
-            const { error } = await supabase
-                .from('projects')
-                .update({ cover_url: coverUrl || null } as any)
-                .eq('id', project.id)
+            const nextCoverUrl = isLocalProject && pendingCoverFile
+                ? await readFileAsDataUrl(pendingCoverFile)
+                : coverUrl || null
 
-            if (error) throw error
+            if (isLocalProject) {
+                await updateLocalProject(project.id, { cover_url: nextCoverUrl } as any)
+                await onLocalProjectChange?.()
+            } else {
+                const { error } = await supabase
+                    .from('projects')
+                    .update({ cover_url: nextCoverUrl } as any)
+                    .eq('id', project.id)
+
+                if (error) throw error
+            }
 
             toast.success("Project cover updated.")
             onOpenChange(false)
@@ -75,6 +116,8 @@ export default function CoverEditModal({ project, isOpen, onOpenChange }: CoverE
                     <CoverPicker 
                         value={coverUrl} 
                         onChange={setCoverUrl} 
+                        deferUpload={isLocalProject}
+                        onPendingFileChange={setPendingCoverFile}
                     />
                 </div>
 
@@ -100,7 +143,7 @@ export default function CoverEditModal({ project, isOpen, onOpenChange }: CoverE
                         </div>
                         <Button
                             onClick={handleSave}
-                            disabled={saving || coverUrl === project.cover_url}
+                            disabled={saving || (coverUrl === project.cover_url && !pendingCoverFile)}
                             className="sanctuary-btn-primary rounded-full px-8 h-12 font-semibold gap-2"
                         >
                             {saving ? (

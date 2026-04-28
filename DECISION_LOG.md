@@ -187,6 +187,27 @@ Approved.
 
 ---
 
+## 2026-04-27 - Local Project File Workflow (Save/Save As/Open)
+
+Decision:
+Implemented a manual "Save / Save As / Open" workflow for local-only projects using the File System Access API, while maintaining the existing background autosave to IndexedDB.
+
+Reason:
+Local writers expect a traditional desktop-like file management experience. Background autosave to IndexedDB prevents data loss, but manual disk saving allows users to treat `.storyline` files as their primary portable project units.
+
+Impact:
+- Library: "Import Backup" renamed to "Open Project File".
+- Project: "Save Project" and "Save As..." actions added to local project menus.
+- "Export Project" renamed to "Export Manuscript..." to avoid confusion with native file saving.
+- `Ctrl+S` / `Cmd+S` keyboard shortcuts trigger native disk saving.
+- Disk-link status (linked filename and last save timestamp) is displayed in the project navigation dropdown.
+- Non-supporting browsers (Safari/Firefox) use a seamless download fallback for disk operations.
+
+Status:
+Approved.
+
+---
+
 ## 2026-04-27 - Implement width-based touch detection override for tablet card UX
 
 Decision:

@@ -96,9 +96,9 @@ export default function NotificationDetailClient({
                             <LocalTransferGuidance
                                 className="!max-w-full mt-4"
                                 cloudSyncHref="/settings"
-                                onImportBackup={() => {
-                                    // Navigate to library and trigger import
-                                    router.push('/library?action=import')
+                                onOpenProjectFile={() => {
+                                    // Navigate to library and trigger open
+                                    router.push('/library?action=open')
                                 }}
                             />
                         ) : (

@@ -27,6 +27,7 @@ interface GuidedFlowProps {
     creating: boolean
     creatingLabel?: string
     onDataChange?: (data: GuidedData) => void
+    isAiEnabled?: boolean
 }
 
 type GuidedStep = 'title' | 'premise' | 'tone' | 'character' | 'setting' | 'first_idea' | 'identity'
@@ -60,7 +61,16 @@ const TONES = [
 ]
 
 
-export default function GuidedFlow({ projectType, initialTitle, onComplete, onBack, creating, creatingLabel = 'Creating Sanctuary...', onDataChange }: GuidedFlowProps) {
+export default function GuidedFlow({
+    projectType,
+    initialTitle,
+    onComplete,
+    onBack,
+    creating,
+    creatingLabel = 'Creating Sanctuary...',
+    onDataChange,
+    isAiEnabled = false,
+}: GuidedFlowProps) {
     const [stepIndex, setStepIndex] = useState(0)
     const [coverFile, setCoverFile] = useState<File | null>(null)
     const [data, setData] = useState<GuidedData>(() => {
@@ -192,7 +202,10 @@ export default function GuidedFlow({ projectType, initialTitle, onComplete, onBa
                     {step === 'tone' && (
                         <StepBlock
                             title="What is the story's tone?"
-                            hint="This guides future AI suggestions for atmosphere. It's optional and can be adjusted anytime."
+                            hint={isAiEnabled
+                                ? "This guides future AI suggestions for atmosphere. It's optional and can be adjusted anytime."
+                                : "This helps define the atmosphere and style of the project. It's optional and can be adjusted anytime."
+                            }
                             optional
                             image={STEP_IMAGES[step]}
                         >
