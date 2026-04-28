@@ -12,6 +12,8 @@ import {
 } from '@/lib/tiptap/screenplay'
 import { StoryImage } from '@/lib/tiptap/story-image'
 
+import { CommentMark } from '@/lib/tiptap/comment-mark'
+
 /**
  * Standard set of extensions used for both parsing HTML -> JSON 
  * and rendering JSON -> HTML during export.
@@ -26,7 +28,8 @@ export const exportExtensions = [
     ScreenplayParenthetical,
     ScreenplayDialogue,
     ScreenplayTransition,
-    StoryImage
+    StoryImage,
+    CommentMark
 ]
 
 /**

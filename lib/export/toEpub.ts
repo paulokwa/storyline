@@ -1,9 +1,7 @@
 import JSZip from 'jszip'
 import type { ExportPayload, ExportOptions } from './buildExportPayload'
 import { generateHTML } from '@tiptap/html'
-import StarterKit from '@tiptap/starter-kit'
-
-const extensions = [StarterKit]
+import { exportExtensions } from './normalize'
 
 export async function toEpub(payload: ExportPayload, options: ExportOptions): Promise<Blob> {
     const { nodes, projectTitle, metadata } = payload
@@ -42,7 +40,7 @@ export async function toEpub(payload: ExportPayload, options: ExportOptions): Pr
                 contentHtml += `<p><i>Summary: ${node.summary}</i></p>`
             }
             if (node.content && (options.contentMode === 'prose_only' || options.contentMode === 'both')) {
-                contentHtml += generateHTML(node.content, extensions)
+                contentHtml += generateHTML(node.content, exportExtensions)
             }
         }
     })

@@ -6,24 +6,6 @@ Keep entries concise. Do not rewrite old decisions unless explicitly instructed.
 
 ---
 
-## 2026-04-28 - Local-Only Export Manuscript Support
-
-Decision:
-Update `ExportModal` and `buildExportPayload` to support local-only storage (IndexedDB) for manuscript exports.
-
-Reason:
-Local projects must be able to export to manuscript formats (Markdown, PDF, DOCX, etc.) without a cloud connection. The previous regression incorrectly triggered a raw `.storyline` download instead of the export modal.
-
-Impact:
-- `Export Manuscript` now consistently opens the `ExportModal`.
-- `buildExportPayload` retrieves project, structure, and scene data from IndexedDB for local projects.
-- `ExportModal` displays accurate stats and metadata for local projects.
-
-Status:
-Approved & Implemented.
-
----
-
 ## 2026-04-27 - Reuse the Help Center for cloud sync guidance instead of a separate explainer page
 
 Decision:

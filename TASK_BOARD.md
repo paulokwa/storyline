@@ -6,6 +6,23 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 
 ---
 
+## 2026-04-28 - Unified Export Schema with CommentMark support
+
+Decision:
+Include `CommentMark` in the centralized `exportExtensions` in `normalize.ts` and ensure all export formats use this unified schema.
+
+Reason:
+Exporting projects containing editor comments was causing a `RangeError` in formats using `generateHTML` (EPUB, HTML, PDF) because the `comment` mark was missing from the provided schema.
+
+Impact:
+- Fixed `RangeError` during manuscript export for projects with comments.
+- Streamlined export logic by ensuring `toEpub.ts` and `toHtml.ts` use the same extension set.
+
+Status:
+Approved & Implemented.
+
+---
+
 ## Now
 
 - Start future AI coding sessions by reading:
@@ -107,5 +124,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
   - Rebranded manuscript export to "Export Manuscript..." to distinguish from native file saving.
   - Fixed "Export Manuscript" regression where local projects triggered a raw download instead of the export modal.
   - Added full IndexedDB support to the manuscript export payload generator.
+  - Fixed a `RangeError` during EPUB/HTML export caused by missing `comment` marks in the TipTap schema.
+  - Centralized export extensions in `lib/export/normalize.ts` and ensured `CommentMark` is included.
   - Fixed a critical bug where `ProjectShell.tsx` was passing the project ID instead of content to the save utility.
   - Ensured sanitization of browser-specific file handles in exported files.

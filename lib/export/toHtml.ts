@@ -1,5 +1,4 @@
 import { generateHTML } from '@tiptap/html'
-import StarterKit from '@tiptap/starter-kit'
 import type { ExportPayload, ExportOptions } from './buildExportPayload'
 
 import { exportExtensions } from './normalize'
