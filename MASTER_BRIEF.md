@@ -22,20 +22,52 @@ Default branch: `main`
 2. Treat this file as the source of truth for broad project workflow and agent behaviour.
 3. Treat `AGENTS.md` as the repo-level execution guide for coding-agent behaviour, diagnostics, implementation, testing, and reporting.
 4. Treat `TROUBLESHOOTING.md` as the playbook for known issues, safe fixes, and debugging patterns.
-5. Use `TASK_BOARD.md` for active tasks and technical debt priorities.
-6. Use `DECISION_LOG.md` for decisions and reasons.
-7. Use `SESSION_HANDOVER.md` for current session status and next-step context.
-8. Use `TESTING.md` for tests that need doing and confirmed test results.
-9. Do not change locked decisions unless explicitly instructed with: `revise the plan`.
-10. Prefer consistency over clever redesign.
-11. If a requested change conflicts with this brief, stop and explain the conflict before editing.
-12. Keep changes focused on the requested task.
-13. Do not silently rewrite architecture, auth, billing, database policies, AI provider logic, or deployment settings.
-14. At the end of each session, update `SESSION_HANDOVER.md`, `TASK_BOARD.md`, and `TESTING.md` if relevant.
-15. If a meaningful decision was made, append it to `DECISION_LOG.md`.
-16. If the user confirms that something is fixed, completed, working, resolved, verified, tested, or otherwise done, update the relevant non-Master Brief files to reflect that status. Usually this means moving items in `TASK_BOARD.md`, adding a concise note to `SESSION_HANDOVER.md`, updating `TESTING.md` when testing is involved, and adding to `DECISION_LOG.md` only if a meaningful decision was made.
-17. After completing session-end updates, commit and push the changes to GitHub unless the user explicitly says not to, there are no changes to commit, or the agent/tool does not have Git/GitHub write access. If unable to commit or push, say so clearly and provide the exact files that still need committing.
-18. Do not edit `MASTER_BRIEF.md` unless the user explicitly asks for the Master Brief itself to be changed.
+5. Use `TASK_BOARD.md` for active tasks, fixes, bugs, polish items, UX improvements, and technical debt priorities.
+6. Use `DECISION_LOG.md` only for meaningful product, architecture, workflow, security, data-model, pricing, AI-provider, or long-term direction decisions.
+7. Do not add routine bug fixes, small UI polish, implementation details, one-off fixes, or normal task completions to `DECISION_LOG.md`; track those in `TASK_BOARD.md`, `SESSION_HANDOVER.md`, `TESTING.md`, or commit messages instead.
+8. Use `SESSION_HANDOVER.md` for current session status and next-step context.
+9. Use `TESTING.md` for tests that need doing and confirmed test results.
+10. Do not change locked decisions unless explicitly instructed with: `revise the plan`.
+11. Prefer consistency over clever redesign.
+12. If a requested change conflicts with this brief, stop and explain the conflict before editing.
+13. Keep changes focused on the requested task.
+14. Do not silently rewrite architecture, auth, billing, database policies, AI provider logic, or deployment settings.
+15. At the end of each session, update `SESSION_HANDOVER.md`, `TASK_BOARD.md`, and `TESTING.md` if relevant.
+16. If a meaningful decision was made, append it to `DECISION_LOG.md` only if it passes the Decision Log Gate below.
+17. If the user confirms that something is fixed, completed, working, resolved, verified, tested, or otherwise done, update the relevant non-Master Brief files to reflect that status. Usually this means moving items in `TASK_BOARD.md`, adding a concise note to `SESSION_HANDOVER.md`, and updating `TESTING.md` when testing is involved. Do not add to `DECISION_LOG.md` unless the user also made or approved a meaningful decision.
+18. After completing session-end updates, commit and push the changes to GitHub unless the user explicitly says not to, there are no changes to commit, or the agent/tool does not have Git/GitHub write access. If unable to commit or push, say so clearly and provide the exact files that still need committing.
+19. Do not edit `MASTER_BRIEF.md` unless the user explicitly asks for the Master Brief itself to be changed.
+
+## Decision Log Gate
+
+Before adding anything to `DECISION_LOG.md`, ask whether the entry represents a durable decision that future agents must preserve.
+
+Add to `DECISION_LOG.md` only if one or more of these is true:
+
+- It changes product direction, UX policy, architecture, database/schema, auth, billing, AI-provider strategy, deployment strategy, privacy/security posture, or agent workflow rules.
+- It records a trade-off that future agents are likely to question or accidentally reverse.
+- It locks a rule, naming convention, user-facing model, permission boundary, or long-term behaviour.
+- The user explicitly says to record it as a decision.
+
+Do not add to `DECISION_LOG.md` for:
+
+- normal bug fixes
+- small UI polish
+- layout corrections
+- copy tweaks
+- routine refactors
+- completed tasks
+- implementation notes
+- test results
+- temporary workarounds
+
+Use these instead:
+
+- `TASK_BOARD.md` for active work, bugs, polish, and technical debt
+- `SESSION_HANDOVER.md` for what changed this session and what is next
+- `TESTING.md` for verified behaviour or test gaps
+- `TROUBLESHOOTING.md` for reusable failure patterns and proven fixes
+- commit messages for implementation details
 
 ## Test Credentials
 
@@ -62,6 +94,7 @@ See `TESTING.md` for more details on test accounts.
 - `MASTER_BRIEF.md` is controlled by the user and should only be edited when explicitly directed.
 - `AGENTS.md` is the repo-level execution guide for coding agents and should be kept aligned with, but separate from, the Master Brief.
 - `TROUBLESHOOTING.md` is the canonical location for debugging patterns and should be updated instead of duplicating fixes elsewhere.
+- `DECISION_LOG.md` is reserved for durable decisions only, not routine bug fixes, polish, or task completions.
 
 ## Agent Session Start Prompt
 
@@ -84,6 +117,9 @@ Rules:
 - Treat MASTER_BRIEF.md as the source of truth for planning, decisions, and continuity.
 - Treat AGENTS.md as the execution guide for repo diagnostics, implementation, testing, and reporting.
 - Treat TROUBLESHOOTING.md as the source of known issues and safe fixes.
+- Use TASK_BOARD.md for normal tasks, bugs, polish, UX improvements, and technical debt.
+- Use DECISION_LOG.md only for durable decisions that future agents must preserve.
+- Do NOT add routine fixes, copy tweaks, layout fixes, test results, or task completions to DECISION_LOG.md.
 - Do NOT change existing decisions unless explicitly told: "revise the plan".
 - Do NOT edit MASTER_BRIEF.md unless explicitly directed.
 - Prefer consistency over optimization.
@@ -115,8 +151,9 @@ Before ending this session:
 
 3. Update TESTING.md if anything was tested, verified, confirmed working, or now needs testing.
 
-4. If any decisions were made:
-   - Append them to DECISION_LOG.md with date and reason
+4. Add to DECISION_LOG.md only if a durable decision was made that future agents must preserve.
+   - Do not log normal bug fixes, copy tweaks, layout fixes, implementation details, test results, or task completions.
+   - If unsure, do not update DECISION_LOG.md; mention the possible decision in SESSION_HANDOVER.md instead.
 
 5. Commit and push all session changes to GitHub, unless I explicitly said not to or there are no changes to commit.
 
