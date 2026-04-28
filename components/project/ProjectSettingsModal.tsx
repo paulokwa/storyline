@@ -884,7 +884,7 @@ export default function ProjectSettingsModal({
                                     </div>
                                     
                                     <div className="p-4 bg-muted/50 rounded-2xl border border-border">
-                                        <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Testing Tip</p>
+                                        <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Export Tip</p>
                                         <p className="text-xs text-muted-foreground leading-relaxed">
                                             This metadata will be automatically injected into your EPUB, DOCX, and PDF exports.
                                         </p>

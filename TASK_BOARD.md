@@ -51,7 +51,7 @@ Approved & Implemented.
 - Improve inline image insertion discoverability in prose/book mode.
 - Update feature/showcase page after a root-and-branch feature audit.
 - Rework help menu/page near launch after major feature changes settle; follow the detailed two-phase audit and rewrite process in `docs/technical-debt-roadmap.md` under "Help System Feature Audit & Rewrite" instead of asking AI to simply improve the page.
-- Clean up Export Metadata helper copy: replace the user-facing "TESTING TIP" label in Project Settings > Export Metadata with polished copy such as "Publishing Tip" / "Export Tip" and ensure this wording is covered during the future Help System Feature Audit & Rewrite in `docs/technical-debt-roadmap.md`.
+- [x] Clean up Export Metadata helper copy: replace the user-facing "TESTING TIP" label in Project Settings > Export Metadata with polished copy such as "Publishing Tip" / "Export Tip" and ensure this wording is covered during the future Help System Feature Audit & Rewrite in `docs/technical-debt-roadmap.md`.
 - Clean up profile/account menu legal links: remove the separate Terms of Service, Privacy Policy, and AI Disclaimer links from the main profile dropdown, keep legal links in the showcase/library footer, and optionally replace them with a single lower-priority "Legal & Privacy" entry under Settings/About/Help if in-app access is still needed. Ensure Admin remains admin-only.
 - Run pre-launch security audit covering input sanitization, auth flows, exposed secrets, personal emails, repo references, and deployment settings.
 - Use the session end prompt to update `SESSION_HANDOVER.md`, `TASK_BOARD.md`, and `TESTING.md` after each coding session.
