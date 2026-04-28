@@ -76,6 +76,129 @@ This document tracks identified architectural risks, technical debt, and reliabi
     *   Do not begin until core features have stabilized.
     *   Do not allow AI to skip the audit phase.
     *   Require a final coverage check ensuring every feature is documented.
+*   **Execution Prompts**:
+
+    **Phase 1 — Full Feature Audit Prompt**
+
+    ```md
+    You are performing a FULL FEATURE AUDIT of this codebase.
+
+    GOAL:
+    Extract EVERY user-facing feature, including:
+    - Visible UI features
+    - Hidden or non-obvious features
+    - Settings, toggles, and modes
+    - Local/cloud/offline behaviours
+    - Import/export/save/open behaviours
+    - AI features and AI-related warnings
+    - Collaboration and feedback/comment features
+    - Backup, restore, merge, and recovery features
+    - Asset/image/reference features
+    - Screenplay/prose-specific editor behaviours
+    - Keyboard shortcuts
+    - Error states, fallback behaviours, and disabled states
+    - Empty states and onboarding/help text
+    - Role-based restrictions such as viewer/editor/owner permissions
+
+    DO NOT summarize.
+    DO NOT skip anything.
+    ASSUME that missing features is a failure.
+
+    PROCESS:
+    1. Scan all frontend components, routes, menus, settings screens, editor extensions, dialogs, onboarding flows, and feature-specific utilities.
+    2. Identify anything a user can click, trigger, configure, see, import, export, enable, disable, recover, save, open, dismiss, search, or interact with.
+    3. Group features by area, such as Library, Project Creation, Editor, Structure Tree, AI, Local/Cloud, Collaboration, Feedback, Assets, Import/Export, Settings, Help, Onboarding, Admin, and Error/Empty States.
+    4. Include related files/components for each feature so later agents can verify the source.
+    5. Mark confidence level for each feature area.
+
+    OUTPUT FORMAT:
+
+    # Full Feature Inventory
+
+    ## [Feature Area]
+
+    ### [Feature Name]
+    - What it does:
+    - Where it appears:
+    - When it appears:
+    - Who can use it:
+    - Related files/components:
+    - Hidden or non-obvious behaviours:
+    - Edge cases:
+    - Help page priority: High / Medium / Low
+    - Confidence: High / Medium / Low
+
+    ## Missing Confidence Areas
+    List anything unclear, ambiguous, or possibly incomplete.
+
+    ## Coverage Risk
+    List app areas that may need manual review by Kwame.
+
+    IMPORTANT:
+    If you are not confident that all features are captured, say so clearly. Do not pretend the audit is complete if it is not.
+    ```
+
+    **Phase 2 — Help System Rewrite Prompt**
+
+    ```md
+    Now convert the FULL FEATURE INVENTORY into a COMPLETE HELP SYSTEM.
+
+    GOAL:
+    Create a searchable, user-friendly Help Center that explains all user-facing features discovered in Phase 1.
+
+    RULES:
+    - Every feature from the Phase 1 inventory must be documented or explicitly listed as intentionally omitted with a reason.
+    - Do not only document obvious features.
+    - Assume users do not know hidden behaviours, advanced options, local/cloud differences, AI availability states, or role restrictions.
+    - Write in clear, non-technical language for normal users.
+    - Include "Where to find it" for important features.
+    - Include warnings or limitations where relevant, especially around AI, privacy, local/cloud storage, file saving, collaboration, import/export, backups, and destructive actions.
+    - Preserve accurate terminology from the app UI.
+
+    SUGGESTED STRUCTURE:
+
+    # Help Center
+
+    ## Getting Started
+    ## Project Basics
+    ## Writing and Editing
+    ## Planning and Structure
+    ## Screenplay Mode
+    ## Prose / Book Mode
+    ## Local Projects and Offline Use
+    ## Cloud Sync and Collaboration
+    ## Feedback and Comments
+    ## Assets and Visual References
+    ## Import, Export, Save, and Backup
+    ## AI Features
+    ## Privacy and Data Choices
+    ## Troubleshooting
+    ## Advanced Features
+    ## Frequently Asked Questions
+
+    FOR EACH FEATURE SECTION, USE THIS PATTERN WHERE PRACTICAL:
+
+    ### [Feature Name]
+    - What it does:
+    - Where to find it:
+    - How to use it:
+    - When it is useful:
+    - Limitations or warnings:
+    - Related features:
+
+    FINAL STEP:
+    Add a coverage check.
+
+    # Coverage Check
+
+    Create a table with:
+    - Feature from Phase 1
+    - Help section where it is documented
+    - Status: Documented / Intentionally omitted
+    - Notes
+
+    Do not mark this task complete unless every Phase 1 feature appears in the coverage check.
+    ```
 *   **Priority**: Medium
 
 ## Lower Priority / Future Enhancements
