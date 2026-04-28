@@ -5,6 +5,33 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-04-28 - Profile Menu Legal Links Cleanup
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Removed the separate legal links (Terms of Service, Privacy Policy, AI Disclaimer) and the "Legal" section header from the profile/account dropdown in `components/app/AppNav.tsx`.
+- Verified that the Admin menu item is correctly gated behind `canAccessAdmin`.
+- Updated `TASK_BOARD.md` to move the corresponding item to Done.
+- Added a manual test to `TESTING.md` under "UI / Device / Accessibility".
+
+### Current status
+
+The profile/account menu is now cleaner and more focused, without duplicating legal links already present elsewhere in the app (like the showcase and library footer).
+
+### Next recommended step
+
+The next session should verify manual testing criteria: profile/account dropdown no longer shows three separate legal links, legal pages/routes are not deleted, legal links remain accessible from footer/showcase/library footer, and Admin does not appear for non-admin users.
+
+### Risks or warnings
+
+- No major risks. The `AppNav` component has been successfully updated and standard TypeScript/lint checks apply.
+
+
+---
 ## 2026-04-27 - Local project .storyline file workflow (Save/Save As/Open)
 
 ### Current branch

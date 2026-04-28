@@ -115,7 +115,7 @@ function SectionTable({
   )
 }
 
-export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const supabase = await createClient()
   const {
     data: { user },

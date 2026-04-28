@@ -83,6 +83,7 @@ Approved & Implemented.
 - Consider adding an `AGENTS.md` or `CONTRIBUTING.md` if agents need stricter operating rules.
 
 ## Done
+- Clean up profile/account menu legal links: remove the separate Terms of Service, Privacy Policy, and AI Disclaimer links from the main profile dropdown, keep legal links in the showcase/library footer, and optionally replace them with a single lower-priority "Legal & Privacy" entry under Settings/About/Help if in-app access is still needed. Ensure Admin remains admin-only.
 
 - Fixed `StructureTree.tsx` server render crash caused by render-time `window` access.
 - Made missing AI settings default to AI off across runtime, settings, preferences save, and admin reporting paths.
