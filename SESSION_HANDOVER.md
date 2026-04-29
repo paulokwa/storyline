@@ -5,6 +5,45 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-04-29 - Shared loading-state UX added for major app transitions
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Added a shared `RouteLoadingScreen` component for staged loading UX:
+  - quiet initial delay for near-instant transitions
+  - skeleton placeholders for short waits
+  - reassuring copy for longer waits
+- Added route-level `loading.tsx` files for:
+  - `app/(app)/library`
+  - `app/(app)/new`
+  - `app/(app)/settings`
+  - `app/(app)/project/[id]/story`
+- Replaced the old plain-text loading placeholder in `LocalProjectShell.tsx` with the same shared workspace loading treatment.
+- Added the supporting shimmer keyframes in `app/globals.css`.
+- Verified the touched code with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+The staged loading UX is implemented for the main high-traffic transitions another agent would be likely to target first, so this task should not be reopened or duplicated.
+
+### Next recommended step
+
+Browser-check the new loading states on:
+- Library
+- New Project
+- Settings
+- Story workspace navigation
+- Local project open
+
+### Risks or warnings
+
+- Important limitation: the very first cloud project-shell load is still constrained by uncached/same-segment work inside `app/(app)/project/[id]/layout.tsx`. Next route-level `loading.tsx` does not cover that layout fetch path. Only revisit this area if the goal is a deliberate layout/data-loading refactor rather than duplicating the loading-screen work already done.
+
+---
 ## 2026-04-27 - Local project .storyline file workflow (Save/Save As/Open)
 
 ### Current branch

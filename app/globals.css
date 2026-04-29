@@ -78,6 +78,15 @@ body {
   width: 100%;
 }
 
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
 .dialog-viewport-safe {
   max-height: calc(100vh - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
 }

@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import RouteLoadingScreen from '@/components/app/RouteLoadingScreen'
 import ProjectShell from '@/components/project/ProjectShell'
-import { getLocalProject, touchLocalProject, type LocalProjectRow } from '@/lib/persistence/local-projects'
 import BackupBanner from '@/components/project/local/BackupBanner'
 import MigratedBanner from '@/components/project/local/MigratedBanner'
+import { getLocalProject, touchLocalProject, type LocalProjectRow } from '@/lib/persistence/local-projects'
 
 export default function LocalProjectShell({
     projectId,
@@ -52,9 +53,12 @@ export default function LocalProjectShell({
 
     if (status === 'loading') {
         return (
-            <div className="flex min-h-0 flex-1 items-center justify-center bg-[#fbf9f5] px-6 py-12">
-                <p className="text-sm font-medium text-slate-400">Opening local project…</p>
-            </div>
+            <RouteLoadingScreen
+                variant="workspace"
+                title="Opening your local project..."
+                description="Loading the draft from this device and rebuilding your writing workspace."
+                reassurance="Your work stays on this device unless you choose cloud sync."
+            />
         )
     }
 
@@ -85,9 +89,9 @@ export default function LocalProjectShell({
             storageMode="local-only"
         >
             {project.migrated_to_cloud_project_id ? (
-                <MigratedBanner 
-                    projectId={projectId} 
-                    cloudProjectId={project.migrated_to_cloud_project_id} 
+                <MigratedBanner
+                    projectId={projectId}
+                    cloudProjectId={project.migrated_to_cloud_project_id}
                 />
             ) : (
                 <BackupBanner projectId={projectId} />

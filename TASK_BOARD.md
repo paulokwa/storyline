@@ -32,12 +32,9 @@ Approved & Implemented.
   - `TASK_BOARD.md`
   - `TESTING.md`
 - Run browser regression for screenplay visual references, AI-off analyzer feedback, and book/prose image behavior.
-- Run a broader pre-launch regression pass across core project flow, import/export, local/cloud behavior, AI availability states, collaboration, tablet/mobile layout, and onboarding tours.
 - Audit app typography and contrast, especially grey text that may cause eye strain.
 - Audit local/cloud feature boundaries, wording, and mode-specific UI behavior.
-- Verify centralized AI rate limiting across helper, scene analyzer, and import detect flows.
 - Browser-check the new library Help Center and cloud sync guidance flow.
-- Add consistent loading-state UX for slow pages and actions: use no visible loader for near-instant loads, skeleton placeholders for short waits, and subtle branded loading feedback for longer waits such as a pen-writing/book-glow/Storyline mark animation. For unusually long loads, show reassuring copy such as "Still loading your projects..." and "Your work is safe," especially on Library, Project Open, Project Creation, Import, and Cloud/AI settings flows. Keep this as a trust-building UX layer while separately investigating actual performance causes such as Netlify cold starts, Supabase latency, slow queries, image sizes, pagination, or client-side data waterfalls.
 
 ## Next
 
@@ -47,8 +44,10 @@ Approved & Implemented.
 - AI abuse-controls hardening.
 - Review import AI behavior when AI is disabled or when large books may exceed trial/cost limits.
 - Review whether scene analysis outputs should save directly to AI Memory when the user chooses Add to AI.
+- Run a broader pre-launch regression pass across core project flow, import/export, local/cloud behavior, AI availability states, collaboration, tablet/mobile layout, and onboarding tours.
 - Audit app-wide AI terminology and decide whether to use AI, Assistant, Muse, or another label consistently.
 - Improve inline image insertion discoverability in prose/book mode.
+- If needed later, refactor `app/(app)/project/[id]/layout.tsx` so the very first cloud project-shell load can participate in route-level instant loading; the shared staged loading UX is already implemented for Library, New Project, Settings, `project/[id]/story`, and local-project open states, so do not duplicate that work.
 - Update feature/showcase page after a root-and-branch feature audit.
 - Rework help menu/page near launch after major feature changes settle; follow the detailed two-phase audit and rewrite process in `docs/technical-debt-roadmap.md` under "Help System Feature Audit & Rewrite" instead of asking AI to simply improve the page.
 - Run pre-launch security audit covering input sanitization, auth flows, exposed secrets, personal emails, repo references, and deployment settings.
@@ -115,6 +114,12 @@ Approved & Implemented.
 - Standardized library card content alignment: Titles and descriptions now use fixed-height containers to ensure uniform layout and perfectly aligned horizontal lines across the grid.
 - Refactored "Working on another device?" guidance from an inline library banner to a persistent system notification event with a full detail view.
 - Made the guided project creation `Story Tone` step dynamic based on AI availability, so AI-specific wording only appears when the account has AI enabled.
+- Implemented a shared staged loading UX for major app transitions:
+  - Added `RouteLoadingScreen` with quiet initial delay, skeleton placeholders, and longer-wait reassurance copy.
+  - Wired route-level loading states into Library, New Project, Settings, and `project/[id]/story`.
+  - Replaced the old plain-text local project open placeholder with the shared workspace loading treatment.
+  - Verified with `npx tsc --noEmit --pretty false`.
+  - Important scope note for future agents: the first cloud project-shell load is still limited by same-segment fetches inside `app/(app)/project/[id]/layout.tsx`; do not redo the new loading screens unless you are intentionally addressing that layout-level limitation.
 - Implemented manual Save / Save As / Open workflow for `.storyline` files (IMPLEMENTATION COMPLETE, PENDING MANUAL SMOKE TEST):
   - Added native File System Access API support with automated download-based fallbacks.
   - Rebranded "Import Backup" to "Open Project File" in the Library.
