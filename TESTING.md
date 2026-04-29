@@ -217,6 +217,7 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 | Local mode image loading | Not tested | - | - | Confirm images load correctly in local mode. |
 | Solo project collaborator header empty state | Passed | User | 2026-04-26 | User confirmed the empty collaborator pill/blip no longer appears on solo projects. |
 | Prose scene gallery wording | Passed | User | 2026-04-26 | User confirmed the wording cleanup is resolved. |
+| Profile menu legal link cleanup | Not tested | - | - | Profile menu no longer shows separate Terms / Privacy / AI Disclaimer links, legal pages remain accessible elsewhere, Admin remains admin-only. |
 
 ## Reliability / Technical Debt
 
