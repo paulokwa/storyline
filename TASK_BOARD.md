@@ -16,6 +16,10 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 
 ## Now
 
+- The sructure and AI partner bar should be full width on desktop and other devices - cutrerntly those rails are pulled inand bot filling out - there empty space on the outside of that - we dont need that wasted sapce
+
+- Centre the row where the stort, Ai partner, AI memory, etc exist.
+
 - AI abuse-controls hardening.
 - Improve inline image insertion discoverability in prose/book mode.
 - Continue typography and contrast audit beyond AI Partner, especially older low-contrast helper/meta text in less-used screens.
