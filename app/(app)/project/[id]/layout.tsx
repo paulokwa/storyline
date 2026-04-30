@@ -75,23 +75,45 @@ async function ProjectLayoutLoader({
 
     const { data: projectData } = await supabase
         .from('projects')
-        .select(`
-            *,
-            project_members!inner(
-                role,
-                user_id,
-                profiles(
-                    display_name,
-                    avatar_url
-                )
-            )
-        `)
+        .select('*')
         .eq('id', id)
-        .single()
+        .maybeSingle()
 
     if (!projectData) notFound()
 
-    const projectDataWithMembers = projectData as ProjectLayoutRow
+    const { data: currentMembership } = await supabase
+        .from('project_members')
+        .select('role')
+        .eq('project_id', id)
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+    const isOwnerWithoutMembership = projectData.user_id === user.id && !currentMembership
+
+    if (!currentMembership && !isOwnerWithoutMembership) {
+        notFound()
+    }
+
+    const { data: projectMembers } = await supabase
+        .from('project_members')
+        .select(`
+            role,
+            user_id,
+            profiles(
+                display_name,
+                avatar_url
+            )
+        `)
+        .eq('project_id', id)
+
+    if (isOwnerWithoutMembership) {
+        console.warn('Project owner membership row missing while opening project:', id)
+    }
+
+    const projectDataWithMembers = {
+        ...projectData,
+        project_members: projectMembers ?? [],
+    } as ProjectLayoutRow
 
     const { data: ownerProfile } = await supabase
         .from('profiles')
@@ -101,7 +123,7 @@ async function ProjectLayoutLoader({
 
     const project = {
         ...projectData,
-        role: projectDataWithMembers.project_members?.[0]?.role ?? 'viewer',
+        role: currentMembership?.role ?? (projectData.user_id === user.id ? 'owner' : 'viewer'),
     }
 
     // Update last accessed time asynchronously via RPC (safe for all members)

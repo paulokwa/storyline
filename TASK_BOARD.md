@@ -19,7 +19,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Continue typography and contrast audit beyond AI Partner, especially older low-contrast helper/meta text in less-used screens.
 
 
-try  cd C:\Coding\Storytime\storyline
+
 npx skills add pbakaus/impeccable
 
 ## Next

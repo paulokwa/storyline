@@ -398,3 +398,62 @@ Add a short entry using this format:
 
 - The project content itself remains safe in IndexedDB (unless the user explicitly deleted it); only the link to the external `.storyline` file is lost.
 
+---
+
+## Issue: Cloud project opens from library but lands on 404
+
+### Symptoms
+
+- A cloud project appears in the library.
+- Opening `/project/<id>/story` shows the app's 404 page.
+- The route exists, but `app/(app)/project/[id]/layout.tsx` calls `notFound()`.
+
+### Cause
+
+- The project layout loader treated an inner-joined `project_members` row as proof that the project exists and is accessible.
+- If the owner could read the `projects` row but their `project_members` row was missing or filtered, the library could still list the project while the layout resolved to 404.
+
+### Fix
+
+- In `app/(app)/project/[id]/layout.tsx`, fetch the project row first.
+- Check the current user's membership separately.
+- Allow the owner through when `projects.user_id` matches even if the owner membership row is missing, and load the member list in a separate query.
+
+### Verification
+
+- `npx tsc --noEmit --pretty false`
+
+### Notes
+
+- Browser verification is still needed for the affected project ID.
+- The loader now logs a warning when an owner opens a project that is missing its owner membership row.
+
+---
+
+## Issue: Library Recent sort stays stale after browser back
+
+### Symptoms
+
+- The Library is set to `Recent`.
+- The user opens a project from the library card, then returns with browser back or mouse back.
+- The project cards keep the old `last_accessed_at` order until the tab is manually refreshed.
+
+### Cause
+
+- The library page can return with stale server props after navigating from a library card into a project and then back again.
+- `ProjectGrid.tsx` sorts `Recent` client-side from those props, so the order stays stale until `router.refresh()` or a full reload fetches fresh `last_accessed_at` values.
+
+### Fix
+
+- In `components/library/ProjectGrid.tsx`, set a session flag when a library project card opens a project.
+- When the library mounts again, consume that flag and call `router.refresh()` once to re-fetch the library payload.
+
+### Verification
+
+- `npx tsc --noEmit --pretty false`
+
+### Notes
+
+- This is intentionally scoped to browser history restore, not generic tab focus, to avoid unnecessary refreshes.
+- Browser verification is still needed for the exact open-project then back flow.
+

@@ -73,6 +73,8 @@ function getAvatarInitials(name: string | null | undefined, fallback = 'U') {
         : value.slice(0, 2).toUpperCase()
 }
 
+const LIBRARY_REFRESH_ON_RETURN_KEY = 'storyline-library-refresh-on-return'
+
 export default function ProjectGrid({ projects, deletedProjects, currentUserId }: { projects: Project[], deletedProjects: Project[], currentUserId: string }) {
     const transferGuidanceDismissKey = 'storyline-library-transfer-guidance-dismissed'
     const router = useRouter()
@@ -97,7 +99,12 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
         if (localStorage.getItem(transferGuidanceDismissKey) === 'true') {
             setShowTransferGuidance(false)
         }
-    }, [])
+
+        if (sessionStorage.getItem(LIBRARY_REFRESH_ON_RETURN_KEY) === 'true') {
+            sessionStorage.removeItem(LIBRARY_REFRESH_ON_RETURN_KEY)
+            router.refresh()
+        }
+    }, [router])
 
     // Save sort preference when it changes
     useEffect(() => {
@@ -634,7 +641,14 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                 isDragging && "shadow-2xl ring-2 ring-primary ring-offset-4 scale-105 rotate-2"
             )}
         >
-            <Link href={mode === 'active' ? `/project/${project.id}/story` : '#'} className={cn(
+            <Link
+                href={mode === 'active' ? `/project/${project.id}/story` : '#'}
+                onClick={() => {
+                    if (mode === 'active') {
+                        sessionStorage.setItem(LIBRARY_REFRESH_ON_RETURN_KEY, 'true')
+                    }
+                }}
+                className={cn(
                 "absolute inset-0 z-10 cursor-pointer",
                 mode === 'trash' && "cursor-default"
             )} />

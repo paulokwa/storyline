@@ -240,6 +240,8 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 
 Newest confirmations go at the top.
 
+| 2026-04-30 | AI agent | TypeScript compile after project-open 404 layout fix | Passed | `npx tsc --noEmit --pretty false` passed after changing the project layout loader to avoid 404s caused by missing owner `project_members` rows. |
+| 2026-04-30 | AI agent | TypeScript compile after library back-refresh fix | Passed | `npx tsc --noEmit --pretty false` passed after adding a library-return refresh flag so `Recent` order can re-fetch after opening a project card and returning. |
 | 2026-04-26 | User | Solo project collaborator header empty state | Passed | User confirmed the empty collaborator pill/blip no longer appears on solo projects. |
 | 2026-04-26 | User | Prose scene gallery wording | Passed | User confirmed the wording cleanup is resolved. |
 | 2026-04-29 | User | AI-disabled scene analyzer feedback | Passed | User manually verified analyzer-specific AI-off feedback in the browser. |

@@ -5,6 +5,67 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-04-30 - Library Recent sort refresh on browser back
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Investigated stale library ordering when returning from a project with browser back while the library was set to `Recent`.
+- Confirmed the sort logic itself was fine; the stale state came from the library page being restored with old server props until a manual refresh.
+- Added a session-based return flag in `components/library/ProjectGrid.tsx`: opening a project from a library card marks the library for refresh, and the next library mount consumes that flag and calls `router.refresh()` once.
+- Added a troubleshooting entry for this pattern.
+- Verified the code with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+The library should now re-fetch fresh `last_accessed_at` data when the user returns via browser back/forward, so `Recent` order should match what a manual tab refresh would show.
+
+### Next recommended step
+
+Browser-check this exact flow:
+- set Library sort to `Recent`
+- open a project from its card
+- return with browser back or mouse back
+- confirm the project order matches a manual refresh
+
+### Risks or warnings
+
+- This session verified compile correctness only, not the live browser flow.
+- The fix intentionally avoids refreshing on ordinary tab focus to reduce unnecessary requests.
+
+---
+## 2026-04-30 - Project open 404 guardrail for missing owner membership
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Investigated a 404 when opening `/project/395d1ebf-7d59-4180-988d-55d4d99ec2c6/story`.
+- Confirmed the route exists and the 404 was app-generated from `app/(app)/project/[id]/layout.tsx`, not a missing Next.js page.
+- Identified a loader mismatch: the library can list a readable `projects` row, but the project layout previously required an inner-joined `project_members` row.
+- Updated the layout loader to fetch the project row first, validate access separately, and allow the owner through when `projects.user_id` matches even if the owner membership row is missing.
+- Added a troubleshooting entry for this 404 pattern.
+- Verified the code with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+The project layout should no longer turn owner-accessible cloud projects into 404s solely because the owner membership row is missing or filtered.
+
+### Next recommended step
+
+Browser-check the exact affected project URL while signed into the owner account and confirm the workspace opens instead of rendering the 404 page.
+
+### Risks or warnings
+
+- This session only verified the fix via TypeScript compile, not a live browser-authenticated project open.
+- If the underlying Supabase data really is missing owner membership rows, a follow-up data repair may still be worth considering even though the route now tolerates it.
+
+---
 ## 2026-04-30 - Sanctuary Design System Unification
 
 ### Current branch
