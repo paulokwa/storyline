@@ -1036,7 +1036,7 @@ export default function AiHelperPanel({
                             size="icon"
                             onClick={() => setTourOpen(true)}
                             data-tour="ai-help-icon"
-                            className="h-8 w-8 rounded-xl border border-slate-200/70 bg-white/75 text-slate-400 shadow-sm transition-all hover:border-indigo-200 hover:bg-white hover:text-indigo-600"
+                            className="h-8 w-8 rounded-xl text-slate-400 transition-all hover:bg-white/80 hover:text-indigo-600"
                         >
                             <HelpCircle className="w-3.5 h-3.5" />
                         </Button>
@@ -1051,10 +1051,10 @@ export default function AiHelperPanel({
                             size="icon"
                             onClick={togglePreview}
                             className={cn(
-                                "h-8 w-8 rounded-xl border border-slate-200/70 bg-white/75 shadow-sm transition-all",
+                                "h-8 w-8 rounded-xl transition-all",
                                 previewOpen
-                                    ? "border-indigo-200 bg-indigo-50 text-indigo-600"
-                                    : "text-slate-500 hover:border-indigo-200 hover:bg-white hover:text-indigo-600"
+                                    ? "bg-indigo-50 text-indigo-600"
+                                    : "text-slate-500 hover:bg-white/80 hover:text-indigo-600"
                             )}
                             aria-label={previewOpen ? 'Hide AI context preview' : 'Show AI context preview'}
                         >
@@ -1073,7 +1073,7 @@ export default function AiHelperPanel({
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 rounded-xl border border-slate-200/70 bg-white/75 text-slate-400 shadow-sm transition-all hover:border-indigo-200 hover:bg-white hover:text-indigo-600"
+                                    className="h-8 w-8 rounded-xl text-slate-400 transition-all hover:bg-white/80 hover:text-indigo-600"
                                 >
                                     <Maximize2 className="w-3.5 h-3.5" />
                                 </Button>
@@ -1092,7 +1092,7 @@ export default function AiHelperPanel({
                                     variant="ghost"
                                     size="icon"
                                     onClick={onClose}
-                                    className="flex h-8 w-8 rounded-xl border border-slate-200/70 bg-white/75 text-slate-400 shadow-sm transition-all hover:border-slate-300 hover:bg-white hover:text-slate-700"
+                                    className="flex h-8 w-8 rounded-xl text-slate-400 transition-all hover:bg-white/80 hover:text-slate-700"
                                 >
                                     <X className="w-4 h-4" />
                                 </Button>
@@ -2084,8 +2084,8 @@ export default function AiHelperPanel({
 
                 {/* Mode Selector */}
                 <div className={cn(
-                    "mt-1 flex items-center gap-2 border-t border-white/70 pt-1.5",
-                    isFullCanvas && "md:mt-0 md:pt-0 md:border-t-0"
+                    "mt-1 flex items-center gap-2 pt-1.5",
+                    isFullCanvas && "md:mt-0 md:pt-0"
                 )}>
                     <div className="flex min-w-0 flex-1 items-center gap-3">
                         <div
@@ -2094,10 +2094,10 @@ export default function AiHelperPanel({
                         >
                             <SanctuarySelect
                                 value={promptMode}
-                                options={modeSelectOptions}
                                 onValueChange={setPromptMode}
-                                placeholder="Choose mode"
-                                triggerClassName="h-9 min-h-9 rounded-full border-indigo-200/80 bg-white/90 px-3 text-[11px] font-bold uppercase tracking-[0.16em] text-indigo-700 shadow-sm hover:border-indigo-300 hover:bg-white focus-visible:ring-indigo-100"
+                                options={modeSelectOptions}
+                                placeholder="Select Mode"
+                                triggerClassName="h-9 min-h-9 rounded-full bg-white/40 border-transparent px-3 text-[11px] font-bold uppercase tracking-[0.16em] text-indigo-700 hover:bg-white/80 focus-visible:ring-indigo-100"
                                 contentClassName="w-[max(var(--anchor-width),17rem)]"
                                 itemClassName="text-[12px]"
                                 iconClassName="text-indigo-400"
@@ -2123,10 +2123,10 @@ export default function AiHelperPanel({
                         onClick={handleContextManagerToggle}
                             disabled={isReadOnly || !activeSceneId || isApplyingContext}
                             className={cn(
-                                "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] shadow-sm transition-all",
+                                "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] transition-all",
                                 contextManagerOpen
-                                    ? "border-indigo-200 bg-indigo-50/90 text-indigo-600"
-                                    : "border-slate-200/70 bg-white/85 text-slate-500 hover:border-slate-300 hover:bg-white hover:text-slate-700",
+                                    ? "border-indigo-100 bg-indigo-50/90 text-indigo-600"
+                                    : "border-transparent bg-white/40 text-slate-500 hover:bg-white/80 hover:text-slate-700",
                                 (isReadOnly || !activeSceneId || isApplyingContext) && "cursor-not-allowed opacity-60"
                             )}
                         >
@@ -2183,10 +2183,10 @@ export default function AiHelperPanel({
                             onClick={handleContextManagerToggle}
                             disabled={isReadOnly || !activeSceneId || isApplyingContext}
                             className={cn(
-                                "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] shadow-sm transition-all",
+                                "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] transition-all",
                                 contextManagerOpen
-                                    ? "border-indigo-200 bg-indigo-50/90 text-indigo-600"
-                                    : "border-slate-200/70 bg-white/85 text-slate-500",
+                                    ? "border-indigo-100 bg-indigo-50/90 text-indigo-600"
+                                    : "border-transparent bg-white/40 text-slate-500",
                                 (isReadOnly || !activeSceneId || isApplyingContext) && "cursor-not-allowed opacity-60"
                             )}
                         >
@@ -2517,9 +2517,9 @@ export default function AiHelperPanel({
                                     <>
                                         <Button
                                             onClick={handleInsert}
-                                            variant="outline"
+                                            variant="ghost"
                                             size="sm"
-                                            className="flex-1 rounded-xl border-indigo-100 hover:border-indigo-200 hover:bg-indigo-50/50 text-indigo-600 gap-2 h-9 font-serif italic transition-all active:scale-95"
+                                            className="flex-1 rounded-xl bg-indigo-50/30 hover:bg-indigo-50/80 text-indigo-600 gap-2 h-9 font-serif italic transition-all active:scale-95"
                                         >
                                             <Plus className="w-3.5 h-3.5" />
                                             Insert into Scene
@@ -2528,9 +2528,9 @@ export default function AiHelperPanel({
                                             <TooltipTrigger asChild>
                                                 <Button
                                                     onClick={() => setSaveModalOpen(true)}
-                                                    variant="outline"
+                                                    variant="ghost"
                                                     size="sm"
-                                                    className="rounded-xl gap-1.5 h-9 px-3 transition-all active:scale-95 border-slate-200 text-slate-500 hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50"
+                                                    className="rounded-xl gap-1.5 h-9 px-3 transition-all active:scale-95 bg-slate-50/50 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50/80"
                                                 >
                                                     <Bookmark className="w-3.5 h-3.5" />
                                                     Save
@@ -2543,16 +2543,16 @@ export default function AiHelperPanel({
                                 {isReadOnly && allowViewerFeedback && (
                                     <Tooltip>
                                         <TooltipTrigger>
-                                            <Button
-                                                onClick={handleSaveToFeedback}
-                                                variant="outline"
-                                                size="sm"
-                                                disabled={isSavingToFeedback}
-                                                className="flex-1 rounded-xl gap-1.5 h-9 px-3 transition-all active:scale-95 border-slate-200 text-slate-500 hover:border-rose-200 hover:text-rose-600 hover:bg-rose-50"
-                                            >
-                                                {isSavingToFeedback ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageSquare className="w-3.5 h-3.5" />}
-                                                Save to Feedback
-                                            </Button>
+                                                <Button
+                                                    onClick={handleSaveToFeedback}
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    disabled={isSavingToFeedback}
+                                                    className="flex-1 rounded-xl gap-1.5 h-9 px-3 transition-all active:scale-95 bg-rose-50/30 text-slate-500 hover:text-rose-600 hover:bg-rose-50/80"
+                                                >
+                                                    {isSavingToFeedback ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageSquare className="w-3.5 h-3.5" />}
+                                                    Save to Feedback
+                                                </Button>
                                         </TooltipTrigger>
                                         <TooltipContent side="top">Save this AI exchange as feedback</TooltipContent>
                                     </Tooltip>
@@ -2561,14 +2561,14 @@ export default function AiHelperPanel({
                                     <TooltipTrigger>
                                         <Button
                                             onClick={handleCopy}
-                                            variant="outline"
+                                            variant="ghost"
                                             size="sm"
                                             className={cn(
                                                 "rounded-xl gap-1.5 h-9 px-3 transition-all active:scale-95",
                                                 isReadOnly && "flex-1",
                                                 copied
-                                                    ? "border-green-200 text-green-600 bg-green-50"
-                                                    : "border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50"
+                                                    ? "bg-green-50 text-green-600"
+                                                    : "bg-slate-50/50 text-slate-500 hover:bg-slate-100/80"
                                             )}
                                         >
                                             {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}

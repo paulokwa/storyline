@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo } from 'react'
 import { Layout, Sparkles } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
 import AiHelperPanel from '../story/AiHelperPanel'
 import { useProjectActions } from '../ProjectContext'
 import { getSceneTextForAi } from '@/lib/story/scene-text'
@@ -105,14 +106,14 @@ export default function AiFullCanvas({
             {/* Minimalist Top Nav for AI Tab */}
             <div className="ai-full-canvas-topnav hidden h-16 items-center justify-between border-b border-slate-200/50 bg-white/50 px-8 backdrop-blur-md md:flex">
                 <div className="flex items-center gap-4">
-                    <button
-                        type="button"
+                    <Button
+                        variant="ghost"
                         onClick={handleReturnToSidebar}
-                        className="flex items-center gap-2 rounded-xl px-3 py-2 text-slate-500 transition-all hover:bg-indigo-50/50 hover:text-indigo-600"
+                        className="flex items-center gap-2 rounded-xl px-3 text-slate-500 hover:bg-white/60 hover:text-indigo-600"
                     >
                         <Layout className="w-4 h-4" />
-                        <span>Return to Side Panel</span>
-                    </button>
+                        <span className="text-sm">Return to Side Panel</span>
+                    </Button>
                     <div className="h-4 w-px bg-slate-200" />
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center">

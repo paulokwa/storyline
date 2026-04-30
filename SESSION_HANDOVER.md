@@ -5,7 +5,7 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
-## 2026-04-30 - AI abuse-controls hardening
+## 2026-04-30 - Sanctuary Design System Unification
 
 ### Current branch
 
@@ -13,13 +13,27 @@ Agents should update this file before ending a session.
 
 ### What was completed
 
-- **Centralized Rate Limiting Upgrade**: Hardened `lib/ai/rate-limit.ts` to detect and throttle IP and Device Fingerprint clusters. Throttling now applies across accounts sharing these identity signals to prevent multi-accounting trial abuse.
-- **Expanded Disposable Email Blocklist**: Expanded the list of blocked disposable domains in `evaluate_and_grant_ai_trial` SQL function to include 40+ providers.
-- **Abuse Detection & Signaling**: Enhanced the trial grant logic to check for existing trials linked to the same IP/Fingerprint within 7-30 days, flagging "reused_device_cluster" or "signup_ip_cluster" risks.
-- **Reporting Utility**: Implemented `lib/ai/abuse-report.ts` for admin/developer visibility into suspicious cluster activity and high-frequency rate-limit triggers.
-- **Full-Width UI**: Expanded the desktop layout to utilize full-width screen space in Library, Project Shell, and AI Sanctuary, and centered navigation tabs.
-- **Export Metadata Copy Polish**: Renamed the placeholder-style "Testing Tip" to "Export Tip" in the Project Settings > Export Metadata tab and ensured this wording is included in the future Help System Audit roadmap.
-- **Project Shell Instant Loading**: Refactored `app/(app)/project/[id]/layout.tsx` using `<Suspense>` and added a route-level `loading.tsx` to enable instant skeleton UI for cloud projects on cold starts or hard refreshes.
+- **Standardized Sidebar Aesthetics**: Unified the visual design of the AI Partner, Feedback, and Scene Gallery panels under the Sanctuary theme.
+- **Button Style Unification**: Transitioned all AI Partner and Scene Gallery buttons from "outline" or subtle-border variants to ghost/borderless styles (e.g., `variant="ghost"`, `rounded-xl`, no border/shadow) to ensure a cohesive, non-intrusive interactive experience.
+- **Layout Harmonization**: Aligned input field shapes, sizes, and internal separator lines between the AI and Feedback panels to ensure visual parity when side-by-side.
+- **Scene Gallery Discoverability**: Added persistent, non-intrusive "helper" cards to the Scene Gallery for prose projects, explaining the right-click workflow for inline image insertion.
+- **Navigation Correction**: Fixed the "Open Asset Manager" button in the Scene Gallery to correctly switch views within the same tab instead of opening a new tab.
+- **Build Error Fix**: Resolved a syntax error in `AiHelperPanel.tsx` caused by accidental duplicate code and a missing comma in a `cn()` call.
+
+### Current status
+
+The sidebar experience is now visually unified across all primary interaction panels. The "Sanctuary" aesthetic (vertical gradients, borderless ghost buttons) is consistently applied.
+
+### Next recommended step
+
+Perform a manual UI audit of the sidebar panels on both mobile and desktop to verify that the borderless buttons remain sufficiently discoverable and that the layout alignment is maintained across different viewport sizes.
+
+### Risks or warnings
+
+- **Discoverability**: Standardizing on ghost/borderless buttons prioritizes aesthetics; monitor if users find the interaction points less obvious.
+- **Layout Consistency**: Ensure that any future sidebar panels (e.g., Character or Location panels) strictly follow the established Sanctuary CSS patterns (gradients, `#d8ddcf` borders, ghost buttons).
+
+---
 
 
 ### Current status

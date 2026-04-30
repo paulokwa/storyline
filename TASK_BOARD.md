@@ -16,8 +16,11 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 
 ## Now
 
-- Improve inline image insertion discoverability in prose/book mode.
 - Continue typography and contrast audit beyond AI Partner, especially older low-contrast helper/meta text in less-used screens.
+
+
+try  cd C:\Coding\Storytime\storyline
+npx skills add pbakaus/impeccable
 
 ## Next
 
@@ -58,6 +61,9 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Consider adding an `AGENTS.md` or `CONTRIBUTING.md` if agents need stricter operating rules.
 
 ## Done
+- Improved inline image insertion discoverability in prose/book mode by adding contextual helper tips to the Scene Gallery.
+- Standardized AI Partner button styles: Transitioned all "outline" variants to ghost/borderless styles consistent with the Sanctuary design system.
+- Fixed layout alignment between AI Partner and Feedback panels.
 - Added first-pass retry/init hardening for cloud project creation and editor saves:
   - cloud project creation now retries transient RPC failures before surfacing an error
   - cloud scene autosave and scene-title saves now retry transient persistence failures

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { 
@@ -34,6 +35,7 @@ export default function EditorAssetSelector({
     inlineImagesDisabled = false,
     disabledMessage = 'Inline image insertion is disabled here.',
 }: EditorAssetSelectorProps) {
+    const router = useRouter()
     const isLocalOnly = isLocalProjectId(projectId)
     const [assets, setAssets] = useState<ProjectAsset[]>([])
     const [loading, setLoading] = useState(false)
@@ -109,7 +111,10 @@ export default function EditorAssetSelector({
                             <Button 
                                 variant="outline" 
                                 className="rounded-2xl px-6 border-slate-200 text-slate-500 hover:text-slate-900"
-                                onClick={() => window.open(`/project/${projectId}/assets`, '_blank')}
+                                onClick={() => {
+                                    onClose()
+                                    router.push(`/project/${projectId}/assets`)
+                                }}
                             >
                                 Open Asset Manager
                             </Button>

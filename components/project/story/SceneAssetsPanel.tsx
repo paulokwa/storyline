@@ -14,7 +14,8 @@ import {
     Search,
     ChevronRight,
     LayoutGrid,
-    ExternalLink
+    ExternalLink,
+    Sparkles
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -198,9 +199,9 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose, projectT
     )
 
     return (
-        <div className="flex flex-col h-full min-h-0 bg-white border-l border-slate-100 shadow-2xl overflow-hidden">
+        <div className="flex flex-col h-full min-h-0 bg-[linear-gradient(180deg,#f5f4ef_0%,#fbf9f5_52%,#f8f6f1_100%)] border-l border-[#d8ddcf] shadow-2xl overflow-hidden">
             {/* Header */}
-            <div className="p-6 border-b border-slate-50 bg-[#fbf9f5]/50 flex items-center justify-between">
+            <div className="px-6 pt-5 pb-4 border-b border-[#ddd8ce] bg-[linear-gradient(180deg,rgba(251,249,245,0.96)_0%,rgba(245,244,239,0.92)_100%)] backdrop-blur-sm flex items-center justify-between">
                 <div>
                     <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#546354]/60">
                         <ImageIcon className="w-3.5 h-3.5" />
@@ -208,7 +209,7 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose, projectT
                     </div>
                 </div>
                 {onClose && (
-                    <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full h-8 w-8 hover:bg-white">
+                    <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full h-8 w-8 hover:bg-white/80 transition-colors">
                         <X className="w-4 h-4 text-slate-400" />
                     </Button>
                 )}
@@ -221,9 +222,9 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose, projectT
                         <p className="text-[10px] font-bold uppercase tracking-widest text-stone-300">Syncing Assets...</p>
                     </div>
                 ) : attachedAssets.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 px-6 text-center bg-[#fcfbf9] rounded-[2rem] border-2 border-dashed border-stone-100">
-                        <div className="w-12 h-12 rounded-2xl bg-white border border-stone-100 flex items-center justify-center mb-4 shadow-sm">
-                            <Plus className="w-5 h-5 text-stone-200" />
+                    <div className="flex flex-col items-center justify-center py-16 px-6 text-center bg-white/40 backdrop-blur-sm rounded-[2.5rem] border border-[#ddd8ce] shadow-sm">
+                        <div className="w-12 h-12 rounded-2xl bg-white border border-[#ddd8ce]/50 flex items-center justify-center mb-4 shadow-sm">
+                            <Plus className="w-5 h-5 text-stone-300" />
                         </div>
                         <p className="text-sm font-serif italic text-slate-400 mb-6">{emptyStateMessage}</p>
                         <Button 
@@ -234,6 +235,22 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose, projectT
                         >
                             {browseButtonLabel}
                         </Button>
+
+                        {!isScreenplay && (
+                            <div className="mt-8 p-4 bg-amber-50/40 border border-amber-100/50 rounded-2xl text-left shadow-[0_2px_10px_rgba(251,191,36,0.05)]">
+                                <div className="flex gap-3">
+                                    <Sparkles className="w-4 h-4 text-amber-500/70 shrink-0 mt-0.5" />
+                                    <div className="space-y-1">
+                                        <p className="text-[11px] font-serif italic text-amber-900/80 leading-relaxed">
+                                            Staging images for your book?
+                                        </p>
+                                        <p className="text-[10px] text-amber-800/60 leading-relaxed">
+                                            To insert an illustration into the actual prose, right-click in the editor and select the <span className="font-bold">Picture</span> icon.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="space-y-4">
@@ -263,12 +280,28 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose, projectT
                         </div>
                         <Button 
                             variant="ghost" 
-                            className="w-full rounded-2xl border-2 border-dashed border-stone-100 h-20 hover:bg-[#fbf9f5] flex flex-col gap-1 transition-all"
+                            className="w-full rounded-2xl border-2 border-dashed border-[#ddd8ce] h-20 hover:bg-white/60 hover:border-indigo-200/50 flex flex-col gap-1 transition-all group/add shadow-sm"
                             onClick={openSelector}
                         >
-                            <Plus className="w-4 h-4 text-stone-300" />
-                            <span className="text-[10px] uppercase tracking-widest font-bold text-stone-300">{attachButtonLabel}</span>
+                            <Plus className="w-4 h-4 text-stone-300 group-hover/add:text-indigo-400 transition-colors" />
+                            <span className="text-[10px] uppercase tracking-widest font-bold text-stone-300 group-hover/add:text-indigo-500 transition-colors">{attachButtonLabel}</span>
                         </Button>
+
+                        {!isScreenplay && (
+                            <div className="mt-6 p-4 bg-amber-50/40 border border-amber-100/50 rounded-2xl shadow-[0_2px_10px_rgba(251,191,36,0.05)]">
+                                <div className="flex gap-3">
+                                    <Sparkles className="w-4 h-4 text-amber-500/70 shrink-0 mt-0.5" />
+                                    <div className="space-y-1">
+                                        <p className="text-[11px] font-serif italic text-amber-900/80 leading-relaxed">
+                                            Tip: Direct Insertion
+                                        </p>
+                                        <p className="text-[10px] text-amber-800/60 leading-relaxed">
+                                            Right-click in the editor and select the <span className="font-bold text-amber-700/80">Picture</span> icon to insert these gallery images directly into your story text.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -277,22 +310,22 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose, projectT
             {isSelecting && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm" onClick={() => setIsSelecting(false)} />
-                    <div className="relative w-full max-w-xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95">
-                        <div className="p-6 border-b border-stone-50 bg-[#fbf9f5] flex items-center justify-between">
+                    <div className="relative w-full max-w-xl bg-[linear-gradient(180deg,#fcfbf9_0%,#fbf9f5_100%)] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 border border-[#ddd8ce]">
+                        <div className="p-6 border-b border-[#ddd8ce] bg-white/40 flex items-center justify-between">
                             <div>
                                 <h3 className="text-xl font-serif italic text-slate-800">Project Assets</h3>
                                 <p className="text-[10px] uppercase tracking-widest text-[#546354]/60 font-bold mt-1">{selectorSubtitle}</p>
                             </div>
-                            <Button variant="ghost" size="icon" onClick={() => setIsSelecting(false)} className="rounded-full">
+                            <Button variant="ghost" size="icon" onClick={() => setIsSelecting(false)} className="rounded-full hover:bg-white/80">
                                 <X className="w-4 h-4" />
                             </Button>
                         </div>
                         
-                        <div className="px-6 py-4 bg-white/50 border-b border-stone-50">
+                        <div className="px-6 py-4 bg-white/20 border-b border-[#ddd8ce]">
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-300" />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
                                 <input 
-                                    className="w-full bg-stone-50 border-none rounded-xl pl-10 pr-4 py-2 text-sm outline-none focus:ring-1 ring-stone-100"
+                                    className="w-full bg-white/80 border border-[#ddd8ce]/50 rounded-xl pl-10 pr-4 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-100 transition-all shadow-sm"
                                     placeholder="Find asset..."
                                     value={searchQuery}
                                     onChange={e => setSearchQuery(e.target.value)}
@@ -313,7 +346,7 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose, projectT
                                             onClick={() => toggleAsset(asset.id)}
                                             className={cn(
                                                 "relative aspect-square rounded-xl overflow-hidden cursor-pointer transition-all",
-                                                isAttached ? "ring-2 ring-[#546354] scale-[0.98]" : "ring-1 ring-stone-100 hover:ring-stone-200"
+                                                isAttached ? "ring-2 ring-indigo-400 scale-[0.98] shadow-md" : "ring-1 ring-[#ddd8ce]/50 hover:ring-indigo-200 bg-white/40 shadow-sm"
                                             )}
                                         >
                                             <img src={getImageUrl(asset.storage_path)} className="w-full h-full object-cover" />
