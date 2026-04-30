@@ -180,7 +180,7 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 | New user sees free trial messaging | Not tested | - | - | Confirm trial message is visible and understandable. |
 | Existing user account state displays correctly | Not tested | - | - | Confirm no incorrect trial prompts. |
 | Account deletion with trial data | Not tested | - | - | Confirm cleanup/hardening works as expected. |
-| Abuse-control signals | Not tested | - | - | Confirm disposable domain/IP/fingerprint checks behave as expected. |
+| Abuse-control signals | Needs retest | AI agent | 2026-04-30 | Implemented expanded disposable domain list (40+ domains) and IP/Fingerprint cluster detection in trial grant logic. Manual verification of new domains is required. |
 
 ## Collaboration / Feedback
 
@@ -220,13 +220,14 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 | Solo project collaborator header empty state | Passed | User | 2026-04-26 | User confirmed the empty collaborator pill/blip no longer appears on solo projects. |
 | Prose scene gallery wording | Passed | User | 2026-04-26 | User confirmed the wording cleanup is resolved. |
 | Profile menu legal link cleanup | Not tested | - | - | Profile menu no longer shows separate Terms / Privacy / AI Disclaimer links, legal pages remain accessible elsewhere, Admin remains admin-only. |
+| Export metadata copy polish | Passed | AI agent | 2026-04-30 | Verified rename of "Testing Tip" to "Export Tip" in Project Settings and updated technical debt roadmap. |
 
 ## Reliability / Technical Debt
 
 | Test | Status | Tested by | Date tested | Notes |
 |---|---|---|---|---|
 | Atomic project scaffolding failure scenario | Not tested | - | - | Confirm no zombie projects after partial failure. |
-| Centralized AI rate limiting | Not tested | - | - | Confirm limits work across serverless instances. |
+| Centralized AI rate limiting | Needs retest | AI agent | 2026-04-30 | Upgraded limiter to support IP and Device Fingerprint clustering. Throttling now applies across accounts sharing the same identity signals to prevent multi-accounting bypass. |
 | Retry/backoff for save/init flows | Not tested | - | - | Verify transient cloud project creation or cloud scene-save failures recover on retry, and only surface errors after retry attempts are exhausted. |
 | AI trial reconciliation checks | Not tested | - | - | After successful runs, failed runs, cancellations, and interrupted trial requests, confirm the trial account balance recovers correctly, stuck reserved usage is reconciled, and admin/user-visible usage data stays consistent. |
 | Structure tree performance with large project | Not tested | - | - | Confirm acceptable performance with many nodes. |

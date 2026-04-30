@@ -99,6 +99,7 @@ This document tracks identified architectural risks, technical debt, and reliabi
     - Keyboard shortcuts
     - Error states, fallback behaviours, and disabled states
     - Empty states and onboarding/help text
+    - Helper text, tips, and labels (e.g., ensure "Testing Tip" placeholders are replaced with "Export Tip" or similar polished copy)
     - Role-based restrictions such as viewer/editor/owner permissions
 
     DO NOT summarize.

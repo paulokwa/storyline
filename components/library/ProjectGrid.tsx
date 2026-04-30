@@ -240,7 +240,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
 
     if (localProjectsLoaded && orderedActive.length === 0 && !draft) {
         return (
-            <div className="library-grid-shell max-w-[1440px] mx-auto px-6 py-24 text-center fade-in">
+            <div className="library-grid-shell w-full px-6 py-24 text-center fade-in">
                 <div className={cn("w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8", isMidnight ? "bg-slate-800/80 border border-slate-700/60" : "bg-stone-100")}>
                     <BookOpen className="w-10 h-10 text-stone-400" />
                 </div>
@@ -276,7 +276,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
 
     return (
         <TooltipProvider>
-            <div className="library-grid-shell max-w-[1440px] mx-auto px-5 py-12 sm:px-6 sm:py-16 lg:py-24">
+            <div className="library-grid-shell w-full px-5 py-12 sm:px-6 sm:py-16 lg:py-24">
                 <div className={cn("flex flex-col gap-8 mb-14 pb-10 lg:flex-row lg:items-end lg:justify-between lg:gap-12 lg:mb-20 lg:pb-12", isMidnight ? "border-b border-slate-700/50" : "border-b border-slate-100")}>
                     <div className="max-w-2xl space-y-4">
                         <motion.h1 
@@ -393,7 +393,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                                 {(provided) => (
                                     <motion.div 
                                         layout
-                                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8"
+                                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 gap-6 md:gap-8"
                                         {...provided.droppableProps}
                                         ref={provided.innerRef}
                                     >

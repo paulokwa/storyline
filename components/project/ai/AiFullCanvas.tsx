@@ -124,7 +124,7 @@ export default function AiFullCanvas({
             </div>
 
             <div className="ai-full-canvas-body flex-1 flex justify-center overflow-hidden">
-                <div className="ai-full-canvas-frame w-full max-w-5xl flex flex-col h-full bg-white shadow-2xl shadow-slate-200/50 border-x border-slate-100 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="ai-full-canvas-frame w-full flex flex-col h-full bg-white shadow-2xl shadow-slate-200/50 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <AiHelperPanel 
                         projectId={projectId}
                         projectTitle={project.title}

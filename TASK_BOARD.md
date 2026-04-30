@@ -10,25 +10,20 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
   - `SESSION_HANDOVER.md`
   - `TASK_BOARD.md`
   - `TESTING.md`
-
+- Use the session end prompt to update `SESSION_HANDOVER.md`, `TASK_BOARD.md`, and `TESTING.md` after each coding session.
 
 ---
 
 ## Now
 
-- The sructure and AI partner bar should be full width on desktop and other devices - cutrerntly those rails are pulled inand bot filling out - there empty space on the outside of that - we dont need that wasted sapce
-
-- Centre the row where the stort, Ai partner, AI memory, etc exist.
-
-- AI abuse-controls hardening.
 - Improve inline image insertion discoverability in prose/book mode.
 - Continue typography and contrast audit beyond AI Partner, especially older low-contrast helper/meta text in less-used screens.
 
 ## Next
 
-- If needed later, refactor `app/(app)/project/[id]/layout.tsx` so the very first cloud project-shell load can participate in route-level instant loading; the shared staged loading UX is already implemented for Library, New Project, Settings, `project/[id]/story`, and local-project open states, so do not duplicate that work.
-- Clean up Export Metadata helper copy: replace the user-facing "TESTING TIP" label in Project Settings > Export Metadata with polished copy such as "Publishing Tip" / "Export Tip" and ensure this wording is covered during the future Help System Feature Audit & Rewrite in `docs/technical-debt-roadmap.md`.
-- Use the session end prompt to update `SESSION_HANDOVER.md`, `TASK_BOARD.md`, and `TESTING.md` after each coding session.
+
+
+
 
 ## Later
 
@@ -144,3 +139,14 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
   - Centralized export extensions in `lib/export/normalize.ts` and ensured `CommentMark` is included.
   - Fixed a critical bug where `ProjectShell.tsx` was passing the project ID instead of content to the save utility.
   - Ensured sanitization of browser-specific file handles in exported files.
+- Expanded desktop layout to full-width across Library, Project Shell, and AI Sanctuary, removing legacy `max-w-` constraints and adding ultra-wide grid support.
+- Centered the project shell navigation tabs (Story, AI Partner, etc.) to improve visual balance on expanded layouts.
+- #20 - AI abuse-controls hardening:
+  - Upgraded the centralized AI rate limiter in `lib/ai/rate-limit.ts` to detect and throttle IP and Device Fingerprint clusters across different user accounts.
+  - Expanded the disposable email domain blocklist in the `evaluate_and_grant_ai_trial` database function to include 40+ known providers.
+  - Implemented `lib/ai/abuse-report.ts` to provide admin visibility into suspicious request clusters and multi-accounting behavior.
+- Cleaned up Export Metadata helper copy and ensured it is covered in the future Help System Feature Audit roadmap.
+- Refactored `app/(app)/project/[id]/layout.tsx` to enable route-level instant loading for cloud projects:
+  - Added `app/(app)/project/[id]/loading.tsx` for child route transitions.
+  - Wrapped project layout fetching logic in `<Suspense>` with `RouteLoadingScreen` fallback.
+  - Enabled the "Workspace" skeleton UI to appear immediately on first load or hard refresh.

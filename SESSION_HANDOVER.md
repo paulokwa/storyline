@@ -5,6 +5,39 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-04-30 - AI abuse-controls hardening
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- **Centralized Rate Limiting Upgrade**: Hardened `lib/ai/rate-limit.ts` to detect and throttle IP and Device Fingerprint clusters. Throttling now applies across accounts sharing these identity signals to prevent multi-accounting trial abuse.
+- **Expanded Disposable Email Blocklist**: Expanded the list of blocked disposable domains in `evaluate_and_grant_ai_trial` SQL function to include 40+ providers.
+- **Abuse Detection & Signaling**: Enhanced the trial grant logic to check for existing trials linked to the same IP/Fingerprint within 7-30 days, flagging "reused_device_cluster" or "signup_ip_cluster" risks.
+- **Reporting Utility**: Implemented `lib/ai/abuse-report.ts` for admin/developer visibility into suspicious cluster activity and high-frequency rate-limit triggers.
+- **Full-Width UI**: Expanded the desktop layout to utilize full-width screen space in Library, Project Shell, and AI Sanctuary, and centered navigation tabs.
+- **Export Metadata Copy Polish**: Renamed the placeholder-style "Testing Tip" to "Export Tip" in the Project Settings > Export Metadata tab and ensured this wording is included in the future Help System Audit roadmap.
+- **Project Shell Instant Loading**: Refactored `app/(app)/project/[id]/layout.tsx` using `<Suspense>` and added a route-level `loading.tsx` to enable instant skeleton UI for cloud projects on cold starts or hard refreshes.
+
+
+### Current status
+
+The platform is significantly more resilient against multi-account trial abuse. Centralized rate limiting now monitors identity clusters in addition to user IDs.
+
+### Next recommended step
+
+Perform a manual smoke test of the new abuse controls:
+- Attempt signup with a disposable domain from the new list (e.g., `muama.com`).
+- Attempt to trigger the rate limiter using multiple accounts from the same device/IP.
+- Check the new `lib/ai/abuse-report.ts` results for any detected clusters.
+
+### Risks or warnings
+
+- Cluster throttling uses a 1.5x more aggressive interval than standard user limits; watch for false positives in high-density environments like universities (though the shared throttle is only for 4s-30s windows).
+- The disposable email list is finite; consider moving to a third-party API if manual domain maintenance becomes a burden.
+
 ## 2026-04-29 - Browser dialog audit completed
 
 ### Current branch

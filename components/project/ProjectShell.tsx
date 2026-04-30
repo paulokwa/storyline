@@ -688,7 +688,7 @@ function ProjectShellInner({
             <div className="project-shell-root h-full min-h-0 flex-1 flex flex-col overflow-hidden">
                 {/* Project header */}
                 <div className="project-shell-header bg-secondary/50 backdrop-blur-sm px-4 sm:px-6 lg:px-8 border-b border-border">
-                <div className="max-w-[1440px] mx-auto">
+                    <div className="w-full">
                     {/* Top row */}
 
                     <div className="flex items-center gap-2 pt-4 pb-2 border-b border-black/5 md:border-none">
@@ -1011,8 +1011,8 @@ function ProjectShellInner({
                         </div>
                     </div>
 
-                    <div className="project-shell-tabs mt-1">
-                        <div className="snap-row flex gap-1 pl-1">
+                    <div className="project-shell-tabs mt-1 flex justify-center">
+                        <div className="snap-row flex gap-1">
                             {visibleTabs.map(({ slug, label, icon: Icon }) => (
                                 <Link
                                     key={slug}
@@ -1036,7 +1036,7 @@ function ProjectShellInner({
             </div>
 
             {/* Page content */}
-            <div className="flex h-full min-h-0 w-full max-w-[1440px] flex-1 flex-col overflow-hidden mx-auto">
+            <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
                 {children}
             </div>
             

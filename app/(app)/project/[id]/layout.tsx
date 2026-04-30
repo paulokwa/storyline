@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import ProjectShell from '@/components/project/ProjectShell'
@@ -6,6 +7,7 @@ import { ProjectProvider } from '@/components/project/ProjectContext'
 import { isLocalProjectId } from '@/lib/persistence/project-mode'
 import type { Database } from '@/lib/supabase/types'
 import { requireVerifiedUser } from '@/lib/supabase/auth'
+import RouteLoadingScreen from '@/components/app/RouteLoadingScreen'
 
 type ProjectRole = Database['public']['Enums']['project_role']
 type ProjectLayoutRow = Database['public']['Tables']['projects']['Row'] & {
@@ -29,6 +31,30 @@ export default async function ProjectLayout({
 }) {
     const { id: rawId } = await params
     const id = decodeURIComponent(rawId)
+
+    return (
+        <Suspense
+            fallback={
+                <RouteLoadingScreen
+                    variant="workspace"
+                    title="Opening your workspace..."
+                    description="Preparing your project structure and preferences."
+                    reassurance="Your work is safe."
+                />
+            }
+        >
+            <ProjectLayoutLoader id={id}>{children}</ProjectLayoutLoader>
+        </Suspense>
+    )
+}
+
+async function ProjectLayoutLoader({
+    id,
+    children,
+}: {
+    id: string
+    children: React.ReactNode
+}) {
     const supabase = await createClient()
     const user = await requireVerifiedUser()
 
@@ -75,7 +101,7 @@ export default async function ProjectLayout({
 
     const project = {
         ...projectData,
-        role: projectDataWithMembers.project_members?.[0]?.role ?? 'viewer'
+        role: projectDataWithMembers.project_members?.[0]?.role ?? 'viewer',
     }
 
     // Update last accessed time asynchronously via RPC (safe for all members)
@@ -106,3 +132,4 @@ export default async function ProjectLayout({
         </ProjectProvider>
     )
 }
+
