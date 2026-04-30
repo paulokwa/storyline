@@ -66,6 +66,59 @@ components:
     padding: "24px"
 ---
 
+<!--
+IMPECCABLE / AI DESIGN GUARDRAIL PROMPT
+
+When using Impeccable, AG, Codex, or any AI design assistant on this project:
+
+Preserve the existing Sanctuary theme. Do not redesign the app.
+
+Storyline already has an intentional visual direction inspired by the Sanctuary theme: calm, literary, warm, rounded, writer-focused, privacy-conscious, and emotionally safe.
+
+Use Impeccable as a critic and polish assistant, not as a full redesign engine.
+
+Default workflow:
+1. Audit first.
+2. Do not edit files until the user approves the audit.
+3. Recommend small, reversible improvements.
+4. Preserve existing product logic and app structure.
+5. Improve clarity, spacing, accessibility, mobile layout, copy, and visual hierarchy.
+6. Do not introduce a new design system unless explicitly requested.
+
+Allowed improvements:
+- clearer hierarchy
+- better helper text contrast
+- less corporate or internal wording
+- better mobile layouts
+- calmer empty states
+- improved form spacing
+- improved button hierarchy
+- accessibility fixes
+- reduced clutter
+- fewer repeated explanations
+
+Avoid:
+- full redesigns
+- generic SaaS styling
+- purple gradients
+- neon/glassmorphism effects
+- random new fonts
+- cards inside cards
+- decorative low-contrast helper text
+- excessive animation
+- changing app logic during visual polish
+- changing Supabase, RLS, auth, API routes, AI provider logic, export/import, local/cloud persistence, or collaboration rules
+
+Before editing, output:
+1. what screen or component is being reviewed
+2. what problems were found
+3. what small changes are recommended
+4. which files may be touched
+5. what will not be changed
+
+Only after approval should changes be applied.
+-->
+
 # Design System: Storyline
 
 ## Overview
