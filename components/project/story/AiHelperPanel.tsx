@@ -2792,7 +2792,7 @@ export default function AiHelperPanel({
                         </div>
                     </div>
                 )}
-                <div className="px-4 pt-3 pb-3 md:pt-4 md:pb-2">
+                <div className="px-4 pt-3 pb-3 md:pt-4 md:pb-4">
                     <form onSubmit={handleSubmit} className="space-y-3" suppressHydrationWarning>
                         {isVirtualRootSelected && (
                             <div className="flex flex-col gap-2 p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-indigo-700 animate-in fade-in zoom-in duration-300 mb-2">
@@ -2885,7 +2885,7 @@ export default function AiHelperPanel({
                                     actualLoading ? "bg-white/90 cursor-wait" : "bg-white/78"
                                 )}
                                 editorClassName="px-4 pr-14 py-3.5 text-sm font-serif leading-relaxed"
-                                minHeight="80px"
+                                minHeight="100px"
                                 maxHeight="min(32vh, 240px)"
                             />
                             <button
