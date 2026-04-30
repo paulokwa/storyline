@@ -193,6 +193,20 @@ export default function ExportModal({
         { id: 'epub', label: 'EPUB Ebook', icon: Files, ext: '.epub', desc: 'Ready for Kindle/iBooks' },
     ]
 
+    const scopeLabel = options.scope === 'entire_project'
+        ? 'Entire project'
+        : options.scope === 'selected_chapters'
+            ? (projectType === 'tv_script' ? 'Selected episodes' : 'Selected chapters')
+            : 'Selected scenes'
+
+    const formatPreviewLabel = formats.find((format) => format.id === options.format)?.label ?? options.format.toUpperCase()
+
+    const contentModePreviewLabel = options.contentMode === 'prose_only'
+        ? 'Manuscript prose only'
+        : options.contentMode === 'summaries_only'
+            ? 'Saved outline summaries only'
+            : 'Saved summaries and manuscript prose'
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className={cn(
@@ -216,14 +230,14 @@ export default function ExportModal({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                <div className="max-h-[70vh] overflow-y-auto custom-scrollbar p-6 space-y-7 sm:p-8 sm:space-y-8">
                     {!canExport && exportRestrictionMessage && (
                         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
                             {exportRestrictionMessage}
                         </div>
                     )}
                     <div className="space-y-4">
-                        <label className="flex items-center gap-2 text-[10px] font-sans tracking-[0.2em] uppercase text-slate-400 font-bold mb-2">
+                        <label className="mb-2 flex items-center gap-2 text-[11px] font-sans font-semibold tracking-[0.16em] uppercase text-slate-500">
                             Scope
                         </label>
                         <div className="flex gap-2 p-1 bg-slate-900/5 rounded-2xl w-fit">
@@ -254,7 +268,7 @@ export default function ExportModal({
 
                     {/* Format Selector */}
                     <div className="space-y-4">
-                        <label className="flex items-center gap-2 text-[10px] font-sans tracking-[0.2em] uppercase text-slate-400 font-bold mb-2">
+                        <label className="mb-2 flex items-center gap-2 text-[11px] font-sans font-semibold tracking-[0.16em] uppercase text-slate-500">
                             <Settings2 className="w-3 h-3" />
                             Target Format
                         </label>
@@ -267,19 +281,19 @@ export default function ExportModal({
                                     className={cn(
                                         "flex flex-col items-start p-4 rounded-2xl border transition-all duration-300 text-left",
                                         options.format === f.id
-                                            ? "bg-white border-amber-200 shadow-lg shadow-amber-900/5 ring-1 ring-amber-200"
+                                            ? "bg-white border-amber-300 shadow-lg shadow-amber-900/5 ring-1 ring-amber-300"
                                             : "border-slate-100 bg-white/40 hover:bg-white hover:border-slate-200",
                                         !canExport && "cursor-not-allowed opacity-60"
                                     )}
                                 >
                                     <div className="flex items-center gap-1.5 mb-1.5 overflow-hidden w-full">
-                                        <f.icon className={cn("w-3.5 h-3.5 shrink-0", options.format === f.id ? "text-amber-600" : "text-slate-400")} />
-                                        <span className={cn("font-medium text-xs sm:text-sm truncate", options.format === f.id ? "text-slate-900" : "text-slate-600")}>
+                                        <f.icon className={cn("w-3.5 h-3.5 shrink-0", options.format === f.id ? "text-amber-700" : "text-slate-400")} />
+                                        <span className={cn("font-medium text-xs sm:text-sm truncate", options.format === f.id ? "text-slate-950" : "text-slate-600")}>
                                             {f.label}
                                         </span>
                                         <span className="text-[9px] text-slate-400 font-mono shrink-0">{f.ext}</span>
                                     </div>
-                                    <p className="text-[11px] text-slate-400 leading-tight">
+                                    <p className={cn("text-[11px] leading-tight", options.format === f.id ? "text-slate-500" : "text-slate-400")}>
                                         {f.desc}
                                     </p>
                                 </button>
@@ -290,7 +304,7 @@ export default function ExportModal({
                     {/* Export Metadata Summary */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between mb-2">
-                            <label className="flex items-center gap-2 text-[10px] font-sans tracking-[0.2em] uppercase text-slate-400 font-bold">
+                            <label className="flex items-center gap-2 text-[11px] font-sans font-semibold tracking-[0.16em] uppercase text-slate-500">
                                 <FileText className="w-3 h-3" />
                                 Export Metadata
                             </label>
@@ -305,25 +319,25 @@ export default function ExportModal({
                             {metadata && (metadata.authorName || metadata.penName || metadata.copyrightHolder) ? (
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
-                                        <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Author / Pen Name</p>
+                                        <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500 font-semibold">Author / Pen Name</p>
                                         <p className="text-xs text-slate-700 font-medium">
                                             {metadata.penName || metadata.authorName || 'Not set'}
                                         </p>
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Copyright</p>
+                                        <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500 font-semibold">Copyright</p>
                                         <p className="text-xs text-slate-700 font-medium">
                                             {metadata.copyrightHolder ? `© ${metadata.copyrightYear || ''} ${metadata.copyrightHolder}` : 'Not set'}
                                         </p>
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Language</p>
+                                        <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500 font-semibold">Language</p>
                                         <p className="text-xs text-slate-700 font-medium">
                                             {metadata.language || 'Not set'}
                                         </p>
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Publisher</p>
+                                        <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500 font-semibold">Publisher</p>
                                         <p className="text-xs text-slate-700 font-medium">
                                             {metadata.publisher || 'Not set'}
                                         </p>
@@ -331,9 +345,9 @@ export default function ExportModal({
                                 </div>
                             ) : (
                                 <div className="flex items-center justify-between">
-                                    <p className="text-xs text-slate-400 italic">No publishing metadata defined yet.</p>
+                                    <p className="text-sm text-slate-500">Add author, copyright, and publishing details before export.</p>
                                     <Button variant="ghost" size="sm" onClick={onOpenSettings} className="h-7 text-[10px] rounded-lg">
-                                        Set Metadata
+                                        Edit Metadata
                                     </Button>
                                 </div>
                             )}
@@ -341,11 +355,14 @@ export default function ExportModal({
                     </div>
 
                     {/* Options Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-6">
-                            <label className="flex items-center gap-2 text-[10px] font-sans tracking-[0.2em] uppercase text-slate-400 font-bold">
+                    <div className="grid grid-cols-1 gap-7 md:grid-cols-2 md:gap-8">
+                        <div className="space-y-5">
+                            <label className="flex items-center gap-2 text-[11px] font-sans font-semibold tracking-[0.16em] uppercase text-slate-500">
                                 Includes
                             </label>
+                            <p className="text-xs leading-5 text-slate-500">
+                                Choose which project and structure titles should appear in the exported file.
+                            </p>
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between group">
                                     <Label htmlFor="inc-title" className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">
@@ -383,10 +400,13 @@ export default function ExportModal({
                             </div>
                         </div>
 
-                        <div className="space-y-6">
-                            <label className="flex items-center gap-2 text-[10px] font-sans tracking-[0.2em] uppercase text-slate-400 font-bold">
+                        <div className="space-y-5">
+                            <label className="flex items-center gap-2 text-[11px] font-sans font-semibold tracking-[0.16em] uppercase text-slate-500">
                                 Content Mode
                             </label>
+                            <p className="text-xs leading-5 text-slate-500">
+                                Manuscript Prose exports the written manuscript text. Outline Summaries exports any saved outline summaries only. Outline + Prose exports both saved summaries and manuscript text.
+                            </p>
                             <div className="space-y-2">
                                 {(['prose_only', 'summaries_only', 'both'] as const).map((mode) => (
                                     <button
@@ -396,7 +416,7 @@ export default function ExportModal({
                                         className={cn(
                                             "w-full flex items-center justify-between px-3 py-2 rounded-xl border text-sm transition-all duration-300",
                                             options.contentMode === mode
-                                                ? "bg-amber-50 border-amber-200 text-amber-900 font-medium"
+                                                ? "bg-amber-50 border-amber-300 text-amber-950 font-medium ring-1 ring-amber-200/80"
                                                 : "bg-white/40 border-transparent text-slate-500 hover:bg-white hover:border-slate-100",
                                             !canExport && "cursor-not-allowed opacity-60"
                                         )}
@@ -415,25 +435,30 @@ export default function ExportModal({
 
                     {/* Preview Box */}
                     <div className="bg-slate-900/5 rounded-[2rem] p-6 border border-slate-900/5">
-                        <div className="flex items-center gap-2 text-[10px] font-sans tracking-[0.2em] uppercase text-slate-400 font-bold mb-4">
+                        <div className="mb-4 flex items-center gap-2 text-[11px] font-sans font-semibold tracking-[0.16em] uppercase text-slate-500">
                             <Eye className="w-3 h-3" />
                             Export Preview
                         </div>
-                        <div className="flex items-center justify-between">
-                            <div className="space-y-1">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="space-y-2">
                                 <p className="text-sm font-medium text-slate-700">
                                     {projectTitle}
                                 </p>
                                 <p className="text-xs text-slate-400">
                                     {stats ? `${stats.chapters} chapters, ${stats.scenes} scenes` : canExport ? 'Loading project stats...' : 'Export stats unavailable while export is disabled'}
                                 </p>
+                                <div className="space-y-1 text-xs leading-5 text-slate-500">
+                                    <p><span className="font-medium text-slate-700">Scope:</span> {scopeLabel}</p>
+                                    <p><span className="font-medium text-slate-700">Format:</span> {formatPreviewLabel}</p>
+                                    <p><span className="font-medium text-slate-700">Content:</span> {contentModePreviewLabel}</p>
+                                </div>
                             </div>
-                            <div className="text-right">
+                            <div className="text-left sm:text-right">
                                 <p className="text-lg font-serif text-slate-900">
                                     {options.format.toUpperCase()}
                                 </p>
-                                <p className="text-[10px] text-slate-400 uppercase tracking-widest">
-                                    {options.contentMode === 'prose_only' ? 'Prose' : options.contentMode === 'summaries_only' ? 'Summary' : 'Mixed'}
+                                <p className="text-[11px] text-slate-500 uppercase tracking-[0.14em] font-semibold">
+                                    {options.contentMode === 'prose_only' ? 'Prose only' : options.contentMode === 'summaries_only' ? 'Saved summaries' : 'Prose + summaries'}
                                 </p>
                             </div>
                         </div>
@@ -447,13 +472,9 @@ export default function ExportModal({
                 </div>
 
                 <DialogFooter className={cn(
-                    "p-8 flex flex-col sm:flex-row gap-4 sm:justify-between items-center",
+                    "p-8 flex flex-col sm:flex-row gap-4 sm:justify-end items-center",
                     isMidnight ? "bg-[#182239]/88 border-slate-700/60" : "bg-white border-[#f0eee9]"
                 )}>
-                    <div className="flex items-center gap-2 text-slate-400 text-xs">
-                        <AlertCircle className="w-4 h-4" />
-                        Selected structure order preserved
-                    </div>
                     <div className="flex items-center gap-3 w-full sm:w-auto">
                         <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-xl flex-1 sm:flex-none">
                             Cancel
