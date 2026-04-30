@@ -804,50 +804,62 @@ export default function CommentsPanel({
     }
 
     return (
-        <div className="comments-panel flex flex-col h-full min-h-0 bg-white">
+        <div className="comments-panel flex flex-col h-full min-h-0 overflow-hidden border-l border-[#d8ddcf] bg-[linear-gradient(180deg,#f5f4ef_0%,#fbf9f5_52%,#f8f6f1_100%)] shadow-[inset_1px_0_0_rgba(255,255,255,0.45),-18px_0_40px_rgba(84,99,84,0.04)]">
             {/* Header */}
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                        <MessageSquare className="w-4 h-4" />
+            <div className="comments-header shrink-0 border-b border-[#ddd8ce] bg-[linear-gradient(180deg,rgba(251,249,245,0.96)_0%,rgba(245,244,239,0.92)_100%)] px-4 py-2 backdrop-blur-sm md:px-6 md:pt-2.5 md:pb-2">
+                <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-white/50 border border-[#ddd8ce] flex items-center justify-center text-slate-600 shadow-sm">
+                            <MessageCircle className="w-4 h-4" />
+                        </div>
+                        <h2 className="text-sm font-serif font-bold italic tracking-tight text-slate-800">Feedback</h2>
                     </div>
-                    <h3 className="font-serif italic font-bold text-slate-800">Feedback</h3>
-                </div>
-                <div className="flex items-center gap-1.5">
-                    <Tooltip>
-                        <TooltipTrigger>
-                            <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className={cn("h-8 px-2 w-auto min-w-[32px] rounded-lg gap-1.5", filterByNode ? "text-primary bg-primary/5" : "text-slate-400")}
-                                onClick={() => setFilterByNode(!filterByNode)}
-                            >
-                                <Filter className="w-3.5 h-3.5" />
-                                <span className="text-[10px] font-bold">{filterByNode ? currentSceneCount : allProjectCount}</span>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">{filterByNode ? "Switch to: All Project Feedback" : "Switch to: Current Scene Only"}</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                        <TooltipTrigger>
-                            <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className={cn("h-8 px-2 w-auto min-w-[32px] rounded-lg gap-1.5", showResolved ? "text-emerald-500 bg-emerald-50" : "text-slate-400")}
-                                onClick={() => setShowResolved(!showResolved)}
-                            >
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                {resolvedCount > 0 && (
-                                    <span className="text-[10px] font-bold">{resolvedCount}</span>
-                                )}
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">{showResolved ? "Hide Resolved" : "Show Resolved"}</TooltipContent>
-                    </Tooltip>
-                    {onClose && (
-                        <div className="w-px h-4 bg-slate-200 mx-1"></div>
-                    )}
-                    {onClose && (
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setFilterByNode(!filterByNode)}
+                                        className={cn(
+                                            "h-8 w-8 rounded-xl transition-all",
+                                            filterByNode 
+                                                ? "bg-indigo-50 text-indigo-600 shadow-sm ring-1 ring-indigo-100" 
+                                                : "text-slate-400 hover:bg-white/80 hover:text-indigo-500"
+                                        )}
+                                    >
+                                        {filterByNode ? <Filter className="w-4 h-4" /> : <FilterX className="w-4 h-4" />}
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom">{filterByNode ? "Switch to: All Project Feedback" : "Switch to: Current Scene Only"}</TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setShowResolved(!showResolved)}
+                                        className={cn(
+                                            "h-8 w-8 rounded-xl transition-all",
+                                            showResolved 
+                                                ? "bg-emerald-50 text-emerald-600 shadow-sm ring-1 ring-emerald-100" 
+                                                : "text-slate-400 hover:bg-white/80 hover:text-emerald-500"
+                                        )}
+                                    >
+                                        <CheckCircle2 className="w-4 h-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom">{showResolved ? "Hide Resolved" : "Show Resolved"}</TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+
+                        <div className="h-5 w-px bg-slate-200/60 mx-1" />
+
                         <Button 
                             variant="ghost" 
                             size="icon" 
@@ -856,12 +868,12 @@ export default function CommentsPanel({
                         >
                             <X className="w-4 h-4" />
                         </Button>
-                    )}
+                    </div>
                 </div>
             </div>
 
             {canFilterByAuthor && (
-                <div className="border-b border-slate-100 px-4 py-3">
+                <div className="border-b border-slate-100 px-4 py-2">
                     <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         {!isLocalOnly && (
                             <button
@@ -870,8 +882,8 @@ export default function CommentsPanel({
                                 className={cn(
                                     "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
                                     authorFilter === 'new'
-                                        ? "bg-slate-900 text-white"
-                                        : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                                        ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 ring-2 ring-indigo-50/50"
+                                        : "bg-white/60 text-slate-500 border border-slate-200/50 hover:bg-white hover:text-indigo-600 hover:border-indigo-100"
                                 )}
                             >
                                 New {newCount}
@@ -881,10 +893,10 @@ export default function CommentsPanel({
                             type="button"
                             onClick={() => setAuthorFilter('all')}
                             className={cn(
-                                "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
+                                "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all duration-300",
                                 authorFilter === 'all'
-                                    ? "bg-slate-900 text-white"
-                                    : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 ring-2 ring-indigo-50/50"
+                                    : "bg-white/60 text-slate-500 border border-slate-200/50 hover:bg-white hover:text-indigo-600 hover:border-indigo-100"
                             )}
                         >
                             All {allProjectCount}
@@ -893,10 +905,10 @@ export default function CommentsPanel({
                             type="button"
                             onClick={() => setAuthorFilter('mine')}
                             className={cn(
-                                "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
+                                "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all duration-300",
                                 authorFilter === 'mine'
-                                    ? "bg-slate-900 text-white"
-                                    : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 ring-2 ring-indigo-50/50"
+                                    : "bg-white/60 text-slate-500 border border-slate-200/50 hover:bg-white hover:text-indigo-600 hover:border-indigo-100"
                             )}
                         >
                             Mine {mineCount}
@@ -907,10 +919,10 @@ export default function CommentsPanel({
                                     type="button"
                                     onClick={() => setAuthorFilter('collaborators')}
                                     className={cn(
-                                        "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
+                                        "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all duration-300",
                                         authorFilter === 'collaborators'
-                                            ? "bg-slate-900 text-white"
-                                            : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                                            ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 ring-2 ring-indigo-50/50"
+                                            : "bg-white/60 text-slate-500 border border-slate-200/50 hover:bg-white hover:text-indigo-600 hover:border-indigo-100"
                                     )}
                                 >
                                     Collaborators {collaboratorCount}
@@ -919,10 +931,10 @@ export default function CommentsPanel({
                                     type="button"
                                     onClick={() => setAuthorFilter('ai')}
                                     className={cn(
-                                        "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
+                                        "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all duration-300",
                                         authorFilter === 'ai'
-                                            ? "bg-slate-900 text-white"
-                                            : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                                            ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 ring-2 ring-indigo-50/50"
+                                            : "bg-white/60 text-slate-500 border border-slate-200/50 hover:bg-white hover:text-indigo-600 hover:border-indigo-100"
                                     )}
                                 >
                                     AI {aiCount}
@@ -931,10 +943,10 @@ export default function CommentsPanel({
                                     type="button"
                                     onClick={() => setAuthorFilter('hidden')}
                                     className={cn(
-                                        "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
+                                        "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all duration-300",
                                         authorFilter === 'hidden'
-                                            ? "bg-slate-900 text-white"
-                                            : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                                            ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 ring-2 ring-indigo-50/50"
+                                            : "bg-white/60 text-slate-500 border border-slate-200/50 hover:bg-white hover:text-indigo-600 hover:border-indigo-100"
                                     )}
                                 >
                                     Hidden {hiddenCount}
@@ -1099,7 +1111,7 @@ export default function CommentsPanel({
             </ScrollArea>
 
             {/* Input Footer */}
-            <div className="p-4 pb-24 md:pb-4 border-t border-slate-100 bg-slate-50/50">
+            <div className="relative z-10 border-t border-[#ddd8ce] bg-[linear-gradient(180deg,rgba(245,244,239,0.9)_0%,rgba(251,249,245,0.96)_100%)] px-4 pt-3 pb-24 md:pb-4">
                 <div className="relative" suppressHydrationWarning>
                     <textarea
                         placeholder={isLocalOnly ? "Add a personal note..." : canViewerLeaveFeedback ? "Add a thought..." : "The owner has not enabled viewer feedback for this project."}
@@ -1109,7 +1121,7 @@ export default function CommentsPanel({
                             handleTyping(null)
                         }}
                         disabled={!canViewerLeaveFeedback}
-                        className="w-full bg-white border border-slate-200 rounded-2xl p-4 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[100px] resize-none font-sans"
+                        className="w-full bg-white/80 border border-slate-200/80 rounded-2xl p-4 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-300 transition-all min-h-[100px] resize-none font-sans shadow-sm"
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                                 handleAddComment()
@@ -1121,13 +1133,13 @@ export default function CommentsPanel({
                         size="icon" 
                         onClick={handleAddComment}
                         disabled={!canViewerLeaveFeedback || !newCommentText.trim()}
-                        className="absolute right-3 bottom-3 h-8 w-8 rounded-xl sanctuary-btn-primary shadow-lg"
+                        className="absolute right-3 bottom-3 h-8 w-8 rounded-xl sanctuary-btn-primary shadow-lg shadow-indigo-100"
                     >
                         <Send className="w-4 h-4" />
                     </Button>
                 </div>
                 {!canViewerLeaveFeedback && role === 'viewer' && (
-                    <p className="mt-3 text-[10px] uppercase tracking-[0.18em] text-slate-400 font-bold">
+                    <p className="mt-3 text-[10px] uppercase tracking-[0.18em] text-slate-400 font-bold px-2">
                         Viewer feedback is currently disabled by the owner.
                     </p>
                 )}
@@ -1185,8 +1197,8 @@ function CommentThread({
     return (
         <div className={cn(
             "transition-all duration-300 rounded-[18px] sm:rounded-[24px] border border-transparent overflow-hidden",
-            isActive && "bg-white border-primary/20 shadow-xl shadow-primary/5 ring-1 ring-primary/10",
-            !isActive && "hover:border-slate-200"
+            isActive && "bg-white/80 border-indigo-200 shadow-xl shadow-indigo-100/30 ring-1 ring-indigo-100/50 backdrop-blur-sm",
+            !isActive && "hover:border-[#d8ddcf]/50"
         )}>
             <div className={cn(
                 "p-3 sm:p-4 space-y-3 sm:space-y-4",
@@ -1286,9 +1298,9 @@ function CommentThread({
                 {typingUsers.length > 0 && !isReplying && (
                     <div className="ml-7 border-l-2 border-slate-100/80 pl-4 py-2 flex items-center gap-2 animate-in fade-in transition-all duration-500">
                         <div className="flex gap-0.5">
-                             <div className="w-1 h-1 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                             <div className="w-1 h-1 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                             <div className="w-1 h-1 bg-primary/40 rounded-full animate-bounce" />
+                             <div className="w-1 h-1 bg-indigo-400/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                             <div className="w-1 h-1 bg-indigo-400/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                             <div className="w-1 h-1 bg-indigo-400/40 rounded-full animate-bounce" />
                         </div>
                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest italic animate-pulse">
                             Someone is writing a reply...
@@ -1356,8 +1368,8 @@ function CommentItem({
             className={cn(
                 "group transition-all cursor-pointer relative",
                 isReply && "py-0.5 sm:py-1",
-                !isReply && "bg-slate-50/50 rounded-2xl p-3 sm:p-4 border border-transparent hover:bg-white hover:border-slate-200 hover:shadow-md",
-                isActive && !isReply && "bg-white border-primary/20 shadow-xl shadow-primary/5 ring-1 ring-primary/10",
+                !isReply && "bg-white/40 rounded-2xl p-3 sm:p-4 border border-transparent hover:bg-white/90 hover:border-[#d8ddcf] hover:shadow-md",
+                isActive && !isReply && "bg-white border-indigo-200 shadow-xl shadow-indigo-100/20 ring-1 ring-indigo-100",
                 comment.status === 'resolved' && "bg-emerald-50/10"
             )}
             onClick={() => {
