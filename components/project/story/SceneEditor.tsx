@@ -1392,7 +1392,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                 saveStatus === 'saved' ? "text-emerald-500" : 
                                 saveStatus === 'error' ? "text-red-500" : "text-slate-300"
                             )}>
-                                {saveStatus === 'saving' ? 'Autosaving...' : saveStatus === 'saved' ? 'Saved' : ''}
+                                {saveStatus === 'saving' ? 'Autosaving...' : saveStatus === 'saved' ? 'Saved' : saveStatus === 'error' ? 'Save failed' : ''}
                             </span>
                         )}
                         

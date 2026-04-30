@@ -6,6 +6,23 @@ Keep entries concise. Do not rewrite old decisions unless explicitly instructed.
 
 ---
 
+## 2026-04-28 - Unified export schema with CommentMark support
+
+Decision:
+Include `CommentMark` in the centralized `exportExtensions` in `normalize.ts` and ensure all export formats use this unified schema.
+
+Reason:
+Exporting projects containing editor comments was causing a `RangeError` in formats using `generateHTML` (EPUB, HTML, PDF) because the `comment` mark was missing from the provided schema.
+
+Impact:
+- Fixed `RangeError` during manuscript export for projects with comments.
+- Streamlined export logic by ensuring `toEpub.ts` and `toHtml.ts` use the same extension set.
+
+Status:
+Approved.
+
+---
+
 ## 2026-04-27 - Reuse the Help Center for cloud sync guidance instead of a separate explainer page
 
 Decision:

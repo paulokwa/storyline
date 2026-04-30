@@ -31,6 +31,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import {
     deleteSavedResponse,
     insertSavedResponseIntoScene,
@@ -164,7 +165,9 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
             setIsEditingTitle(false)
         } catch (err: any) {
             console.error('Error renaming response:', err.message)
-            alert('Failed to rename response. Please try again.')
+            toast.error('Failed to rename response.', {
+                description: 'Please try again.',
+            })
         } finally {
             setIsSavingAction(false)
         }
@@ -200,7 +203,9 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
             setIsInserting(false)
         } catch (err: any) {
             console.error('Error inserting into scene:', err.message)
-            alert('Failed to insert into scene. Please try again.')
+            toast.error('Failed to insert into scene.', {
+                description: 'Please try again.',
+            })
         } finally {
             setIsSavingAction(false)
         }

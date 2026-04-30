@@ -108,10 +108,11 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 | Rename project metadata | Not tested | - | - | Confirm title/metadata saves and persists. |
 | Local/cloud mode feature boundaries | Not tested | - | - | Confirm local features work, cloud-only features are hidden or explained, and cloud projects are not stuck in local-mode wording. |
 | Cloud project open messaging | Not tested | - | - | Confirm opening a cloud project does not flash local project messaging. |
+| Broader pre-launch regression pass | Not tested | - | - | Cover core project flow, import/export, local/cloud behavior, AI availability states, collaboration, tablet/mobile layout, and onboarding tours. |
 
 ## Structure / Planning
 | Autosave/persistence after refresh | Not tested | - | - | Confirm content remains after reload/device switch. |
-| Editor save failure handling | Not tested | - | - | Confirm user gets clear feedback on failure. |
+| Editor save failure handling | Not tested | - | - | Simulate or provoke a save failure after retries are exhausted and confirm the editor surfaces a visible `Save failed` state. |
 | Read aloud/view mode on tablet portrait | Not tested | - | - | Confirm layout is not cut off on real tablet in portrait mode. |
 | Undelete local scene cleanup | Needs retest | - | - | Undelete works but recovered item should disappear from recovery list. |
 | Legacy cloud deleted scene cleanup | Needs retest | - | - | Deleted scene text should not remain visible in cloud-enabled project. |
@@ -158,7 +159,7 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 
 | Test | Status | Tested by | Date tested | Notes |
 |---|---|---|---|---|
-| AI-disabled scene analyzer feedback | Needs retest | - | - | Verify clicking Analyze with AI off opens the AI sidebar with analyzer-specific access messaging. |
+| AI-disabled scene analyzer feedback | Passed | User | 2026-04-29 | User manually verified clicking Analyze with AI off opens the AI sidebar with analyzer-specific access messaging. |
 | AI partner mode selector dropdown | Passed | User | 2026-04-26 | User confirmed the horizontal mode button issue is resolved. |
 | AI story-context selection roll-up | Passed | User | 2026-04-26 | User confirmed act/scene selection behavior is now working again after tree and AI-ready bar fixes. |
 | AI partner UI cleanup | Passed | User | 2026-04-26 | User confirmed Archive Context removal, redundant Mode pill removal, and desktop spacing cleanup are resolved. |
@@ -167,9 +168,10 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 | AI terminology consistency | Not tested | - | - | Audit consistency of AI-related wording across the app. |
 | BYOK Gemini connection | Not tested | - | - | Confirm user-supplied Gemini key works. |
 | Ollama/local AI connection | Not tested | - | - | Confirm local model connection works if enabled. |
+| Local AI usage logging integrity | Not tested | - | - | Confirm Ollama/local AI requests create accurate `ai_usage_events` rows for completed, failed, and cancelled runs. |
 | App-managed free trial AI usage | Not tested | - | - | Confirm trial mode works for new users. |
-| Trial balance/cap enforcement | Not tested | - | - | Confirm usage stops or prompts correctly at cap. |
-| AI provider error handling | Not tested | - | - | Confirm failed provider calls do not corrupt balances or UI state. |
+| Trial balance/cap enforcement | Not tested | - | - | Use the sponsored app-managed AI trial until it reaches the limit, then confirm the user is blocked cleanly, sees the right exhausted/upgrade guidance, and does not keep getting free responses after the cap is reached. |
+| AI provider error handling | Not tested | - | - | Trigger or simulate failed AI calls and confirm the user gets a clear error, the app does not hang, and failed requests do not leave trial balance, reserved balance, or UI state in a broken state. |
 
 ## Trial / Billing / Account State
 
@@ -205,13 +207,13 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 
 | Test | Status | Tested by | Date tested | Notes |
 |---|---|---|---|---|
-| Screenplay visual references panel | Needs retest | - | - | Verify labels, attach/remove flow, refresh persistence. |
-| Book/prose inline illustration regression | Needs retest | - | - | Confirm Insert Illustration and Gallery behavior remain unchanged. |
+| Screenplay visual references panel | Passed | User | 2026-04-29 | User manually verified labels, attach/remove flow, and refresh persistence for screenplay visual references. |
+| Book/prose inline illustration regression | Passed | User | 2026-04-29 | User manually verified prose/book Insert Illustration and Gallery behavior remain unchanged. |
 | Library cloud sync help flow | Passed | AI agent | 2026-04-27 | Verified library guidance opens `/help` with clear cloud sync instructions and nav Help Center remains reachable. |
 | Tablet portrait layout | Not tested | - | - | Confirm important views do not cut off. |
 | Mobile/narrow screen layout | Not tested | - | - | Confirm core flows remain usable. |
 | Desktop layout | Not tested | - | - | Confirm normal working layout. |
-| Font/readability audit | Not tested | - | - | Grey text may be too light and cause strain. |
+| Font/readability audit | Needs retest | - | - | Focused AI Partner pass landed: footer warning removed, preview note moved to first-use context preview, and low-contrast helper text was darkened. Browser validation is still needed. |
 | Screenplay editor width on mobile | Not tested | - | - | Editor becomes narrow after typing. |
 | Swipe/tap sidebar close behavior | Not tested | - | - | Compare swipe vs tap-outside UX. |
 | Local mode image loading | Not tested | - | - | Confirm images load correctly in local mode. |
@@ -225,9 +227,10 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 |---|---|---|---|---|
 | Atomic project scaffolding failure scenario | Not tested | - | - | Confirm no zombie projects after partial failure. |
 | Centralized AI rate limiting | Not tested | - | - | Confirm limits work across serverless instances. |
-| Retry/backoff for save/init flows | Not tested | - | - | Confirm intermittent failures recover cleanly. |
-| AI trial reconciliation checks | Not tested | - | - | Confirm ledger/account/event data stays consistent. |
+| Retry/backoff for save/init flows | Not tested | - | - | Verify transient cloud project creation or cloud scene-save failures recover on retry, and only surface errors after retry attempts are exhausted. |
+| AI trial reconciliation checks | Not tested | - | - | After successful runs, failed runs, cancellations, and interrupted trial requests, confirm the trial account balance recovers correctly, stuck reserved usage is reconciled, and admin/user-visible usage data stays consistent. |
 | Structure tree performance with large project | Not tested | - | - | Confirm acceptable performance with many nodes. |
+| Pre-launch security audit | Not tested | - | - | Review input sanitization, auth flows, exposed secrets, personal emails, repo references, and deployment settings. |
 | Code injection / input sanitization checks | Not tested | - | - | Verify editor, imports, comments, and inputs do not execute unsafe scripts. |
 
 ---
@@ -238,6 +241,9 @@ Newest confirmations go at the top.
 
 | 2026-04-26 | User | Solo project collaborator header empty state | Passed | User confirmed the empty collaborator pill/blip no longer appears on solo projects. |
 | 2026-04-26 | User | Prose scene gallery wording | Passed | User confirmed the wording cleanup is resolved. |
+| 2026-04-29 | User | AI-disabled scene analyzer feedback | Passed | User manually verified analyzer-specific AI-off feedback in the browser. |
+| 2026-04-29 | User | Screenplay visual references panel | Passed | User manually verified labels, attach/remove flow, and refresh persistence. |
+| 2026-04-29 | User | Book/prose inline illustration regression | Passed | User manually verified prose/book image insertion and gallery behavior remain correct. |
 | 2026-04-27 | AI agent | TypeScript compile after guided Story Tone AI-availability fix | Passed | `npx tsc --noEmit --pretty false` passed after making guided `Story Tone` copy dynamic based on the user's `ai_enabled` setting. |
 | 2026-04-27 | AI agent | TypeScript compile after local/cloud boundary messaging fix | Passed | `npx tsc --noEmit --pretty false` passed after correcting local settings cloud-sync guidance and adding a direct Project Settings path from the local education modal. |
 | 2026-04-27 | AI agent | TypeScript compile after local library cover-edit fix | Passed | `npx tsc --noEmit --pretty false` passed after restoring local library edit/cover actions and adding local cover persistence in `CoverEditModal`. |

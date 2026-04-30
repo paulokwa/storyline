@@ -4,55 +4,26 @@ Simple repo-based task tracking for agents and humans.
 
 Keep this lightweight. Move items between sections instead of rewriting the whole file.
 
----
-
-## 2026-04-28 - Unified Export Schema with CommentMark support
-
-Decision:
-Include `CommentMark` in the centralized `exportExtensions` in `normalize.ts` and ensure all export formats use this unified schema.
-
-Reason:
-Exporting projects containing editor comments was causing a `RangeError` in formats using `generateHTML` (EPUB, HTML, PDF) because the `comment` mark was missing from the provided schema.
-
-Impact:
-- Fixed `RangeError` during manuscript export for projects with comments.
-- Streamlined export logic by ensuring `toEpub.ts` and `toHtml.ts` use the same extension set.
-
-Status:
-Approved & Implemented.
-
----
-
-## Now
-
 - Start future AI coding sessions by reading:
   - `MASTER_BRIEF.md`
   - `DECISION_LOG.md`
   - `SESSION_HANDOVER.md`
   - `TASK_BOARD.md`
   - `TESTING.md`
-- Run browser regression for screenplay visual references, AI-off analyzer feedback, and book/prose image behavior.
-- Audit app typography and contrast, especially grey text that may cause eye strain.
-- Audit local/cloud feature boundaries, wording, and mode-specific UI behavior.
-- Browser-check the new library Help Center and cloud sync guidance flow.
+
+
+---
+
+## Now
+
+- AI abuse-controls hardening.
+- Improve inline image insertion discoverability in prose/book mode.
+- Continue typography and contrast audit beyond AI Partner, especially older low-contrast helper/meta text in less-used screens.
 
 ## Next
 
-- Atomic project scaffolding via Supabase RPC.
-- Robust retry and initialization patterns for editor save and project initialization flows.
-- AI trial reconciliation and RPC failure handling.
-- AI abuse-controls hardening.
-- Review import AI behavior when AI is disabled or when large books may exceed trial/cost limits.
-- Review whether scene analysis outputs should save directly to AI Memory when the user chooses Add to AI.
-- Run a broader pre-launch regression pass across core project flow, import/export, local/cloud behavior, AI availability states, collaboration, tablet/mobile layout, and onboarding tours.
-- Audit app-wide AI terminology and decide whether to use AI, Assistant, Muse, or another label consistently.
-- Improve inline image insertion discoverability in prose/book mode.
 - If needed later, refactor `app/(app)/project/[id]/layout.tsx` so the very first cloud project-shell load can participate in route-level instant loading; the shared staged loading UX is already implemented for Library, New Project, Settings, `project/[id]/story`, and local-project open states, so do not duplicate that work.
-- Update feature/showcase page after a root-and-branch feature audit.
-- Rework help menu/page near launch after major feature changes settle; follow the detailed two-phase audit and rewrite process in `docs/technical-debt-roadmap.md` under "Help System Feature Audit & Rewrite" instead of asking AI to simply improve the page.
 - Clean up Export Metadata helper copy: replace the user-facing "TESTING TIP" label in Project Settings > Export Metadata with polished copy such as "Publishing Tip" / "Export Tip" and ensure this wording is covered during the future Help System Feature Audit & Rewrite in `docs/technical-debt-roadmap.md`.
-
-- Run pre-launch security audit covering input sanitization, auth flows, exposed secrets, personal emails, repo references, and deployment settings.
 - Use the session end prompt to update `SESSION_HANDOVER.md`, `TASK_BOARD.md`, and `TESTING.md` after each coding session.
 
 ## Later
@@ -61,7 +32,6 @@ Approved & Implemented.
 - State management consolidation, likely with Zustand.
 - Structure tree performance improvements for large projects.
 - AI trial cost model calibration against real provider usage.
-- Local AI usage logging integrity improvements.
 - Advanced offline / pending sync beyond current `localStorage` fallback.
 - Stronger destructive action guards for high-impact deletes.
 - Writing UX polish: focus, paper transitions, font sizing, and themes.
@@ -69,20 +39,54 @@ Approved & Implemented.
 - Add clearer free trial indicators and onboarding copy for new users.
 - Add AI explanation page covering BYOK, Ollama/local AI, optional app-managed AI usage, and using the app without AI.
 - Add feature list / benefits page covering autosave, recovery, snapshots, backup, local/cloud options, AI workflow help, and privacy choices.
-- Decide launch trial/cloud pricing model before public launch, including trial length, cloud access limits, and showcase/onboarding copy.
 - Explore non-annoying support prompts for free local users, such as donate, review, share, or upgrade nudges.
+- Create YouTube/tutorial content for Ollama, Gemini API, OpenAI API, and general onboarding.
+- Consider offline sync options such as Google Drive.
+
+## Decisions / Blockers
+
+- Review whether scene analysis outputs should save directly to AI Memory when the user chooses Add to AI.
+- Audit app-wide AI terminology and decide whether to use AI, Assistant, Muse, or another label consistently.
+- Update feature/showcase page after a root-and-branch feature audit.
+- Rework help menu/page near launch after major feature changes settle; follow the detailed two-phase audit and rewrite process in `docs/technical-debt-roadmap.md` under "Help System Feature Audit & Rewrite" instead of asking AI to simply improve the page.
+- Decide launch trial/cloud pricing model before public launch, including trial length, cloud access limits, and showcase/onboarding copy.
 - Capture final showcase screenshots after app name, branding, and key UI polish are settled.
 - Update verification/welcome email branding after final app name is chosen.
 - Create browser icons/favicons after final branding decision.
 - Perform full app naming consistency pass after final app name is chosen.
-- Create YouTube/tutorial content for Ollama, Gemini API, OpenAI API, and general onboarding.
-- Consider offline sync options such as Google Drive.
 - Consider paying a designer/Fiverr freelancer for branding, assets, and landing/showcase polish.
 - Consider adding a GitHub Project board after the Markdown workflow proves useful.
 - Consider adding an `AGENTS.md` or `CONTRIBUTING.md` if agents need stricter operating rules.
 
 ## Done
+- Added first-pass retry/init hardening for cloud project creation and editor saves:
+  - cloud project creation now retries transient RPC failures before surfacing an error
+  - cloud scene autosave and scene-title saves now retry transient persistence failures
+  - scene history capture retries in the background and no longer blocks a successful save
+  - editor UI now shows `Save failed` if retries are exhausted
+- Atomic cloud project scaffolding now uses Supabase RPC:
+  - cloud project creation flows through `lib/persistence/cloud-projects.ts`
+  - the app calls `create_cloud_project` to create the project, owner membership, starter nodes, scenes, and entities in one database function
+  - keep follow-up verification in `TESTING.md` under `Atomic project scaffolding failure scenario`
+- Added local Ollama usage-event logging integrity path:
+  - client-side Ollama runs report `completed`, `failed`, and `cancelled` outcomes to `/api/ai/local-usage`
+  - server-side route records those events into `ai_usage_events` with provider/billing-mode metadata for admin and abuse visibility
+- Browser regression completed for recent image/AI-availability changes:
+  - user manually verified screenplay visual references behavior
+  - user manually verified AI-off analyzer feedback
+  - user manually verified book/prose image behavior regression remained clean
 - Clean up profile/account menu legal links: remove the separate Terms of Service, Privacy Policy, and AI Disclaimer links from the main profile dropdown, keep legal links in the showcase/library footer, and optionally replace them with a single lower-priority "Legal & Privacy" entry under Settings/About/Help if in-app access is still needed. Ensure Admin remains admin-only.
+- Replaced remaining browser system dialogs across the app:
+  - swapped Recovery `Clear Trash` from native `confirm()` to an in-app `AlertDialog`
+  - replaced export, recovery, and saved-response `alert()` error boxes with `sonner` toasts
+  - replaced Project Settings editor-mode `window.confirm()` with an in-app `AlertDialog`
+  - verified via repo-wide search that no `alert()` / `confirm()` / `prompt()` calls remain in `components`, `app`, or `lib`
+- Audited AI Partner typography/readability and removed persistent footer clutter:
+  - deleted the stale generated `font-audit-report.md` artifact while keeping the reusable `font:audit` script
+  - removed the always-visible AI privacy warning below the prompt box
+  - moved the AI context preview toggle into the header utility icon row beside the tour/help controls
+  - added a one-time per-project AI privacy/context note inside the context preview the first time AI Partner is used
+  - tightened low-contrast preview and empty-state text in `AiHelperPanel.tsx`
 
 - Fixed `StructureTree.tsx` server render crash caused by render-time `window` access.
 - Made missing AI settings default to AI off across runtime, settings, preferences save, and admin reporting paths.

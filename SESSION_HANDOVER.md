@@ -5,6 +5,69 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-04-29 - Browser dialog audit completed
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Audited the repo for browser-native `alert()` / `confirm()` / `prompt()` usage.
+- Replaced Recovery `Clear Trash` native confirmation with the app's `AlertDialog`.
+- Replaced the remaining `alert()` error boxes in Export Modal, Recovery, and Saved Responses with `sonner` toasts.
+- Replaced the Project Settings editor-mode mismatch `window.confirm()` with an in-app `AlertDialog`.
+- Verified via repo-wide search that no `alert()` / `confirm()` / `prompt()` calls remain in `components`, `app`, or `lib`.
+
+### Current status
+
+The app should no longer fall back to browser system dialog boxes in the main product code.
+
+### Next recommended step
+
+Browser-check the updated flows:
+- Recovery `Clear Trash`
+- Project Settings editor-mode mismatch confirm
+- Saved response rename/insert failure handling
+- Export failure handling
+
+### Risks or warnings
+
+- Verification in this session was compile-only plus repo search; the updated dialogs/toasts still need real browser interaction checks.
+
+---
+## 2026-04-29 - AI Partner readability cleanup and first-use preview note
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Removed the persistent AI privacy warning from below the AI Partner prompt box to free vertical space.
+- Moved the AI context preview toggle from the footer row into the header utility icon cluster beside the tour/help controls.
+- Added a one-time per-project AI Partner note that auto-opens inside the context preview after the first successful AI use, then does not auto-appear again for that project.
+- Tightened several low-contrast `text-slate-400` treatments in `AiHelperPanel.tsx`, especially the empty state and context preview labels/snippets.
+- Deleted the stale generated `font-audit-report.md` file while keeping the reusable `scripts/font-audit.js` audit tool and `npm run font:audit` script.
+
+### Current status
+
+The main readability complaint in AI Partner has been addressed without changing AI behavior or local/cloud boundaries. Another agent should not re-add the permanent footer warning unless the product direction changes.
+
+### Next recommended step
+
+Browser-check AI Partner on desktop and mobile:
+- verify the footer warning is gone
+- verify the context preview button now lives in the header icon row
+- verify the first-use preview note appears once for a project after the first completed AI response
+- verify reopening AI Partner for the same project does not auto-show that note again
+
+### Risks or warnings
+
+- The first-use note is stored client-side per project via browser storage, so it is per-browser rather than synced across devices.
+- This was a focused AI Partner typography pass, not a full app-wide contrast audit.
+
+---
 ## 2026-04-29 - Shared loading-state UX added for major app transitions
 
 ### Current branch

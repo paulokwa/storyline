@@ -162,8 +162,8 @@ export default function AiFullCanvas({
             </div>
 
             {/* Bottom Status Bar */}
-            <div className="ai-full-canvas-status hidden h-10 items-center justify-between border-t border-slate-100 bg-white px-8 text-[9px] font-bold uppercase tracking-widest text-slate-400 md:flex">
-                <div className="flex items-center gap-6">
+            <div className="ai-full-canvas-status hidden min-h-10 items-center justify-between gap-6 border-t border-slate-100 bg-white px-8 py-2 text-[10px] font-medium tracking-[0.08em] text-slate-500 md:flex">
+                <div className="flex min-w-0 items-center gap-5">
                     <span className="flex items-center gap-2">
                         <div className={`w-1.5 h-1.5 rounded-full ${collaborationDotClass}`} />
                         {collaborationLabel}
@@ -173,12 +173,12 @@ export default function AiFullCanvas({
                         <span>Trial Left: ${formatMicrosAsUsd(aiSettings?.trial?.remaining_micros)}</span>
                     )}
                 </div>
-                <div className="hidden sm:block italic lowercase capitalize tracking-normal font-serif text-slate-300">
+                <div className="hidden shrink-0 whitespace-nowrap text-right text-[9px] leading-none tracking-[0.06em] text-slate-500 xl:block">
                     AI only receives the text you send when you use an AI feature. Your project storage mode does not change.
                 </div>
             </div>
 
-            <div className="ai-full-canvas-status border-t border-slate-100 bg-white px-4 py-2 text-[9px] font-bold uppercase tracking-[0.22em] text-slate-400 md:hidden">
+            <div className="ai-full-canvas-status border-t border-slate-100 bg-white px-4 py-2 text-[10px] font-medium tracking-[0.08em] text-slate-500 md:hidden">
                 <div className="flex items-center justify-between gap-3">
                     <span className="flex items-center gap-2 min-w-0">
                         <div className={`w-1.5 h-1.5 rounded-full ${collaborationDotClass} shrink-0`} />

@@ -90,6 +90,7 @@ type ContextEntityType = 'characters' | 'ideas' | 'locations' | 'objects' | 'aiF
 type ContextDraft = Record<ContextEntityType, string[]>
 
 const EMPTY_ARRAY: any[] = []
+const AI_PARTNER_PREVIEW_NOTE_KEY_PREFIX = 'storyline-ai-partner-preview-note'
 
 function buildContextDraft({
     sceneCharacters = [],
@@ -116,6 +117,10 @@ function buildContextDraft({
 function arraysEqual(a: string[], b: string[]) {
     if (a.length !== b.length) return false
     return a.every((value, index) => value === b[index])
+}
+
+function getAiPartnerPreviewNoteKey(projectId: string) {
+    return `${AI_PARTNER_PREVIEW_NOTE_KEY_PREFIX}:${projectId}`
 }
 
 function draftsEqual(a: ContextDraft, b: ContextDraft) {
@@ -650,6 +655,7 @@ export default function AiHelperPanel({
     const [isApplyingContext, setIsApplyingContext] = useState(false)
     const [pendingContextDraft, setPendingContextDraft] = useState<ContextDraft | null>(null)
     const [requestNotice, setRequestNotice] = useState<string | null>(null)
+    const [showFirstUsePreviewNotice, setShowFirstUsePreviewNotice] = useState(false)
     const [isRequestCancelled, setIsRequestCancelled] = useState(false)
     const cloudAbortRef = useRef<AbortController | null>(null)
     const ollamaAbortRef = useRef<AbortController | null>(null)
@@ -658,6 +664,7 @@ export default function AiHelperPanel({
     const cancelledRequestRef = useRef(false)
     const requestTokenRef = useRef(0)
     const lastSubmittedPromptRef = useRef('')
+    const hasShownProjectPreviewNoticeRef = useRef(false)
     const aiAccessIssue = useMemo(() => getAiAccessIssue(aiSettings, accessContext), [accessContext, aiSettings])
 
     const currentContextDraft = useMemo(
@@ -737,6 +744,22 @@ export default function AiHelperPanel({
             setShowAiAccessNotice(false)
         }
     }, [aiAccessIssue])
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+        if (!completion || isPartnerBusy || isCloudLoading || isOllamaLoading || hasShownProjectPreviewNoticeRef.current) return
+
+        const storageKey = getAiPartnerPreviewNoteKey(projectId)
+        if (localStorage.getItem(storageKey) === 'true') {
+            hasShownProjectPreviewNoticeRef.current = true
+            return
+        }
+
+        localStorage.setItem(storageKey, 'true')
+        hasShownProjectPreviewNoticeRef.current = true
+        setShowFirstUsePreviewNotice(true)
+        setPreviewOpen(true)
+    }, [completion, isCloudLoading, isOllamaLoading, isPartnerBusy, projectId])
 
     const sceneTextRef = useRef(sceneText)
     sceneTextRef.current = sceneText
@@ -990,6 +1013,19 @@ export default function AiHelperPanel({
         return 'Project Chat'
     }, [activeNodeId, allNodes, isNovel])
 
+    const closePreview = () => {
+        setPreviewOpen(false)
+        setShowFirstUsePreviewNotice(false)
+    }
+
+    const togglePreview = () => {
+        if (previewOpen) {
+            closePreview()
+            return
+        }
+        setPreviewOpen(true)
+    }
+
     const utilityIcons = (
         <TooltipProvider>
             <div className="flex items-center gap-0.5">
@@ -1006,6 +1042,28 @@ export default function AiHelperPanel({
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top">Tour</TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={togglePreview}
+                            className={cn(
+                                "h-8 w-8 rounded-xl border border-slate-200/70 bg-white/75 shadow-sm transition-all",
+                                previewOpen
+                                    ? "border-indigo-200 bg-indigo-50 text-indigo-600"
+                                    : "text-slate-500 hover:border-indigo-200 hover:bg-white hover:text-indigo-600"
+                            )}
+                            aria-label={previewOpen ? 'Hide AI context preview' : 'Show AI context preview'}
+                        >
+                            {previewOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <Info className="h-3.5 w-3.5" />}
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                        {previewOpen ? 'Hide AI context preview' : 'Inspect what the AI can currently use'}
+                    </TooltipContent>
                 </Tooltip>
 
                 {!isFullCanvas && (
@@ -2250,15 +2308,15 @@ export default function AiHelperPanel({
                 )}
 
                 {!displayedCompletion && !actualLoading && !completionError && !requestNotice && !aiAccessIssue && (
-                    <div className="flex flex-col items-center justify-center h-full text-center space-y-5 opacity-60">
+                    <div className="flex h-full flex-col items-center justify-center space-y-5 text-center opacity-80">
                         <div className="flex h-14 w-14 items-center justify-center rounded-[1.6rem] border border-slate-200/70 bg-white/85 shadow-sm">
                             <MessageSquare className="w-5 h-5 text-indigo-300" />
                         </div>
                         <div className="space-y-1.5 flex flex-col items-center">
-                            <p className="text-sm font-serif font-medium text-slate-600">
+                            <p className="text-sm font-serif font-medium text-slate-700">
                                 {emptyStateCall}
                             </p>
-                            <p className="text-xs text-slate-400 font-serif italic max-w-[200px] leading-relaxed">
+                            <p className="max-w-[200px] text-xs font-serif italic leading-relaxed text-slate-500">
                                 "{emptyStateHint}"
                             </p>
                         </div>
@@ -2551,27 +2609,50 @@ export default function AiHelperPanel({
                     <div className="absolute inset-x-4 bottom-full z-20 mb-3 rounded-[1.6rem] border border-[#ddd8ce] bg-[rgba(251,249,245,0.98)] shadow-[0_20px_60px_rgba(15,23,42,0.16)] backdrop-blur md:left-4 md:right-4">
                         <div className="flex items-center justify-between border-b border-[#ece6d9] px-4 py-3">
                             <div>
-                                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">AI Context Preview</p>
-                                <p className="mt-1 text-xs text-slate-500">A developer-style view of what the AI can currently use.</p>
+                                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">AI Context Preview</p>
+                                <p className="mt-1 text-xs text-slate-600">A developer-style view of what the AI can currently use.</p>
                             </div>
                             <button
                                 type="button"
-                                onClick={() => setPreviewOpen(false)}
-                                className="rounded-full border border-slate-200 bg-white p-2 text-slate-400 transition-colors hover:text-slate-700"
+                                onClick={closePreview}
+                                className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition-colors hover:text-slate-700"
                                 aria-label="Close AI context preview"
                             >
                                 <X className="h-4 w-4" />
                             </button>
                         </div>
                         <div className="max-h-80 overflow-y-auto px-4 py-3 text-[11px] font-mono whitespace-pre-wrap text-slate-600 space-y-4 overscroll-contain touch-auto custom-scrollbar md:max-h-64">
+                            {showFirstUsePreviewNotice && (
+                                <div className="rounded-2xl border border-indigo-200 bg-indigo-50/80 p-3 text-left shadow-sm">
+                                    <div className="flex items-start gap-3">
+                                        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-white text-indigo-500">
+                                            <Info className="h-3.5 w-3.5" />
+                                        </div>
+                                        <div className="min-w-0 flex-1 space-y-1.5">
+                                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-700">First AI Partner use in this project</p>
+                                            <p className="font-sans text-[11px] leading-relaxed text-slate-700">
+                                                AI only sees the scene text and linked context you send with an AI request. Using AI Partner does not change whether this project is local or cloud.
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowFirstUsePreviewNotice(false)}
+                                            className="rounded-full border border-indigo-200 bg-white p-1.5 text-indigo-400 transition-colors hover:text-indigo-700"
+                                            aria-label="Dismiss AI Partner first-use note"
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                             <div>
-                                <div className="font-bold text-slate-400 mb-1">{label.toUpperCase()}:</div>
+                                <div className="mb-1 font-bold text-slate-500">{label.toUpperCase()}:</div>
                                 <div className="italic bg-white p-2 border border-slate-100 rounded-lg">{sceneTextRef.current.slice(-1000) || '(empty)'}</div>
                             </div>
 
                             {linkedCharacters.length > 0 && (
                                 <div>
-                                    <div className="font-bold text-slate-400 mb-1">CHARACTERS:</div>
+                                    <div className="mb-1 font-bold text-slate-500">CHARACTERS:</div>
                                     <ul className="list-disc pl-4 space-y-1 bg-white p-2 border border-slate-100 rounded-lg">
                                         {linkedCharacters.map(c => (
                                             <li key={c.id}>
@@ -2584,12 +2665,12 @@ export default function AiHelperPanel({
 
                             {linkedRegularIdeas.length > 0 && (
                                 <div>
-                                    <div className="font-bold text-slate-400 mb-1">IDEAS:</div>
+                                    <div className="mb-1 font-bold text-slate-500">IDEAS:</div>
                                     <ul className="list-disc pl-4 space-y-1 bg-white p-2 border border-slate-100 rounded-lg">
                                         {linkedRegularIdeas.map(i => (
                                             <li key={i.id}>
                                                 <span className="font-bold">{i.title}</span>
-                                                {i.content && <span className="text-slate-400"> - {i.content.length > 50 ? i.content.slice(0, 50) + '...' : i.content}</span>}
+                                                {i.content && <span className="text-slate-500"> - {i.content.length > 50 ? i.content.slice(0, 50) + '...' : i.content}</span>}
                                             </li>
                                         ))}
                                     </ul>
@@ -2598,12 +2679,12 @@ export default function AiHelperPanel({
 
                             {linkedFeedbackItems.length > 0 && (
                                 <div>
-                                    <div className="font-bold text-slate-400 mb-1">FEEDBACK:</div>
+                                    <div className="mb-1 font-bold text-slate-500">FEEDBACK:</div>
                                     <ul className="list-disc pl-4 space-y-1 bg-white p-2 border border-slate-100 rounded-lg">
                                         {linkedFeedbackItems.map((item) => (
                                             <li key={item.id}>
                                                 <span className="font-bold">{stripFeedbackPrefix(item.title)}</span>
-                                                {item.content && <span className="text-slate-400"> - {item.content.length > 50 ? item.content.slice(0, 50) + '...' : item.content}</span>}
+                                                {item.content && <span className="text-slate-500"> - {item.content.length > 50 ? item.content.slice(0, 50) + '...' : item.content}</span>}
                                             </li>
                                         ))}
                                     </ul>
@@ -2612,12 +2693,12 @@ export default function AiHelperPanel({
 
                             {linkedAiFeedback.length > 0 && (
                                 <div>
-                                    <div className="font-bold text-slate-400 mb-1">AI FEEDBACK:</div>
+                                    <div className="mb-1 font-bold text-slate-500">AI FEEDBACK:</div>
                                     <ul className="list-disc pl-4 space-y-1 bg-white p-2 border border-slate-100 rounded-lg">
                                         {linkedAiFeedback.map((item) => (
                                             <li key={item.id}>
                                                 <span className="font-bold">{item.title}</span>
-                                                {item.response && <span className="text-slate-400"> - {item.response.length > 50 ? item.response.slice(0, 50) + '...' : item.response}</span>}
+                                                {item.response && <span className="text-slate-500"> - {item.response.length > 50 ? item.response.slice(0, 50) + '...' : item.response}</span>}
                                             </li>
                                         ))}
                                     </ul>
@@ -2626,7 +2707,7 @@ export default function AiHelperPanel({
 
                             {linkedLocations.length > 0 && (
                                 <div>
-                                    <div className="font-bold text-slate-400 mb-1">LOCATIONS:</div>
+                                    <div className="mb-1 font-bold text-slate-500">LOCATIONS:</div>
                                     <ul className="list-disc pl-4 space-y-1 bg-white p-2 border border-slate-100 rounded-lg">
                                         {linkedLocations.map(l => (
                                             <li key={l.id}>
@@ -2639,7 +2720,7 @@ export default function AiHelperPanel({
 
                             {linkedObjects.length > 0 && (
                                 <div>
-                                    <div className="font-bold text-slate-400 mb-1">OBJECTS/ITEMS:</div>
+                                    <div className="mb-1 font-bold text-slate-500">OBJECTS/ITEMS:</div>
                                     <ul className="list-disc pl-4 space-y-1 bg-white p-2 border border-slate-100 rounded-lg">
                                         {linkedObjects.map(o => (
                                             <li key={o.id}>
@@ -2682,7 +2763,7 @@ export default function AiHelperPanel({
 
                             {storySelectionContext.length > 0 && (
                                 <div>
-                                    <div className="font-bold text-slate-400 mb-1 flex items-center justify-between">
+                                    <div className="mb-1 flex items-center justify-between font-bold text-slate-500">
                                         <span>STORY CONTEXT ({storySelectionContext.length} scenes):</span>
                                         {onClearSelection && (
                                             <button
@@ -2697,13 +2778,13 @@ export default function AiHelperPanel({
                                         {storySelectionContext.slice(0, 3).map(s => (
                                             <div key={s.node_id} className="border-b border-slate-50 last:border-0 pb-1.5 mb-1.5">
                                                 <div className="font-bold text-slate-700 truncate">{s.title}</div>
-                                                <div className="line-clamp-2 text-slate-400 italic text-[10px]">
+                                                <div className="line-clamp-2 text-[10px] italic text-slate-500">
                                                     {s.content || '(No text yet)'}
                                                 </div>
                                             </div>
                                         ))}
                                         {storySelectionContext.length > 3 && (
-                                            <div className="text-center py-1 text-slate-300 italic">+ {storySelectionContext.length - 3} more elements</div>
+                                            <div className="py-1 text-center italic text-slate-500">+ {storySelectionContext.length - 3} more elements</div>
                                         )}
                                     </div>
                                 </div>
@@ -2825,32 +2906,6 @@ export default function AiHelperPanel({
                                 )}
                             </button>
                         </div>
-                        <div className="mt-2 flex items-center justify-between gap-3">
-                            <div className="text-[10px] text-slate-400">
-                                AI only receives the text you send when you use an AI feature. Your project storage mode does not change.
-                            </div>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button
-                                        type="button"
-                                        onClick={() => setPreviewOpen(!previewOpen)}
-                                        className={cn(
-                                            "shrink-0 rounded-full border p-2 transition-all",
-                                            previewOpen
-                                                ? "border-indigo-200 bg-indigo-50 text-indigo-600 shadow-sm"
-                                                : "border-slate-200 bg-white/85 text-slate-400 hover:border-slate-300 hover:text-slate-600"
-                                        )}
-                                        aria-label={previewOpen ? 'Hide AI context preview' : 'Show AI context preview'}
-                                    >
-                                        {previewOpen ? <ChevronDown className="h-4 w-4" /> : <Info className="h-4 w-4" />}
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top">
-                                    {previewOpen ? 'Hide AI context preview' : 'Inspect what the AI can currently use'}
-                                </TooltipContent>
-                            </Tooltip>
-                        </div>
-
                     </form>
                 </div>
             </div>

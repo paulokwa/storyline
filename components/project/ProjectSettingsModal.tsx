@@ -15,6 +15,16 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -101,6 +111,7 @@ export default function ProjectSettingsModal({
 
     const [showMigrationConfirm, setShowMigrationConfirm] = useState(false)
     const [migrationProgress, setMigrationProgress] = useState<string | null>(null)
+    const [pendingWritingMode, setPendingWritingMode] = useState<'simple' | 'screenplay' | null>(null)
 
     const handleLockedSettingClick = () => {
         if (!isLocalOnly) return
@@ -257,6 +268,7 @@ export default function ProjectSettingsModal({
     }
 
     return (
+        <>
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className={cn(
                 "project-settings-modal dialog-viewport-safe flex w-[calc(100%-1rem)] max-w-[850px] flex-col gap-0 p-0 overflow-hidden rounded-[2.5rem] shadow-2xl !opacity-100 backdrop-blur-none sm:w-full",
@@ -377,13 +389,13 @@ export default function ProjectSettingsModal({
                                             value={writingMode}
                                             onValueChange={(nextValue) => {
                                                 if (!canManageProject) return
-                                                const newMode = nextValue as any;
+                                                const newMode = nextValue as 'simple' | 'screenplay';
                                                 const isMismatch = (type === 'novel' && newMode === 'screenplay') ||
                                                                  (type === 'tv_script' && newMode === 'simple');
                                                 
                                                 if (isMismatch) {
-                                                    const confirm = window.confirm(`Switching editor mode may not match your project structure. ${getProjectTypeLabel('tv_script')} mode works best with ${getProjectTypeLabel('tv_script').toLowerCase()}s. Continue?`);
-                                                    if (!confirm) return;
+                                                    setPendingWritingMode(newMode)
+                                                    return
                                                 }
                                                 setWritingMode(newMode);
                                             }}
@@ -976,6 +988,28 @@ export default function ProjectSettingsModal({
                 )}
             </DialogContent>
         </Dialog>
+        <AlertDialog open={pendingWritingMode !== null} onOpenChange={(open) => !open && setPendingWritingMode(null)}>
+            <AlertDialogContent className="max-w-md rounded-[2rem]">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Switch editor mode?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Switching editor mode may not match your project structure. {getProjectTypeLabel('tv_script')} mode works best with {getProjectTypeLabel('tv_script').toLowerCase()}s.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => {
+                        if (pendingWritingMode) {
+                            setWritingMode(pendingWritingMode)
+                        }
+                        setPendingWritingMode(null)
+                    }}>
+                        Continue
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        </>
     )
 }
 

@@ -243,6 +243,36 @@ Add a short entry using this format:
 
 ### Notes
 
+---
+
+## Issue: Cloud Snapshot Restore Fails With Empty Error Object
+
+### Symptoms
+
+- Restoring a project snapshot in Recovery fails for a cloud project.
+- The browser console shows `Error restoring snapshot: {}` from `components/project/recovery/RecoveryTab.tsx`.
+- The UI only shows a generic restore failure toast.
+
+### Cause
+
+- `restoreProjectSnapshot` reused the original `id` values from snapshot data when re-inserting `scene_locations` and `scene_objects`.
+- Those join rows are not soft-deleted during snapshot restore, so reusing the same primary keys can trigger duplicate-key failures.
+- The restore path also was not normalizing Supabase/PostgREST errors, which made the console output look like an empty object.
+
+### Fix
+
+- In `lib/supabase/recovery.ts`, regenerate fresh UUIDs for restored `scene_locations` and `scene_objects` rows instead of reusing snapshot IDs.
+- Check previously ignored Supabase mutation results during snapshot restore and throw contextual errors.
+- Surface the real error message in `RecoveryTab.tsx` instead of a generic fallback.
+
+### Verification
+
+- `npx tsc --noEmit --pretty false`
+
+### Notes
+
+- This is most likely to appear on snapshots that include scene-to-location or scene-to-object links.
+
 - 1280px was chosen to cover the 1366px landscape width of the iPad Pro while still allowing 'hover-to-reveal' on standard desktop monitors (typically 1440px or 1920px).
 
 ---

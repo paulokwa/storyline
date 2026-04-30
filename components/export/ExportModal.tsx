@@ -38,6 +38,7 @@ import { toEpub } from '@/lib/export/toEpub'
 import { toPdf } from '@/lib/export/toPdf'
 import { ExportMetadata } from '@/lib/export/buildExportPayload'
 import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 import { useTheme } from '@/components/providers/ThemeProvider'
 import { isLocalProjectId } from '@/lib/persistence/project-mode'
 import { getLocalProject } from '@/lib/persistence/local-projects'
@@ -175,7 +176,9 @@ export default function ExportModal({
             onOpenChange(false)
         } catch (error) {
             console.error('Export failed:', error)
-            alert('Failed to Export Manuscript. Please try again.')
+            toast.error('Failed to export manuscript.', {
+                description: 'Please try again.',
+            })
         } finally {
             setLoading(false)
         }

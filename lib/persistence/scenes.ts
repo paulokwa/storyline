@@ -3,6 +3,7 @@ import { getUserSafely } from '@/lib/supabase/client-auth'
 import { captureSceneVersion } from '@/lib/supabase/recovery'
 import { getLocalRecord, getLocalRecordsByNodeId, putLocalRecord, LOCAL_STORE_NAMES } from '@/lib/persistence/local-db'
 import { isLocalProjectId } from '@/lib/persistence/project-mode'
+import { isRetryablePersistenceError, withPersistenceRetry } from '@/lib/persistence/retry'
 import type { Database } from '@/lib/supabase/types'
 
 type SceneRow = Database['public']['Tables']['scenes']['Row']
@@ -70,41 +71,71 @@ export async function saveSceneContent({
 
     const supabase = createClient()
     const { user } = await getUserSafely(supabase)
+    try {
+        const { error: sceneError, count } = await withPersistenceRetry(async () => {
+            const result = await supabase
+                .from('scenes')
+                .update({
+                    content: content as SceneContent,
+                    version: localVersion + 1,
+                    last_editor_id: user?.id,
+                    updated_at: new Date().toISOString(),
+                }, { count: 'exact' })
+                .eq('id', scene.id)
+                .eq('version', localVersion)
 
-    const { error: sceneError, count } = await supabase
-        .from('scenes')
-        .update({
-            content: content as SceneContent,
-            version: localVersion + 1,
-            last_editor_id: user?.id,
-            updated_at: new Date().toISOString(),
-        }, { count: 'exact' })
-        .eq('id', scene.id)
-        .eq('version', localVersion)
+            if (result.error && isRetryablePersistenceError(result.error)) {
+                throw result.error
+            }
 
-    await captureSceneVersion(supabase, scene.project_id, scene.id, content)
+            return result
+        }, {
+            label: 'scene autosave',
+        })
 
-    let nodeErrorResult: unknown = null
-    if (currentTitle !== initialTitle) {
-        const { error: nodeError } = await supabase
-            .from('structure_nodes')
-            .update({ title: currentTitle })
-            .eq('id', scene.node_id)
-        nodeErrorResult = nodeError
-    }
+        if (!sceneError && count !== 0) {
+            void withPersistenceRetry(
+                () => captureSceneVersion(supabase, scene.project_id, scene.id, content),
+                { label: 'scene history capture' }
+            ).catch((historyError) => {
+                console.error('Scene history capture failed after save:', historyError)
+            })
+        }
 
-    if (count === 0 && !sceneError) {
-        return { status: 'conflict' }
-    }
+        let nodeErrorResult: unknown = null
+        if (currentTitle !== initialTitle) {
+            const { error: nodeError } = await withPersistenceRetry(async () => {
+                const result = await supabase
+                    .from('structure_nodes')
+                    .update({ title: currentTitle })
+                    .eq('id', scene.node_id)
 
-    if (sceneError || nodeErrorResult) {
-        return { status: 'error', error: sceneError || nodeErrorResult }
-    }
+                if (result.error && isRetryablePersistenceError(result.error)) {
+                    throw result.error
+                }
 
-    return {
-        status: 'saved',
-        savedVersion: localVersion + 1,
-        userId: user?.id ?? null,
+                return result
+            }, {
+                label: 'scene title save',
+            })
+            nodeErrorResult = nodeError
+        }
+
+        if (count === 0 && !sceneError) {
+            return { status: 'conflict' }
+        }
+
+        if (sceneError || nodeErrorResult) {
+            return { status: 'error', error: sceneError || nodeErrorResult }
+        }
+
+        return {
+            status: 'saved',
+            savedVersion: localVersion + 1,
+            userId: user?.id ?? null,
+        }
+    } catch (error) {
+        return { status: 'error', error }
     }
 }
 

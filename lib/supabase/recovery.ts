@@ -3,6 +3,21 @@ import { Database } from './types';
 
 type EntityTable = 'characters' | 'ideas' | 'locations' | 'objects' | 'ai_responses';
 
+function getRecoveryErrorMessage(error: unknown) {
+    if (error instanceof Error && error.message) return error.message;
+    if (typeof error === 'object' && error !== null) {
+        const candidate = error as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown };
+        const parts = [candidate.message, candidate.details, candidate.hint, candidate.code]
+            .filter((value): value is string => typeof value === 'string' && value.trim().length > 0);
+
+        if (parts.length > 0) {
+            return parts.join(' | ');
+        }
+    }
+
+    return String(error);
+}
+
 /**
  * Soft deletes a structure node and all its descendants recursively.
  * Also soft deletes all linked scenes.
@@ -286,7 +301,16 @@ export async function restoreProjectSnapshot(
 
     // 2. Step A: Prepare restoration environment
     // Fetch current active scenes to capture history before trashing them
-    const { data: currentScenes } = await supabase.from('scenes').select('*').eq('project_id', projectId).is('deleted_at', null);
+    const { data: currentScenes, error: currentScenesError } = await supabase
+        .from('scenes')
+        .select('*')
+        .eq('project_id', projectId)
+        .is('deleted_at', null);
+
+    if (currentScenesError) {
+        throw new Error(`Failed to load current scenes before restore: ${getRecoveryErrorMessage(currentScenesError)}`);
+    }
+
     if (currentScenes) {
         for (const scene of currentScenes) {
             // Only capture if there is actually content or we want a blank starting point
@@ -300,11 +324,16 @@ export async function restoreProjectSnapshot(
         (supabase.from(table as any) as any).update({ deleted_at: deletedAt }).eq('project_id', projectId).is('deleted_at', null)
     );
     
-    await Promise.all([
+    const clearResults = await Promise.all([
         ...clearPromises,
         supabase.from('structure_nodes').update({ deleted_at: deletedAt }).eq('project_id', projectId).is('deleted_at', null),
         supabase.from('scenes').update({ deleted_at: deletedAt }).eq('project_id', projectId).is('deleted_at', null)
     ]);
+
+    const clearError = clearResults.find((result) => result.error)?.error;
+    if (clearError) {
+        throw new Error(`Failed to move the current project state to Trash: ${getRecoveryErrorMessage(clearError)}`);
+    }
 
     // 4. Step C: Recreate and Remap
     const idMap = new Map<string, string>();
@@ -335,7 +364,9 @@ export async function restoreProjectSnapshot(
                 deleted_at: null,
                 created_at: new Date().toISOString()
             });
-            if (error) throw error;
+            if (error) {
+                throw new Error(`Failed to restore structure node "${currentNode.title}": ${getRecoveryErrorMessage(error)}`);
+            }
         } else {
             pendingNodes.push(currentNode);
             if (pendingNodes.length > nodes.length * 5) break; // Defensive skip
@@ -361,7 +392,9 @@ export async function restoreProjectSnapshot(
             ...s,
             content: s.content || ''
         })));
-        if (error) throw error;
+        if (error) {
+            throw new Error(`Failed to restore scenes: ${getRecoveryErrorMessage(error)}`);
+        }
     }
 
     /** 4.3 Restore Assets & Entities (Bulk) **/
@@ -385,7 +418,9 @@ export async function restoreProjectSnapshot(
         });
         if (rows.length > 0) {
             const { error } = await (supabase.from(ent.name as any) as any).insert(rows);
-            if (error) throw error;
+            if (error) {
+                throw new Error(`Failed to restore ${ent.name}: ${getRecoveryErrorMessage(error)}`);
+            }
         }
     }
 
@@ -393,8 +428,8 @@ export async function restoreProjectSnapshot(
     const joinConfigs = [
         { table: 'scene_characters', items: data.sceneCharacters, entityField: 'character_id' },
         { table: 'scene_ideas', items: data.sceneIdeas, entity_field: 'idea_id' },
-        { table: 'scene_locations', items: data.sceneLocations, entityField: 'location_id' },
-        { table: 'scene_objects', items: data.sceneObjects, entityField: 'object_id' }
+        { table: 'scene_locations', items: data.sceneLocations, entityField: 'location_id', regenerateId: true },
+        { table: 'scene_objects', items: data.sceneObjects, entityField: 'object_id', regenerateId: true }
     ];
 
     for (const config of joinConfigs) {
@@ -405,17 +440,25 @@ export async function restoreProjectSnapshot(
             if (!newSceneId || !newEntityId) return null;
             
             const { scenes, ...cleanItem } = item; 
-            return {
+            const restoredRow = {
                 ...cleanItem,
                 scene_id: newSceneId,
                 [eField]: newEntityId,
                 created_at: new Date().toISOString()
             };
+
+            if ((config as any).regenerateId && 'id' in restoredRow) {
+                restoredRow.id = crypto.randomUUID();
+            }
+
+            return restoredRow;
         }).filter(Boolean);
 
         if (rowsToInsert.length > 0) {
             const { error } = await (supabase.from(config.table as any) as any).insert(rowsToInsert);
-            if (error) throw error;
+            if (error) {
+                throw new Error(`Failed to restore ${config.table} links: ${getRecoveryErrorMessage(error)}`);
+            }
         }
     }
 
@@ -435,7 +478,9 @@ export async function restoreProjectSnapshot(
 
     if (relRows.length > 0) {
         const { error: relError } = await supabase.from('entity_relationships').insert(relRows);
-        if (relError) throw relError;
+        if (relError) {
+            throw new Error(`Failed to restore entity relationships: ${getRecoveryErrorMessage(relError)}`);
+        }
     }
 }
 

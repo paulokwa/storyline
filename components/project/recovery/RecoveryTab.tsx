@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { generateHTML } from '@tiptap/html'
 import { 
     Trash2, 
     History, 
@@ -26,6 +27,7 @@ import {
     FileText
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { exportExtensions, normalizeContent } from '@/lib/export/normalize'
 import { Button } from '@/components/ui/button'
 import { 
     clearRecoveryTrash,
@@ -43,6 +45,17 @@ import { isLocalProjectId } from '@/lib/persistence/project-mode'
 import { useRouter } from 'next/navigation'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { SanctuarySelect } from '@/components/ui/sanctuary-select'
+import { toast } from 'sonner'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 type RecoverySection = 'trash' | 'history' | 'snapshots'
 type TrashFilter = 'all' | 'structure' | 'assets' | 'ai' | 'feedback'
@@ -60,6 +73,32 @@ interface RecoveryTabProps {
     historyEntries: any[]
     snapshots: any[]
     onLocalDataChanged?: () => Promise<void> | void
+}
+
+function getErrorMessage(error: unknown) {
+    if (error instanceof Error && error.message) return error.message
+    if (typeof error === 'object' && error !== null) {
+        const candidate = error as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown }
+        const parts = [candidate.message, candidate.details, candidate.hint, candidate.code]
+            .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+
+        if (parts.length > 0) {
+            return parts.join(' | ')
+        }
+    }
+
+    return 'Please try again.'
+}
+
+function getHistoryPreviewHtml(content: unknown) {
+    if (!content) return ''
+
+    try {
+        return generateHTML(normalizeContent(content), exportExtensions)
+    } catch (error) {
+        console.error('Failed to render recovery history preview:', error)
+        return typeof content === 'string' ? content : ''
+    }
 }
 
 export default function RecoveryTab({
@@ -100,6 +139,8 @@ export default function RecoveryTab({
     // Permanent Deletion States
     const [itemToPermanentlyDelete, setItemToPermanentlyDelete] = useState<any | null>(null)
     const [isPermanentlyDeleting, setIsPermanentlyDeleting] = useState(false)
+    const [showClearTrashConfirm, setShowClearTrashConfirm] = useState(false)
+    const [isClearingTrash, setIsClearingTrash] = useState(false)
     const [versionToDelete, setVersionToDelete] = useState<any | null>(null)
     const [isDeletingVersion, setIsDeletingVersion] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
@@ -118,6 +159,11 @@ export default function RecoveryTab({
 
         router.refresh()
     }
+
+    const previewHtml = useMemo(() => {
+        if (!previewVersion) return ''
+        return getHistoryPreviewHtml(previewVersion.content)
+    }, [previewVersion])
 
     // Handle deep links from search params
     useEffect(() => {
@@ -206,7 +252,9 @@ export default function RecoveryTab({
             setSnapshotDescription('')
             router.refresh()
         } catch (error: any) {
-            alert(error.message || 'Error creating snapshot')
+            toast.error('Failed to create snapshot.', {
+                description: error?.message || 'Please try again.',
+            })
         } finally {
             setIsCreatingSnapshot(false)
         }
@@ -223,7 +271,9 @@ export default function RecoveryTab({
             router.push(`/project/${projectId}/story`)
         } catch (error) {
             console.error('Error restoring snapshot:', error)
-            alert('Restore failed. Please check the console.')
+            toast.error('Restore failed.', {
+                description: getErrorMessage(error),
+            })
         } finally {
             setIsRestoringSnapshot(false)
         }
@@ -276,8 +326,7 @@ export default function RecoveryTab({
 
     const handleClearTrash = async () => {
         if (isReadOnly) return
-        if (!confirm('Are you sure you want to permanently clear all items in the trash? This cannot be undone.')) return
-        setIsPermanentlyDeleting(true)
+        setIsClearingTrash(true)
         try {
             await clearRecoveryTrash({
                 projectId,
@@ -289,11 +338,12 @@ export default function RecoveryTab({
                 deletedResponses,
                 deletedComments,
             })
+            setShowClearTrashConfirm(false)
             await refreshRecoveryView()
         } catch (error) {
             console.error('Error clearing trash:', error)
         } finally {
-            setIsPermanentlyDeleting(false)
+            setIsClearingTrash(false)
         }
     }
 
@@ -405,9 +455,9 @@ export default function RecoveryTab({
                     {activeSection === 'trash' ? (
                         <div className="space-y-8 animate-in fade-in duration-500">
                             {/* Trash Filters and Search */}
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 min-w-0">
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 min-w-0 w-full sm:w-auto">
-                                    <div className="flex items-center gap-2 p-1 bg-white rounded-full ring-1 ring-slate-100 shadow-sm overflow-x-auto w-full sm:w-auto no-scrollbar">
+                            <div className="flex flex-col gap-4 min-w-0 lg:flex-row lg:items-center lg:justify-between">
+                                <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center">
+                                    <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto rounded-full bg-white p-1 shadow-sm ring-1 ring-slate-100 no-scrollbar lg:w-fit lg:max-w-full lg:gap-1 lg:overflow-visible">
                                         {[
                                             { id: 'all', label: 'All Items' },
                                             { id: 'structure', label: 'Story Structure' },
@@ -419,7 +469,7 @@ export default function RecoveryTab({
                                                 key={f.id}
                                                 onClick={() => setTrashFilter(f.id as TrashFilter)}
                                                 className={cn(
-                                                    "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
+                                                    "rounded-full px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap transition-all lg:px-3 lg:text-[9px] lg:tracking-[0.18em] xl:px-4 xl:text-[10px] xl:tracking-widest",
                                                     trashFilter === f.id 
                                                         ? "bg-[#546354] text-white" 
                                                         : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
@@ -433,17 +483,17 @@ export default function RecoveryTab({
                                         <Button 
                                             variant="ghost" 
                                             size="sm" 
-                                            onClick={handleClearTrash}
-                                            disabled={isPermanentlyDeleting}
-                                            className="text-[9px] font-bold uppercase tracking-widest text-red-400 hover:text-red-500 hover:bg-red-50 rounded-full h-9 px-4"
+                                            onClick={() => setShowClearTrashConfirm(true)}
+                                            disabled={isClearingTrash}
+                                            className="h-9 shrink-0 rounded-full px-3 text-[9px] font-bold uppercase tracking-widest text-red-400 hover:bg-red-50 hover:text-red-500 lg:px-2.5 min-[1750px]:px-4"
                                         >
-                                            <Trash2 className="w-3 h-3 mr-2" />
-                                            Clear Trash
+                                            <Trash2 className="h-3 w-3 min-[1750px]:mr-2" />
+                                            <span className="hidden min-[1750px]:inline">Clear Trash</span>
                                         </Button>
                                     )}
                                 </div>
 
-                                <div className="relative w-full sm:w-64">
+                                <div className="relative w-full lg:w-64 lg:shrink-0">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300" />
                                     <input 
                                         type="text"
@@ -683,7 +733,7 @@ export default function RecoveryTab({
                         </div>
                         <div className="flex-1 overflow-y-auto p-12 bg-[#fdfcfb]">
                             <div className="max-w-[80ch] mx-auto prose prose-slate prose-lg font-serif">
-                                <div dangerouslySetInnerHTML={{ __html: previewVersion.content || '' }} />
+                                <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
                             </div>
                         </div>
                     </div>
@@ -755,6 +805,30 @@ export default function RecoveryTab({
                     </div>
                 </div>
             )}
+
+            <AlertDialog open={showClearTrashConfirm} onOpenChange={setShowClearTrashConfirm}>
+                <AlertDialogContent className="max-w-md rounded-[2rem] border border-red-100 bg-white">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-xl font-serif italic text-slate-800">
+                            Clear trash?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-sm italic leading-relaxed text-slate-500">
+                            This will permanently remove every item currently in Recovery trash. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel className="uppercase tracking-widest text-[10px] font-bold">
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleClearTrash}
+                            className="bg-red-600 uppercase tracking-widest text-[10px] font-bold text-white hover:bg-red-700"
+                        >
+                            {isClearingTrash ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Clear Trash'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             {!isLocalProject && versionToDelete && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
