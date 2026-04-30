@@ -70,7 +70,7 @@ function formatProjectDate(value: string | null | undefined) {
 function ToggleStatePill({ checked, isLocalOnly }: { checked: boolean, isLocalOnly?: boolean }) {
     if (isLocalOnly) {
         return (
-            <span className="inline-flex min-w-[5.5rem] items-center justify-center rounded-full border px-3 py-1 text-[8px] sm:text-[10px] font-bold uppercase tracking-widest border-indigo-100 bg-indigo-50/50 text-indigo-600">
+            <span className="inline-flex min-w-[5.75rem] items-center justify-center rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] border-indigo-100 bg-indigo-50/50 text-indigo-700">
                 Requires Cloud
             </span>
         )
@@ -116,7 +116,7 @@ export default function ProjectSettingsModal({
     const handleLockedSettingClick = () => {
         if (!isLocalOnly) return
         toast.info("Cloud required", {
-            description: "Collaboration features require enabling cloud sync for this project. Use Enable Cloud & Collaboration above when you're ready.",
+            description: "To share this project or invite collaborators, turn on cloud sync first using Enable Cloud & Collaboration above.",
             duration: 5000,
         })
     }
@@ -284,8 +284,8 @@ export default function ProjectSettingsModal({
                         <div className="text-center space-y-3">
                             <h2 className="text-2xl font-serif text-foreground">Enable Cloud Sync?</h2>
                             <div className="text-muted-foreground max-w-sm mx-auto text-sm space-y-2">
-                                <p>Your project and assets will be securely uploaded to the cloud, enabling collaboration and cross-device sync.</p>
-                                <p className="font-semibold text-foreground">Your local project will be kept as a backup. AI settings are not affected.</p>
+                                <p>Turn on cloud sync for this project if you want it on other devices or want to collaborate.</p>
+                                <p className="font-medium text-foreground">Your local copy stays on this device as a backup. This does not publish your work or invite anyone automatically.</p>
                             </div>
                         </div>
                         
@@ -301,7 +301,7 @@ export default function ProjectSettingsModal({
                                 disabled={loading}
                                 className="h-14 rounded-full text-base font-semibold shadow-lg shadow-indigo-200/50 bg-indigo-600 hover:bg-indigo-700 text-white"
                             >
-                                {loading ? 'Migrating...' : 'Yes, Upload to Cloud'}
+                                {loading ? 'Turning on Cloud Sync...' : 'Turn On Cloud Sync'}
                             </Button>
                             <Button
                                 variant="ghost"
@@ -320,8 +320,8 @@ export default function ProjectSettingsModal({
                             isMidnight ? "bg-[#182239]/88 border-slate-700/60" : "bg-white/50 border-[#f0eee9]"
                         )}>
                             <DialogTitle className="text-2xl sm:text-3xl font-serif text-foreground">Project Settings</DialogTitle>
-                            <DialogDescription className="text-xs sm:text-sm text-muted-foreground font-medium">
-                                Configure the foundations of your story.
+                            <DialogDescription className="text-sm text-muted-foreground font-medium">
+                                Update the title, format, sharing, and export details for this project.
                             </DialogDescription>
                         </DialogHeader>
 
@@ -406,13 +406,13 @@ export default function ProjectSettingsModal({
                                             ]}
                                             triggerClassName="border-border bg-muted/50 focus:bg-card focus-visible:ring-primary/20 text-sm"
                                         />
-                                        <p className="px-1 text-[10px] italic text-slate-400">Controls the behavior and formatting of the editor.</p>
+                                        <p className="px-1 text-xs leading-5 text-slate-500">Choose how this project behaves in the editor and how scenes are formatted while you write.</p>
                                     </div>
 
                                     <div className="space-y-2.5">
                                         <Label htmlFor="premise" className="text-sm font-semibold text-foreground ml-1">Core Premise</Label>
-                                        <div className="p-4 bg-muted/30 rounded-2xl border border-border/50 text-[10px] text-slate-400 font-medium leading-relaxed italic mb-2">
-                                            The central spark. This provides context for the AI and serves as the foundation for your narrative arc.
+                                        <div className="mb-2 rounded-2xl border border-border/50 bg-muted/30 p-4 text-xs font-medium leading-5 text-slate-500">
+                                            A short note about the story at its heart. This helps orient the project and can guide AI tools when you choose to use them.
                                         </div>
                                         <Textarea
                                             id="premise"
@@ -427,10 +427,10 @@ export default function ProjectSettingsModal({
                                     <div className="space-y-2.5">
                                         <div className="flex items-center justify-between ml-1">
                                             <Label htmlFor="tone" className="text-sm font-semibold text-foreground">Story Tone</Label>
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">Optional</span>
+                                            <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">Optional</span>
                                         </div>
-                                        <div className="p-4 bg-muted/30 rounded-2xl border border-border/50 text-[10px] text-slate-400 font-medium leading-relaxed italic mb-2">
-                                            Guides future AI suggestions for atmosphere and style.
+                                        <div className="mb-2 rounded-2xl border border-border/50 bg-muted/30 p-4 text-xs font-medium leading-5 text-slate-500">
+                                            Capture the mood, voice, or atmosphere you want to return to later. AI tools may also use this when you ask for help.
                                         </div>
                                         <Textarea
                                             id="tone"
@@ -456,12 +456,12 @@ export default function ProjectSettingsModal({
                                                     </div>
                                                     <div className="space-y-0.5">
                                                         <h4 className="text-sm font-bold text-indigo-900">
-                                                            {isAlreadyMigrated ? 'Cloud Project Available' : 'Local Mode: private on this device'}
+                                                            {isAlreadyMigrated ? 'Cloud copy available' : 'Private on this device'}
                                                         </h4>
-                                                        <p className="text-xs text-indigo-700/80 font-medium">
+                                                        <p className="text-sm leading-5 text-indigo-800/80 font-medium">
                                                             {isAlreadyMigrated 
-                                                                ? 'This project has been migrated to the cloud for collaboration.'
-                                                                : 'Stored locally. Collaboration and sharing require cloud sync.'
+                                                                ? 'A cloud version of this project is ready if you want to collaborate or work across devices.'
+                                                                : 'This project is staying local for now. Turn on cloud sync only if you want it on other devices or need collaboration.'
                                                             }
                                                         </p>
                                                     </div>
@@ -540,7 +540,7 @@ export default function ProjectSettingsModal({
                                                     </div>
                                                     <p className="text-xs leading-relaxed text-slate-500">
                                                         {isLocalOnly 
-                                                            ? "Enable cloud sync to let invited viewers highlight passages and leave feedback."
+                                                            ? "Turn on cloud sync if you want invited readers to highlight passages and leave feedback."
                                                             : "When on, viewers can highlight passages, leave feedback, and save AI conversations into feedback threads. They still cannot edit the project itself."
                                                         }
                                                     </p>
@@ -584,8 +584,8 @@ export default function ProjectSettingsModal({
                                                         </div>
                                                         <p className="text-xs leading-relaxed text-slate-500">
                                                             {isLocalOnly 
-                                                                ? "Cloud sync is required before feedback can be shared with collaborators."
-                                                                : "Legacy project-wide visibility for owner feedback. Per-comment sharing is available directly from each feedback item and is recommended for finer privacy control."
+                                                                ? "Turn on cloud sync before sharing your feedback with collaborators."
+                                                                : "Share your feedback across the project by default. If you want more control, share feedback from individual comments instead."
                                                             }
                                                         </p>
                                                     </div>
@@ -598,7 +598,7 @@ export default function ProjectSettingsModal({
                                                     >
                                                         <span className="flex items-center gap-2 text-[11px] font-semibold text-indigo-600">
                                                             <Users className="h-3.5 w-3.5 text-indigo-400" />
-                                                            Enable cloud to manage collaborators
+                                                            Turn on cloud sync to manage collaborators
                                                         </span>
                                                         <ArrowUpRight className="h-3.5 w-3.5 text-indigo-400" />
                                                     </button>
@@ -653,7 +653,7 @@ export default function ProjectSettingsModal({
                                                     </div>
                                                     <p className="text-xs leading-relaxed text-slate-500">
                                                         {isLocalOnly 
-                                                            ? "Cloud sync is required before collaborator export permissions can be managed."
+                                                            ? `Turn on cloud sync before you manage whether collaborators can export this ${getProjectTypeLabel(project.type).toLowerCase()}.`
                                                             : `When off, collaborators can still read the shared ${getProjectTypeLabel(project.type).toLowerCase()} but cannot export it. The owner can always export.`
                                                         }
                                                     </p>
@@ -674,7 +674,7 @@ export default function ProjectSettingsModal({
                                     )}>
                                         <div className="space-y-1">
                                             <h3 className="text-sm font-medium text-foreground">About this project</h3>
-                                            <p className="text-xs leading-relaxed text-slate-500">
+                                            <p className="text-sm leading-6 text-slate-500">
                                                 Basic info about how this project is stored and synced.
                                             </p>
                                         </div>
@@ -742,7 +742,7 @@ export default function ProjectSettingsModal({
                                                     <AdvancedInfoRow
                                                         icon={isLocalOnly ? HardDrive : DatabaseIcon}
                                                         label="Storage backend"
-                                                        value={isLocalOnly ? 'IndexedDB' : 'Supabase'}
+                                                        value={isLocalOnly ? 'IndexedDB on this device' : 'Supabase cloud storage'}
                                                     />
                                                     <AdvancedInfoRow
                                                         label="Created"
@@ -774,9 +774,9 @@ export default function ProjectSettingsModal({
                                 </div>
                             ) : (
                                 <div className="space-y-5 animate-in fade-in slide-in-from-right-2 duration-300 sm:space-y-6">
-                                    <div className="grid grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6">
                                         <div className="space-y-2.5">
-                                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                            <Label className="ml-1 flex items-center gap-1.5 text-sm font-semibold text-foreground">
                                                 <Type className="w-3 h-3" /> Author Name
                                             </Label>
                                             <Input
@@ -788,7 +788,7 @@ export default function ProjectSettingsModal({
                                             />
                                         </div>
                                         <div className="space-y-2.5">
-                                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                            <Label className="ml-1 flex items-center gap-1.5 text-sm font-semibold text-foreground">
                                                 <Info className="w-3 h-3" /> Pen Name
                                             </Label>
                                             <Input
@@ -801,9 +801,9 @@ export default function ProjectSettingsModal({
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6">
                                         <div className="space-y-2.5">
-                                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                            <Label className="ml-1 flex items-center gap-1.5 text-sm font-semibold text-foreground">
                                                 <Copyright className="w-3 h-3" /> Copyright
                                             </Label>
                                             <Input
@@ -815,7 +815,7 @@ export default function ProjectSettingsModal({
                                             />
                                         </div>
                                         <div className="space-y-2.5">
-                                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                            <Label className="ml-1 flex items-center gap-1.5 text-sm font-semibold text-foreground">
                                                 <Info className="w-3 h-3" /> Year
                                             </Label>
                                             <Input
@@ -828,9 +828,9 @@ export default function ProjectSettingsModal({
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6">
                                         <div className="space-y-2.5">
-                                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                            <Label className="ml-1 flex items-center gap-1.5 text-sm font-semibold text-foreground">
                                                 <Globe className="w-3 h-3" /> Language
                                             </Label>
                                             <Input
@@ -842,7 +842,7 @@ export default function ProjectSettingsModal({
                                             />
                                         </div>
                                         <div className="space-y-2.5">
-                                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                            <Label className="ml-1 flex items-center gap-1.5 text-sm font-semibold text-foreground">
                                                 <Book className="w-3 h-3" /> Publisher
                                             </Label>
                                             <Input
@@ -856,7 +856,7 @@ export default function ProjectSettingsModal({
                                     </div>
 
                                     <div className="space-y-2.5">
-                                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                        <Label className="ml-1 flex items-center gap-1.5 text-sm font-semibold text-foreground">
                                             <Info className="w-3 h-3" /> Blurb / Description
                                         </Label>
                                         <Textarea
@@ -868,9 +868,9 @@ export default function ProjectSettingsModal({
                                         />
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6">
                                         <div className="space-y-2.5">
-                                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                            <Label className="ml-1 flex items-center gap-1.5 text-sm font-semibold text-foreground">
                                                 <Tag className="w-3 h-3" /> Keywords
                                             </Label>
                                             <Input
@@ -882,7 +882,7 @@ export default function ProjectSettingsModal({
                                             />
                                         </div>
                                         <div className="space-y-2.5">
-                                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                            <Label className="ml-1 flex items-center gap-1.5 text-sm font-semibold text-foreground">
                                                 <Hash className="w-3 h-3" /> ISBN
                                             </Label>
                                             <Input
@@ -895,9 +895,9 @@ export default function ProjectSettingsModal({
                                         </div>
                                     </div>
                                     
-                                    <div className="p-4 bg-muted/50 rounded-2xl border border-border">
-                                        <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Export Tip</p>
-                                        <p className="text-xs text-muted-foreground leading-relaxed">
+                                    <div className="rounded-2xl border border-border bg-muted/50 p-4">
+                                        <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Export Tip</p>
+                                        <p className="text-sm leading-6 text-muted-foreground">
                                             This metadata will be automatically injected into your EPUB, DOCX, and PDF exports.
                                         </p>
                                     </div>
@@ -915,25 +915,25 @@ export default function ProjectSettingsModal({
                                         <Button
                                             variant="ghost"
                                             onClick={() => setShowDeleteConfirm(true)}
-                                            className="h-9 rounded-full px-5 text-slate-400 hover:text-red-500 hover:bg-red-50"
+                                            className="h-9 rounded-full px-5 text-sm font-medium text-slate-500 hover:bg-red-50/80 hover:text-red-600"
                                         >
                                             <Trash2 className="w-4 h-4 mr-2" />
-                                            Delete Project
+                                            Delete project...
                                         </Button>
                                     ) : (
                                         <Button
                                             variant="ghost"
                                             onClick={handleLeaveCollaboration}
                                             disabled={loading}
-                                            className="h-9 rounded-full px-5 text-slate-400 hover:text-amber-600 hover:bg-amber-50"
+                                            className="h-9 rounded-full px-5 text-sm font-medium text-slate-500 hover:bg-amber-50 hover:text-amber-700"
                                         >
                                             <LogOut className="w-4 h-4 mr-2" />
-                                            Leave Collaboration
+                                            Leave project
                                         </Button>
                                     )}
                                 </div>
 
-                                <div className="mx-auto grid w-full max-w-[42rem] grid-cols-[0.92fr_1.58fr] gap-4">
+                                <div className="mx-auto grid w-full max-w-[42rem] grid-cols-1 gap-3 sm:grid-cols-[0.92fr_1.58fr] sm:gap-4">
                                     <Button
                                         variant="outline"
                                         onClick={() => onOpenChange(false)}
@@ -961,9 +961,9 @@ export default function ProjectSettingsModal({
                             <AlertTriangle className="w-10 h-10" />
                         </div>
                         <div className="text-center space-y-2">
-                            <h2 className="text-2xl font-serif text-foreground">Delete Project?</h2>
+                            <h2 className="text-2xl font-serif text-foreground">Delete this project?</h2>
                             <p className="text-muted-foreground max-w-xs mx-auto">
-                                This will permanently delete <span className="font-bold text-foreground">&quot;{project.title}&quot;</span> and all its scenes, characters, and ideas.
+                                This permanently deletes <span className="font-bold text-foreground">&quot;{project.title}&quot;</span>, including its scenes, characters, and ideas.
                             </p>
                         </div>
                         <div className="flex flex-col gap-3">
@@ -973,7 +973,7 @@ export default function ProjectSettingsModal({
                                 disabled={loading}
                                 className="h-14 rounded-full text-base font-semibold shadow-lg shadow-red-200"
                             >
-                                {loading ? 'Deleting...' : 'Yes, Delete Everything'}
+                                {loading ? 'Deleting...' : 'Delete project'}
                             </Button>
                             <Button
                                 variant="ghost"
@@ -981,7 +981,7 @@ export default function ProjectSettingsModal({
                                 disabled={loading}
                                 className="h-12 rounded-full text-muted-foreground"
                             >
-                                No, Keep My Story
+                                Keep project
                             </Button>
                         </div>
                     </div>
@@ -1016,8 +1016,8 @@ export default function ProjectSettingsModal({
 function InfoRow({ label, value }: { label: string, value: string }) {
     return (
         <div className="rounded-lg border border-border/50 bg-background/35 px-3 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">{label}</p>
-            <p className="mt-1 text-xs font-medium text-foreground">{value}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</p>
+            <p className="mt-1 text-sm font-medium text-foreground">{value}</p>
         </div>
     )
 }
@@ -1036,12 +1036,12 @@ function AdvancedInfoRow({
     return (
         <div className="flex items-start justify-between gap-4 rounded-lg border border-border/50 bg-background/45 px-3 py-2.5">
             <div className="min-w-0">
-                <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                     {Icon && <Icon className="h-3 w-3" />}
                     {label}
                 </p>
                 <p className={cn(
-                    "mt-1 break-words text-xs text-slate-600",
+                    "mt-1 break-words text-sm text-slate-600",
                     monospace && "font-mono text-[11px]"
                 )}>
                     {value}

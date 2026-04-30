@@ -344,7 +344,7 @@ export default function ProjectShell({
                                         <DialogHeader className="space-y-3 text-left">
                                             <DialogTitle className="font-serif text-2xl text-slate-900">Stored on this device</DialogTitle>
                                             <DialogDescription className="text-sm leading-6 text-slate-600">
-                                                This project is stored only on this device. To access it elsewhere, export a backup or enable cloud sync.
+                                                This project stays on this device unless you back it up or turn on cloud sync.
                                             </DialogDescription>
                                         </DialogHeader>
 
@@ -359,11 +359,23 @@ export default function ProjectShell({
                                             </Button>
                                             <Button
                                                 type="button"
+                                                variant="outline"
+                                                onClick={() => {
+                                                    dismissLocalModeEducation()
+                                                    setSettingsModalOpen(true)
+                                                }}
+                                                className="h-11 rounded-full border-[#d9e1d5] bg-white/80 text-slate-700 hover:bg-white"
+                                            >
+                                                <Settings className="mr-2 h-4 w-4" />
+                                                Open Project Settings
+                                            </Button>
+                                            <Button
+                                                type="button"
                                                 variant="ghost"
                                                 onClick={dismissLocalModeEducation}
                                                 className="h-11 rounded-full text-slate-600 hover:text-slate-900"
                                             >
-                                                Got it
+                                                Keep writing
                                             </Button>
                                         </div>
                                     </div>

@@ -46,9 +46,9 @@ export default function LocalTransferGuidance({
                     <HardDrive className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
-                    <h3 className="text-lg font-semibold text-slate-900">Working on another device?</h3>
+                    <h3 className="text-lg font-semibold text-slate-900">Need this project on another device?</h3>
                     <p className="mt-2 text-sm leading-6 text-slate-600">
-                        Local projects stay on the device where they were created. To use a project on this device, save it as a .storyline file on your other device and open it here. You can also enable cloud sync for projects you want available across devices.
+                        If you want to keep this project local, save a `.storyline` file on one device and open it on the other. If you want it available across devices, turn on cloud sync from Project Settings.
                     </p>
                 </div>
             </div>
