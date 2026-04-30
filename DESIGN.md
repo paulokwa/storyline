@@ -225,6 +225,8 @@ Storyline uses tonal layering and soft shadows, not high-drama depth. Surfaces a
 - Dialog titles should be plain and specific. “Project Settings” is stronger than abstract metaphor.
 - High-stakes dialogs must answer three questions quickly: what is happening, what changes, and what remains safe.
 - Destructive confirmations should be explicit without sounding punitive or melodramatic.
+- Modal footers should default to the Export Manuscript pattern: a quiet bordered footer band, right-aligned actions, a low-emphasis ghost secondary action, and a clear Sanctuary Green primary action when the modal has a commit step.
+- Footer actions should share one vocabulary across the app: `Cancel` or `Close` on the left of the action group, the main commit action on the right, both at the same height with rounded-xl corners. Avoid mixing pill buttons, outline buttons, and text-only footers across similar modal types.
 
 ### Forms and Input Rules
 

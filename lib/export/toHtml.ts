@@ -50,7 +50,9 @@ export function toHtml(payload: ExportPayload, options: ExportOptions): string {
                 html += `    <h2>${node.title}</h2>\n`
             }
         } else if (node.type === 'act') {
-            html += `    <h3>${node.title}</h3>\n`
+            if (options.includeChapterTitles) {
+                html += `    <h3>${node.title}</h3>\n`
+            }
         } else if (node.type === 'scene') {
             html += `    <div class="scene">\n`
             if (options.includeSceneSubtitles) {

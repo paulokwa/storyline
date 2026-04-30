@@ -933,11 +933,11 @@ export default function ProjectSettingsModal({
                                     )}
                                 </div>
 
-                                <div className="mx-auto grid w-full max-w-[42rem] grid-cols-1 gap-3 sm:grid-cols-[0.92fr_1.58fr] sm:gap-4">
+                                <div className="flex w-full items-center gap-3 sm:justify-end">
                                     <Button
-                                        variant="outline"
+                                        variant="ghost"
                                         onClick={() => onOpenChange(false)}
-                                        className="h-11 w-full rounded-full border-border px-6"
+                                        className="h-11 rounded-xl px-8 flex-1 sm:flex-none"
                                     >
                                         Cancel
                                     </Button>
@@ -945,7 +945,7 @@ export default function ProjectSettingsModal({
                                         <Button
                                             onClick={handleSave}
                                             disabled={loading || !title.trim()}
-                                            className="sanctuary-btn-primary h-11 w-full rounded-full px-8 transition-all active:scale-95"
+                                            className="bg-[#546354] hover:bg-[#3d4a3d] text-white h-11 rounded-xl px-8 flex-1 sm:flex-none shadow-lg shadow-slate-900/10 transition-all duration-300 active:scale-95"
                                         >
                                             <Save className="w-4 h-4 mr-2" />
                                             Save Changes

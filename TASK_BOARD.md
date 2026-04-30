@@ -17,6 +17,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 ## Now
 
 - Continue typography and contrast audit beyond AI Partner, especially older low-contrast helper/meta text in less-used screens.
+- Check and fix export issues, starting with PDF, then verify the other export formats as well, especially screenplay-mode output errors.
 
 
 
@@ -61,6 +62,12 @@ npx skills add pbakaus/impeccable
 - Consider adding an `AGENTS.md` or `CONTRIBUTING.md` if agents need stricter operating rules.
 
 ## Done
+- Hide incomplete summary export modes from Export Manuscript modal to avoid confusing users.
+- Hide incomplete Episodes/Scenes export scope options from Export Manuscript modal to avoid confusing users.
+- Fix Export Manuscript include toggles so they remain visible and the full row is clickable, not just the tiny switch.
+- Fix Export Manuscript include toggles so they actually affect exported structure headings consistently across formats.
+- Clarify Export Manuscript include switches with explicit On/Off state and conventional switch coloring.
+- Align Project Settings and Share modal footer actions to the Export Manuscript footer pattern and document it in `DESIGN.md`.
 - Improved inline image insertion discoverability in prose/book mode by adding contextual helper tips to the Scene Gallery.
 - Standardized AI Partner button styles: Transitioned all "outline" variants to ghost/borderless styles consistent with the Sanctuary design system.
 - Fixed layout alignment between AI Partner and Feedback panels.

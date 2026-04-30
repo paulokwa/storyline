@@ -32,6 +32,10 @@ export async function toEpub(payload: ExportPayload, options: ExportOptions): Pr
             if (options.includeChapterTitles) {
                 contentHtml += `<h2>${node.title}</h2>`
             }
+        } else if (node.type === 'act') {
+            if (options.includeChapterTitles) {
+                contentHtml += `<h3>${node.title}</h3>`
+            }
         } else if (node.type === 'scene') {
             if (options.includeSceneSubtitles) {
                 contentHtml += `<h3>${node.title}</h3>`

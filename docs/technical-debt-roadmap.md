@@ -205,6 +205,44 @@ This document tracks identified architectural risks, technical debt, and reliabi
 
 ## Lower Priority / Future Enhancements
 
+### 0. First-class story summaries for outline export
+*   **Why it matters**: Storyline currently has dormant export support for `node.summary` and summary-related content modes, but there is no normal user workflow or data model field for exportable scene, chapter, or act summaries.
+*   **Current state**: Exporters can output summaries if `node.summary` exists, but `buildExportPayload()` does not currently populate it. The summary-related export modes were hidden from the Export Manuscript modal to avoid misleading users.
+*   **Future product decision needed**:
+    *   Decide whether summaries should exist at scene level only, or also chapter and act level.
+    *   Decide whether summaries are manually authored, AI-generated, or both.
+    *   Decide whether AI Scene Analysis summaries should remain separate from exportable story summaries.
+    *   Add proper local and cloud persistence if summaries become first-class story data.
+    *   Wire `buildExportPayload()` to populate `node.summary`.
+    *   Re-enable `Outline Summaries` and `Outline + Prose` only after the feature is real and tested.
+*   **Priority**: Low
+
+### 0.1 Scoped exports for episodes, chapters, scenes, and selected structure nodes
+*   **Why it matters**: The Export Manuscript modal previously exposed Episodes and Scenes scope options, but they were globally disabled and not connected to real project structure or export filtering.
+*   **Current state**: `buildExportPayload()` currently exports all active nodes and does not use `options.scope` or `selectedIds`. The incomplete scope options were hidden from the modal to avoid confusing users.
+*   **Future implementation should**:
+    *   Define supported export scopes for Book and Screenplay projects.
+    *   Decide whether scope options should be Episodes, Acts, Chapters, Scenes, or selected structure nodes depending on project type.
+    *   Add UI for choosing specific nodes or scenes to export.
+    *   Preserve selected structure order.
+    *   Update `buildExportPayload()` to filter nodes based on scope and `selectedIds`.
+    *   Ensure parent headings are handled correctly when exporting selected child nodes.
+    *   Update Export Preview to reflect selected scope.
+    *   Test Markdown, TXT, HTML, DOCX, EPUB, and PDF outputs.
+    *   Verify local and cloud projects behave consistently.
+    *   Re-enable scoped export UI only after the pipeline is real and tested.
+*   **Priority**: Low
+
+### 0.2 Browser download overwrite friction for same-name exports
+*   **Why it matters**: On Chrome desktop for Windows, exporting a file with the same name as a recent prior download can trigger a browser-level `Needs permission to download` interruption, even when new filenames work normally.
+*   **Current state**: Storyline uses normal browser blob downloads for manuscript exports. Repeated same-name exports may hit Chrome's automatic-download or overwrite protection behavior on `localhost`, which creates confusing failures during testing.
+*   **Future implementation should**:
+    *   Reproduce the same-name overwrite/download-permission issue reliably on Chrome desktop for Windows.
+    *   Determine whether the best fix is browser guidance, filename strategy, or an in-app warning before download.
+    *   Consider a small user-facing note explaining that repeated same-name exports may require allowing automatic downloads or choosing a new filename.
+    *   Verify behavior across DOCX, PDF, HTML, EPUB, Markdown, and TXT exports.
+*   **Priority**: Low
+
 ### 1. Advanced Offline / Pending Sync
 *   **Description**: Beyond the current `localStorage` fallback, implement a robust "Pending Sync" queue that automatically uploads changes when the connection returns.
 *   **Implementation**: Service Worker or a background polling sync manager.

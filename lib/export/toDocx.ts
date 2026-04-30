@@ -179,11 +179,13 @@ export async function toDocx(payload: ExportPayload, options: ExportOptions): Pr
                 }))
             }
         } else if (node.type === 'act') {
-            sections.push(new Paragraph({
-                text: node.title,
-                heading: HeadingLevel.HEADING_2,
-                spacing: { before: 400, after: 200 }
-            }))
+            if (options.includeChapterTitles) {
+                sections.push(new Paragraph({
+                    text: node.title,
+                    heading: HeadingLevel.HEADING_2,
+                    spacing: { before: 400, after: 200 }
+                }))
+            }
         } else if (node.type === 'scene') {
             if (options.includeSceneSubtitles) {
                 sections.push(new Paragraph({

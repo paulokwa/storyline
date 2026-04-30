@@ -5,6 +5,52 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-04-30 - Export modal trust and include-toggle fixes
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Audited the Export Manuscript modal and removed incomplete user-facing features that were creating trust problems.
+- Hid dormant summary export modes (`Outline Summaries`, `Outline + Prose`) from the live modal while leaving internal exporter support in place for future work.
+- Hid incomplete scoped-export UI (`Episodes`, `Scenes`) and replaced it with a plain-language full-project export scope summary.
+- Fixed the `Includes` controls so the switches are clearly visible, the full rows are clickable, and the current include choices are echoed in the export preview.
+- Added explicit `On` / `Off` labels and conventional switch coloring so enabled/disabled state is readable without guessing from tone alone.
+- Fixed exporter consistency so `Chapter / Act Titles` now gates act headings across DOCX, Markdown, HTML, TXT, and EPUB instead of only gating chapter/episode headings.
+- Added export-related future-work notes to `docs/technical-debt-roadmap.md` for first-class story summaries, real scoped exports, and Chrome same-name download overwrite friction on Windows.
+- Updated `DESIGN.md` with the export-style modal footer pattern and aligned Project Settings / Share footer actions to that reference.
+- Verified all code changes with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+The export modal is now clearer and less misleading:
+- only working scope/content choices are exposed
+- the include toggles have clearer semantics
+- preview copy reflects current include state
+- act-title export behavior is more consistent across formats
+
+User browser screenshots also suggest the latest DOCX include behavior now matches the preview state after the fixes.
+
+### Next recommended step
+
+Run a focused browser/manual export regression pass:
+- Markdown export in prose mode
+- DOCX export in prose mode
+- PDF export, especially on Chrome desktop for Windows
+- screenplay-mode export across DOCX/PDF/HTML/TXT
+- confirm include toggles affect structure labels as expected in each format
+
+Also verify whether the Chrome same-name overwrite/download-permission interruption should be handled with a small in-app warning before export.
+
+### Risks or warnings
+
+- Export regression coverage is still incomplete, especially for PDF and screenplay-mode output.
+- Chrome on Windows may interrupt repeated same-name downloads with `Needs permission to download`; this is now tracked as future work, not fixed.
+- `TESTING.md` was intentionally not updated to `Passed` for export flows because the user found real issues during validation and the session ended before a full clean pass.
+
+---
 ## 2026-04-30 - Library Recent sort refresh on browser back
 
 ### Current branch

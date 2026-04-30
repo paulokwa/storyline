@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { 
     Dialog, 
     DialogContent, 
@@ -18,16 +18,8 @@ import {
     Files, 
     Download, DownloadCloud, 
     Settings2, 
-    Eye,
-    CheckCircle2,
-    AlertCircle
+    Eye
 } from 'lucide-react'
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip"
 import { cn } from '@/lib/utils'
 import { buildExportPayload, ExportOptions } from '@/lib/export/buildExportPayload'
 import { toMarkdown } from '@/lib/export/toMarkdown'
@@ -77,9 +69,17 @@ export default function ExportModal({
         includeSceneSubtitles: true,
         contentMode: 'prose_only'
     })
+    const optionsRef = useRef<ExportOptions>({
+        format: 'md',
+        scope: 'entire_project',
+        includeProjectTitle: true,
+        includeChapterTitles: true,
+        includeSceneSubtitles: true,
+        contentMode: 'prose_only'
+    })
 
     // Stats for preview
-    const [stats, setStats] = useState<{ chapters: number, scenes: number, hasProse: boolean, hasSummaries: boolean } | null>(null)
+    const [stats, setStats] = useState<{ chapters: number, scenes: number, hasProse: boolean } | null>(null)
     const exportRestrictionMessage = useMemo(
         () => role === 'owner'
             ? null
@@ -119,8 +119,7 @@ export default function ExportModal({
                 const chapters = payload.nodes.filter(n => n.type === 'chapter' || n.type === 'episode').length
                 const scenes = payload.nodes.filter(n => n.type === 'scene').length
                 const hasProse = payload.nodes.some(n => n.content?.content?.length > 0)
-                const hasSummaries = payload.nodes.some(n => n.summary && n.summary.trim().length > 0)
-                setStats({ chapters, scenes, hasProse, hasSummaries })
+                setStats({ chapters, scenes, hasProse })
             } catch (e) {
                 console.error('Failed to fetch stats:', e)
             }
@@ -133,32 +132,33 @@ export default function ExportModal({
         setLoading(true)
         try {
             const payload = await buildExportPayload(projectId)
+            const exportOptions = optionsRef.current
             let blob: Blob
             let extension = 'txt'
 
-            switch (options.format) {
+            switch (exportOptions.format) {
                 case 'md':
-                    blob = new Blob([toMarkdown(payload, options)], { type: 'text/markdown' })
+                    blob = new Blob([toMarkdown(payload, exportOptions)], { type: 'text/markdown' })
                     extension = 'md'
                     break
                 case 'html':
-                    blob = new Blob([toHtml(payload, options)], { type: 'text/html' })
+                    blob = new Blob([toHtml(payload, exportOptions)], { type: 'text/html' })
                     extension = 'html'
                     break
                 case 'txt':
-                    blob = new Blob([toText(payload, options)], { type: 'text/plain' })
+                    blob = new Blob([toText(payload, exportOptions)], { type: 'text/plain' })
                     extension = 'txt'
                     break
                 case 'docx':
-                    blob = await toDocx(payload, options)
+                    blob = await toDocx(payload, exportOptions)
                     extension = 'docx'
                     break
                 case 'pdf':
-                    blob = await toPdf(payload, options)
+                    blob = await toPdf(payload, exportOptions)
                     extension = 'pdf'
                     break
                 case 'epub':
-                    blob = await toEpub(payload, options)
+                    blob = await toEpub(payload, exportOptions)
                     extension = 'epub'
                     break
                 default:
@@ -193,19 +193,33 @@ export default function ExportModal({
         { id: 'epub', label: 'EPUB Ebook', icon: Files, ext: '.epub', desc: 'Ready for Kindle/iBooks' },
     ]
 
-    const scopeLabel = options.scope === 'entire_project'
-        ? 'Entire project'
-        : options.scope === 'selected_chapters'
-            ? (projectType === 'tv_script' ? 'Selected episodes' : 'Selected chapters')
-            : 'Selected scenes'
+    const scopeLabel = 'Entire project'
 
     const formatPreviewLabel = formats.find((format) => format.id === options.format)?.label ?? options.format.toUpperCase()
 
-    const contentModePreviewLabel = options.contentMode === 'prose_only'
-        ? 'Manuscript prose only'
-        : options.contentMode === 'summaries_only'
-            ? 'Saved outline summaries only'
-            : 'Saved summaries and manuscript prose'
+    const contentModePreviewLabel = 'Manuscript prose'
+    const includesPreviewLabel = [
+        options.includeProjectTitle ? 'project title' : null,
+        options.includeChapterTitles ? (projectType === 'tv_script' ? 'episode and act titles' : 'chapter titles') : null,
+        options.includeSceneSubtitles ? 'scene subtitles' : null,
+    ].filter(Boolean).join(', ') || 'manuscript text only'
+
+    function updateOptions(next: ExportOptions | ((current: ExportOptions) => ExportOptions)) {
+        setOptions((current) => {
+            const resolved = typeof next === 'function' ? next(current) : next
+            optionsRef.current = resolved
+            return resolved
+        })
+    }
+
+    function toggleIncludeOption(option: 'includeProjectTitle' | 'includeChapterTitles' | 'includeSceneSubtitles') {
+        if (!canExport) return
+
+        updateOptions((current) => ({
+            ...current,
+            [option]: !current[option],
+        }))
+    }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -238,31 +252,11 @@ export default function ExportModal({
                     )}
                     <div className="space-y-4">
                         <label className="mb-2 flex items-center gap-2 text-[11px] font-sans font-semibold tracking-[0.16em] uppercase text-slate-500">
-                            Scope
+                            Export Scope
                         </label>
-                        <div className="flex gap-2 p-1 bg-slate-900/5 rounded-2xl w-fit">
-                            {(['entire_project', 'selected_chapters', 'selected_scenes'] as const).map((s) => (
-                                <Tooltip key={s}>
-                                    <TooltipTrigger asChild>
-                                        <button
-                                            onClick={() => setOptions({ ...options, scope: s })}
-                                            disabled={!canExport || s !== 'entire_project'}
-                                            className={cn(
-                                                "px-4 py-2 rounded-xl text-xs font-medium transition-all duration-300",
-                                                options.scope === s
-                                                    ? "bg-white text-slate-900 shadow-sm"
-                                                    : "text-slate-500 hover:text-slate-700 hover:bg-white/40",
-                                                (!canExport || s !== 'entire_project') && "opacity-50 grayscale cursor-not-allowed"
-                                            )}
-                                        >
-                                            {s === 'entire_project' ? 'Entire Project' : s === 'selected_chapters' ? (projectType === 'tv_script' ? 'Episodes' : 'Chapters') : 'Scenes'}
-                                        </button>
-                                    </TooltipTrigger>
-                                    {s !== 'entire_project' && (
-                                        <TooltipContent side="top">Coming soon in V2</TooltipContent>
-                                    )}
-                                </Tooltip>
-                            ))}
+                        <div className="rounded-2xl bg-white/40 px-4 py-3 text-sm text-slate-700">
+                            <span className="font-medium text-slate-900">Entire project</span>
+                            <span className="ml-2 text-slate-500">All active {projectType === 'tv_script' ? 'episodes, acts, and scenes' : 'chapters and scenes'} will be included.</span>
                         </div>
                     </div>
 
@@ -276,7 +270,7 @@ export default function ExportModal({
                             {formats.map((f) => (
                                 <button
                                     key={f.id}
-                                    onClick={() => setOptions({ ...options, format: f.id as any })}
+                                    onClick={() => updateOptions((current) => ({ ...current, format: f.id as any }))}
                                     disabled={!canExport}
                                     className={cn(
                                         "flex flex-col items-start p-4 rounded-2xl border transition-all duration-300 text-left",
@@ -354,81 +348,134 @@ export default function ExportModal({
                         </div>
                     </div>
 
-                    {/* Options Grid */}
-                    <div className="grid grid-cols-1 gap-7 md:grid-cols-2 md:gap-8">
-                        <div className="space-y-5">
-                            <label className="flex items-center gap-2 text-[11px] font-sans font-semibold tracking-[0.16em] uppercase text-slate-500">
-                                Includes
-                            </label>
-                            <p className="text-xs leading-5 text-slate-500">
-                                Choose which project and structure titles should appear in the exported file.
-                            </p>
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between group">
-                                    <Label htmlFor="inc-title" className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">
-                                        Project Title
-                                    </Label>
+                    {/* Options */}
+                    <div className="space-y-5">
+                        <label className="flex items-center gap-2 text-[11px] font-sans font-semibold tracking-[0.16em] uppercase text-slate-500">
+                            Includes
+                        </label>
+                        <p className="text-xs leading-5 text-slate-500">
+                            Choose which project and structure titles should appear in the exported file. Manuscript text is included automatically.
+                        </p>
+                        <div className="space-y-4 rounded-2xl bg-white/40 p-4 sm:p-5">
+                            <div
+                                role="button"
+                                tabIndex={canExport ? 0 : -1}
+                                aria-disabled={!canExport}
+                                onClick={() => toggleIncludeOption('includeProjectTitle')}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter' || event.key === ' ') {
+                                        event.preventDefault()
+                                        toggleIncludeOption('includeProjectTitle')
+                                    }
+                                }}
+                                className={cn(
+                                    "group flex items-center justify-between gap-4 rounded-xl px-3 py-2 transition-colors",
+                                    canExport ? "cursor-pointer hover:bg-white/70 focus-visible:bg-white/70" : "cursor-not-allowed opacity-60"
+                                )}
+                            >
+                                <Label
+                                    htmlFor="inc-title"
+                                    onClick={(event) => event.stopPropagation()}
+                                    className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors"
+                                >
+                                    Project Title
+                                </Label>
+                                <div className="flex items-center gap-3">
+                                    <span className={cn(
+                                        "min-w-[2rem] text-right text-[11px] font-semibold uppercase tracking-[0.12em]",
+                                        options.includeProjectTitle ? "text-[#546354]" : "text-slate-400"
+                                    )}>
+                                        {options.includeProjectTitle ? 'On' : 'Off'}
+                                    </span>
                                     <Switch
                                         id="inc-title"
                                         checked={options.includeProjectTitle}
-                                        onCheckedChange={(v) => setOptions({ ...options, includeProjectTitle: v })}
+                                        onCheckedChange={(v) => updateOptions((current) => ({ ...current, includeProjectTitle: v }))}
+                                        onClick={(event) => event.stopPropagation()}
                                         disabled={!canExport}
-                                    />
-                                </div>
-                                <div className="flex items-center justify-between group">
-                                    <Label htmlFor="inc-chapters" className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">
-                                        {stats?.chapters ? (stats.chapters > 0 ? 'Chapter / Act Titles' : 'Titles') : 'Titles'}
-                                    </Label>
-                                    <Switch
-                                        id="inc-chapters"
-                                        checked={options.includeChapterTitles}
-                                        onCheckedChange={(v) => setOptions({ ...options, includeChapterTitles: v })}
-                                        disabled={!canExport}
-                                    />
-                                </div>
-                                <div className="flex items-center justify-between group">
-                                    <Label htmlFor="inc-scenes" className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">
-                                        Scene Subtitles
-                                    </Label>
-                                    <Switch
-                                        id="inc-scenes"
-                                        checked={options.includeSceneSubtitles}
-                                        onCheckedChange={(v) => setOptions({ ...options, includeSceneSubtitles: v })}
-                                        disabled={!canExport}
+                                        className="border border-[#cfc7b8] data-checked:bg-[#546354] data-checked:border-[#546354] data-unchecked:bg-[#ece7dc] data-unchecked:border-[#cfc7b8] dark:data-checked:bg-[#aac0ad] dark:data-checked:border-[#aac0ad] dark:data-unchecked:bg-slate-700 dark:data-unchecked:border-slate-500"
                                     />
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="space-y-5">
-                            <label className="flex items-center gap-2 text-[11px] font-sans font-semibold tracking-[0.16em] uppercase text-slate-500">
-                                Content Mode
-                            </label>
-                            <p className="text-xs leading-5 text-slate-500">
-                                Manuscript Prose exports the written manuscript text. Outline Summaries exports any saved outline summaries only. Outline + Prose exports both saved summaries and manuscript text.
-                            </p>
-                            <div className="space-y-2">
-                                {(['prose_only', 'summaries_only', 'both'] as const).map((mode) => (
-                                    <button
-                                        key={mode}
-                                        onClick={() => setOptions({ ...options, contentMode: mode })}
+                            <div
+                                role="button"
+                                tabIndex={canExport ? 0 : -1}
+                                aria-disabled={!canExport}
+                                onClick={() => toggleIncludeOption('includeChapterTitles')}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter' || event.key === ' ') {
+                                        event.preventDefault()
+                                        toggleIncludeOption('includeChapterTitles')
+                                    }
+                                }}
+                                className={cn(
+                                    "group flex items-center justify-between gap-4 rounded-xl px-3 py-2 transition-colors",
+                                    canExport ? "cursor-pointer hover:bg-white/70 focus-visible:bg-white/70" : "cursor-not-allowed opacity-60"
+                                )}
+                            >
+                                <Label
+                                    htmlFor="inc-chapters"
+                                    onClick={(event) => event.stopPropagation()}
+                                    className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors"
+                                >
+                                    {stats?.chapters ? (stats.chapters > 0 ? 'Chapter / Act Titles' : 'Titles') : 'Titles'}
+                                </Label>
+                                <div className="flex items-center gap-3">
+                                    <span className={cn(
+                                        "min-w-[2rem] text-right text-[11px] font-semibold uppercase tracking-[0.12em]",
+                                        options.includeChapterTitles ? "text-[#546354]" : "text-slate-400"
+                                    )}>
+                                        {options.includeChapterTitles ? 'On' : 'Off'}
+                                    </span>
+                                    <Switch
+                                        id="inc-chapters"
+                                        checked={options.includeChapterTitles}
+                                        onCheckedChange={(v) => updateOptions((current) => ({ ...current, includeChapterTitles: v }))}
+                                        onClick={(event) => event.stopPropagation()}
                                         disabled={!canExport}
-                                        className={cn(
-                                            "w-full flex items-center justify-between px-3 py-2 rounded-xl border text-sm transition-all duration-300",
-                                            options.contentMode === mode
-                                                ? "bg-amber-50 border-amber-300 text-amber-950 font-medium ring-1 ring-amber-200/80"
-                                                : "bg-white/40 border-transparent text-slate-500 hover:bg-white hover:border-slate-100",
-                                            !canExport && "cursor-not-allowed opacity-60"
-                                        )}
-                                    >
-                                        <span>
-                                            {mode === 'prose_only' && 'Manuscript Prose'}
-                                            {mode === 'summaries_only' && 'Outline Summaries'}
-                                            {mode === 'both' && 'Outline + Prose'}
-                                        </span>
-                                        {options.contentMode === mode && <CheckCircle2 className="w-4 h-4 text-amber-600" />}
-                                    </button>
-                                ))}
+                                        className="border border-[#cfc7b8] data-checked:bg-[#546354] data-checked:border-[#546354] data-unchecked:bg-[#ece7dc] data-unchecked:border-[#cfc7b8] dark:data-checked:bg-[#aac0ad] dark:data-checked:border-[#aac0ad] dark:data-unchecked:bg-slate-700 dark:data-unchecked:border-slate-500"
+                                    />
+                                </div>
+                            </div>
+                            <div
+                                role="button"
+                                tabIndex={canExport ? 0 : -1}
+                                aria-disabled={!canExport}
+                                onClick={() => toggleIncludeOption('includeSceneSubtitles')}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter' || event.key === ' ') {
+                                        event.preventDefault()
+                                        toggleIncludeOption('includeSceneSubtitles')
+                                    }
+                                }}
+                                className={cn(
+                                    "group flex items-center justify-between gap-4 rounded-xl px-3 py-2 transition-colors",
+                                    canExport ? "cursor-pointer hover:bg-white/70 focus-visible:bg-white/70" : "cursor-not-allowed opacity-60"
+                                )}
+                            >
+                                <Label
+                                    htmlFor="inc-scenes"
+                                    onClick={(event) => event.stopPropagation()}
+                                    className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors"
+                                >
+                                    Scene Subtitles
+                                </Label>
+                                <div className="flex items-center gap-3">
+                                    <span className={cn(
+                                        "min-w-[2rem] text-right text-[11px] font-semibold uppercase tracking-[0.12em]",
+                                        options.includeSceneSubtitles ? "text-[#546354]" : "text-slate-400"
+                                    )}>
+                                        {options.includeSceneSubtitles ? 'On' : 'Off'}
+                                    </span>
+                                    <Switch
+                                        id="inc-scenes"
+                                        checked={options.includeSceneSubtitles}
+                                        onCheckedChange={(v) => updateOptions((current) => ({ ...current, includeSceneSubtitles: v }))}
+                                        onClick={(event) => event.stopPropagation()}
+                                        disabled={!canExport}
+                                        className="border border-[#cfc7b8] data-checked:bg-[#546354] data-checked:border-[#546354] data-unchecked:bg-[#ece7dc] data-unchecked:border-[#cfc7b8] dark:data-checked:bg-[#aac0ad] dark:data-checked:border-[#aac0ad] dark:data-unchecked:bg-slate-700 dark:data-unchecked:border-slate-500"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -451,6 +498,7 @@ export default function ExportModal({
                                     <p><span className="font-medium text-slate-700">Scope:</span> {scopeLabel}</p>
                                     <p><span className="font-medium text-slate-700">Format:</span> {formatPreviewLabel}</p>
                                     <p><span className="font-medium text-slate-700">Content:</span> {contentModePreviewLabel}</p>
+                                    <p><span className="font-medium text-slate-700">Includes:</span> {includesPreviewLabel}</p>
                                 </div>
                             </div>
                             <div className="text-left sm:text-right">
@@ -458,16 +506,10 @@ export default function ExportModal({
                                     {options.format.toUpperCase()}
                                 </p>
                                 <p className="text-[11px] text-slate-500 uppercase tracking-[0.14em] font-semibold">
-                                    {options.contentMode === 'prose_only' ? 'Prose only' : options.contentMode === 'summaries_only' ? 'Saved summaries' : 'Prose + summaries'}
+                                    Prose manuscript
                                 </p>
                             </div>
                         </div>
-                        {options.contentMode === 'summaries_only' && stats && !stats.hasSummaries && (
-                            <div className="mt-4 flex items-center gap-2 p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-700 text-xs">
-                                <AlertCircle className="w-4 h-4" />
-                                No summaries found. Export will be empty for summaries only.
-                            </div>
-                        )}
                     </div>
                 </div>
 

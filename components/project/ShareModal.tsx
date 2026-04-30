@@ -336,16 +336,18 @@ export default function ShareModal({
                 </div>
 
                 <DialogFooter className={cn(
-                    "p-6 flex justify-end",
+                    "p-8 flex flex-col gap-4 items-center sm:flex-row sm:justify-end",
                     isMidnight ? "bg-[#182239]/88 border-slate-700/60" : "bg-white border-[#f0eee9]"
                 )}>
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
                     <Button 
                         variant="ghost" 
                         onClick={() => onOpenChange(false)} 
-                        className="rounded-full px-8 h-12 font-semibold text-muted-foreground hover:text-foreground hover:bg-slate-100 transition-all"
+                        className="h-11 rounded-xl px-8 flex-1 sm:flex-none"
                     >
                         Close
                     </Button>
+                    </div>
                 </DialogFooter>
 
                 {memberPendingRemoval && (

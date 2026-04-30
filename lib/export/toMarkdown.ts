@@ -91,7 +91,9 @@ export function toMarkdown(payload: ExportPayload, options: ExportOptions): stri
                 md += `## ${node.title}\n\n`
             }
         } else if (node.type === 'act') {
-            md += `### ${node.title}\n\n`
+            if (options.includeChapterTitles) {
+                md += `### ${node.title}\n\n`
+            }
         } else if (node.type === 'scene') {
             if (options.includeSceneSubtitles) {
                 md += `#### ${node.title}\n\n`
