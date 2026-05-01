@@ -5,6 +5,33 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-01 - SceneEditor JSX build fix
+
+### Current branch
+
+`ui-redesign-stitch-v1`
+
+### What was completed
+
+- Investigated a Turbopack/TypeScript build failure in `components/project/story/SceneEditor.tsx` that reported `Expected ',', got 'ident'` at the scene-title input.
+- Confirmed the reported `<input>` line was only the first parser failure and traced the real issue to malformed JSX higher in the header/action toolbar block.
+- Restored the missing wrapper `<div>` structure around the toolbar area and added the missing `createPortal` import from `react-dom`.
+- Verified the fix with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+The `SceneEditor` file parses and type-checks again on this branch, so the reported JSX build error is cleared.
+
+### Next recommended step
+
+- Run a quick browser smoke test on the story workspace header and scene editor toolbar.
+- After that, continue the Stitch-inspired UI branch work from the current Phase 6 state.
+
+### Risks or warnings
+
+- This session verified compile/type-check only, not a live browser pass of the story workspace on this branch.
+
+---
 ## 2026-05-01 - Phase 6 Navbar Reorganization (Stitch-inspired Layout)
 
 ### Current branch

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useImperativeHandle, forwardRef, useRef, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { useEditor, EditorContent } from '@tiptap/react'
 import { BubbleMenu } from '@tiptap/react/menus'
 import type { VirtualElement } from '@floating-ui/dom'
@@ -1396,6 +1397,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                     </div>
                 </div>
             )}
+            <div className="flex flex-col mb-10">
+                <div className="flex items-start justify-end gap-3 mb-2">
                     <div className="flex items-center gap-2 shrink-0">
                         {!isReadOnly && (
                              <span className={cn(

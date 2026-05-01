@@ -247,6 +247,7 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 Newest confirmations go at the top.
 
 | 2026-04-30 | AI agent | TypeScript compile after project-open 404 layout fix | Passed | `npx tsc --noEmit --pretty false` passed after changing the project layout loader to avoid 404s caused by missing owner `project_members` rows. |
+| 2026-05-01 | AI agent | TypeScript compile after SceneEditor JSX build fix | Passed | `npx tsc --noEmit --pretty false` passed after restoring missing wrapper JSX in `components/project/story/SceneEditor.tsx` and adding the missing `createPortal` import. |
 | 2026-05-01 | AI agent | Help shortcuts access compile and focused lint | Passed | `npx tsc --noEmit --pretty false` passed after wiring project Help into the shortcuts modal, and focused `npx eslint` passed for `components/project/help/HelpTab.tsx`, `lib/help.ts`, and `lib/project/shortcuts.ts`. |
 | 2026-04-30 | AI agent | TypeScript compile after library back-refresh fix | Passed | `npx tsc --noEmit --pretty false` passed after adding a library-return refresh flag so `Recent` order can re-fetch after opening a project card and returning. |
 | 2026-05-01 | AI agent | Focused auth hardening compile and lint | Passed | `npx tsc --noEmit --pretty false` and focused `npx eslint` passed after adding guarded auth redirects and the shared client helper. |
