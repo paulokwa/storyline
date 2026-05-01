@@ -201,6 +201,7 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 | Main tour launches correctly | Not tested | - | - | Confirm it does not conflict with other tours. |
 | AI tour launches correctly | Not tested | - | - | Confirm it does not overlap main tour. |
 | Help page covers current features | Not tested | - | - | Confirm coverage against real app features. |
+| Help Center Midnight and scanability polish | Needs retest | AI agent | 2026-05-01 | Shared `HelpTab` and scoped `globals.css` Midnight overrides landed. Browser validation is still needed for `/help` and `/project/[id]/help` in Sanctuary/Midnight, search states, tablet/mobile layout, and the tour CTA. |
 | User-facing AI setup instructions | Not tested | - | - | Confirm non-technical users can follow them. |
 | Mobile tour performance | Not tested | - | - | Cover section may be too slow; check asset sizes. |
 
@@ -247,6 +248,7 @@ Newest confirmations go at the top.
 | 2026-04-30 | AI agent | TypeScript compile after library back-refresh fix | Passed | `npx tsc --noEmit --pretty false` passed after adding a library-return refresh flag so `Recent` order can re-fetch after opening a project card and returning. |
 | 2026-05-01 | AI agent | Focused auth hardening compile and lint | Passed | `npx tsc --noEmit --pretty false` and focused `npx eslint` passed after adding guarded auth redirects and the shared client helper. |
 | 2026-05-01 | AI agent | Account Settings polish compile and lint | Passed | `npx tsc --noEmit --pretty false` and `npx eslint components/app/SettingsView.tsx` passed after the presentation-only Sanctuary polish pass for Account Settings. |
+| 2026-05-01 | AI agent | Help Center polish compile and lint | Passed | `npx tsc --noEmit --pretty false` and `npx eslint components/project/help/HelpTab.tsx` passed after the Help Center Midnight and scanability polish pass. |
 | 2026-04-26 | User | Solo project collaborator header empty state | Passed | User confirmed the empty collaborator pill/blip no longer appears on solo projects. |
 | 2026-04-26 | User | Prose scene gallery wording | Passed | User confirmed the wording cleanup is resolved. |
 | 2026-04-29 | User | AI-disabled scene analyzer feedback | Passed | User manually verified analyzer-specific AI-off feedback in the browser. |

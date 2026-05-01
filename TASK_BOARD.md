@@ -31,6 +31,12 @@ npx skills add pbakaus/impeccable
   - midnight theme
   - AI-off, no-key, and limited-trial states
   - existing email/password/delete flows
+- Manual Help Center visual regression pass:
+  - `/help` and `/project/[id]/help`
+  - Sanctuary and Midnight themes
+  - search default, matched, and no-results states
+  - tablet and narrow/mobile layout
+  - confirm tour CTA behavior remains unchanged
 
 
 ## Later
@@ -66,6 +72,12 @@ npx skills add pbakaus/impeccable
 - Consider adding an `AGENTS.md` or `CONTRIBUTING.md` if agents need stricter operating rules.
 
 ## Done
+- Minimal Help Center Midnight + scanability polish:
+  - added a shared Help root class so `/help` and `/project/[id]/help` use the same scoped Help surface styling
+  - replaced hardcoded light Help surfaces with Sanctuary-compatible classes and added Help-specific Midnight selectors
+  - improved search prominence with a visible label and clearer search wrapper
+  - reduced secondary-card competition and tightened article-card spacing for better scanability
+  - tightened Help layout spacing on smaller screens without changing Help logic or content
 - Minimal Account Settings Sanctuary polish pass:
   - reordered Settings to `Profile / Security`, `Appearance`, then `AI Partner Settings`
   - separated profile, email, password, and danger-zone areas into clearer visual sections

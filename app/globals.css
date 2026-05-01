@@ -1628,6 +1628,61 @@ body {
   background: rgba(42, 56, 87, 0.88) !important;
 }
 
+[data-theme='midnight'] .help-center-view {
+  background:
+    radial-gradient(circle at top, rgba(56, 78, 129, 0.14), transparent 40%),
+    linear-gradient(180deg, #0b1120 0%, #111a2f 52%, #0b1120 100%) !important;
+}
+
+[data-theme='midnight'] .help-center-view [class*="bg-white"],
+[data-theme='midnight'] .help-center-view [class*="bg-slate-50"] {
+  background-color: rgba(24, 34, 57, 0.9) !important;
+}
+
+[data-theme='midnight'] .help-center-view [class*="bg-white/"],
+[data-theme='midnight'] .help-center-view [class*="bg-slate-50/"],
+[data-theme='midnight'] .help-center-view [class*="bg-slate-100"] {
+  background-color: rgba(37, 49, 77, 0.76) !important;
+}
+
+[data-theme='midnight'] .help-center-view [class*="border-slate-"],
+[data-theme='midnight'] .help-center-view [class*="border-white/"] {
+  border-color: rgba(96, 115, 151, 0.3) !important;
+}
+
+[data-theme='midnight'] .help-center-view [class*="text-slate-900"],
+[data-theme='midnight'] .help-center-view [class*="text-slate-800"],
+[data-theme='midnight'] .help-center-view [class*="text-slate-700"],
+[data-theme='midnight'] .help-center-view [class*="text-slate-600"] {
+  color: #eff4ff !important;
+}
+
+[data-theme='midnight'] .help-center-view [class*="text-slate-500"],
+[data-theme='midnight'] .help-center-view [class*="text-slate-400"],
+[data-theme='midnight'] .help-center-view [class*="text-slate-300"] {
+  color: #aebbd3 !important;
+}
+
+[data-theme='midnight'] .help-center-view input {
+  background: rgba(14, 20, 38, 0.92) !important;
+  color: #eff4ff !important;
+  border-color: rgba(96, 115, 151, 0.34) !important;
+}
+
+[data-theme='midnight'] .help-center-view input::placeholder {
+  color: #8191b0 !important;
+}
+
+[data-theme='midnight'] .help-center-view [class*="hover:bg-white"]:hover,
+[data-theme='midnight'] .help-center-view [class*="hover:bg-slate-50"]:hover,
+[data-theme='midnight'] .help-center-view [class*="hover:bg-slate-100"]:hover {
+  background: rgba(42, 56, 87, 0.88) !important;
+}
+
+[data-theme='midnight'] .help-center-view .custom-scrollbar {
+  scrollbar-color: rgba(125, 146, 187, 0.55) rgba(16, 23, 39, 0.35);
+}
+
 [data-theme='midnight'] .new-project-page {
   background:
     radial-gradient(circle at top, rgba(56, 78, 129, 0.16), transparent 38%),

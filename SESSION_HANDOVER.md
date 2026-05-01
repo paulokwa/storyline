@@ -5,6 +5,44 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-01 - Help Center Midnight and scanability polish
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Applied a presentation-only polish pass to the shared Help Center surface in `components/project/help/HelpTab.tsx`.
+- Added a Help-specific root class so both `/help` and `/project/[id]/help` now share the same scoped Help styling.
+- Replaced hardcoded light Help surfaces with Sanctuary-compatible utility surfaces and reduced the visual weight of the hero block on smaller screens.
+- Added a visible search label and a clearer search wrapper without changing any search logic or filtering behavior.
+- Softened the helper/tour card and sidebar panels so they read as secondary to the main Help results.
+- Improved Help topic-card spacing and body readability without changing any help content.
+- Added Help-specific Midnight selectors in `app/globals.css` following the existing AI/Settings override pattern.
+- Verified the touched files with:
+  - `npx tsc --noEmit --pretty false`
+  - `npx eslint components/project/help/HelpTab.tsx`
+
+### Current status
+
+The shared Help Center now has scoped Midnight theme support and calmer hierarchy across both global and project Help routes, while keeping Help content, search behavior, and tour behavior unchanged.
+
+### Next recommended step
+
+Run a browser verification pass for Help:
+- `/help` in Sanctuary and Midnight
+- `/project/[id]/help` in Sanctuary and Midnight
+- search default, matched, and no-results states
+- tablet and narrow/mobile layout
+- confirm the workspace-tour action still behaves exactly the same
+
+### Risks or warnings
+
+- This session verified compile and focused lint only, not a full browser pass of the Help routes in both themes.
+- Midnight styling is intentionally scoped to the new Help root class; if other Help-adjacent surfaces are introduced later without that root, they will not inherit these overrides automatically.
+
+---
 ## 2026-05-01 - Account Settings Sanctuary polish pass
 
 ### Current branch
