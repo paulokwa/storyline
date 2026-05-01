@@ -461,11 +461,30 @@ body {
 
 [data-theme='midnight'] .ai-helper-header,
 [data-theme='midnight'] .ai-helper-context,
+[data-theme='midnight'] .ai-helper-composer,
 [data-theme='midnight'] .ai-helper-memory,
 [data-theme='midnight'] .comments-panel > div:first-child,
 [data-theme='midnight'] .comments-panel > div:last-child {
   background: rgba(15, 23, 42, 0.7) !important;
   border-color: rgba(148, 163, 184, 0.12) !important;
+}
+
+[data-theme='midnight'] .ai-helper-composer-editor {
+  background: rgba(17, 24, 39, 0.9) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 14px 28px -24px rgba(2, 6, 23, 0.9) !important;
+}
+
+[data-theme='midnight'] .ai-helper-composer-editor .ProseMirror {
+  background: transparent !important;
+  color: #e5edf7 !important;
+}
+
+[data-theme='midnight'] .ai-helper-composer-editor .is-editor-empty:first-child::before {
+  color: rgba(148, 163, 184, 0.8) !important;
+  opacity: 1 !important;
 }
 
 [data-theme='midnight'] .project-shell-root [class*="bg-white"],

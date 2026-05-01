@@ -2792,7 +2792,7 @@ export default function AiHelperPanel({
                         </div>
                     </div>
                 )}
-                <div className="relative z-10 border-t border-[#ddd8ce] bg-[linear-gradient(180deg,rgba(245,244,239,0.9)_0%,rgba(251,249,245,0.96)_100%)] p-4 pb-4">
+                <div className="ai-helper-composer relative z-10 border-t border-[#ddd8ce] bg-[linear-gradient(180deg,rgba(245,244,239,0.9)_0%,rgba(251,249,245,0.96)_100%)] p-4 pb-4">
                     <form onSubmit={handleSubmit} className="flex flex-col" suppressHydrationWarning>
                         {isVirtualRootSelected && (
                             <div className="flex flex-col gap-2 p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-indigo-700 animate-in fade-in zoom-in duration-300 mb-2">
@@ -2881,7 +2881,7 @@ export default function AiHelperPanel({
                                 }}
                                 placeholder={promptPlaceholder}
                                 className={cn(
-                                    "w-full rounded-2xl border border-slate-200/80 shadow-sm transition-all focus-within:ring-2 focus-within:ring-indigo-500/10 focus-within:border-indigo-300",
+                                    "ai-helper-composer-editor w-full rounded-2xl border border-slate-200/80 shadow-sm transition-all focus-within:ring-2 focus-within:ring-indigo-500/10 focus-within:border-indigo-300",
                                     actualLoading ? "bg-white/90 cursor-wait" : "bg-white/80"
                                 )}
                                 editorClassName="p-4 pr-14 text-sm font-sans leading-relaxed"

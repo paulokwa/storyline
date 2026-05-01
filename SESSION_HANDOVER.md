@@ -5,6 +5,39 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-01 - AI Partner Midnight composer surface fix
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Investigated the reported Midnight-mode AI Partner regression where the lower chat/composer area still rendered with light-theme surfaces.
+- Confirmed there was no matching reusable troubleshooting entry, then traced the issue to missing Midnight styling for the AI composer footer and the `PremiumEditor` ProseMirror prompt surface.
+- Updated `components/project/story/AiHelperPanel.tsx` to add scoped composer hooks for the affected footer and editor wrapper.
+- Updated `app/globals.css` to give the AI composer footer and prompt editor a proper Midnight background, border, text, and placeholder treatment without changing other editors.
+- Verified the fix with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+The AI Partner composer now has explicit Midnight-only styling hooks, so the footer band and prompt box should no longer stay light when the app theme is set to `midnight`.
+
+### Next recommended step
+
+Run a browser validation pass in Midnight mode:
+- open the AI Partner in sidebar and full-canvas modes
+- confirm the lower composer band is dark instead of paper-white
+- confirm the prompt box background, typed text, and placeholder all read correctly
+- check both book and screenplay projects
+- confirm the send/stop button contrast still feels correct against the darker composer
+
+### Risks or warnings
+
+- This session verified the fix with TypeScript compile only, not a browser screenshot or live UI pass.
+- Focused eslint on `components/project/story/AiHelperPanel.tsx` still reports a large pre-existing lint backlog unrelated to this change.
+
+---
 ## 2026-05-01 - Library sort default and persistence hardening
 
 ### Current branch

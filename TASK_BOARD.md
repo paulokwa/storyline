@@ -71,6 +71,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Consider adding an `AGENTS.md` or `CONTRIBUTING.md` if agents need stricter operating rules.
 
 ## Done
+- Fixed the Midnight-mode AI Partner composer regression so the lower chat/prompt area and `PremiumEditor` prompt surface no longer stay light in dark theme.
 - Hardened Library sort persistence so it initializes from browser storage with a `Recent` fallback instead of defaulting through `Custom`.
 - Fixed incomplete guided setup resume drift by persisting the guided flow sub-step alongside the saved guided draft.
 - Normalized the Library incomplete-setup delete confirmation to match the regular project-card confirmation treatment more closely.
