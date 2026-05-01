@@ -74,6 +74,19 @@ function getAvatarInitials(name: string | null | undefined, fallback = 'U') {
 }
 
 const LIBRARY_REFRESH_ON_RETURN_KEY = 'storyline-library-refresh-on-return'
+const LIBRARY_SORT_KEY = 'storyline-library-sort'
+const DEFAULT_LIBRARY_SORT: 'custom' | 'recent' | 'az' = 'recent'
+
+function getSavedLibrarySort(): 'custom' | 'recent' | 'az' {
+    if (typeof window === 'undefined') return DEFAULT_LIBRARY_SORT
+
+    const saved = localStorage.getItem(LIBRARY_SORT_KEY)
+    if (saved === 'custom' || saved === 'recent' || saved === 'az') {
+        return saved
+    }
+
+    return DEFAULT_LIBRARY_SORT
+}
 
 export default function ProjectGrid({ projects, deletedProjects, currentUserId }: { projects: Project[], deletedProjects: Project[], currentUserId: string }) {
     const transferGuidanceDismissKey = 'storyline-library-transfer-guidance-dismissed'
@@ -85,17 +98,12 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
     const [draft, setDraft] = useState<{ state: any; step: any } | null>(null)
     const [confirmDeleteDraft, setConfirmDeleteDraft] = useState(false)
     const [view, setView] = useState<'active' | 'trash'>('active')
-    const [sortFilter, setSortFilter] = useState<'custom' | 'recent' | 'az'>('custom')
+    const [sortFilter, setSortFilter] = useState<'custom' | 'recent' | 'az'>(getSavedLibrarySort)
     const [showTransferGuidance, setShowTransferGuidance] = useState(true)
     const initialMount = useRef(true)
 
     // Load sort preference on mount
     useEffect(() => {
-        const saved = localStorage.getItem('storyline-library-sort')
-        if (saved && (saved === 'custom' || saved === 'recent' || saved === 'az')) {
-            setSortFilter(saved as any)
-        }
-
         if (localStorage.getItem(transferGuidanceDismissKey) === 'true') {
             setShowTransferGuidance(false)
         }
@@ -112,7 +120,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
             initialMount.current = false
             return
         }
-        localStorage.setItem('storyline-library-sort', sortFilter)
+        localStorage.setItem(LIBRARY_SORT_KEY, sortFilter)
     }, [sortFilter])
     
     // Local state for dragging

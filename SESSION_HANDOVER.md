@@ -5,6 +5,38 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-01 - Library sort default and persistence hardening
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Inspected the Library sort persistence path and confirmed it is browser-local only, using `localStorage`, not account/profile storage.
+- Confirmed there was no second app-side writer for `storyline-library-sort`.
+- Updated `components/library/ProjectGrid.tsx` so the sort state initializes directly from storage with a `recent` fallback instead of booting through `custom`.
+- Centralized the Library sort key and fallback into `LIBRARY_SORT_KEY` and `DEFAULT_LIBRARY_SORT`.
+- Verified the change with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+The Library now defaults to `Recent` whenever no valid saved sort exists, and it no longer mounts through `Custom` first before hydrating the saved preference.
+
+### Next recommended step
+
+Browser-check the Library sort behavior:
+- load the Library with empty/cleared site storage and confirm it defaults to `Recent`
+- switch to `A-Z`, refresh, and confirm it stays `A-Z`
+- switch to `Custom`, refresh, and confirm it stays `Custom`
+- switch back to `Recent`, close the tab/browser, reopen later, and confirm it still opens as `Recent`
+
+### Risks or warnings
+
+- This session verified the change with TypeScript compile only, not a browser interaction pass.
+- If the browser or an extension clears site storage between sessions, the saved choice will still be lost, but the fallback is now `Recent` instead of `Custom`.
+
+---
 ## 2026-05-01 - Incomplete setup resume fix and draft-card delete confirmation alignment
 
 ### Current branch

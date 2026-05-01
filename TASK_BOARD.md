@@ -71,6 +71,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Consider adding an `AGENTS.md` or `CONTRIBUTING.md` if agents need stricter operating rules.
 
 ## Done
+- Hardened Library sort persistence so it initializes from browser storage with a `Recent` fallback instead of defaulting through `Custom`.
 - Fixed incomplete guided setup resume drift by persisting the guided flow sub-step alongside the saved guided draft.
 - Normalized the Library incomplete-setup delete confirmation to match the regular project-card confirmation treatment more closely.
 - Added full-app dark mode regression pass test case to `TESTING.md`.

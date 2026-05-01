@@ -213,6 +213,7 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 |---|---|---|---|---|
 | Full-app dark mode regression pass | Not tested | - | - | User has seen dark mode anomalies. Audit the entire app in dark/Midnight mode, including library, auth, settings, project shell, editor, AI panels, help, import/export, collaboration/feedback, modals, empty states, hover/focus states, and mobile/tablet layouts. |
 | Screenplay visual references panel | Passed | User | 2026-04-29 | User manually verified labels, attach/remove flow, and refresh persistence for screenplay visual references. |
+| Library sort persistence and default | Needs retest | AI agent | 2026-05-01 | `ProjectGrid.tsx` now initializes sort from `localStorage` with a `recent` fallback instead of booting through `custom`. Browser validation is still needed for fresh storage, refresh persistence, and reopening later. |
 | Book/prose inline illustration regression | Passed | User | 2026-04-29 | User manually verified prose/book Insert Illustration and Gallery behavior remain unchanged. |
 | Library cloud sync help flow | Passed | AI agent | 2026-04-27 | Verified library guidance opens `/help` with clear cloud sync instructions and nav Help Center remains reachable. |
 | Tablet portrait layout | Not tested | - | - | Confirm important views do not cut off. |
