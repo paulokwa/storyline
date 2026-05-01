@@ -172,7 +172,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     title: 'Where are keyboard shortcuts?',
     summary: 'Quickly access keyboard shortcuts and navigation help.',
     answer:
-      'Press ? while not typing to open the shortcuts panel. The panel lists navigation keys, editor tools, and other quick commands to speed up your workflow.',
+      'Inside a project, choose Open keyboard shortcuts from Help, or press Shift + / while focus is outside a text field. The shortcuts panel lists navigation keys, editor tools, and other quick commands to speed up your workflow.',
     keywords: ['shortcuts', 'keyboard', 'hotkeys', 'commands'],
     relatedRoutes: [],
     sampleQuestions: ['How do I see keyboard shortcuts?', 'What hotkeys are available?', 'How do I navigate quickly?']

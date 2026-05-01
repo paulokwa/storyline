@@ -201,6 +201,7 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 | Main tour launches correctly | Not tested | - | - | Confirm it does not conflict with other tours. |
 | AI tour launches correctly | Not tested | - | - | Confirm it does not overlap main tour. |
 | Help page covers current features | Not tested | - | - | Confirm coverage against real app features. |
+| Project Help shortcuts access | Needs retest | AI agent | 2026-05-01 | Added direct `Open keyboard shortcuts` actions in `/project/[id]/help`, clarified `Shift + /` copy, and routed those actions to the existing shortcuts modal. Browser validation is still needed for both the button flow and the keyboard trigger. |
 | Help Center Midnight and scanability polish | Needs retest | AI agent | 2026-05-01 | Shared `HelpTab` and scoped `globals.css` Midnight overrides landed. Browser validation is still needed for `/help` and `/project/[id]/help` in Sanctuary/Midnight, search states, tablet/mobile layout, and the tour CTA. |
 | User-facing AI setup instructions | Not tested | - | - | Confirm non-technical users can follow them. |
 | Mobile tour performance | Not tested | - | - | Cover section may be too slow; check asset sizes. |
@@ -245,6 +246,7 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 Newest confirmations go at the top.
 
 | 2026-04-30 | AI agent | TypeScript compile after project-open 404 layout fix | Passed | `npx tsc --noEmit --pretty false` passed after changing the project layout loader to avoid 404s caused by missing owner `project_members` rows. |
+| 2026-05-01 | AI agent | Help shortcuts access compile and focused lint | Passed | `npx tsc --noEmit --pretty false` passed after wiring project Help into the shortcuts modal, and focused `npx eslint` passed for `components/project/help/HelpTab.tsx`, `lib/help.ts`, and `lib/project/shortcuts.ts`. |
 | 2026-04-30 | AI agent | TypeScript compile after library back-refresh fix | Passed | `npx tsc --noEmit --pretty false` passed after adding a library-return refresh flag so `Recent` order can re-fetch after opening a project card and returning. |
 | 2026-05-01 | AI agent | Focused auth hardening compile and lint | Passed | `npx tsc --noEmit --pretty false` and focused `npx eslint` passed after adding guarded auth redirects and the shared client helper. |
 | 2026-05-01 | AI agent | Account Settings polish compile and lint | Passed | `npx tsc --noEmit --pretty false` and `npx eslint components/app/SettingsView.tsx` passed after the presentation-only Sanctuary polish pass for Account Settings. |

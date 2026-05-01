@@ -83,6 +83,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import OnboardingTour from './OnboardingTour'
 import { queueAiTourStart } from '@/lib/ai/tour'
 import { WORKSPACE_TOUR_PENDING_KEY } from '@/lib/project/tour'
+import { OPEN_SHORTCUTS_EVENT } from '@/lib/project/shortcuts'
 
 type Project = Database['public']['Tables']['projects']['Row']
 type ProjectOwner = {
@@ -192,6 +193,13 @@ export default function ProjectShell({
 
         return () => clearTimeout(timer)
     }, [pathname])
+
+    useEffect(() => {
+        const handleOpenShortcuts = () => setShortcutsOpen(true)
+
+        window.addEventListener(OPEN_SHORTCUTS_EVENT, handleOpenShortcuts)
+        return () => window.removeEventListener(OPEN_SHORTCUTS_EVENT, handleOpenShortcuts)
+    }, [])
 
     useEffect(() => {
         if (!isLocalOnly) return
@@ -684,11 +692,19 @@ function ProjectShellInner({
     const { speak, speechState } = useSpeech()
     const isReading = speechState === 'speaking'
 
-    // Global shortcut for help
+    // Global shortcut for the shortcuts panel
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === '?' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName) && !(e.target as HTMLElement).isContentEditable) {
-                setShortcutsOpen(true)
+            const target = e.target as HTMLElement | null
+            const isTypingTarget = !!target && (
+                ['INPUT', 'TEXTAREA'].includes(target.tagName) ||
+                target.isContentEditable
+            )
+            const isShortcutKey = e.key === '?' || (e.key === '/' && e.shiftKey)
+
+            if (isShortcutKey && !isTypingTarget) {
+                e.preventDefault()
+                setShortcutsOpen((open: boolean) => !open)
             }
         }
         window.addEventListener('keydown', handleKeyDown)
@@ -1053,7 +1069,6 @@ function ProjectShellInner({
             </div>
             
             </div>
-            <ShortcutsLegend open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
         </TooltipProvider>
     )
 }

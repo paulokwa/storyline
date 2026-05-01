@@ -37,6 +37,8 @@ npx skills add pbakaus/impeccable
   - search default, matched, and no-results states
   - tablet and narrow/mobile layout
   - confirm tour CTA behavior remains unchanged
+  - confirm project `Open keyboard shortcuts` actions open the shortcuts modal
+  - confirm `Shift + /` opens the modal only while focus is outside text inputs/editors
 
 
 ## Later
@@ -72,6 +74,11 @@ npx skills add pbakaus/impeccable
 - Consider adding an `AGENTS.md` or `CONTRIBUTING.md` if agents need stricter operating rules.
 
 ## Done
+- Hardened project Help shortcuts access:
+  - added direct `Open keyboard shortcuts` actions in `/project/[id]/help`
+  - clarified shortcuts guidance to use `Shift + /` wording and the non-typing requirement
+  - wired project Help into the existing shortcuts modal with shared client-side event dispatch
+  - removed the duplicate in-tree shortcuts modal render from `ProjectShell`
 - Minimal Help Center Midnight + scanability polish:
   - added a shared Help root class so `/help` and `/project/[id]/help` use the same scoped Help surface styling
   - replaced hardcoded light Help surfaces with Sanctuary-compatible classes and added Help-specific Midnight selectors

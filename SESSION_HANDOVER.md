@@ -5,6 +5,45 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-01 - Project Help shortcuts access fix
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Investigated the reported mismatch between Help guidance and the actual keyboard-shortcuts access path.
+- Confirmed there was no direct project-Help action to open the shortcuts modal, only a Help Center search/filter path.
+- Added a shared project-scoped shortcuts-open event so project Help can open the existing modal directly.
+- Updated `components/project/help/HelpTab.tsx` so project Help now offers visible `Open keyboard shortcuts` actions near search, inside the shortcuts topic card, and in the quick links area.
+- Clarified the user-facing shortcuts guidance to say `Shift + /` and to explain that focus must be outside a text field.
+- Tightened the keyboard handler in `components/project/ProjectShell.tsx` so the shortcuts modal toggles from either `?` or `Shift + /` when the user is not typing.
+- Removed the duplicate in-tree `ShortcutsLegend` render, leaving the single outer modal instance as the source of truth.
+- Verified the change with:
+  - `npx tsc --noEmit --pretty false`
+  - `npx eslint components/project/help/HelpTab.tsx lib/help.ts lib/project/shortcuts.ts`
+
+### Current status
+
+Project Help now has an explicit, clickable path to the shortcuts modal instead of only showing search results about shortcuts. The keyboard copy is clearer, and the project shell no longer mounts the shortcuts dialog twice.
+
+### Next recommended step
+
+Run a browser check on project Help and the shortcuts modal:
+- open `/project/[id]/help`
+- click `Open keyboard shortcuts` from the search helper row
+- click `Open keyboard shortcuts` from the quick links area
+- confirm the shortcuts topic card button opens the same modal
+- confirm `Shift + /` opens and closes the modal while focus is outside a text field
+- confirm typing `?` inside editor/search fields does not hijack text entry
+
+### Risks or warnings
+
+- `components/project/ProjectShell.tsx` still has pre-existing lint debt unrelated to this fix, so the focused lint verification was scoped to the newly added Help/helper code paths.
+- This session verified compile plus focused lint, not a live browser interaction pass for the shortcuts modal.
+
+---
 ## 2026-05-01 - Help Center Midnight and scanability polish
 
 ### Current branch

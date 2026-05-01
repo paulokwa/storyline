@@ -9,9 +9,21 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { HELP_TOPICS, matchHelpTopics, type HelpTopic } from '@/lib/help'
 import { queueWorkspaceTourStart } from '@/lib/project/tour'
+import { requestOpenShortcuts } from '@/lib/project/shortcuts'
 
-function HelpTopicCard({ topic, projectId, mode }: { topic: HelpTopic; projectId: string; mode: 'project' | 'global' }) {
+function HelpTopicCard({
+  topic,
+  projectId,
+  mode,
+  onOpenShortcuts,
+}: {
+  topic: HelpTopic
+  projectId: string
+  mode: 'project' | 'global'
+  onOpenShortcuts?: () => void
+}) {
   const hasProjectRoute = mode === 'project' && projectId && topic.relatedRoutes.length > 0
+  const canOpenShortcuts = mode === 'project' && topic.id === 'shortcuts' && !!onOpenShortcuts
 
   return (
     <div className="rounded-[2rem] border border-slate-200/70 bg-white p-5 shadow-sm sm:p-6">
@@ -27,6 +39,14 @@ function HelpTopicCard({ topic, projectId, mode }: { topic: HelpTopic; projectId
           >
             Open
           </Link>
+        ) : canOpenShortcuts ? (
+          <button
+            type="button"
+            onClick={onOpenShortcuts}
+            className="shrink-0 rounded-full border border-slate-200 bg-slate-50/80 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-white"
+          >
+            Open shortcuts
+          </button>
         ) : null}
       </div>
       <div className="mt-5 whitespace-pre-line text-[15px] leading-7 text-slate-700">{topic.answer}</div>
@@ -55,6 +75,13 @@ export default function HelpTab({ mode = 'project' }: { mode?: 'project' | 'glob
 
     queueWorkspaceTourStart()
     router.push(`/project/${projectId}/story`)
+  }
+
+  const handleOpenShortcuts = () => {
+    if (mode !== 'project' || !projectId) return
+
+    setQueryOverride('keyboard shortcuts')
+    requestOpenShortcuts()
   }
 
   return (
@@ -96,6 +123,18 @@ export default function HelpTab({ mode = 'project' }: { mode?: 'project' | 'glob
                   placeholder={mode === 'project' ? "Ask a question, like 'How do I add a character?'" : "Ask a question, like 'How do I enable cloud sync?'"}
                   className="mt-3 h-10 max-w-2xl border-slate-200 bg-white text-sm shadow-sm placeholder:text-slate-400 focus-visible:border-slate-300 focus-visible:ring-primary/20"
                 />
+                {mode === 'project' ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                    <button
+                      type="button"
+                      onClick={handleOpenShortcuts}
+                      className="rounded-full border border-slate-200 bg-white px-3 py-1 font-medium text-slate-800 transition hover:bg-slate-100"
+                    >
+                      Open keyboard shortcuts
+                    </button>
+                    <p>Or press Shift + / while focus is outside a text field.</p>
+                  </div>
+                ) : null}
               </div>
             </div>
 
@@ -145,7 +184,13 @@ export default function HelpTab({ mode = 'project' }: { mode?: 'project' | 'glob
             ) : null}
 
             {results.map((topic) => (
-              <HelpTopicCard key={topic.id} topic={topic} projectId={projectId} mode={mode} />
+              <HelpTopicCard
+                key={topic.id}
+                topic={topic}
+                projectId={projectId}
+                mode={mode}
+                onOpenShortcuts={mode === 'project' ? handleOpenShortcuts : undefined}
+              />
             ))}
           </div>
 
@@ -186,10 +231,10 @@ export default function HelpTab({ mode = 'project' }: { mode?: 'project' | 'glob
                 )}
                 <button
                   type="button"
-                  onClick={() => setQueryOverride(mode === 'project' ? 'keyboard shortcuts' : 'cloud sync')}
+                  onClick={mode === 'project' ? handleOpenShortcuts : () => setQueryOverride('cloud sync')}
                   className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-left text-sm font-medium text-slate-800 shadow-sm transition hover:bg-white"
                 >
-                  {mode === 'project' ? 'Keyboard shortcuts' : 'Cloud sync guide'}
+                  {mode === 'project' ? 'Open keyboard shortcuts' : 'Cloud sync guide'}
                 </button>
               </div>
             </div>
