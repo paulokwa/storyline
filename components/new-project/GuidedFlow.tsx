@@ -30,6 +30,11 @@ interface GuidedFlowProps {
     isAiEnabled?: boolean
 }
 
+interface GuidedDraftPayload {
+    data: GuidedData
+    stepIndex?: number
+}
+
 type GuidedStep = 'title' | 'premise' | 'tone' | 'character' | 'setting' | 'first_idea' | 'identity'
 
 const STEPS: GuidedStep[] = ['premise', 'tone', 'character', 'setting', 'first_idea', 'identity']
@@ -71,14 +76,34 @@ export default function GuidedFlow({
     onDataChange,
     isAiEnabled = false,
 }: GuidedFlowProps) {
-    const [stepIndex, setStepIndex] = useState(0)
+    const [stepIndex, setStepIndex] = useState(() => {
+        if (typeof window === 'undefined') return 0
+
+        const saved = localStorage.getItem('storyline-guided-data-draft')
+        if (!saved) return 0
+
+        try {
+            const parsed = JSON.parse(saved) as GuidedDraftPayload | GuidedData
+            if (!parsed || typeof parsed !== 'object') return 0
+            const savedStepIndex = (parsed as GuidedDraftPayload).stepIndex ?? 0
+
+            return Math.min(Math.max(savedStepIndex, 0), STEPS.length - 1)
+        } catch (e) {
+            console.error("Failed to load guided draft step", e)
+            return 0
+        }
+    })
     const [coverFile, setCoverFile] = useState<File | null>(null)
     const [data, setData] = useState<GuidedData>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('storyline-guided-data-draft')
             if (saved) {
                 try {
-                    return JSON.parse(saved)
+                    const parsed = JSON.parse(saved) as GuidedDraftPayload | GuidedData
+                    if (parsed && typeof parsed === 'object' && 'data' in parsed && parsed.data) {
+                        return parsed.data
+                    }
+                    return parsed as GuidedData
                 } catch (e) {
                     console.error("Failed to load guided draft", e)
                 }
@@ -96,9 +121,9 @@ export default function GuidedFlow({
     })
 
     useEffect(() => {
-        localStorage.setItem('storyline-guided-data-draft', JSON.stringify(data))
+        localStorage.setItem('storyline-guided-data-draft', JSON.stringify({ data, stepIndex }))
         onDataChange?.(data)
-    }, [data, onDataChange])
+    }, [data, onDataChange, stepIndex])
 
     const step = STEPS[stepIndex]
     const isScriptProject = projectType === 'tv_script'

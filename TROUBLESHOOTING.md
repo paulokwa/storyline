@@ -221,6 +221,31 @@ Add a short entry using this format:
 - Risks, warnings, or follow-up
 ```
 
+## Issue: Incomplete guided setup resumes at the wrong step
+
+### Symptoms
+
+- The Library shows `Resume your setup` for an unfinished project draft.
+- Opening the draft returns to the guided setup flow, but the user is sent back to the first guided prompt instead of the last completed step.
+
+### Cause
+
+- The `/new` page persisted the outer setup step, but `GuidedFlow.tsx` did not persist its internal `stepIndex`.
+- Guided draft data and guided draft position could drift because only the form fields were stored in `storyline-guided-data-draft`.
+
+### Fix
+
+- Persist both the guided draft data and the guided `stepIndex` in `storyline-guided-data-draft`.
+- Keep backward compatibility with older saved drafts that only stored the data object.
+
+### Verification
+
+- `npx tsc --noEmit --pretty false`
+
+### Notes
+
+- Browser validation is still needed for a real incomplete guided draft, especially resuming from later steps like `World & Locations`, `Vision`, and `Identity`.
+
 ## Issue: Next.js dev server listens but auth pages hang or never finish loading
 
 ### Symptoms

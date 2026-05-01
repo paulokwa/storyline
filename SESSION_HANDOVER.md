@@ -5,6 +5,40 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-01 - Incomplete setup resume fix and draft-card delete confirmation alignment
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Investigated the Library `Resume your setup` card and confirmed the draft card used a separate delete-confirmation UI from regular project cards.
+- Traced the incomplete setup resume path to the `/new` guided flow and confirmed the outer draft step was persisted, but the guided sub-step was not.
+- Updated `components/new-project/GuidedFlow.tsx` to persist and restore both guided draft data and the guided `stepIndex`, while remaining compatible with older localStorage drafts.
+- Updated the incomplete setup delete confirmation in `components/library/ProjectGrid.tsx` to match the darker, cleaner project-card confirmation pattern more closely.
+- Added a troubleshooting entry for the guided-resume mismatch.
+- Verified the change with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+Incomplete guided project setup should now resume at the exact guided step where the draft was left, and the draft-card delete confirmation no longer uses the older lighter treatment.
+
+### Next recommended step
+
+Run a browser validation pass:
+- create or resume an incomplete guided setup draft
+- leave the flow on later guided steps such as `World & Locations`, `Vision`, or `Identity`
+- return to the Library and click `Resume`
+- confirm the flow reopens on the exact same guided step with entered data intact
+- confirm the draft-card delete confirmation now matches the regular project-card style visually on desktop and tablet widths
+
+### Risks or warnings
+
+- This session verified the fix with TypeScript compile only, not a live browser interaction pass.
+- Existing older drafts should still load because the guided draft reader accepts both the old plain-data shape and the new `{ data, stepIndex }` shape.
+
+---
 ## 2026-05-01 - Added dark mode regression pass to Testing Tracker
 
 ### Current branch

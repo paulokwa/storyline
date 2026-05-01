@@ -427,35 +427,28 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                                                                 {confirmDeleteDraft ? (
                                                                     <div
                                                                         onClick={e => e.preventDefault()}
-                                                                        className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 animate-in fade-in slide-in-from-right-2 duration-200 bg-white/80 dark:bg-black/40 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-black/5 dark:border-white/10 shadow-sm"
+                                                                        className="flex min-w-[140px] items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in duration-200 dark:border-slate-800 dark:bg-slate-900/95 sm:min-w-[160px]"
                                                                     >
-                                                                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mr-0.5">
-                                                                            Delete?
-                                                                        </span>
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="sm"
-                                                                            className="h-7 px-2 text-[10px] text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
+                                                                        <button
                                                                             onClick={e => {
                                                                                 e.preventDefault()
                                                                                 e.stopPropagation()
                                                                                 setConfirmDeleteDraft(false)
                                                                             }}
+                                                                            className="rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 transition-colors hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
                                                                         >
                                                                             Cancel
-                                                                        </Button>
-                                                                        <Button
-                                                                            variant="destructive"
-                                                                            size="sm"
-                                                                            className="h-7 px-3 text-[10px] bg-red-500 hover:bg-red-600 text-white rounded-lg shadow-sm font-bold transition-all active:scale-95"
+                                                                        </button>
+                                                                        <button
                                                                             onClick={e => {
                                                                                 e.preventDefault()
                                                                                 e.stopPropagation()
                                                                                 clearDraft()
                                                                             }}
+                                                                            className="rounded-lg bg-red-500 px-4 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-md transition-all hover:bg-red-600 active:scale-95"
                                                                         >
                                                                             Delete
-                                                                        </Button>
+                                                                        </button>
                                                                     </div>
                                                                 ) : (
                                                                     <button

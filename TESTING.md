@@ -105,6 +105,7 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 |---|---|---|---|---|
 | Create a new project | Not tested | - | - | Confirm full project scaffolding works. |
 | Open an existing project | Not tested | - | - | Confirm project loads without missing data. |
+| Resume incomplete guided setup draft | Needs retest | AI agent | 2026-05-01 | `GuidedFlow.tsx` now persists `stepIndex` with `storyline-guided-data-draft`. Browser validation is still needed to confirm the Library `Resume your setup` card restores the exact guided sub-step and entered data. |
 | Rename project metadata | Not tested | - | - | Confirm title/metadata saves and persists. |
 | Local/cloud mode feature boundaries | Not tested | - | - | Confirm local features work, cloud-only features are hidden or explained, and cloud projects are not stuck in local-mode wording. |
 | Cloud project open messaging | Not tested | - | - | Confirm opening a cloud project does not flash local project messaging. |
