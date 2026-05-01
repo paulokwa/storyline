@@ -5,6 +5,48 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-01 - Account Settings Sanctuary polish pass
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Applied a presentation-only polish pass to `components/app/SettingsView.tsx` for the Account Settings screen.
+- Reordered the screen so the visible flow is now `Profile / Security`, then `Appearance`, then `AI Partner Settings`.
+- Split the account area into clearer visual subsections for profile, email, password, and danger-zone actions without changing any existing handlers or account logic.
+- Reduced AI-section dominance by rewriting technical copy into plain user-facing language and shifting selected states away from indigo-heavy styling toward calmer Sanctuary-adjacent emphasis.
+- Improved helper-text readability for trust-sensitive copy around passwords, deletion, AI keys, local Ollama setup, and trial limits.
+- Removed the glassy `Appearance` card treatment in favor of a flatter Sanctuary card style.
+- Tightened mobile stacking in the settings header, AI status/action rows, and delete-confirm controls.
+- Cleaned up local typing in `SettingsView.tsx` so the file now passes focused linting again.
+- Verified the touched file with:
+  - `npx tsc --noEmit --pretty false`
+  - `npx eslint components/app/SettingsView.tsx`
+
+### Current status
+
+The Account Settings screen now reads more like a calm account surface and less like an AI-first control panel, while keeping all existing auth, billing, deletion, Supabase, and AI-setting behavior intact.
+
+### Next recommended step
+
+Run a signed-in browser verification pass on `/settings`:
+- desktop hierarchy check
+- mobile/narrow viewport stacking
+- midnight theme
+- AI-off and no-key states
+- limited-trial state if available
+- email, password, and delete-account flows
+
+After that, return to the previously deferred live auth-flow submission checks if they are still pending.
+
+### Risks or warnings
+
+- This session verified compile and lint only, not a full signed-in browser pass of the settings states.
+- The settings page still uses top-level success/error banners; section-local feedback placement remains follow-up work, not part of this pass.
+
+---
 ## 2026-05-01 - Dev-origin and auth navigation hardening
 
 ### Current branch

@@ -214,6 +214,7 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 | Tablet portrait layout | Not tested | - | - | Confirm important views do not cut off. |
 | Mobile/narrow screen layout | Not tested | - | - | Confirm core flows remain usable. |
 | Desktop layout | Not tested | - | - | Confirm normal working layout. |
+| Account Settings hierarchy and mobile polish | Needs retest | AI agent | 2026-05-01 | Presentation-only `SettingsView` polish landed. Signed-in desktop/mobile/midnight, AI-off/no-key, limited-trial, and danger-zone browser checks are still needed. |
 | Font/readability audit | Needs retest | - | - | Focused AI Partner pass landed: footer warning removed, preview note moved to first-use context preview, and low-contrast helper text was darkened. Browser validation is still needed. |
 | Screenplay editor width on mobile | Not tested | - | - | Editor becomes narrow after typing. |
 | Swipe/tap sidebar close behavior | Not tested | - | - | Compare swipe vs tap-outside UX. |
@@ -245,6 +246,7 @@ Newest confirmations go at the top.
 | 2026-04-30 | AI agent | TypeScript compile after project-open 404 layout fix | Passed | `npx tsc --noEmit --pretty false` passed after changing the project layout loader to avoid 404s caused by missing owner `project_members` rows. |
 | 2026-04-30 | AI agent | TypeScript compile after library back-refresh fix | Passed | `npx tsc --noEmit --pretty false` passed after adding a library-return refresh flag so `Recent` order can re-fetch after opening a project card and returning. |
 | 2026-05-01 | AI agent | Focused auth hardening compile and lint | Passed | `npx tsc --noEmit --pretty false` and focused `npx eslint` passed after adding guarded auth redirects and the shared client helper. |
+| 2026-05-01 | AI agent | Account Settings polish compile and lint | Passed | `npx tsc --noEmit --pretty false` and `npx eslint components/app/SettingsView.tsx` passed after the presentation-only Sanctuary polish pass for Account Settings. |
 | 2026-04-26 | User | Solo project collaborator header empty state | Passed | User confirmed the empty collaborator pill/blip no longer appears on solo projects. |
 | 2026-04-26 | User | Prose scene gallery wording | Passed | User confirmed the wording cleanup is resolved. |
 | 2026-04-29 | User | AI-disabled scene analyzer feedback | Passed | User manually verified analyzer-specific AI-off feedback in the browser. |

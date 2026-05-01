@@ -25,8 +25,12 @@ npx skills add pbakaus/impeccable
 
 ## Next
 
-
-
+- Manual signed-in regression pass for Account Settings polish:
+  - desktop hierarchy
+  - mobile/narrow viewport stacking
+  - midnight theme
+  - AI-off, no-key, and limited-trial states
+  - existing email/password/delete flows
 
 
 ## Later
@@ -62,6 +66,13 @@ npx skills add pbakaus/impeccable
 - Consider adding an `AGENTS.md` or `CONTRIBUTING.md` if agents need stricter operating rules.
 
 ## Done
+- Minimal Account Settings Sanctuary polish pass:
+  - reordered Settings to `Profile / Security`, `Appearance`, then `AI Partner Settings`
+  - separated profile, email, password, and danger-zone areas into clearer visual sections
+  - reduced AI-section dominance with calmer Sanctuary styling and plain-language copy
+  - improved trust-sensitive helper text readability
+  - replaced the glassy Appearance card treatment with a flatter Sanctuary surface
+  - improved narrow-screen stacking for the header, AI rows, and delete confirmation controls
 - Hardened Next 16 local dev-origin and auth navigation reliability:
   - added `127.0.0.1` to `allowedDevOrigins` while keeping the existing LAN origin
   - added guarded client-side auth redirects for login, signup, and reset-password so those pages surface a clear fallback message instead of spinning forever when navigation never leaves the current route
