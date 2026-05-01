@@ -71,6 +71,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Consider adding an `AGENTS.md` or `CONTRIBUTING.md` if agents need stricter operating rules.
 
 ## Done
+- Added full-app dark mode regression pass test case to `TESTING.md`.
 - Hardened project Help shortcuts access:
   - added direct `Open keyboard shortcuts` actions in `/project/[id]/help`
   - clarified shortcuts guidance to use `Shift + /` wording and the non-typing requirement

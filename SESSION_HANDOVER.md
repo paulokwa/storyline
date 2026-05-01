@@ -5,6 +5,31 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-01 - Added dark mode regression pass to Testing Tracker
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Added a comprehensive `Full-app dark mode regression pass` test case to `TESTING.md` under the `UI / Device / Accessibility` section.
+- The test case covers auditing the entire app in Midnight mode across various components (library, auth, settings, editor, etc.) and layouts (mobile/tablet).
+
+### Current status
+
+`TESTING.md` now explicitly tracks the need for a full-app dark mode audit following reported anomalies.
+
+### Next recommended step
+
+- Perform the manual dark mode regression pass as defined in the new test case.
+- Investigate and fix any dark mode anomalies found during the audit.
+
+### Risks or warnings
+
+- None.
+
+---
 ## 2026-05-01 - Project Help shortcuts access fix
 
 ### Current branch
