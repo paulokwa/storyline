@@ -23,6 +23,30 @@ If you are capable of doing something yourself inside the workspace, do it. Do n
 
 ---
 
+## Mandatory Startup Rule
+
+At the start of every new session, before planning, coding, editing, or answering project-specific implementation questions, read `MASTER_BRIEF.md` first.
+
+Treat `MASTER_BRIEF.md` as the source of truth for product direction, locked decisions, architecture constraints, terminology, current phase, open questions, and handoff discipline.
+
+Do not rely on memory, prior chat context, or assumptions if `MASTER_BRIEF.md` is available in the workspace.
+
+If `MASTER_BRIEF.md` conflicts with another instruction file, pause and state the conflict before changing code. Do not silently choose a direction.
+
+When reporting your plan or final answer, explicitly state whether your work changes an approved recommendation:
+
+- `NO CHANGE TO RECOMMENDATION` when the work follows the existing Master Brief direction.
+- `CHANGE DETECTED` when the work would alter an approved recommendation, locked plan, architecture direction, terminology decision, or workflow rule.
+
+If `CHANGE DETECTED`, include:
+
+1. What changed
+2. Why it changed
+3. Old recommendation
+4. New recommendation
+
+---
+
 ## Core Rule
 
 Do not make guesses. Diagnose first.
@@ -41,15 +65,17 @@ Treat the app as a production-bound creative writing tool. Avoid broad rewrites 
 
 ## Required Reference Files
 
-Before planning or changing the project, read:
+Before planning or changing the project, read these files in this order:
 
-- `MASTER_BRIEF.md`
-- `AGENTS.md`
-- `TROUBLESHOOTING.md`
-- `DECISION_LOG.md`
-- `SESSION_HANDOVER.md`
-- `TASK_BOARD.md`
-- `TESTING.md`
+1. `MASTER_BRIEF.md`
+2. `AGENTS.md`
+3. `TROUBLESHOOTING.md`
+4. `DECISION_LOG.md`
+5. `SESSION_HANDOVER.md`
+6. `TASK_BOARD.md`
+7. `TESTING.md`
+
+For small, isolated implementation tasks, still read `MASTER_BRIEF.md` first, then inspect only the additional files needed for the task.
 
 If debugging a failure, always check `TROUBLESHOOTING.md` before inventing a new fix.
 
