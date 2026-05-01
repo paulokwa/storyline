@@ -20,9 +20,6 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Check and fix export issues, starting with PDF, then verify the other export formats as well, especially screenplay-mode output errors.
 
 
-
-npx skills add pbakaus/impeccable
-
 ## Next
 
 - Manual signed-in regression pass for Account Settings polish:
