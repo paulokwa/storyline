@@ -63,7 +63,7 @@ function LinkActionDropdown({
             <DropdownMenuTrigger
                 disabled={isDisabled}
                 className={cn(
-                    "inline-flex shrink-0 items-center gap-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider text-slate-400 outline-none transition-colors disabled:pointer-events-none disabled:opacity-50",
+                    "inline-flex shrink-0 items-center gap-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider text-[#a8a9a2] outline-none transition-colors disabled:pointer-events-none disabled:opacity-50",
                     hoverClassName
                 )}
             >
@@ -74,7 +74,7 @@ function LinkActionDropdown({
                 align="start"
                 side="bottom"
                 sideOffset={8}
-                className="w-56 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-[0_12px_32px_rgba(15,23,42,0.12)]"
+                className="w-56 rounded-2xl border border-[#e4e2da] bg-white p-1.5 shadow-[0_12px_32px_rgba(49,51,47,0.12)]"
             >
                 <div className="max-h-64 overflow-y-auto">
                     {items.map((item) => (
@@ -85,7 +85,7 @@ function LinkActionDropdown({
                                 onSelect(item.id)
                                 onOpenChange(false)
                             }}
-                            className="flex w-full items-center rounded-xl px-3 py-2 text-left text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+                            className="flex w-full items-center rounded-xl px-3 py-2 text-left text-xs font-medium text-[#5e605b] transition-colors hover:bg-[#fbf9f5] hover:text-[#31332f]"
                         >
                             <span className="truncate">{item.label}</span>
                         </button>
@@ -275,7 +275,7 @@ export default function LinkedContext({
             )}
 
             <div className="flex min-w-0 items-start gap-3 pl-1">
-                <div className="flex shrink-0 items-center gap-2 pt-1 text-[9px] uppercase tracking-widest text-slate-400 font-bold">
+                <div className="flex shrink-0 items-center gap-2 pt-1 text-[9px] uppercase tracking-widest text-[#a8a9a2] font-bold">
                     <span>AI Ready</span>
                 </div>
 
@@ -299,7 +299,7 @@ export default function LinkedContext({
                             key={char.id} 
                             className={cn(
                                 "flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all select-none", 
-                                isActive ? "bg-[#546354]/10 text-[#546354] border-transparent" : "bg-white text-slate-300 border-slate-100 grayscale opacity-60"
+                                isActive ? "bg-[#546354]/10 text-[#546354] border-transparent" : "bg-[#fbf9f5] text-[#ccc9c0] border-[#e4e2da] grayscale opacity-60"
                             )}
                         >
                             <input
@@ -329,7 +329,7 @@ export default function LinkedContext({
                             key={idea.id} 
                             className={cn(
                                 "flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all select-none", 
-                                isActive ? "bg-indigo-50 text-indigo-700 border-indigo-100" : "bg-white text-slate-300 border-slate-100 grayscale opacity-60"
+                                isActive ? "bg-indigo-50 text-indigo-700 border-indigo-100" : "bg-[#fbf9f5] text-[#ccc9c0] border-[#e4e2da] grayscale opacity-60"
                             )}
                         >
                             <input
@@ -357,7 +357,7 @@ export default function LinkedContext({
                             key={loc.id} 
                             className={cn(
                                 "flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all select-none", 
-                                isActive ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-white text-slate-300 border-slate-100 grayscale opacity-60"
+                                isActive ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-[#fbf9f5] text-[#ccc9c0] border-[#e4e2da] grayscale opacity-60"
                             )}
                         >
                             <input
@@ -385,7 +385,7 @@ export default function LinkedContext({
                             key={obj.id} 
                             className={cn(
                                 "flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all select-none", 
-                                isActive ? "bg-blue-50 text-blue-700 border-blue-100" : "bg-white text-slate-300 border-slate-100 grayscale opacity-60"
+                                isActive ? "bg-blue-50 text-blue-700 border-blue-100" : "bg-[#fbf9f5] text-[#ccc9c0] border-[#e4e2da] grayscale opacity-60"
                             )}
                         >
                             <input
@@ -445,7 +445,7 @@ export default function LinkedContext({
 
                         {!hasLinkedContext && (
                             <div className="flex min-w-0 items-center">
-                                <div className="relative -top-[0.40625rem] inline-block text-[11px] text-slate-300 italic leading-none">No linked items ready for AI analysis</div>
+                                <div className="relative -top-[0.40625rem] inline-block text-[11px] text-[#ccc9c0] italic leading-none">No linked items ready for AI analysis</div>
                             </div>
                         )}
                     </div>

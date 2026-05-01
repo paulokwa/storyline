@@ -810,10 +810,10 @@ export default function CommentsPanel({
             <div className="comments-header shrink-0 border-b border-[#ddd8ce] bg-[linear-gradient(180deg,rgba(251,249,245,0.96)_0%,rgba(245,244,239,0.92)_100%)] px-4 py-2 backdrop-blur-sm md:px-6 md:pt-2.5 md:pb-2">
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-8 h-8 rounded-xl bg-white/50 border border-[#ddd8ce] flex items-center justify-center text-slate-600 shadow-sm">
+                        <div className="w-8 h-8 rounded-xl bg-white/50 border border-[#ddd8ce] flex items-center justify-center text-[#5e605b] shadow-sm">
                             <MessageCircle className="w-4 h-4" />
                         </div>
-                        <h2 className="text-sm font-serif font-bold italic tracking-tight text-slate-800">Feedback</h2>
+                        <h2 className="text-sm font-serif font-bold italic tracking-tight text-[#31332f]">Feedback</h2>
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
@@ -828,7 +828,7 @@ export default function CommentsPanel({
                                             "h-8 w-8 rounded-xl transition-all",
                                             filterByNode 
                                                 ? "bg-indigo-50 text-indigo-600 shadow-sm ring-1 ring-indigo-100" 
-                                                : "text-slate-400 hover:bg-white/80 hover:text-indigo-500"
+                                                : "text-[#a8a9a2] hover:bg-white/80 hover:text-indigo-500"
                                         )}
                                     >
                                         {filterByNode ? <Filter className="w-4 h-4" /> : <FilterX className="w-4 h-4" />}
@@ -849,7 +849,7 @@ export default function CommentsPanel({
                                             "h-8 w-8 rounded-xl transition-all",
                                             showResolved 
                                                 ? "bg-emerald-50 text-emerald-600 shadow-sm ring-1 ring-emerald-100" 
-                                                : "text-slate-400 hover:bg-white/80 hover:text-emerald-500"
+                                                : "text-[#a8a9a2] hover:bg-white/80 hover:text-emerald-500"
                                         )}
                                     >
                                         <CheckCircle2 className="w-4 h-4" />
@@ -859,12 +859,12 @@ export default function CommentsPanel({
                             </Tooltip>
                         </TooltipProvider>
 
-                        <div className="h-5 w-px bg-slate-200/60 mx-1" />
+                        <div className="h-5 w-px bg-[#e4e2da]/60 mx-1" />
 
                         <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="h-8 w-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                            className="h-8 w-8 rounded-lg text-[#a8a9a2] hover:text-[#5e605b] hover:bg-[#fbf9f5]"
                             onClick={onClose}
                         >
                             <X className="w-4 h-4" />
@@ -884,7 +884,7 @@ export default function CommentsPanel({
                                     "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors",
                                     authorFilter === 'new'
                                         ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 ring-2 ring-indigo-50/50"
-                                        : "bg-white/60 text-slate-500 border border-slate-200/50 hover:bg-white hover:text-indigo-600 hover:border-indigo-100"
+                                        : "bg-white/60 text-[#a8a9a2] border border-[#e4e2da]/50 hover:bg-white hover:text-indigo-600 hover:border-indigo-100"
                                 )}
                             >
                                 New {newCount}
@@ -897,7 +897,7 @@ export default function CommentsPanel({
                                 "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all duration-300",
                                 authorFilter === 'all'
                                     ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 ring-2 ring-indigo-50/50"
-                                    : "bg-white/60 text-slate-500 border border-slate-200/50 hover:bg-white hover:text-indigo-600 hover:border-indigo-100"
+                                    : "bg-white/60 text-[#a8a9a2] border border-[#e4e2da]/50 hover:bg-white hover:text-indigo-600 hover:border-indigo-100"
                             )}
                         >
                             All {allProjectCount}
@@ -909,7 +909,7 @@ export default function CommentsPanel({
                                 "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all duration-300",
                                 authorFilter === 'mine'
                                     ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 ring-2 ring-indigo-50/50"
-                                    : "bg-white/60 text-slate-500 border border-slate-200/50 hover:bg-white hover:text-indigo-600 hover:border-indigo-100"
+                                    : "bg-white/60 text-[#a8a9a2] border border-[#e4e2da]/50 hover:bg-white hover:text-indigo-600 hover:border-indigo-100"
                             )}
                         >
                             Mine {mineCount}
@@ -923,7 +923,7 @@ export default function CommentsPanel({
                                         "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all duration-300",
                                         authorFilter === 'collaborators'
                                             ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 ring-2 ring-indigo-50/50"
-                                            : "bg-white/60 text-slate-500 border border-slate-200/50 hover:bg-white hover:text-indigo-600 hover:border-indigo-100"
+                                            : "bg-white/60 text-[#a8a9a2] border border-[#e4e2da]/50 hover:bg-white hover:text-indigo-600 hover:border-indigo-100"
                                     )}
                                 >
                                     Collaborators {collaboratorCount}
@@ -935,7 +935,7 @@ export default function CommentsPanel({
                                         "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all duration-300",
                                         authorFilter === 'ai'
                                             ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 ring-2 ring-indigo-50/50"
-                                            : "bg-white/60 text-slate-500 border border-slate-200/50 hover:bg-white hover:text-indigo-600 hover:border-indigo-100"
+                                            : "bg-white/60 text-[#a8a9a2] border border-[#e4e2da]/50 hover:bg-white hover:text-indigo-600 hover:border-indigo-100"
                                     )}
                                 >
                                     AI {aiCount}
@@ -947,7 +947,7 @@ export default function CommentsPanel({
                                         "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all duration-300",
                                         authorFilter === 'hidden'
                                             ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 ring-2 ring-indigo-50/50"
-                                            : "bg-white/60 text-slate-500 border border-slate-200/50 hover:bg-white hover:text-indigo-600 hover:border-indigo-100"
+                                            : "bg-white/60 text-[#a8a9a2] border border-[#e4e2da]/50 hover:bg-white hover:text-indigo-600 hover:border-indigo-100"
                                     )}
                                 >
                                     Hidden {hiddenCount}
@@ -960,13 +960,13 @@ export default function CommentsPanel({
 
             {/* Global Typing Indicator (outside thread) */}
             {typingUsers.some(u => !u.threadId) && (
-                <div className="px-4 py-1.5 bg-slate-50 border-b border-slate-100 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-300">
+                <div className="px-4 py-1.5 bg-[#fbf9f5] border-b border-[#e4e2da] flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-300">
                     <div className="flex gap-0.5">
                          <div className="w-1 h-1 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
                          <div className="w-1 h-1 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
                          <div className="w-1 h-1 bg-primary/40 rounded-full animate-bounce" />
                     </div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    <span className="text-[10px] font-bold text-[#a8a9a2] uppercase tracking-widest">
                         {typingUsers.filter(u => !u.threadId).length === 1 
                             ? `${typingUsers.find(u => !u.threadId)?.userEmail} is typing...` 
                             : `${typingUsers.filter(u => !u.threadId).length} people are typing...`}
@@ -979,10 +979,10 @@ export default function CommentsPanel({
                 <div className="space-y-6 pb-20">
                     {filteredComments.length === 0 && !isLoading && (
                         <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-                            <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-200">
+                            <div className="w-12 h-12 rounded-2xl bg-[#fbf9f5] flex items-center justify-center text-[#ccc9c0]">
                                 <MessageCircle className="w-6 h-6" />
                             </div>
-                            <p className="text-sm font-serif italic text-slate-400">
+                            <p className="text-sm font-serif italic text-[#a8a9a2]">
                                 {authorFilter === 'ai'
                                     ? (filterByNode ? "No AI feedback for this scene yet." : "No AI feedback saved yet.")
                                     : (filterByNode ? "No feedback for this scene yet." : "No project feedback yet.")}
@@ -1140,7 +1140,7 @@ export default function CommentsPanel({
                     </Button>
                 </div>
                 {!canViewerLeaveFeedback && role === 'viewer' && (
-                    <p className="mt-3 text-[10px] uppercase tracking-[0.18em] text-slate-400 font-bold px-2">
+                    <p className="mt-3 text-[10px] uppercase tracking-[0.18em] text-[#a8a9a2] font-bold px-2">
                         Viewer feedback is currently disabled by the owner.
                     </p>
                 )}

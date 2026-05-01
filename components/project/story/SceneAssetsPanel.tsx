@@ -210,7 +210,7 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose, projectT
                 </div>
                 {onClose && (
                     <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full h-8 w-8 hover:bg-white/80 transition-colors">
-                        <X className="w-4 h-4 text-slate-400" />
+                        <X className="w-4 h-4 text-[#a8a9a2]" />
                     </Button>
                 )}
             </div>
@@ -226,7 +226,7 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose, projectT
                         <div className="w-12 h-12 rounded-2xl bg-white border border-[#ddd8ce]/50 flex items-center justify-center mb-4 shadow-sm">
                             <Plus className="w-5 h-5 text-stone-300" />
                         </div>
-                        <p className="text-sm font-serif italic text-slate-400 mb-6">{emptyStateMessage}</p>
+                        <p className="text-sm font-serif italic text-[#a8a9a2] mb-6">{emptyStateMessage}</p>
                         <Button 
                             variant="outline" 
                             size="sm" 
@@ -313,7 +313,7 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose, projectT
                     <div className="relative w-full max-w-xl bg-[linear-gradient(180deg,#fcfbf9_0%,#fbf9f5_100%)] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 border border-[#ddd8ce]">
                         <div className="p-6 border-b border-[#ddd8ce] bg-white/40 flex items-center justify-between">
                             <div>
-                                <h3 className="text-xl font-serif italic text-slate-800">Project Assets</h3>
+                                <h3 className="text-xl font-serif italic text-[#31332f]">Project Assets</h3>
                                 <p className="text-[10px] uppercase tracking-widest text-[#546354]/60 font-bold mt-1">{selectorSubtitle}</p>
                             </div>
                             <Button variant="ghost" size="icon" onClick={() => setIsSelecting(false)} className="rounded-full hover:bg-white/80">
@@ -369,7 +369,7 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose, projectT
                                                     <div className="flex items-center gap-1 ml-auto">
                                                         <button 
                                                             onClick={(e) => { e.stopPropagation(); setConfirmingAssetId(null) }}
-                                                            className="text-[10px] font-bold text-slate-400 hover:text-slate-600 px-2 py-1"
+                                                            className="text-[10px] font-bold text-[#a8a9a2] hover:text-[#5e605b] px-2 py-1"
                                                         >No</button>
                                                         <button 
                                                             onClick={(e) => handleDeleteProjectAsset(e, asset)}
@@ -380,18 +380,18 @@ export default function SceneAssetsPanel({ projectId, sceneId, onClose, projectT
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center justify-between opacity-100 md:opacity-0 md:group-hover/asset:opacity-100 transition-opacity duration-300">
-                                                    <span className="text-[9px] text-slate-400 truncate max-w-[50%] font-medium uppercase tracking-tight">{asset.file_name}</span>
+                                                    <span className="text-[9px] text-[#a8a9a2] truncate max-w-[50%] font-medium uppercase tracking-tight">{asset.file_name}</span>
                                                     <div className="flex items-center gap-1">
                                                         <button 
                                                             onClick={(e) => { e.stopPropagation(); window.open(getImageUrl(asset.storage_path), '_blank') }}
-                                                            className="text-slate-300 hover:text-indigo-500 transition-colors p-1"
+                                                            className="text-[#ccc9c0] hover:text-indigo-500 transition-colors p-1"
                                                             title="Open in new tab"
                                                         >
                                                             <ExternalLink className="w-3.5 h-3.5" />
                                                         </button>
                                                         <button 
                                                             onClick={(e) => { e.stopPropagation(); setConfirmingAssetId(asset.id) }}
-                                                            className="text-slate-300 hover:text-red-500 transition-colors p-1"
+                                                            className="text-[#ccc9c0] hover:text-red-500 transition-colors p-1"
                                                         >
                                                             <X className="w-3.5 h-3.5" />
                                                         </button>

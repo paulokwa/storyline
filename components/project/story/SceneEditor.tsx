@@ -169,8 +169,8 @@ const ToolbarButton = ({
             className={cn(
                 "scene-editor-toolbar-button p-1.5 sm:p-2 rounded-lg transition-all duration-200 shrink-0",
                 active 
-                    ? "bg-slate-800 text-white shadow-md scale-105" 
-                    : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                    ? "bg-[#31332f] text-white shadow-md scale-105" 
+                    : "text-[#a8a9a2] hover:text-[#31332f] hover:bg-[#fbf9f5]"
             )}
         >
             <Icon className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
@@ -192,7 +192,7 @@ const ToolbarButton = ({
 }
 
 const TOP_ACTION_PILL_BASE =
-    "scene-editor-top-action hidden h-8 rounded-full px-3 text-[10px] font-bold uppercase tracking-widest transition-all border border-slate-200/70 bg-white/70 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
+    "scene-editor-top-action hidden h-8 rounded-full px-3 text-[10px] font-bold uppercase tracking-widest transition-all border border-[#e4e2da] bg-white/70 shadow-[0_1px_2px_rgba(49,51,47,0.03)]"
 
 const SCREENPLAY_INLINE_IMAGE_DISABLED_MESSAGE = 'Inline images are disabled in screenplay mode. Use Scene Visual References instead.'
 
@@ -229,6 +229,11 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [showTabHint, setShowTabHint] = useState(false)
     const [showAtHint, setShowAtHint] = useState(false)
     const atHintTimerRef = useRef<NodeJS.Timeout | null>(null)
+    
+    const [metadataPortal, setMetadataPortal] = useState<Element | null>(null)
+    useEffect(() => {
+        setMetadataPortal(document.getElementById('app-nav-metadata-portal'))
+    }, [])
     
     // AI Helper discovery rule
     // (Moved to ProjectShell.tsx in Phase 2B so it anchors globally)
@@ -1347,43 +1352,50 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                     </div>
                 </div>
             )}
-            {/* Header info bar */}
-            <div className="flex flex-col mb-10">
-                <div className="flex items-start justify-between gap-3 mb-2">
-                    <div className="flex min-w-0 items-center gap-2">
-                        <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 font-sans">
-                            {writingMode === 'screenplay' ? 'Screenplay' : 'Draft'} — {label}
-                        </span>
-                        {activeSceneUsers.length > 0 && (
-                            <div className="hidden sm:flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300 ml-4">
-                                <div className="flex items-center -space-x-1.5">
-                                    {activeSceneUsers.map(u => {
-                                        const userColor = getUserColor(u.email)
-                                        return (
-                                            <Tooltip key={u.user_id}>
-                                                <TooltipTrigger>
-                                                    <div 
-                                                        className={cn(
-                                                            "w-5 h-5 rounded-full border border-white flex items-center justify-center text-[8px] font-bold shadow-sm cursor-default",
-                                                            userColor
-                                                        )}
-                                                    >
-                                                        {u.email[0].toUpperCase()}
-                                                    </div>
-                                                </TooltipTrigger>
-                                                <TooltipContent side="bottom" className="text-[10px]">{u.email}</TooltipContent>
-                                            </Tooltip>
-                                        )
-                                    })}
-                                </div>
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                                    {activeSceneUsers.length === 1 
-                                        ? `${activeSceneUsers[0].email} is ${activeSceneUsers[0].status === 'editing' ? 'writing' : 'reading'}` 
-                                        : `${activeSceneUsers.length} others reading`}
-                                </span>
+
+            {/* Header info bar - portaled to global nav on desktop */}
+            {metadataPortal ? createPortal(
+                <div className="flex items-center gap-4 ml-4 border-l border-[#e4e2da] pl-4 h-9 animate-in fade-in slide-in-from-left-2 duration-500">
+                    <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#a8a9a2] font-sans whitespace-nowrap">
+                        {writingMode === 'screenplay' ? 'Screenplay' : 'Draft'} — {label}
+                    </span>
+                    {activeSceneUsers.length > 0 && (
+                        <div className="flex items-center gap-2">
+                            <div className="flex items-center -space-x-1.5">
+                                {activeSceneUsers.map(u => {
+                                    const userColor = getUserColor(u.email)
+                                    return (
+                                        <Tooltip key={u.user_id}>
+                                            <TooltipTrigger>
+                                                <div 
+                                                    className={cn(
+                                                        "w-5 h-5 rounded-full border border-white flex items-center justify-center text-[8px] font-bold shadow-sm cursor-default",
+                                                        userColor
+                                                    )}
+                                                >
+                                                    {u.email[0].toUpperCase()}
+                                                </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="bottom" className="text-[10px]">{u.email}</TooltipContent>
+                                        </Tooltip>
+                                    )
+                                })}
                             </div>
-                        )}
+                        </div>
+                    )}
+                </div>,
+                metadataPortal
+            ) : (
+                <div className="flex flex-col mb-10 lg:hidden">
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="flex min-w-0 items-center gap-2">
+                            <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#a8a9a2] font-sans">
+                                {writingMode === 'screenplay' ? 'Screenplay' : 'Draft'} — {label}
+                            </span>
+                        </div>
                     </div>
+                </div>
+            )}
                     <div className="flex items-center gap-2 shrink-0">
                         {!isReadOnly && (
                              <span className={cn(
@@ -1419,11 +1431,11 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                             className="fixed inset-0 z-[60]" 
                                             onClick={() => setShowViewSettings(false)} 
                                         />
-                                        <div className="scene-editor-floating-panel absolute right-0 top-8 w-64 bg-white/95 backdrop-blur-xl border border-slate-200 shadow-2xl rounded-2xl p-4 z-[70] animate-in fade-in slide-in-from-top-2 duration-200">
+                                        <div className="scene-editor-floating-panel absolute right-0 top-8 w-64 bg-white/95 backdrop-blur-xl border border-[#e4e2da] shadow-2xl rounded-2xl p-4 z-[70] animate-in fade-in slide-in-from-top-2 duration-200">
                                             <div className="space-y-4">
                                                 {/* Font Choice */}
                                                 <div>
-                                                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2 block">Typography</label>
+                                                    <label className="text-[10px] uppercase tracking-widest font-bold text-[#a8a9a2] mb-2 block">Typography</label>
                                                     <div className="grid grid-cols-2 bg-slate-50 p-1 rounded-xl gap-1">
                                                         {[
                                                             { id: 'Newsreader', label: 'Newsreader', serif: true },
@@ -1450,7 +1462,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
                                                 {/* Font Size */}
                                                 <div>
-                                                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2 block">Font Size</label>
+                                                    <label className="text-[10px] uppercase tracking-widest font-bold text-[#a8a9a2] mb-2 block">Font Size</label>
                                                     <div className="flex bg-slate-50 p-1 rounded-xl gap-1">
                                                         {['16px', '18px', '22px'].map((size) => (
                                                             <button
@@ -1471,7 +1483,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
                                                 {/* Line Height */}
                                                 <div>
-                                                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2 block">Line Height</label>
+                                                    <label className="text-[10px] uppercase tracking-widest font-bold text-[#a8a9a2] mb-2 block">Line Height</label>
                                                     <div className="flex bg-slate-50 p-1 rounded-xl gap-1">
                                                         {['1.5', '1.8', '2.2'].map((lh) => (
                                                             <button
@@ -1492,7 +1504,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
                                                 {/* Page Width */}
                                                 <div>
-                                                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2 block">Page Width</label>
+                                                    <label className="text-[10px] uppercase tracking-widest font-bold text-[#a8a9a2] mb-2 block">Page Width</label>
                                                     <div className="flex bg-slate-50 p-1 rounded-xl gap-1">
                                                         {['896px', '1152px', '100%'].map((width) => (
                                                             <button
@@ -1513,7 +1525,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
                                                 {/* Alignment */}
                                                 <div>
-                                                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2 block">Alignment</label>
+                                                    <label className="text-[10px] uppercase tracking-widest font-bold text-[#a8a9a2] mb-2 block">Alignment</label>
                                                     <div className="flex bg-slate-50 p-1 rounded-xl gap-1">
                                                         {[
                                                             { id: 'left', icon: AlignLeft, label: 'Left' },
@@ -1610,12 +1622,12 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                     className={cn(
                         "scene-editor-title w-full bg-transparent border-none focus:outline-none focus:ring-0 p-0 transition-all placeholder:text-slate-300",
                         writingMode === 'screenplay' 
-                            ? "font-mono uppercase text-xl font-bold tracking-widest text-slate-700" 
+                            ? "font-mono uppercase text-xl font-bold tracking-widest text-[#5e605b]" 
                             : "font-serif text-3xl sm:text-4xl text-[#31332f]"
                     )}
                 />
                 {lastEditorName && (
-                    <div className="flex items-center gap-1.5 mt-2 text-[10px] text-slate-400 font-bold uppercase tracking-wider animate-in fade-in duration-500">
+                    <div className="flex items-center gap-1.5 mt-2 text-[10px] text-[#a8a9a2] font-bold uppercase tracking-wider animate-in fade-in duration-500">
                         <Clock className="w-3 h-3" />
                         <span>Last edited by {lastEditorName}</span>
                     </div>
@@ -1640,7 +1652,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             "scene-editor-screenplay-page max-w-[80ch] mx-auto p-12 sm:p-20 min-h-[11in] border",
                             isMidnight
                                 ? "bg-transparent border-slate-700/60 shadow-[0_30px_90px_-40px_rgba(0,0,0,0.82)]"
-                                : "bg-white border-slate-200/50 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)]"
+                                : "bg-white border-[#e4e2da] shadow-[0_10px_40px_-10px_rgba(49,51,47,0.04)]"
                         )
                         : "mx-auto w-full transition-[max-width] duration-500 ease-in-out"
                 )}
@@ -1665,7 +1677,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             hide: true,
                             inline: true,
                         }}
-                        className="scene-editor-bubble flex items-center gap-0.5 bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl p-1 animate-in fade-in zoom-in duration-200 z-[100] max-w-[calc(100vw-2rem)] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [scroll-snap-type:x_proximity] [scroll-padding-left:0.25rem] pr-6 cursor-default"
+                        className="scene-editor-bubble flex items-center gap-0.5 bg-white/90 backdrop-blur-md border border-[#e4e2da] shadow-xl rounded-xl p-1 animate-in fade-in zoom-in duration-200 z-[100] max-w-[calc(100vw-2rem)] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [scroll-snap-type:x_proximity] [scroll-padding-left:0.25rem] pr-6 cursor-default"
                     >
                         {isReadOnly ? (
                             <ToolbarButton
@@ -1701,7 +1713,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     tooltip="Parenthetical"
                                 />
                                 
-                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <div className="w-px h-4 bg-[#e4e2da] mx-1" />
 
                                 <ToolbarButton
                                     onClick={() => editor.chain().focus().setNode('screenplayDialogue').run()}
@@ -1716,7 +1728,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     tooltip="Transition"
                                 />
 
-                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <div className="w-px h-4 bg-[#e4e2da] mx-1" />
 
                                 <ToolbarButton
                                     onClick={handleAddInlineComment}
@@ -1762,7 +1774,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     tooltip="Highlight"
                                     showTooltip={false}
                                 />
-                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <div className="w-px h-4 bg-[#e4e2da] mx-1" />
                                 <ToolbarButton
                                     onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
                                     active={editor.isActive('heading', { level: 1 })}
@@ -1777,7 +1789,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     tooltip="Heading 2"
                                     showTooltip={false}
                                 />
-                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <div className="w-px h-4 bg-[#e4e2da] mx-1" />
                                 <ToolbarButton
                                     onClick={() => editor.chain().focus().toggleBulletList().run()}
                                     active={editor.isActive('bulletList')}
@@ -1800,7 +1812,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     showTooltip={false}
                                 />
 
-                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <div className="w-px h-4 bg-[#e4e2da] mx-1" />
 
                                 <ToolbarButton
                                     onClick={handleAddInlineComment}
@@ -1809,7 +1821,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     tooltip="Add Feedback"
                                     showTooltip={false}
                                 />
-                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <div className="w-px h-4 bg-[#e4e2da] mx-1" />
                                 <ToolbarButton
                                     onClick={openAssetSelector}
                                     active={false}
@@ -1848,7 +1860,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     icon={MessageSquarePlus}
                                     tooltip="Add Feedback"
                                 />
-                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <div className="w-px h-4 bg-[#e4e2da] mx-1" />
                                 <ToolbarButton
                                     onClick={() => editor.chain().focus().setNode('screenplaySceneHeading').run()}
                                     active={editor.isActive('screenplaySceneHeading')}
@@ -1873,7 +1885,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     icon={() => <span className="text-[10px] font-bold">( )</span>}
                                     tooltip="Parenthetical"
                                 />
-                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <div className="w-px h-4 bg-[#e4e2da] mx-1" />
                                 <ToolbarButton
                                     onClick={() => editor.chain().focus().setNode('screenplayDialogue').run()}
                                     active={editor.isActive('screenplayDialogue')}
@@ -1919,7 +1931,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     icon={Highlighter}
                                     tooltip="Highlight"
                                 />
-                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <div className="w-px h-4 bg-[#e4e2da] mx-1" />
                                 <ToolbarButton
                                     onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
                                     active={editor.isActive('heading', { level: 1 })}
@@ -1932,7 +1944,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     icon={Heading2}
                                     tooltip="Heading 2"
                                 />
-                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <div className="w-px h-4 bg-[#e4e2da] mx-1" />
                                 <ToolbarButton
                                     onClick={() => editor.chain().focus().toggleBulletList().run()}
                                     active={editor.isActive('bulletList')}
@@ -1951,14 +1963,14 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     icon={Quote}
                                     tooltip="Blockquote"
                                 />
-                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <div className="w-px h-4 bg-[#e4e2da] mx-1" />
                                 <ToolbarButton
                                     onClick={handleAddInlineComment}
                                     active={false}
                                     icon={MessageSquarePlus}
                                     tooltip="Add Feedback"
                                 />
-                                <div className="w-px h-4 bg-slate-200 mx-1" />
+                                <div className="w-px h-4 bg-[#e4e2da] mx-1" />
                                 <ToolbarButton
                                     onClick={openAssetSelector}
                                     active={false}
@@ -1969,7 +1981,11 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                         )}
                     </div>
                 )}
-                <div className="relative z-10">
+
+                <div className={cn(
+                    "relative z-10",
+                    writingMode === 'simple' && "paper-card mt-8 mb-24"
+                )}>
                     <EditorContent editor={editor} />
                 </div>
                 

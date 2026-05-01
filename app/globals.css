@@ -130,6 +130,45 @@ body {
   overscroll-behavior: contain;
 }
 
+
+
+/* Stitch Redesign: Paper Card & Notebook Aesthetic */
+.paper-card {
+  background-color: hsl(var(--surface-lowest));
+  box-shadow: 
+    0 10px 40px -10px rgba(49, 51, 47, 0.08),
+    0 4px 12px -4px rgba(49, 51, 47, 0.04);
+  border: 1px solid #e4e2da;
+  border-radius: 2.5rem;
+  padding: 4rem 4rem 4rem 7rem; /* Asymmetric left gutter */
+  position: relative;
+  transition: all 0.5s ease;
+}
+
+[data-theme='midnight'] .paper-card {
+  background-color: hsl(var(--card));
+  border-color: hsl(var(--border) / 0.4);
+  box-shadow: 
+    0 20px 50px -12px rgba(0, 0, 0, 0.5),
+    0 8px 24px -8px rgba(0, 0, 0, 0.3);
+}
+
+/* Notebook gutter: vertical line on the left to simulate a notebook fold */
+.paper-card::before {
+  content: '';
+  position: absolute;
+  left: 3.5rem;
+  top: 4rem;
+  bottom: 4rem;
+  width: 1px;
+  background: linear-gradient(to bottom, transparent, #e4e2da 10%, #e4e2da 90%, transparent);
+  opacity: 0.6;
+}
+
+[data-theme='midnight'] .paper-card::before {
+  background: linear-gradient(to bottom, transparent, hsl(var(--border) / 0.5) 10%, hsl(var(--border) / 0.5) 90%, transparent);
+}
+
 /* Editor typography */
 .editor-content {
   font-family: var(--editor-font);
@@ -310,6 +349,35 @@ body {
 [data-theme='midnight'] .project-shell-root {
   background: linear-gradient(180deg, #08101d 0%, #0b1120 100%);
   color: #e5edf7;
+}
+
+/* ─── Sanctuary light-mode nav ───────────────────────────────────────────── */
+/* Warm cream header surface for the default (non-midnight) theme.           */
+/* The class is already applied in AppNav.tsx via the app-nav-shell token.    */
+:root .app-nav-shell,
+[data-theme='sanctuary'] .app-nav-shell {
+  background: rgba(251, 249, 245, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom-color: rgba(178, 178, 173, 0.15);
+  box-shadow: 0 1px 20px rgba(49, 51, 47, 0.04);
+}
+
+/* ─── Sanctuary light-mode structure panel ───────────────────────────────── */
+:root .structure-tree-panel,
+[data-theme='sanctuary'] .structure-tree-panel {
+  /* Inherits bg from the sidebar shell; provides ambient left gradient */
+  background: transparent;
+}
+
+/* Custom scrollbar inside the structure panel — warm tones */
+:root .structure-tree-panel .custom-scrollbar,
+[data-theme='sanctuary'] .structure-tree-panel .custom-scrollbar {
+  scrollbar-color: rgba(84, 99, 84, 0.18) transparent;
+}
+
+:root .structure-tree-panel .custom-scrollbar::-webkit-scrollbar-thumb,
+[data-theme='sanctuary'] .structure-tree-panel .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(84, 99, 84, 0.16);
 }
 
 [data-theme='midnight'] .app-nav-shell {

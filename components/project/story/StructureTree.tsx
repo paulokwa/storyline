@@ -278,13 +278,13 @@ export default function StructureTree({
             <div className="structure-tree-panel flex h-full min-h-0 flex-col overflow-hidden bg-transparent">
                 <div className="px-4 sm:px-6 pt-2 pb-4 sm:py-6 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-serif italic text-slate-500 tracking-wide">The Structure</h3>
+                        <h3 className="text-sm font-serif italic text-[#8a8c84] tracking-wide">The Structure</h3>
                     </div>
                     {onClose && (
                         <button
                             type="button"
                             onClick={onClose}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-slate-300 transition-all hover:bg-white/70 hover:text-slate-600"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-[#a8a9a2] transition-all hover:bg-[#e8e7e0] hover:text-[#5e605b]"
                             aria-label="Close structure panel"
                         >
                             <X className="h-4 w-4" />
@@ -301,7 +301,7 @@ export default function StructureTree({
                                     'group flex items-center gap-2 py-4 px-3 sm:px-4 mx-2 sm:mx-3 rounded-2xl cursor-pointer transition-all duration-300 text-sm mb-4 relative border shadow-sm',
                                     selectedNodeIds.includes('virtual-root')
                                         ? 'bg-indigo-50 border-indigo-200 text-indigo-900 font-bold'
-                                        : 'bg-white/50 backdrop-blur-sm border-slate-200/60 text-slate-700 hover:bg-white hover:border-slate-300'
+                                        : 'bg-[#edecea]/60 border-[#ccc9c0]/40 text-[#5e605b] hover:bg-[#e8e7e0] hover:border-[#bbb8af]'
                                 )}
                                 onClick={() => onNodeSelect('virtual-root')}
                             >
@@ -350,7 +350,7 @@ export default function StructureTree({
                                     </p>
                                     <Button
                                         onClick={addRootNode}
-                                        className="bg-white hover:bg-slate-50 text-[#546354] border border-[#546354]/10 shadow-sm transition-all duration-300 rounded-xl px-6"
+                                        className="bg-[#fbf9f5] hover:bg-[#f5f4ef] text-[#546354] border border-[#546354]/15 shadow-sm transition-all duration-300 rounded-xl px-6"
                                     >
                                         <Plus className="w-4 h-4 mr-2" />
                                         + Create {rootLabel}
@@ -423,7 +423,7 @@ export default function StructureTree({
                                     variant="ghost"
                                     size="sm"
                                     onClick={addRootNode}
-                                    className="w-full justify-start text-slate-400 hover:text-[#546354] hover:bg-white/50 text-[10px] uppercase tracking-widest gap-2 px-3 h-10 rounded-xl"
+                                    className="w-full justify-start text-[#a8a9a2] hover:text-[#546354] hover:bg-[#f5f4ef] text-[10px] uppercase tracking-widest gap-2 px-3 h-10 rounded-xl"
                                 >
                                     <Plus className="w-3.5 h-3.5" /> Add {rootLabel}
                                 </Button>
@@ -527,13 +527,13 @@ const NodeItem = React.memo(({
                 className={cn(
                     'flex min-w-0 items-center gap-1.5 py-3 px-2 sm:px-3 mx-1 sm:mx-2 rounded-2xl cursor-pointer transition-all duration-300 text-sm mb-1 relative border border-transparent',
                     isActive
-                        ? 'bg-white text-[#546354] shadow-[0_8px_24px_rgba(0,0,0,0.06)] font-bold border-[#546354]/10 z-10'
-                        : 'text-slate-500 hover:bg-white/60',
-                    isRoot && 'font-serif italic text-base py-3 sm:py-4 bg-white/30 backdrop-blur-sm border-white/40 mb-2 mt-2 shadow-[0_2px_8px_rgba(0,0,0,0.02)]',
-                    isAct && 'font-semibold text-slate-700 py-2 sm:py-2.5',
-                    isScene && 'items-center text-slate-500 py-1.5',
+                        ? 'bg-[#fbf9f5] text-[#546354] shadow-[0_6px_20px_rgba(49,51,47,0.06)] font-bold border-[#546354]/10 z-10'
+                        : 'text-[#7a7c76] hover:bg-[#f0efe9]/70',
+                    isRoot && 'font-serif italic text-base py-3 sm:py-4 bg-[#edecea]/40 border-[#ccc9c0]/30 mb-2 mt-2 shadow-[0_2px_8px_rgba(49,51,47,0.03)]',
+                    isAct && 'font-semibold text-[#5e605b] py-2 sm:py-2.5',
+                    isScene && 'items-center text-[#7a7c76] py-1.5',
                     isSelected && 'bg-indigo-50/40 border-indigo-200/50',
-                    snapshot.isDragging && 'shadow-2xl bg-white ring-2 ring-[#546354]/10 border-slate-200 opacity-100 !transform-none cursor-grabbing',
+                    snapshot.isDragging && 'shadow-2xl bg-[#fbf9f5] ring-2 ring-[#546354]/10 border-[#ccc9c0] opacity-100 !transform-none cursor-grabbing',
                     (!snapshot.isDragging && isAdjacentToDrop) && 'bg-indigo-50/80 border-indigo-400 shadow-[0_0_25px_rgba(99,102,241,0.25)] ring-2 ring-indigo-500/20 z-20'
                 )}
                 style={{ 
@@ -554,7 +554,7 @@ const NodeItem = React.memo(({
                     type="button"
                     {...(!isDragDisabled ? provided.dragHandleProps : {})}
                     className={cn(
-                        "shrink-0 rounded-md p-1 -ml-1 text-slate-300 transition-all hover:text-slate-400 hover:bg-slate-100",
+                        "shrink-0 rounded-md p-1 -ml-1 text-[#b0b1aa] transition-all hover:text-[#7a7c76] hover:bg-[#e8e7e0]",
                         isScene && "mt-0.5 self-start",
                         isDragDisabled
                             ? "cursor-default opacity-0 pointer-events-none"
@@ -620,8 +620,8 @@ const NodeItem = React.memo(({
                             <span
                                 className={cn(
                                     "min-w-0 flex-1 truncate whitespace-nowrap overflow-hidden text-ellipsis",
-                                    isRoot && "font-serif not-italic text-slate-800",
-                                    isScene && "text-slate-600 font-medium",
+                                    isRoot && "font-serif not-italic text-[#31332f]",
+                                    isScene && "text-[#5e605b] font-medium",
                                     mobileOptionsActive && "hidden md:block"
                                 )}
                                 title={node.title}
@@ -665,7 +665,7 @@ const NodeItem = React.memo(({
                                 )}
                                 <button
                                     onClick={e => { e.stopPropagation(); setEditing(true) }}
-                                    className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 active:scale-95 transition-all"
+                                    className="p-2 rounded-lg hover:bg-[#e8e7e0] text-[#a8a9a2] hover:text-[#5e605b] active:scale-95 transition-all"
                                 >
                                     <Pencil className="w-4 h-4 md:w-3.5 md:h-3.5" />
                                 </button>

@@ -692,6 +692,16 @@ function ProjectShellInner({
     const { speak, speechState } = useSpeech()
     const isReading = speechState === 'speaking'
 
+    const [mainPortal, setMainPortal] = useState<Element | null>(null)
+    const [metadataPortal, setMetadataPortal] = useState<Element | null>(null)
+    const [actionsPortal, setActionsPortal] = useState<Element | null>(null)
+
+    useEffect(() => {
+        setMainPortal(document.getElementById('app-nav-main-portal'))
+        setMetadataPortal(document.getElementById('app-nav-metadata-portal'))
+        setActionsPortal(document.getElementById('app-nav-actions-portal'))
+    }, [])
+
     // Global shortcut for the shortcuts panel
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -711,187 +721,187 @@ function ProjectShellInner({
         return () => window.removeEventListener('keydown', handleKeyDown)
     }, [setShortcutsOpen])
 
+
+    const mainHeaderContent = (
+        <div className="flex items-center gap-1.5 shrink-0 px-2">
+            <Tooltip>
+                <TooltipTrigger>
+                    <Link 
+                        href="/library" 
+                        className="h-9 w-9 flex items-center justify-center rounded-xl bg-black/5 text-slate-500 hover:text-slate-800 transition-all active:scale-95"
+                    >
+                        <Home className="w-4 h-4" />
+                    </Link>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={-57}>Back to library</TooltipContent>
+            </Tooltip>
+
+            {isStoryTab && (
+                <div className="relative">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleToggleStructure}
+                        data-tour="structure-toggle"
+                        aria-pressed={sidebarOpen}
+                        aria-label={sidebarOpen ? "Hide structure panel" : "Show structure panel"}
+                        className={cn(
+                            "rounded-xl transition-all h-9 px-3 gap-2",
+                            sidebarOpen ? "bg-primary/10 text-primary hover:bg-primary/20" : "bg-black/5 text-slate-600 hover:bg-black/10 hover:text-slate-800"
+                        )}
+                    >
+                        <PanelLeft className="w-4 h-4 shrink-0" />
+                        <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-[0.14em]">Structure</span>
+                    </Button>
+                </div>
+            )}
+
+            <div className="flex items-center gap-3 overflow-hidden px-1 ml-1 mr-4 border-l border-[#e4e2da] pl-4">
+                {!editingTitle ? (
+                    <button 
+                        onClick={() => {
+                            if (role === 'owner') {
+                                setTitleDraft(project.title)
+                                setEditingTitle(true)
+                            }
+                        }}
+                        className="text-sm font-serif italic text-slate-800 hover:text-indigo-600 transition-colors truncate text-left max-w-[120px] xl:max-w-[200px]"
+                    >
+                        {project.title}
+                    </button>
+                ) : (
+                    <div className="flex items-center gap-2 w-full animate-in fade-in slide-in-from-left-1 duration-200">
+                        <Input
+                            value={titleDraft}
+                            onChange={(e) => setTitleDraft(e.target.value)}
+                            className="h-8 text-sm font-serif italic border-indigo-200 focus:ring-indigo-500/20 bg-white"
+                            autoFocus
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') saveTitle()
+                                if (e.key === 'Escape') setEditingTitle(false)
+                            }}
+                        />
+                    </div>
+                )}
+            </div>
+
+            {/* Desktop Tabs */}
+            <div className="hidden lg:flex items-center gap-6 overflow-x-auto [scrollbar-width:none]">
+                {visibleTabs.map(({ slug, label, icon: Icon }) => (
+                    <Link
+                        key={slug}
+                        href={`/project/${project.id}/${slug}${slug === 'story' && activeNodeId ? `?nodeId=${activeNodeId}` : ''}`}
+                        onClick={slug === 'ai' ? handleAiTabClick : undefined}
+                        className={cn(
+                            'flex items-center gap-2 py-3 text-[14px] font-medium transition-colors shrink-0 border-b-[2px]',
+                            activeTab === slug
+                                ? (isMidnight ? 'border-[#edf3ff] text-[#edf3ff]' : 'border-[#31332f] text-[#31332f]')
+                                : (isMidnight ? 'border-transparent text-slate-400 hover:text-slate-200' : 'border-transparent text-[#a8a9a2] hover:text-[#5e605b]')
+                        )}
+                    >
+                        <Icon className="w-3.5 h-3.5" />
+                        <span className="font-sans tracking-wide">{label}</span>
+                    </Link>
+                ))}
+            </div>
+        </div>
+    )
+
+    const actionsHeaderContent = (
+        <div className="flex items-center gap-3 shrink-0">
+            {!isLocalOnly && <AvatarPortal owner={owner} members={members} currentUserId={currentUserId} role={role} />}
+            
+            {supportsAi && isStoryTab && (
+                <div className="hidden lg:flex items-center gap-1.5 p-1 bg-violet-50/50 rounded-2xl border border-violet-100/50">
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => (isAnalyzing ? stopAnalysis() : analyzeScene())}
+                                disabled={!isAnalyzing && !currentSceneText}
+                                className={cn(
+                                    "rounded-xl transition-all h-9 w-9 p-0",
+                                    isAnalyzing ? "bg-white text-violet-600 shadow-sm animate-pulse ring-2 ring-violet-200/70" : "text-slate-500 hover:bg-white hover:text-violet-600"
+                                )}
+                            >
+                                {isAnalyzing ? <Square className="w-3.5 h-3.5 fill-current" /> : <Wand2 className="w-4 h-4" />}
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" sideOffset={7}>{isAnalyzing ? 'Stop analysis' : 'Analyze'}</TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleToggleAi}
+                                className={cn(
+                                    "rounded-xl transition-all h-9 w-9 p-0",
+                                    aiPanelOpen ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:bg-white hover:text-indigo-600"
+                                )}
+                            >
+                                <Sparkles className="w-4 h-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" sideOffset={7}>Ask AI</TooltipContent>
+                    </Tooltip>
+                </div>
+            )}
+
+            <Tooltip>
+                <TooltipTrigger>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push(`/project/${project.id}/help`)}
+                        className="h-9 w-9 p-0 rounded-xl bg-black/5 text-slate-500 hover:text-primary hover:bg-primary/5 transition-all"
+                    >
+                        <HelpCircle className="w-5 h-5" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Help</TooltipContent>
+            </Tooltip>
+        </div>
+    )
+
     return (
         <TooltipProvider>
             <div className="project-shell-root h-full min-h-0 flex-1 flex flex-col overflow-hidden">
-                {/* Project header */}
-                <div className="project-shell-header bg-secondary/50 backdrop-blur-sm px-4 sm:px-6 lg:px-8 border-b border-border">
+                {mainPortal && createPortal(mainHeaderContent, mainPortal)}
+                {actionsPortal && createPortal(actionsHeaderContent, actionsPortal)}
+
+                {/* Mobile Tabs Row */}
+                <div className={cn(
+                    "project-shell-header px-4 sm:px-6 lg:px-8",
+                    isMidnight ? "bg-[#182237]" : "bg-[#fbf9f5]"
+                )}>
                     <div className="w-full">
-                    {/* Top row */}
-
-                    <div className="flex items-center gap-2 pt-4 pb-2 border-b border-black/5 md:border-none">
-                        <div className="flex items-center gap-1.5 shrink-0">
-                            <Tooltip>
-                                <TooltipTrigger>
-                                    <Link 
-                                        href="/library" 
-                                        className="h-9 w-9 flex items-center justify-center rounded-xl bg-black/5 text-slate-500 hover:text-slate-800 transition-all active:scale-95"
-                                    >
-                                        <Home className="w-4 h-4" />
-                                    </Link>
-                                </TooltipTrigger>
-                                <TooltipContent side="bottom" sideOffset={-57}>Back to library</TooltipContent>
-                            </Tooltip>
-
-                            {isStoryTab && (
-                                <div className="relative">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={handleToggleStructure}
-                                        data-tour="structure-toggle"
-                                        aria-pressed={sidebarOpen}
-                                        aria-label={sidebarOpen ? "Hide structure panel" : "Show structure panel"}
-                                        className={cn(
-                                            "rounded-xl transition-all h-9 px-3 gap-2",
-                                            sidebarOpen ? "bg-primary/10 text-primary hover:bg-primary/20" : "bg-black/5 text-slate-600 hover:bg-black/10 hover:text-slate-800"
-                                        )}
-                                    >
-                                        <PanelLeft className="w-4 h-4 shrink-0" />
-                                        <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-[0.14em]">Structure</span>
-                                    </Button>
-                                    {showStructureHint && (
-                                        <div className="absolute left-1/2 top-full mt-2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 duration-500 bg-[#546354] text-white text-[11px] leading-relaxed font-medium py-2.5 pl-4 pr-3 rounded-2xl shadow-xl shadow-black/10 flex items-center gap-3 whitespace-normal w-[240px] md:hidden">
-                                            <div className="absolute -top-1 left-1/2 -ml-1 border-4 border-transparent border-b-[#546354] border-t-0" />
-                                            <p>You can reopen your story structure any time from the Structure button next to Home.</p>
-                                            <button onClick={handleDismissStructureHint} className="bg-white/20 hover:bg-white/30 rounded-full p-1 shrink-0 transition-colors">
-                                                <X className="w-3 h-3" />
-                                            </button>
-                                        </div>
+                        <div className="flex lg:hidden items-center gap-4 overflow-x-auto [scrollbar-width:none] pt-2">
+                            {visibleTabs.map(({ slug, label, icon: Icon }) => (
+                                <Link
+                                    key={slug}
+                                    href={`/project/${project.id}/${slug}${slug === 'story' && activeNodeId ? `?nodeId=${activeNodeId}` : ''}`}
+                                    onClick={slug === 'ai' ? handleAiTabClick : undefined}
+                                    data-tour={slug === 'ai' ? 'ai-tab' : undefined}
+                                    className={cn(
+                                        'flex items-center gap-2 py-2 text-[14px] font-medium transition-colors shrink-0 border-b-[2px]',
+                                        activeTab === slug
+                                            ? (isMidnight ? 'border-[#edf3ff] text-[#edf3ff]' : 'border-[#31332f] text-[#31332f]')
+                                            : (isMidnight ? 'border-transparent text-slate-400 hover:text-slate-200' : 'border-transparent text-[#a8a9a2] hover:text-[#5e605b]')
                                     )}
-                                </div>
-                            )}
-
-                            {!isStoryTab && (
-                                     <Tooltip>
-                                         <TooltipTrigger>
-                                             <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => router.push(`/project/${project.id}/story${activeNodeId ? `?nodeId=${activeNodeId}` : ''}`)}
-                                            className="h-9 px-3 gap-2 rounded-xl bg-indigo-50/50 text-indigo-600 hover:bg-indigo-50 transition-all active:scale-95 ml-1"
-                                        >
-                                            <PenLine className="w-3.5 h-3.5" />
-                                            <span className="hidden lg:inline text-[10px] font-bold uppercase tracking-[0.1em]">Editor</span>
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="bottom">Return to your last active scene</TooltipContent>
-                                </Tooltip>
-                            )}
-                        </div>
-
-                        <div className="flex items-center gap-2 overflow-hidden flex-1 px-1">
-                            {!editingTitle ? (
-                                <>
-                                    <div className={cn(
-                                        "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm",
-                                        project.type === 'novel'
-                                            ? (isMidnight
-                                                ? "bg-[rgba(245,248,255,0.08)] text-[#aab8ff] border border-[rgba(96,115,151,0.28)] shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12),0_10px_24px_rgba(2,6,23,0.24)]"
-                                                : "bg-indigo-50 text-indigo-600")
-                                            : (isMidnight
-                                                ? "bg-[rgba(245,248,255,0.08)] text-[#f5b767] border border-[rgba(96,115,151,0.28)] shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12),0_10px_24px_rgba(2,6,23,0.24)]"
-                                                : "bg-amber-50 text-amber-600")
-                                    )}>
-                                        {project.type === 'novel' ? <BookOpen className="w-4 h-4" /> : <Tv className="w-4 h-4" />}
-                                    </div>
-                                    <button 
-                                        onClick={() => {
-                                            if (role === 'owner') {
-                                                setTitleDraft(project.title)
-                                                setEditingTitle(true)
-                                            }
-                                        }}
-                                        className="text-sm sm:text-lg font-serif italic text-slate-800 hover:text-indigo-600 transition-colors truncate text-left"
-                                    >
-                                        {project.title}
-                                    </button>
-                                </>
-                            ) : (
-                                <div className="flex items-center gap-2 w-full animate-in fade-in slide-in-from-left-1 duration-200">
-                                    <Input
-                                        value={titleDraft}
-                                        onChange={(e) => setTitleDraft(e.target.value)}
-                                        className="h-8 text-sm font-serif italic border-indigo-200 focus:ring-indigo-500/20 bg-white"
-                                        autoFocus
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') saveTitle()
-                                            if (e.key === 'Escape') setEditingTitle(false)
-                                        }}
-                                    />
-                                    <button onClick={saveTitle} className="p-1 text-green-600 hover:bg-green-50 rounded-lg">
-                                        <Check className="w-4 h-4" />
-                                    </button>
-                                    <button onClick={() => setEditingTitle(false)} className="p-1 text-red-600 hover:bg-red-50 rounded-lg">
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                            {!isLocalOnly && <AvatarPortal owner={owner} members={members} currentUserId={currentUserId} role={role} />}
-                            
-                            {supportsAi && isStoryTab && (
-                                <div className="hidden lg:flex xl:hidden items-center gap-1.5 p-1 bg-violet-50/50 rounded-2xl border border-violet-100/50">
-                                    <Tooltip>
-                                        <TooltipTrigger>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => (isAnalyzing ? stopAnalysis() : analyzeScene())}
-                                                disabled={!isAnalyzing && !currentSceneText}
-                                                className={cn(
-                                                    "rounded-xl transition-all h-9 w-9 p-0",
-                                                    isAnalyzing ? "bg-white text-violet-600 shadow-sm animate-pulse ring-2 ring-violet-200/70" : "text-slate-500 hover:bg-white hover:text-violet-600"
-                                                )}
-                                            >
-                                                {isAnalyzing ? <Square className="w-3.5 h-3.5 fill-current" /> : <Wand2 className="w-4 h-4" />}
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="bottom" sideOffset={7}>{isAnalyzing ? 'Stop analysis' : 'Analyze this scene with AI'}</TooltipContent>
-                                    </Tooltip>
-
-                                    <Tooltip>
-                                        <TooltipTrigger>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={handleToggleAi}
-                                                data-tour="ai-sidebar-trigger"
-                                                className={cn(
-                                                    "rounded-xl transition-all h-9 w-9 p-0",
-                                                    aiPanelOpen ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:bg-white hover:text-indigo-600"
-                                                )}
-                                            >
-                                                <Sparkles className="w-4 h-4" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="bottom" sideOffset={7}>Ask AI Partner</TooltipContent>
-                                    </Tooltip>
-                                </div>
-                            )}
-
-                            {!isLocalOnly && <div className="h-6 w-px bg-slate-200/50" />}
-                            
-                            <Tooltip>
-                                <TooltipTrigger>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => router.push(`/project/${project.id}/help`)}
-                                        data-tour="help-icon"
-                                        className="h-9 w-9 p-0 rounded-xl bg-black/5 text-slate-500 hover:text-primary hover:bg-primary/5 transition-all"
-                                    >
-                                        <HelpCircle className="w-5 h-5" />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent side="bottom">Help center</TooltipContent>
-                            </Tooltip>
+                                >
+                                    <Icon className="w-3.5 h-3.5" />
+                                    <span className="font-sans tracking-wide">{label}</span>
+                                </Link>
+                            ))}
                         </div>
                     </div>
+                </div>
 
-                    
+                {/* Main Content Area */}
+                <div className="project-shell-content flex-1 min-h-0 relative">
                     {/* Action Buttons Row - Mobile Only */}
                     <div className="project-shell-mobilebar lg:hidden border-b border-black/5">
                         <div className="snap-row flex items-center gap-2 py-2 pl-1">
@@ -1039,7 +1049,7 @@ function ProjectShellInner({
                         </div>
                     </div>
 
-                    <div className="project-shell-tabs mt-1 flex justify-center">
+                    <div className="project-shell-tabs mt-1 flex lg:hidden overflow-x-auto [scrollbar-width:none] justify-start sm:justify-center">
                         <div className="snap-row flex gap-1">
                             {visibleTabs.map(({ slug, label, icon: Icon }) => (
                                 <Link
@@ -1060,17 +1070,15 @@ function ProjectShellInner({
                             ))}
                         </div>
                     </div>
+
+                {/* Page content */}
+                <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
+                    {children}
                 </div>
             </div>
-
-            {/* Page content */}
-            <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
-                {children}
-            </div>
-            
-            </div>
-        </TooltipProvider>
-    )
+        </div>
+    </TooltipProvider>
+)
 }
 
 function AvatarPortal({

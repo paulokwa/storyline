@@ -80,7 +80,7 @@ export default function AppNav({ user }: { user: User }) {
         <nav className={`app-nav-shell sticky top-0 z-40 shrink-0 px-4 sm:px-6 lg:px-8 ${
             isMidnight
                 ? 'bg-[#182237]/88 backdrop-blur-xl border-b border-slate-500/20 shadow-[0_10px_30px_rgba(2,6,23,0.18)]'
-                : 'bg-white/80 backdrop-blur-sm border-b border-slate-200'
+                : 'bg-[#fbf9f5]/92 backdrop-blur-sm'
         }`}>
             <div className={`app-nav-inner max-w-[1440px] mx-auto h-14 flex items-center justify-between ${
                 isMidnight ? 'border-b border-white/0' : ''
@@ -94,8 +94,8 @@ export default function AppNav({ user }: { user: User }) {
                         <PenLine className="w-4 h-4 text-white" />
                     </div>
                     <div className="flex flex-col -gap-1">
-                        <span className={`app-nav-title font-serif italic text-lg leading-none ${
-                            isMidnight ? 'text-[#edf3ff]' : 'text-slate-800'
+                        <span className={`app-nav-title font-serif italic text-2xl leading-none ${
+                            isMidnight ? 'text-[#edf3ff]' : 'text-[#31332f]'
                         }`}>Storyline</span>
                         <span className={`app-nav-subtitle text-[9px] font-bold tracking-[0.2em] uppercase ${
                             isMidnight ? 'text-[#abc0ad]/70' : 'text-[#546354]/40'
@@ -103,7 +103,13 @@ export default function AppNav({ user }: { user: User }) {
                     </div>
                 </Link>
 
-                <div className="flex items-center gap-2 sm:gap-4">
+                <div id="app-nav-center-portal" className="flex-1 flex items-center min-w-0 px-4">
+                    <div id="app-nav-main-portal" className="flex items-center" />
+                    <div id="app-nav-metadata-portal" className="hidden lg:flex items-center min-w-0" />
+                    <div id="app-nav-actions-portal" className="flex items-center ml-auto gap-2" />
+                </div>
+
+                <div className="flex items-center gap-2 sm:gap-4 shrink-0">
                     <NotificationBell />
 
                     <div
@@ -112,17 +118,17 @@ export default function AppNav({ user }: { user: User }) {
                             "flex items-center rounded-full px-1.5 py-1",
                             isMidnight
                                 ? "bg-white/6 border border-white/8"
-                                : "bg-slate-50/90 border border-slate-200/80"
+                                : "bg-[#f5f4ef]/80 border border-[#b2b2ad]/20"
                         ) : "flex items-center"}
                     />
 
                     <DropdownMenu>
                         <DropdownMenuTrigger>
-                            <div className={`app-nav-avatar-trigger relative h-10 w-10 flex items-center justify-center rounded-full cursor-pointer ${
-                                isMidnight ? 'hover:bg-white/6' : 'hover:bg-black/5'
+                            <div className={`app-nav-avatar-trigger relative h-10 w-10 flex items-center justify-center rounded-full cursor-pointer transition-colors duration-300 ${
+                                isMidnight ? 'hover:bg-white/6' : 'hover:bg-[#546354]/6'
                             }`}>
                                 <Avatar className={`app-nav-avatar h-9 w-9 border-2 shadow-sm transition-transform active:scale-90 ${
-                                    isMidnight ? 'border-white/12 shadow-[0_10px_22px_rgba(2,6,23,0.24)]' : 'border-white'
+                                    isMidnight ? 'border-white/12 shadow-[0_10px_22px_rgba(2,6,23,0.24)]' : 'border-[#f5f4ef] shadow-[0_4px_14px_rgba(84,99,84,0.10)]'
                                 }`}>
                                     {user.user_metadata?.avatar_url && (
                                         <img 
@@ -142,9 +148,9 @@ export default function AppNav({ user }: { user: User }) {
                         <DropdownMenuContent className={`w-64 mt-2 rounded-2xl p-2 shadow-xl ${
                             isMidnight
                                 ? 'border-slate-600/30 bg-[#182239]/96 text-slate-100 shadow-[0_24px_60px_rgba(2,6,23,0.45)] backdrop-blur-xl'
-                                : 'border-slate-200 bg-white'
+                                : 'border-[#b2b2ad]/20 bg-[#fbf9f5] shadow-[0_12px_40px_rgba(49,51,47,0.08)]'
                         }`} align="end">
-                            <div className={`px-3 py-3 mb-1 border-b ${isMidnight ? 'border-slate-700/60' : 'border-slate-100'}`}>
+                            <div className={`px-3 py-3 mb-1 border-b ${isMidnight ? 'border-slate-700/60' : 'border-[#e8e7e2]'}`}>
                                 <div className="flex flex-col space-y-1">
                                     <p className={`text-sm font-bold leading-none ${isMidnight ? 'text-slate-100' : 'text-slate-900'}`}>{displayName}</p>
                                     <p className="text-[11px] leading-none text-slate-400 truncate tracking-wide">{user.email}</p>
@@ -158,8 +164,8 @@ export default function AppNav({ user }: { user: User }) {
                                     {saveAction && (
                                         <DropdownMenuItem 
                                             onClick={saveAction}
-                                            className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
-                                                isMidnight ? 'text-slate-300 focus:text-indigo-200 focus:bg-white/8' : 'text-slate-600 focus:text-indigo-600 focus:bg-indigo-50'
+                                            className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all duration-200 ${
+                                                isMidnight ? 'text-slate-300 focus:text-indigo-200 focus:bg-white/8' : 'text-[#5e605b] focus:text-[#31332f] focus:bg-[#efeee9]'
                                             }`}
                                         >
                                             <Save className="w-4 h-4" />
@@ -185,8 +191,8 @@ export default function AppNav({ user }: { user: User }) {
                                     {saveAsAction && (
                                         <DropdownMenuItem 
                                             onClick={saveAsAction}
-                                            className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
-                                                isMidnight ? 'text-slate-300 focus:text-indigo-200 focus:bg-white/8' : 'text-slate-600 focus:text-indigo-600 focus:bg-indigo-50'
+                                            className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all duration-200 ${
+                                                isMidnight ? 'text-slate-300 focus:text-indigo-200 focus:bg-white/8' : 'text-[#5e605b] focus:text-[#31332f] focus:bg-[#efeee9]'
                                             }`}
                                         >
                                             <FilePlus className="w-4 h-4" />
@@ -197,10 +203,10 @@ export default function AppNav({ user }: { user: User }) {
                                     <DropdownMenuItem 
                                         onClick={exportAction}
                                         disabled={!canExport}
-                                        className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
+                                        className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all duration-200 ${
                                             !canExport
                                                 ? 'pointer-events-none opacity-50'
-                                                : isMidnight ? 'text-slate-300 focus:text-indigo-200 focus:bg-white/8' : 'text-slate-600 focus:text-indigo-600 focus:bg-indigo-50'
+                                                : isMidnight ? 'text-slate-300 focus:text-indigo-200 focus:bg-white/8' : 'text-[#5e605b] focus:text-[#31332f] focus:bg-[#efeee9]'
                                         }`}
                                         title={!canExport ? (exportDisabledReason ?? 'Export is currently disabled.') : undefined}
                                     >
@@ -213,8 +219,8 @@ export default function AppNav({ user }: { user: User }) {
                                     {canShare && shareAction && (
                                         <DropdownMenuItem 
                                             onClick={shareAction}
-                                            className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
-                                                isMidnight ? 'text-slate-300 focus:text-indigo-200 focus:bg-white/8' : 'text-slate-600 focus:text-indigo-600 focus:bg-indigo-50'
+                                            className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all duration-200 ${
+                                                isMidnight ? 'text-slate-300 focus:text-indigo-200 focus:bg-white/8' : 'text-[#5e605b] focus:text-[#31332f] focus:bg-[#efeee9]'
                                             }`}
                                         >
                                             <Users className="w-4 h-4" />
@@ -225,8 +231,8 @@ export default function AppNav({ user }: { user: User }) {
                                     {settingsAction && (
                                         <DropdownMenuItem 
                                             onClick={settingsAction}
-                                            className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
-                                                isMidnight ? 'text-slate-300 focus:text-indigo-200 focus:bg-white/8' : 'text-slate-600 focus:text-indigo-600 focus:bg-indigo-50'
+                                            className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all duration-200 ${
+                                                isMidnight ? 'text-slate-300 focus:text-indigo-200 focus:bg-white/8' : 'text-[#5e605b] focus:text-[#31332f] focus:bg-[#efeee9]'
                                             }`}
                                         >
                                             <Settings2 className="w-4 h-4" />
@@ -237,8 +243,8 @@ export default function AppNav({ user }: { user: User }) {
                                     {statsAction && (
                                         <DropdownMenuItem 
                                             onClick={statsAction}
-                                            className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
-                                                isMidnight ? 'text-slate-300 focus:text-indigo-200 focus:bg-white/8' : 'text-slate-600 focus:text-indigo-600 focus:bg-indigo-50'
+                                            className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all duration-200 ${
+                                                isMidnight ? 'text-slate-300 focus:text-indigo-200 focus:bg-white/8' : 'text-[#5e605b] focus:text-[#31332f] focus:bg-[#efeee9]'
                                             }`}
                                         >
                                             <BarChart3 className="w-4 h-4" />
@@ -249,8 +255,8 @@ export default function AppNav({ user }: { user: User }) {
                                     {restoreAction && (
                                         <DropdownMenuItem 
                                             onClick={restoreAction}
-                                            className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
-                                                isMidnight ? 'text-slate-300 focus:text-amber-200 focus:bg-amber-900/20' : 'text-slate-600 focus:text-amber-700 focus:bg-amber-50'
+                                            className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all duration-200 ${
+                                                isMidnight ? 'text-slate-300 focus:text-amber-200 focus:bg-amber-900/20' : 'text-[#5e605b] focus:text-amber-700 focus:bg-amber-50/60'
                                             }`}
                                         >
                                             <ArchiveRestore className="w-4 h-4" />
@@ -258,14 +264,14 @@ export default function AppNav({ user }: { user: User }) {
                                         </DropdownMenuItem>
                                     )}
                                     
-                                    <DropdownMenuSeparator className={`my-1.5 ${isMidnight ? 'bg-slate-700/60' : 'bg-slate-100'}`} />
+                                    <DropdownMenuSeparator className={`my-1.5 ${isMidnight ? 'bg-slate-700/60' : 'bg-[#e8e7e2]'}`} />
                                 </>
                             )}
 
                             <DropdownMenuItem 
                                 onClick={() => router.push('/help')}
-                                className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
-                                    isMidnight ? 'text-slate-300 focus:text-[#dbe5ff] focus:bg-white/8' : 'text-slate-600 focus:text-[#546354] focus:bg-[#546354]/5'
+                                className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all duration-200 ${
+                                    isMidnight ? 'text-slate-300 focus:text-[#dbe5ff] focus:bg-white/8' : 'text-[#5e605b] focus:text-[#31332f] focus:bg-[#efeee9]'
                                 }`}
                             >
                                 <HelpCircle className="w-4 h-4" />
@@ -274,8 +280,8 @@ export default function AppNav({ user }: { user: User }) {
 
                             <DropdownMenuItem 
                                 onClick={() => router.push('/settings')}
-                                className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
-                                    isMidnight ? 'text-slate-300 focus:text-[#dbe5ff] focus:bg-white/8' : 'text-slate-600 focus:text-[#546354] focus:bg-[#546354]/5'
+                                className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all duration-200 ${
+                                    isMidnight ? 'text-slate-300 focus:text-[#dbe5ff] focus:bg-white/8' : 'text-[#5e605b] focus:text-[#31332f] focus:bg-[#efeee9]'
                                 }`}
                             >
                                 <SettingsIcon className="w-4 h-4" />
@@ -285,8 +291,8 @@ export default function AppNav({ user }: { user: User }) {
                             {canAccessAdmin && (
                                 <DropdownMenuItem 
                                     onClick={() => router.push('/admin')}
-                                    className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
-                                        isMidnight ? 'text-slate-300 focus:text-[#dbe5ff] focus:bg-white/8' : 'text-slate-600 focus:text-[#546354] focus:bg-[#546354]/5'
+                                    className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all duration-200 ${
+                                        isMidnight ? 'text-slate-300 focus:text-[#dbe5ff] focus:bg-white/8' : 'text-[#5e605b] focus:text-[#31332f] focus:bg-[#efeee9]'
                                     }`}
                                 >
                                     <Shield className="w-4 h-4" />
@@ -299,15 +305,15 @@ export default function AppNav({ user }: { user: User }) {
                                     const currentPath = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : '')
                                     router.push(`/feedback?from=${encodeURIComponent(currentPath)}`)
                                 }}
-                                className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
-                                    isMidnight ? 'text-slate-300 focus:text-[#dbe5ff] focus:bg-white/8' : 'text-slate-600 focus:text-[#546354] focus:bg-[#546354]/5'
+                                className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all duration-200 ${
+                                    isMidnight ? 'text-slate-300 focus:text-[#dbe5ff] focus:bg-white/8' : 'text-[#5e605b] focus:text-[#31332f] focus:bg-[#efeee9]'
                                 }`}
                             >
                                 <Mail className="w-4 h-4" />
                                 <span className="font-semibold text-sm">Support & Feedback</span>
                             </DropdownMenuItem>
                             
-                            <DropdownMenuSeparator className={`my-1.5 ${isMidnight ? 'bg-slate-700/60' : 'bg-slate-100'}`} />
+                            <DropdownMenuSeparator className={`my-1.5 ${isMidnight ? 'bg-slate-700/60' : 'bg-[#e8e7e2]'}`} />
 
                             
                             <DropdownMenuItem 

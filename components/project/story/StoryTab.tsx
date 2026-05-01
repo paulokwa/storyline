@@ -635,7 +635,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                     'flex flex-col transition-all duration-500 ease-in-out overflow-hidden z-40 md:z-20',
                     'absolute top-0 bottom-0 left-0 md:relative md:inset-auto md:h-full',
                     sidebarOpen
-                        ? 'w-[280px] lg:w-[320px] border-r border-slate-200 opacity-100 translate-x-0 bg-[#f5f4ef]'
+                        ? 'w-[280px] lg:w-[320px] border-r border-[#ccc9c0] opacity-100 translate-x-0 bg-[#f2f0eb]'
                         : theme === 'midnight'
                             ? 'w-0 border-none opacity-0 -translate-x-full md:w-14 md:translate-x-0 md:opacity-100 md:border-r md:border-slate-500/20 md:bg-[linear-gradient(180deg,rgba(19,28,45,0.96)_0%,rgba(16,24,38,0.98)_100%)] md:shadow-[inset_-1px_0_0_rgba(148,163,184,0.08),10px_0_30px_rgba(2,6,23,0.18)]'
                             : 'structure-collapsed-rail w-0 border-none opacity-0 -translate-x-full md:w-14 md:translate-x-0 md:opacity-100 md:border-r md:border-[#d8ddcf] md:bg-[#eef1e8] md:shadow-[inset_-1px_0_0_rgba(84,99,84,0.06)]'
@@ -684,7 +684,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             <div data-tour="main-editor" className="story-workspace flex-1 flex flex-col overflow-hidden bg-[#fbf9f5] w-full">
                 {/* Linked Context (Sticky) */}
                 {activeNodeId && activeScene && !isLocalOnly && (
-                    <div className="story-workspace-topbar bg-[#fbf9f5] border-b border-slate-100 z-10">
+                    <div className="story-workspace-topbar bg-[#fbf9f5] border-b border-[#e4e2da] z-10">
                         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-start sm:items-center justify-between gap-4">
                             <div className="flex-1 snap-row">
                                 <LinkedContext
