@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { startGuardedAuthRedirect } from '@/lib/auth/client-navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -52,8 +53,13 @@ export default function SignupPage() {
                 return
             }
 
-            router.push('/library')
-            router.refresh()
+            startGuardedAuthRedirect({
+                router,
+                onStalled: () => {
+                    setError('Your account was created, but your library did not open yet. Please try signing in again.')
+                    setLoading(false)
+                },
+            })
         } catch {
             setError('Unable to create your account right now.')
             setLoading(false)

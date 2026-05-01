@@ -108,6 +108,7 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 | Rename project metadata | Not tested | - | - | Confirm title/metadata saves and persists. |
 | Local/cloud mode feature boundaries | Not tested | - | - | Confirm local features work, cloud-only features are hidden or explained, and cloud projects are not stuck in local-mode wording. |
 | Cloud project open messaging | Not tested | - | - | Confirm opening a cloud project does not flash local project messaging. |
+| Auth navigation fallback after successful mutation | Needs retest | - | - | Login, signup immediate-session, and reset-password now use a guarded redirect helper. Real browser form submission is still needed to confirm the fallback only appears on genuine stalls. |
 | Broader pre-launch regression pass | Not tested | - | - | Cover core project flow, import/export, local/cloud behavior, AI availability states, collaboration, tablet/mobile layout, and onboarding tours. |
 
 ## Structure / Planning
@@ -229,6 +230,7 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 | Atomic project scaffolding failure scenario | Not tested | - | - | Confirm no zombie projects after partial failure. |
 | Centralized AI rate limiting | Needs retest | AI agent | 2026-04-30 | Upgraded limiter to support IP and Device Fingerprint clustering. Throttling now applies across accounts sharing the same identity signals to prevent multi-accounting bypass. |
 | Retry/backoff for save/init flows | Not tested | - | - | Verify transient cloud project creation or cloud scene-save failures recover on retry, and only surface errors after retry attempts are exhausted. |
+| Next.js dev-origin and local auth route reachability | Passed | AI agent | 2026-05-01 | Verified `/login` returns `200` on both `localhost` and `127.0.0.1` after `.next` reset and `allowedDevOrigins` update. Playwright also loaded `127.0.0.1` without the previous dev-origin warning appearing in the current Next dev log. |
 | AI trial reconciliation checks | Not tested | - | - | After successful runs, failed runs, cancellations, and interrupted trial requests, confirm the trial account balance recovers correctly, stuck reserved usage is reconciled, and admin/user-visible usage data stays consistent. |
 | Structure tree performance with large project | Not tested | - | - | Confirm acceptable performance with many nodes. |
 | Pre-launch security audit | Not tested | - | - | Review input sanitization, auth flows, exposed secrets, personal emails, repo references, and deployment settings. |
@@ -242,6 +244,7 @@ Newest confirmations go at the top.
 
 | 2026-04-30 | AI agent | TypeScript compile after project-open 404 layout fix | Passed | `npx tsc --noEmit --pretty false` passed after changing the project layout loader to avoid 404s caused by missing owner `project_members` rows. |
 | 2026-04-30 | AI agent | TypeScript compile after library back-refresh fix | Passed | `npx tsc --noEmit --pretty false` passed after adding a library-return refresh flag so `Recent` order can re-fetch after opening a project card and returning. |
+| 2026-05-01 | AI agent | Focused auth hardening compile and lint | Passed | `npx tsc --noEmit --pretty false` and focused `npx eslint` passed after adding guarded auth redirects and the shared client helper. |
 | 2026-04-26 | User | Solo project collaborator header empty state | Passed | User confirmed the empty collaborator pill/blip no longer appears on solo projects. |
 | 2026-04-26 | User | Prose scene gallery wording | Passed | User confirmed the wording cleanup is resolved. |
 | 2026-04-29 | User | AI-disabled scene analyzer feedback | Passed | User manually verified analyzer-specific AI-off feedback in the browser. |

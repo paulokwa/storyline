@@ -4,10 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { getErrorMessage, startGuardedAuthRedirect } from '@/lib/auth/client-navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { PenLine, AlertCircle, Sparkles } from 'lucide-react'
+import { PenLine, AlertCircle } from 'lucide-react'
 
 export default function ResetPasswordPage() {
     const router = useRouter()
@@ -21,7 +22,6 @@ export default function ResetPasswordPage() {
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
-        console.log('Reset password submit triggered')
         if (password !== confirmPassword) {
             setError('Passwords do not match')
             return
@@ -31,21 +31,22 @@ export default function ResetPasswordPage() {
         setError('')
 
         try {
-            console.log('Updating password in Supabase...')
             const { error } = await supabase.auth.updateUser({ password })
-            console.log('Password update response. Error:', error)
 
             if (error) {
                 setError(error.message)
                 setLoading(false)
             } else {
-                console.log('Success! Redirecting...')
-                router.push('/library')
-                router.refresh()
+                startGuardedAuthRedirect({
+                    router,
+                    onStalled: () => {
+                        setError('Your password was updated, but your library did not open yet. Please try signing in again.')
+                        setLoading(false)
+                    },
+                })
             }
-        } catch (err: any) {
-            console.error('Caught exception during update:', err)
-            setError(err.message || 'An unexpected error occurred')
+        } catch (err: unknown) {
+            setError(getErrorMessage(err, 'An unexpected error occurred'))
             setLoading(false)
         }
     }
@@ -100,7 +101,7 @@ export default function ResetPasswordPage() {
                             </div>
                         )}
 
-                        <Button onClick={handleSubmit} type="submit" className="w-full h-12 bg-[#546354] hover:bg-[#3d4a3d] text-white rounded-full font-serif italic text-lg shadow-lg hover:shadow-xl transition-all duration-300" disabled={loading}>
+                        <Button type="submit" className="w-full h-12 bg-[#546354] hover:bg-[#3d4a3d] text-white rounded-full font-serif italic text-lg shadow-lg hover:shadow-xl transition-all duration-300" disabled={loading}>
                             {loading ? 'Securing…' : 'Update Password'}
                         </Button>
                     </form>

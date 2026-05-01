@@ -62,6 +62,10 @@ npx skills add pbakaus/impeccable
 - Consider adding an `AGENTS.md` or `CONTRIBUTING.md` if agents need stricter operating rules.
 
 ## Done
+- Hardened Next 16 local dev-origin and auth navigation reliability:
+  - added `127.0.0.1` to `allowedDevOrigins` while keeping the existing LAN origin
+  - added guarded client-side auth redirects for login, signup, and reset-password so those pages surface a clear fallback message instead of spinning forever when navigation never leaves the current route
+  - documented the confirmed `.next` reset plus dev-origin fix in `TROUBLESHOOTING.md`
 - Hide incomplete summary export modes from Export Manuscript modal to avoid confusing users.
 - Hide incomplete Episodes/Scenes export scope options from Export Manuscript modal to avoid confusing users.
 - Fix Export Manuscript include toggles so they remain visible and the full row is clickable, not just the tiny switch.

@@ -5,6 +5,47 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-01 - Dev-origin and auth navigation hardening
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Investigated a local dev failure where the app could bind to port `3000` but still hang on page loads and post-login navigation.
+- Confirmed the existing troubleshooting path applied: stopping the stuck dev process tree, clearing `.next`, and restarting restored normal local responses.
+- Updated `next.config.ts` so Next 16 development also allows `127.0.0.1` in addition to the existing LAN origin.
+- Added a shared client auth redirect helper in `lib/auth/client-navigation.ts`.
+- Hardened `app/(auth)/login/page.tsx`, `app/(auth)/signup/page.tsx`, and `app/(auth)/reset-password/page.tsx` so they no longer sit in a silent loading state if post-auth navigation never leaves the current page.
+- Removed duplicate reset-password submit wiring and deleted temporary auth debug logging.
+- Added a reusable troubleshooting entry for the Next.js dev-origin plus stuck-cache pattern.
+- Verified the touched code with:
+  - `npx tsc --noEmit --pretty false`
+  - focused `npx eslint` on the touched auth/config/helper files
+  - HTTP `200` responses for `/login` on both `http://localhost:3000` and `http://127.0.0.1:3000`
+  - Playwright page load on `http://127.0.0.1:3000/login` without the earlier dev-origin warning appearing in `.next/dev/logs/next-development.log`
+
+### Current status
+
+The local dev server now starts cleanly again after cache reset, and Next 16 no longer blocks the `127.0.0.1` host used during local testing. The auth entry pages now fail more clearly if they never leave the current route after a successful auth mutation.
+
+### Next recommended step
+
+Run a focused browser submission pass on the auth flows:
+- invalid login should show an inline error and clear loading
+- successful login should leave `/login` and reach the authenticated app
+- signup verification-required path should still show confirmation copy
+- reset-password success path should navigate cleanly, and failure should clear loading
+
+After that, return to the Account Settings audit the user requested earlier.
+
+### Risks or warnings
+
+- The new auth fallback only detects the specific failure mode where the page never leaves the current auth route. It does not solve deeper server stalls after navigation has already changed routes.
+- Playwright created locked `.playwright-mcp` artifact files in the workspace; they are untracked but may need manual cleanup outside the current tool lock if desired.
+
+---
 ## 2026-04-30 - Export modal trust and include-toggle fixes
 
 ### Current branch

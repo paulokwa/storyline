@@ -221,6 +221,35 @@ Add a short entry using this format:
 - Risks, warnings, or follow-up
 ```
 
+## Issue: Next.js dev server listens but auth pages hang or never finish loading
+
+### Symptoms
+
+- `npm run dev` starts and binds to port `3000`, but local pages stall or time out.
+- The login screen may render, but signing in appears to do nothing and the loading label keeps spinning.
+- Requests from `127.0.0.1` can trigger Next.js dev-origin warnings even though `localhost` works.
+
+### Cause
+
+- A stale or locked `.next` cache can leave the Next.js 16 dev server in a half-working state where it listens but does not serve requests reliably.
+- An overly narrow `allowedDevOrigins` config can also block dev-only assets when the app is opened from `127.0.0.1`.
+
+### Fix
+
+- Stop the stuck dev server process tree completely.
+- Remove `.next`.
+- Restart `npm run dev`.
+- In `next.config.ts`, include `127.0.0.1` in `allowedDevOrigins` while keeping any existing LAN dev host entries.
+
+### Verification
+
+- `http://localhost:3000/login` returns `200` after restart.
+- `http://127.0.0.1:3000/login` loads without Next.js dev-origin warnings after the config update.
+
+### Notes
+
+- If `.next` cannot be deleted on Windows, a child `node.exe` process may still be holding cache files open.
+
 ## Issue: Action icons hidden on iPad Pro / Large Tablets
 
 ### Symptoms

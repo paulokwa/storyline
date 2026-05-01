@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { getErrorMessage, startGuardedAuthRedirect } from '@/lib/auth/client-navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,15 +22,25 @@ export default function LoginPage() {
         setLoading(true)
         setError('')
 
-        const supabase = createClient()
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        try {
+            const supabase = createClient()
+            const { error } = await supabase.auth.signInWithPassword({ email, password })
 
-        if (error) {
-            setError(error.message)
+            if (error) {
+                setError(error.message)
+                setLoading(false)
+            } else {
+                startGuardedAuthRedirect({
+                    router,
+                    onStalled: () => {
+                        setError('You are signed in, but your library did not open yet. Please try again.')
+                        setLoading(false)
+                    },
+                })
+            }
+        } catch (err: unknown) {
+            setError(getErrorMessage(err, 'Unable to sign in right now.'))
             setLoading(false)
-        } else {
-            router.push('/library')
-            router.refresh()
         }
     }
 
