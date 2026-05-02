@@ -179,7 +179,7 @@ Credentials must live only in a gitignored local env file such as `.local/test-a
 
 | Test | Status | Tested by | Date tested | Notes |
 |---|---|---|---|---|
-| Local dev test account workflow | Needs retest | AI agent | 2026-05-02 | The original workflow landed and ignore rules were verified, but a real local run exposed a Node compatibility issue from `lib/supabase/admin.ts` importing `server-only`. That import is now removed and `npx tsc --noEmit --pretty false` passes. Re-run `npm run create:test-account` locally to verify end-to-end behavior. |
+| Local dev test account workflow | Passed | User | 2026-05-02 | User verified end-to-end local execution: `npm run create:test-account` created the account from `.local/test-account.env` on first run and then correctly reported the account already exists on second run. |
 | New user sees free trial messaging | Not tested | - | - | Confirm trial message is visible and understandable. |
 | Existing user account state displays correctly | Not tested | - | - | Confirm no incorrect trial prompts. |
 | Account deletion with trial data | Not tested | - | - | Confirm cleanup/hardening works as expected. |
@@ -257,6 +257,7 @@ Credentials must live only in a gitignored local env file such as `.local/test-a
 Newest confirmations go at the top.
 
 | 2026-04-30 | AI agent | TypeScript compile after project-open 404 layout fix | Passed | `npx tsc --noEmit --pretty false` passed after changing the project layout loader to avoid 404s caused by missing owner `project_members` rows. |
+| 2026-05-02 | User | Local dev test account workflow end-to-end | Passed | User verified the script used `.local/test-account.env`, created `dev-test@example.com`, and then reported the same account already exists on a second run. |
 | 2026-05-02 | AI agent | Test account script compatibility fix compile check | Passed | Removed the shared `server-only` import from `lib/supabase/admin.ts` so standalone Node and `tsx` scripts can import the admin helper, and `npx tsc --noEmit --pretty false` passed. |
 | 2026-05-01 | AI agent | Local dev test account workflow verification | Passed | `npx tsc --noEmit --pretty false` passed, `npm run create:test-account` is wired, and `git check-ignore -v` confirms `.local/test-account.env` and `.env.test.local` are ignored. |
 | 2026-05-01 | AI agent | Help shortcuts access compile and focused lint | Passed | `npx tsc --noEmit --pretty false` passed after wiring project Help into the shortcuts modal, and focused `npx eslint` passed for `components/project/help/HelpTab.tsx`, `lib/help.ts`, and `lib/project/shortcuts.ts`. |

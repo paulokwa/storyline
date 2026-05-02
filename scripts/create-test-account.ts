@@ -8,6 +8,7 @@ type LoadedTestAccountConfig = {
   password: string
 }
 
+const SERVER_ENV_CANDIDATES = ['.env.local', '.env'] as const
 const LOCAL_ENV_CANDIDATES = ['.local/test-account.env', '.env.test.local'] as const
 
 function parseEnvFile(fileContents: string): Record<string, string> {
@@ -62,6 +63,24 @@ function loadLocalTestAccountConfig(): LoadedTestAccountConfig {
   )
 }
 
+function loadServerEnvFiles() {
+  for (const relativeEnvPath of SERVER_ENV_CANDIDATES) {
+    const envPath = path.resolve(process.cwd(), relativeEnvPath)
+
+    if (!fs.existsSync(envPath)) {
+      continue
+    }
+
+    const envValues = parseEnvFile(fs.readFileSync(envPath, 'utf8'))
+
+    for (const [key, value] of Object.entries(envValues)) {
+      if (!process.env[key]) {
+        process.env[key] = value
+      }
+    }
+  }
+}
+
 async function findUserByEmail(email: string) {
   const supabase = createAdminClient()
 
@@ -102,6 +121,7 @@ async function findUserByEmail(email: string) {
 }
 
 async function main() {
+  loadServerEnvFiles()
   const { envPath, email, password } = loadLocalTestAccountConfig()
   const { supabase, user } = await findUserByEmail(email)
 

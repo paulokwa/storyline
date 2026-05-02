@@ -21,16 +21,16 @@ Agents should update this file before ending a session.
 
 ### Current status
 
-The repo-side module error is fixed. The next local run should get past the earlier `server-only` crash and either create the account, report that it already exists, or fail on missing local env configuration.
+The repo-side module error is fixed, and the local test-account workflow has now been verified end-to-end on the user's machine. The script successfully created the account on first run and correctly reported the existing account on the second run.
 
 ### Next recommended step
 
-- Run `npm run create:test-account` again locally.
-- If it now reports missing env vars, create `.local/test-account.env` and ensure the server-side Supabase env vars are available in your local shell or env files.
+- Keep using `.local/test-account.env` for local-only test credentials.
+- Re-run `npm run create:test-account` whenever a machine needs to create or verify its own local dev account.
 
 ### Risks or warnings
 
-- I could not fully execute `npm run create:test-account` in this sandbox because `tsx` and `esbuild` child-process spawn is blocked here (`spawn EPERM`), so runtime verification is compile-only on my side.
+- The user's local verification passed, but the script fix that loads `.env.local` still needs committing and pushing from this session.
 
 ---
 ## 2026-05-01 - Local-only dev test account workflow
