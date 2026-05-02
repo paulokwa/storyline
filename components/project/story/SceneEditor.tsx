@@ -365,6 +365,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [findMatches, setFindMatches] = useState<SceneSearchMatch[]>([])
     const [activeFindMatchIndex, setActiveFindMatchIndex] = useState(-1)
     const [searchDocVersion, setSearchDocVersion] = useState(0)
+    const [findRevealRequest, setFindRevealRequest] = useState(0)
 
     // Versioning & Conflict State
     const [localVersion, setLocalVersion] = useState<number>(scene.version || 1)
@@ -457,6 +458,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         setFindQuery('')
         setFindMatches([])
         setActiveFindMatchIndex(-1)
+        setFindRevealRequest(0)
     }, [])
 
     const openFindPanel = useCallback(() => {
@@ -474,6 +476,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const navigateFindMatches = useCallback((direction: 'next' | 'previous') => {
         if (!findMatches.length) return
 
+        setFindRevealRequest((request) => request + 1)
         setActiveFindMatchIndex((currentIndex) => {
             if (currentIndex === -1) {
                 return direction === 'next' ? 0 : findMatches.length - 1
@@ -1094,13 +1097,13 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     }, [editor, findMatches, activeFindMatchIndex, hasFindQuery])
 
     useEffect(() => {
-        if (!editor || activeFindMatchIndex < 0) return
+        if (!editor || activeFindMatchIndex < 0 || findRevealRequest === 0) return
 
         const activeMatch = findMatches[activeFindMatchIndex]
         if (!activeMatch) return
 
         revealFindMatch(editor, activeMatch)
-    }, [editor, findMatches, activeFindMatchIndex, revealFindMatch])
+    }, [editor, findMatches, activeFindMatchIndex, findRevealRequest, revealFindMatch])
 
     useEffect(() => {
         resetFindState()

@@ -5,6 +5,38 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-02 - Current-scene find typing-bounce stabilization
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Tightened the current-scene find behavior in `components/project/story/SceneEditor.tsx` so typing into the search field no longer auto-reveals matches on every keystroke.
+- Split find behavior into two phases:
+  - query updates recalculate match count and highlighting only
+  - explicit navigation (`Enter`, `Next`, `Previous`) triggers scroll reveal of the active match
+- This prevents the search flow from treating each partially typed query as an immediate viewport target.
+- Verified the change with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+Current-scene find should now remain stable while the user types. Highlighting and counts still update live, but snapping should only happen when the user explicitly navigates results.
+
+### Next recommended step
+
+- Re-test the exact prior regression:
+  - open current-scene find
+  - type a multi-letter word like `fingers`
+  - confirm the input keeps visual stability while typing
+  - then use `Enter`, `Next`, and `Previous` to confirm snapping still works intentionally
+
+### Risks or warnings
+
+- This is a narrow behavior change only. If additional UX issues remain, they are likely in the explicit navigation path rather than live query updates.
+
+---
 ## 2026-05-02 - Current-scene find focus-steal / formatting-toolbar regression fix
 
 ### Current branch
