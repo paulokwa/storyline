@@ -5,6 +5,52 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-02 - Editor current-scene find Block 3B Safe Pass 2
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Added a compact current-scene find UI in `components/project/story/SceneEditor.tsx`.
+- Added a visible `Find` control in the editor utility row and kept it available in Focus Mode.
+- Added scoped `Ctrl/Cmd + F` support when keyboard focus is already inside the editor shell, so the browser find shortcut is not hijacked globally.
+- Implemented case-insensitive plain-text current-scene matching only.
+- Added:
+  - search input
+  - match status (`1 of N` / `No matches`)
+  - previous / next navigation
+  - close button
+- Reset find state cleanly on scene switch and kept it session-local with no persistence.
+- Kept screenplay handling plain-text only by searching TipTap document text directly, without AI-oriented screenplay labels or any screenplay node/keyboard changes.
+- Deliberately deferred match highlighting for this pass to keep the implementation ProseMirror-safe and avoid widening scope into decoration/plugin work.
+- Verified the change with `npx tsc --noEmit --pretty false`.
+- Ran `npm run lint`; it still fails on the repo's broad pre-existing lint backlog, including unrelated `no-explicit-any`, `react/no-unescaped-entities`, and older script/app issues outside this task.
+
+### Current status
+
+Storyline now has a minimal find-in-current-scene feature for the active editor only. Users can open it from the editor chrome or with `Ctrl/Cmd + F` while working inside the editor, then cycle matches inside the current scene without any project-wide search behavior.
+
+### Next recommended step
+
+- Run a browser/manual regression pass for:
+  - prose find open/close
+  - case-insensitive prose matching
+  - next/previous cycling and no-results state
+  - scene-switch reset
+  - Focus Mode and Typewriter Mode regression
+  - screenplay matching across Scene Heading, Action, Character, Parenthetical, Dialogue, and Transition
+  - read-only/viewer mode remaining non-editable
+  - local and cloud parity
+- If Block 3B continues later, the next safe follow-up is optional match highlighting inside the current scene only. Do not jump to replace, project-wide search, structure search, links, horizontal rules, or export parity from this pass.
+
+### Risks or warnings
+
+- Matching is simple plain-text matching within text nodes. It is case-insensitive and scene-local, but this pass does not attempt cross-node phrase matching or decorative highlight rendering.
+- `npm run lint` remains noisy and failing due pre-existing repo-wide debt; this pass did not attempt lint cleanup.
+
+---
 ## 2026-05-02 - Editor writing-surface word count Block 3B Safe Pass 1
 
 ### Current branch

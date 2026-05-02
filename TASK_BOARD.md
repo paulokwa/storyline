@@ -79,6 +79,12 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
   - uses a shared plain-text helper in `lib/story/word-count.ts` for prose and screenplay
   - keeps the UI read-only and does not add find/search, replace, project totals, or links
   - reused the shared counting helper in `lib/project-stats.ts` so editor and stats counts stay aligned
+- Completed editor/font polish Block 3B Safe Pass 2:
+  - added a current-scene find surface inside `SceneEditor.tsx`
+  - supports a visible `Find` control plus scoped `Ctrl/Cmd + F` when focus is already inside the editor shell
+  - includes a search field, match count, next/previous navigation, and close/reset behavior on scene switch
+  - keeps matching case-insensitive and local to the current scene only
+  - deliberately deferred match highlighting, replace, and any project-wide or structure search
 - Added a dismiss `X` to the migrated local backup warning banner:
   - dismissal is component-state only for the current page/component lifecycle
   - the banner still reappears after refresh or when reopening the local backup project

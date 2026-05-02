@@ -37,6 +37,7 @@ import {
     Trash2, 
     RotateCcw, 
     Loader2, 
+    Search,
     Bold,
     Italic,
     Underline as UnderlineIcon,
@@ -62,6 +63,8 @@ import {
     MessageCircle,
     ArrowRight,
     Type as TypeIcon,
+    ChevronUp,
+    ChevronDown,
     Clock,
     Image as ImageIcon,
     X
@@ -119,9 +122,45 @@ const normalizeReaderText = (value: string) =>
         .replace(/\s+/g, ' ')
         .trim()
 
+const findSceneSearchMatches = (
+    doc: TiptapEditor['state']['doc'],
+    query: string
+): SceneSearchMatch[] => {
+    const normalizedQuery = query.trim().toLocaleLowerCase()
+    if (!normalizedQuery) return []
+
+    const matches: SceneSearchMatch[] = []
+
+    doc.descendants((node, position) => {
+        if (!node.isText || !node.text) return
+
+        const lowerText = node.text.toLocaleLowerCase()
+        let searchIndex = 0
+
+        while (searchIndex <= lowerText.length - normalizedQuery.length) {
+            const matchIndex = lowerText.indexOf(normalizedQuery, searchIndex)
+            if (matchIndex === -1) break
+
+            matches.push({
+                from: position + matchIndex,
+                to: position + matchIndex + normalizedQuery.length,
+            })
+
+            searchIndex = matchIndex + normalizedQuery.length
+        }
+    })
+
+    return matches
+}
+
 type AndroidToolbarPosition = {
     top: number
     anchorLeft: number
+}
+
+type SceneSearchMatch = {
+    from: number
+    to: number
 }
 
 interface SceneEditorProps {
@@ -301,6 +340,11 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [activeBlockType, setActiveBlockType] = useState<string | null>(null)
     const [sceneWordCount, setSceneWordCount] = useState(0)
     const [selectedWordCount, setSelectedWordCount] = useState(0)
+    const [isFindOpen, setIsFindOpen] = useState(false)
+    const [findQuery, setFindQuery] = useState('')
+    const [findMatches, setFindMatches] = useState<SceneSearchMatch[]>([])
+    const [activeFindMatchIndex, setActiveFindMatchIndex] = useState(-1)
+    const [searchDocVersion, setSearchDocVersion] = useState(0)
 
     // Versioning & Conflict State
     const [localVersion, setLocalVersion] = useState<number>(scene.version || 1)
@@ -317,6 +361,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [androidToolbarWidth, setAndroidToolbarWidth] = useState(0)
     const editorShellRef = useRef<HTMLDivElement | null>(null)
     const editorPageRef = useRef<HTMLDivElement | null>(null)
+    const findInputRef = useRef<HTMLInputElement | null>(null)
     const typewriterScrollFrameRef = useRef<number | null>(null)
     const typewriterProgrammaticScrollRef = useRef(false)
     const typewriterLastScrollRef = useRef(0)
@@ -328,6 +373,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         height: number
     } | null>(null)
     const hasSelectedWords = selectedWordCount > 0
+    const hasFindQuery = findQuery.trim().length > 0
+    const hasFindMatches = findMatches.length > 0
 
     const updateWordCountState = useCallback((editorInstance: TiptapEditor) => {
         const totalText = editorInstance.getText()
@@ -339,6 +386,39 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         setSceneWordCount(countWordsFromText(totalText))
         setSelectedWordCount(countWordsFromText(selectionText))
     }, [])
+
+    const resetFindState = useCallback(() => {
+        setIsFindOpen(false)
+        setFindQuery('')
+        setFindMatches([])
+        setActiveFindMatchIndex(-1)
+    }, [])
+
+    const openFindPanel = useCallback(() => {
+        setIsFindOpen(true)
+        window.requestAnimationFrame(() => {
+            findInputRef.current?.focus()
+            findInputRef.current?.select()
+        })
+    }, [])
+
+    const closeFindPanel = useCallback(() => {
+        resetFindState()
+    }, [resetFindState])
+
+    const navigateFindMatches = useCallback((direction: 'next' | 'previous') => {
+        if (!findMatches.length) return
+
+        setActiveFindMatchIndex((currentIndex) => {
+            if (currentIndex === -1) {
+                return direction === 'next' ? 0 : findMatches.length - 1
+            }
+
+            return direction === 'next'
+                ? (currentIndex + 1) % findMatches.length
+                : (currentIndex - 1 + findMatches.length) % findMatches.length
+        })
+    }, [findMatches.length])
 
     useEffect(() => {
         const supabase = createClient()
@@ -780,10 +860,12 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         onCreate: ({ editor }) => {
             onTextChange?.(getSceneTextForAi(editor.getJSON()))
             updateWordCountState(editor)
+            setSearchDocVersion(version => version + 1)
         },
         onUpdate: ({ editor, transaction }) => {
             onTextChange?.(getSceneTextForAi(editor.getJSON()))
             updateWordCountState(editor)
+            setSearchDocVersion(version => version + 1)
             
             // Only trigger autosave if it's a user change
             const isInternal = transaction.getMeta('isInternal')
@@ -882,6 +964,55 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         if (!editor) return
         updateWordCountState(editor)
     }, [editor, scene.id, scene.content, updateWordCountState])
+
+    useEffect(() => {
+        if (!editor || !hasFindQuery) {
+            setFindMatches([])
+            setActiveFindMatchIndex(-1)
+            return
+        }
+
+        const nextMatches = findSceneSearchMatches(editor.state.doc, findQuery)
+        setFindMatches(nextMatches)
+        setActiveFindMatchIndex(currentIndex => {
+            if (!nextMatches.length) return -1
+            if (currentIndex < 0) return 0
+            return Math.min(currentIndex, nextMatches.length - 1)
+        })
+    }, [editor, findQuery, hasFindQuery, searchDocVersion])
+
+    useEffect(() => {
+        if (!editor || activeFindMatchIndex < 0) return
+
+        const activeMatch = findMatches[activeFindMatchIndex]
+        if (!activeMatch) return
+
+        const { from, to } = editor.state.selection
+        if (from === activeMatch.from && to === activeMatch.to) return
+
+        editor.chain().setTextSelection({ from: activeMatch.from, to: activeMatch.to }).scrollIntoView().run()
+    }, [editor, findMatches, activeFindMatchIndex])
+
+    useEffect(() => {
+        resetFindState()
+        setSearchDocVersion(0)
+    }, [scene.id, resetFindState])
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'f') return
+
+            const target = event.target as HTMLElement | null
+            const editorShell = editorShellRef.current
+            if (!target || !editorShell?.contains(target)) return
+
+            event.preventDefault()
+            openFindPanel()
+        }
+
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [openFindPanel])
 
     const canShowSelectionToolbar = !!editor && (!isReadOnly || (role === 'viewer' && allowViewerFeedback))
 
@@ -1493,12 +1624,86 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const isDeleted = scene.deleted_at !== null
     const totalWordLabel = `${sceneWordCount.toLocaleString()} ${sceneWordCount === 1 ? 'word' : 'words'}`
     const selectedWordLabel = `${selectedWordCount.toLocaleString()} selected`
+    const findStatusLabel = !hasFindQuery
+        ? 'Find in scene'
+        : hasFindMatches
+            ? `${activeFindMatchIndex + 1} of ${findMatches.length}`
+            : 'No matches'
 
     // Sync editor settings without re-mounting
     useEffect(() => {
         if (!editor) return
         editor.setEditable(!isReadOnly)
     }, [editor, isReadOnly])
+
+    const findPanel = isFindOpen ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-[1.1rem] border border-[#dde6d8] bg-white/92 px-3 py-2 shadow-[0_10px_30px_rgba(49,51,47,0.06)] backdrop-blur-sm">
+            <div className="relative min-w-[220px] flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <input
+                    ref={findInputRef}
+                    type="text"
+                    value={findQuery}
+                    onChange={(event) => setFindQuery(event.target.value)}
+                    onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                            event.preventDefault()
+                            navigateFindMatches(event.shiftKey ? 'previous' : 'next')
+                        } else if (event.key === 'Escape') {
+                            event.preventDefault()
+                            closeFindPanel()
+                        }
+                    }}
+                    placeholder="Find in this scene"
+                    aria-label="Find in current scene"
+                    className="h-9 w-full rounded-[0.95rem] border border-[#e8e3da] bg-[#f8f6f1] pl-9 pr-3 text-sm text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-[#cfd7c8] focus:bg-white"
+                />
+            </div>
+            <span
+                className={cn(
+                    "min-w-[74px] text-center text-[10px] font-semibold uppercase tracking-[0.18em]",
+                    hasFindQuery && !hasFindMatches ? "text-amber-600" : "text-slate-400"
+                )}
+                aria-live="polite"
+            >
+                {findStatusLabel}
+            </span>
+            <div className="flex items-center gap-1">
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigateFindMatches('previous')}
+                    disabled={!hasFindMatches}
+                    aria-label="Previous match"
+                    className="h-8 rounded-full px-2 text-slate-500 hover:bg-[#f4f5f1] hover:text-slate-700 disabled:opacity-40"
+                >
+                    <ChevronUp className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigateFindMatches('next')}
+                    disabled={!hasFindMatches}
+                    aria-label="Next match"
+                    className="h-8 rounded-full px-2 text-slate-500 hover:bg-[#f4f5f1] hover:text-slate-700 disabled:opacity-40"
+                >
+                    <ChevronDown className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={closeFindPanel}
+                    aria-label="Close find in current scene"
+                    className="h-8 rounded-full px-2 text-slate-500 hover:bg-[#f4f5f1] hover:text-slate-700"
+                >
+                    <X className="h-3.5 w-3.5" />
+                </Button>
+            </div>
+        </div>
+    ) : null
 
     return (
         <div
@@ -1636,6 +1841,21 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                         )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={isFindOpen ? closeFindPanel : openFindPanel}
+                            aria-label={isFindOpen ? 'Close find in current scene' : 'Find in current scene'}
+                            className={cn(
+                                TOP_ACTION_PILL_BASE,
+                                "inline-flex text-slate-400 hover:text-slate-600 hover:bg-white",
+                                isFindOpen && "border-[#cfd7c8] bg-white text-[#546354]"
+                            )}
+                        >
+                            <Search className="mr-1 h-3 w-3" />
+                            Find
+                        </Button>
                         <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                             {hasSelectedWords ? `${selectedWordLabel} · ${totalWordLabel}` : totalWordLabel}
                         </span>
@@ -1671,6 +1891,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
                     </div>
                 </div>
+                {findPanel}
                 
                 <input
                     value={title}
@@ -2141,22 +2362,42 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             )}
 
             {isFocusMode && (
-                <div className="sticky top-3 z-[95] mb-4 flex items-center justify-between gap-3">
-                    <div className="min-w-0 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                        {hasSelectedWords ? `${selectedWordLabel} · ${totalWordLabel}` : totalWordLabel}
+                <div className="sticky top-3 z-[95] mb-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                            {hasSelectedWords ? `${selectedWordLabel} · ${totalWordLabel}` : totalWordLabel}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={isFindOpen ? closeFindPanel : openFindPanel}
+                                aria-label={isFindOpen ? 'Close find in current scene' : 'Find in current scene'}
+                                className={cn(
+                                    TOP_ACTION_PILL_BASE,
+                                    "inline-flex text-slate-400 hover:text-slate-600 hover:bg-white",
+                                    isFindOpen && "border-[#cfd7c8] bg-white text-[#546354]"
+                                )}
+                            >
+                                <Search className="mr-1 h-3 w-3" />
+                                Find
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => updateViewSetting('focusMode', false)}
+                                className={cn(
+                                    TOP_ACTION_PILL_BASE,
+                                    "scene-editor-focus-exit inline-flex items-center gap-1.5"
+                                )}
+                            >
+                                <X className="h-3.5 w-3.5" />
+                                Exit Focus
+                            </Button>
+                        </div>
                     </div>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => updateViewSetting('focusMode', false)}
-                        className={cn(
-                            TOP_ACTION_PILL_BASE,
-                            "scene-editor-focus-exit inline-flex items-center gap-1.5"
-                        )}
-                    >
-                        <X className="h-3.5 w-3.5" />
-                        Exit Focus
-                    </Button>
+                    {findPanel}
                 </div>
             )}
 
