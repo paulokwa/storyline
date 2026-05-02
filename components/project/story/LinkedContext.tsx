@@ -277,6 +277,11 @@ export default function LinkedContext({
             <div className="flex min-w-0 items-start gap-3 pl-1">
                 <div className="flex shrink-0 items-center gap-2 pt-1 text-[9px] uppercase tracking-widest text-slate-400 font-bold">
                     <span>AI Ready</span>
+                    {isReadOnly && (
+                        <span className="rounded-full border border-slate-200 bg-white/80 px-2 py-0.5 text-[8px] tracking-[0.16em] text-slate-400">
+                            View Only
+                        </span>
+                    )}
                 </div>
 
                 <div className="relative min-w-0 flex-1 h-[34px]">
@@ -288,7 +293,9 @@ export default function LinkedContext({
                         onMouseMove={onMouseMove}
                         className={cn(
                             "flex items-center gap-2 overflow-x-auto no-scrollbar absolute inset-0 pr-12 [mask-image:linear-gradient(to_right,black_calc(100%-40px),transparent_100%)] overscroll-x-contain pointer-events-auto",
-                            isDragging ? "cursor-grabbing" : "cursor-grab"
+                            isReadOnly
+                                ? "pointer-events-none opacity-60"
+                                : (isDragging ? "cursor-grabbing" : "cursor-grab")
                         )}
                     >
                 {/* Linked Characters */}
@@ -306,6 +313,7 @@ export default function LinkedContext({
                                 type="checkbox"
                                 checked={isActive}
                                 onChange={(e) => setActiveCharacters?.(prev => ({ ...prev, [char.id]: e.target.checked }))}
+                                disabled={isReadOnly}
                                 className="w-3.5 h-3.5 rounded-md cursor-pointer accent-[#546354]"
                             />
                             <Users className="w-3 h-3 opacity-60" />
@@ -336,6 +344,7 @@ export default function LinkedContext({
                                 type="checkbox"
                                 checked={isActive}
                                 onChange={(e) => setActiveIdeas?.(prev => ({ ...prev, [idea.id]: e.target.checked }))}
+                                disabled={isReadOnly}
                                 className="w-3.5 h-3.5 rounded-md cursor-pointer accent-indigo-600"
                             />
                             <IdeaIcon className="w-3 h-3 opacity-60" />
@@ -364,6 +373,7 @@ export default function LinkedContext({
                                 type="checkbox"
                                 checked={isActive}
                                 onChange={(e) => setActiveLocations?.(prev => ({ ...prev, [loc.id]: e.target.checked }))}
+                                disabled={isReadOnly}
                                 className="w-3.5 h-3.5 rounded-md cursor-pointer accent-emerald-600"
                             />
                             <MapPin className="w-3 h-3 opacity-60" />
@@ -392,6 +402,7 @@ export default function LinkedContext({
                                 type="checkbox"
                                 checked={isActive}
                                 onChange={(e) => setActiveObjects?.(prev => ({ ...prev, [obj.id]: e.target.checked }))}
+                                disabled={isReadOnly}
                                 className="w-3.5 h-3.5 rounded-md cursor-pointer accent-blue-600"
                             />
                             <Package className="w-3 h-3 opacity-60" />
@@ -445,7 +456,11 @@ export default function LinkedContext({
 
                         {!hasLinkedContext && (
                             <div className="flex min-w-0 items-center">
-                                <div className="relative -top-[0.40625rem] inline-block text-[11px] text-slate-300 italic leading-none">No linked items ready for AI analysis</div>
+                                <div className="relative -top-[0.40625rem] inline-block text-[11px] text-slate-300 italic leading-none">
+                                    {isReadOnly
+                                        ? 'Linked items can be managed by the owner or an editor'
+                                        : 'No linked items ready for AI analysis'}
+                                </div>
                             </div>
                         )}
                     </div>

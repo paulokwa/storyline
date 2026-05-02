@@ -89,10 +89,7 @@ async function ProjectLayoutLoader({
         .maybeSingle()
 
     const isOwnerWithoutMembership = projectData.user_id === user.id && !currentMembership
-
-    if (!currentMembership && !isOwnerWithoutMembership) {
-        notFound()
-    }
+    const isVisibleWithoutMembership = !currentMembership && projectData.user_id !== user.id
 
     const { data: projectMembers } = await supabase
         .from('project_members')
@@ -106,8 +103,13 @@ async function ProjectLayoutLoader({
         `)
         .eq('project_id', id)
 
-    if (isOwnerWithoutMembership) {
-        console.warn('Project owner membership row missing while opening project:', id)
+    if (isOwnerWithoutMembership || isVisibleWithoutMembership) {
+        console.warn(
+            isOwnerWithoutMembership
+                ? 'Project owner membership row missing while opening project:'
+                : 'Project visible from library without a readable membership row while opening project:',
+            id
+        )
     }
 
     const projectDataWithMembers = {

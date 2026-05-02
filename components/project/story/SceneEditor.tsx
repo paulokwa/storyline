@@ -82,13 +82,17 @@ import { useComments } from '@/components/project/CommentsContext'
 import { CommentMark } from '@/lib/tiptap/comment-mark'
 import { usePresence } from '@/components/project/PresenceContext'
 import { useTheme } from '@/components/providers/ThemeProvider'
-
-const VIEW_FONT_STACKS: Record<string, string> = {
-    Newsreader: "var(--font-newsreader), var(--font-lora), Georgia, serif",
-    Lora: "var(--font-lora), Georgia, serif",
-    Inter: "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    'Atkinson Hyperlegible': "var(--font-atkinson), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-}
+import {
+    DEFAULT_PROSE_EDITOR_VIEW_SETTINGS,
+    EDITOR_VIEW_SETTINGS_STORAGE_KEY,
+    normalizeProseEditorViewSettings,
+    type ProseEditorViewSettings,
+} from '@/lib/editor/view-settings'
+import { PROSE_EDITOR_FONTS, PROSE_EDITOR_FONT_STACKS } from '@/lib/editor/fonts'
+import {
+    MANUSCRIPT_VIEW_STATE_EVENT,
+    TOGGLE_MANUSCRIPT_VIEW_EVENT,
+} from '@/lib/editor/manuscript-view-events'
 
 const ANDROID_NATIVE_SELECTION_TOOLBAR_HEIGHT = 52
 const SELECTION_TOOLBAR_HEIGHT = 48
@@ -195,6 +199,8 @@ const TOP_ACTION_PILL_BASE =
     "scene-editor-top-action hidden h-8 rounded-full px-3 text-[10px] font-bold uppercase tracking-widest transition-all border border-slate-200/70 bg-white/70 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
 
 const SCREENPLAY_INLINE_IMAGE_DISABLED_MESSAGE = 'Inline images are disabled in screenplay mode. Use Scene Visual References instead.'
+const DESKTOP_VIEW_DRAWER_RAIL_WIDTH = 56
+const DESKTOP_VIEW_DRAWER_CLOSE_MS = 500
 
 const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     scene,
@@ -304,6 +310,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [androidToolbarPosition, setAndroidToolbarPosition] = useState<AndroidToolbarPosition | null>(null)
     const androidToolbarRef = useRef<HTMLDivElement | null>(null)
     const [androidToolbarWidth, setAndroidToolbarWidth] = useState(0)
+    const editorShellRef = useRef<HTMLDivElement | null>(null)
     const editorPageRef = useRef<HTMLDivElement | null>(null)
     const activeReaderBlockRef = useRef<HTMLElement | null>(null)
     const [readerHighlightRect, setReaderHighlightRect] = useState<{
@@ -324,6 +331,96 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 setCurrentUserId(null)
             })
     }, [])
+
+    useEffect(() => {
+        if (!showViewSettings) return
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setShowViewSettings(false)
+            }
+        }
+
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [showViewSettings])
+
+    useEffect(() => {
+        const handleToggleView = (event: Event) => {
+            const nextState =
+                event instanceof CustomEvent && typeof event.detail?.open === 'boolean'
+                    ? event.detail.open
+                    : !showViewSettings
+
+            setShowViewSettings(nextState)
+        }
+
+        window.addEventListener(TOGGLE_MANUSCRIPT_VIEW_EVENT, handleToggleView as EventListener)
+        return () => window.removeEventListener(TOGGLE_MANUSCRIPT_VIEW_EVENT, handleToggleView as EventListener)
+    }, [showViewSettings])
+
+    useEffect(() => {
+        window.dispatchEvent(
+            new CustomEvent(MANUSCRIPT_VIEW_STATE_EVENT, {
+                detail: { open: showViewSettings && writingMode === 'simple' },
+            })
+        )
+    }, [showViewSettings, writingMode])
+
+    useEffect(() => {
+        if (writingMode !== 'simple' && showViewSettings) {
+            setShowViewSettings(false)
+        }
+    }, [showViewSettings, writingMode])
+
+    useEffect(() => {
+        if (writingMode !== 'simple') {
+            setDesktopViewDrawerBounds(null)
+            return
+        }
+
+        if (!showViewSettings) {
+            const timeout = window.setTimeout(() => {
+                setDesktopViewDrawerBounds(null)
+            }, DESKTOP_VIEW_DRAWER_CLOSE_MS)
+
+            return () => window.clearTimeout(timeout)
+        }
+
+        const shell = editorShellRef.current
+        const scrollRegion = shell?.closest('[data-story-scroll-region]') as HTMLElement | null
+        const anchor = scrollRegion ?? shell
+
+        if (!anchor) {
+            setDesktopViewDrawerBounds(null)
+            return
+        }
+
+        const syncBounds = () => {
+            const rect = anchor.getBoundingClientRect()
+            setDesktopViewDrawerBounds({
+                top: Math.max(rect.top, 0),
+                height: Math.max(rect.height, 0),
+            })
+        }
+
+        syncBounds()
+
+        const resizeObserver = new ResizeObserver(syncBounds)
+        resizeObserver.observe(anchor)
+        if (shell && shell !== anchor) {
+            resizeObserver.observe(shell)
+        }
+
+        window.addEventListener('resize', syncBounds)
+        window.addEventListener('scroll', syncBounds, true)
+
+        return () => {
+            resizeObserver.disconnect()
+            window.removeEventListener('resize', syncBounds)
+            window.removeEventListener('scroll', syncBounds, true)
+        }
+    }, [showViewSettings, writingMode])
 
     const { speechState, currentChunkText, currentChunkIndex, currentMode } = useSpeech()
 
@@ -503,15 +600,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         }
     }, [dictationRequest, speechSupported, isReadOnly])
 
-    const [viewSettings, setViewSettings] = useState({
-        fontSize: '18px',
-        lineHeight: '1.8',
-        maxWidth: '1152px',
-        textAlign: 'left',
-        fontFamily: 'Newsreader'
-    })
+    const [viewSettings, setViewSettings] = useState<ProseEditorViewSettings>(DEFAULT_PROSE_EDITOR_VIEW_SETTINGS)
+    const [desktopViewDrawerBounds, setDesktopViewDrawerBounds] = useState<{ top: number; height: number } | null>(null)
 
-    const resolvedEditorFont = VIEW_FONT_STACKS[viewSettings.fontFamily] ?? VIEW_FONT_STACKS.Newsreader
+    const resolvedEditorFont = PROSE_EDITOR_FONT_STACKS[viewSettings.fontFamily] ?? PROSE_EDITOR_FONT_STACKS.Newsreader
     const androidViewportWidth = typeof window === 'undefined'
         ? 0
         : (window.visualViewport?.width ?? window.innerWidth)
@@ -527,11 +619,11 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
     useEffect(() => {
         setIsMounted(true)
-        const saved = localStorage.getItem('storyline_editor_prefs')
+        const saved = localStorage.getItem(EDITOR_VIEW_SETTINGS_STORAGE_KEY)
         if (saved) {
             try {
                 const parsed = JSON.parse(saved)
-                setViewSettings(prev => ({ ...prev, ...parsed }))
+                setViewSettings(normalizeProseEditorViewSettings(parsed))
             } catch (e) {
                 console.error('Failed to load editor prefs', e)
             }
@@ -544,10 +636,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         sceneRef.current = scene
     }, [scene])
 
-    const updateViewSetting = (key: string, value: string) => {
+    const updateViewSetting = <K extends keyof ProseEditorViewSettings>(key: K, value: ProseEditorViewSettings[K]) => {
         const newSettings = { ...viewSettings, [key]: value }
         setViewSettings(newSettings)
-        localStorage.setItem('storyline_editor_prefs', JSON.stringify(newSettings))
+        localStorage.setItem(EDITOR_VIEW_SETTINGS_STORAGE_KEY, JSON.stringify(newSettings))
     }
 
     // Sync with external title (StructureTree changes)
@@ -1255,7 +1347,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     }, [editor, isReadOnly])
 
     return (
-        <div className={cn(
+        <div
+            ref={editorShellRef}
+            className={cn(
             'scene-editor-shell transition-all duration-700 ease-in-out relative',
             isProjectEmpty ? 'flex flex-col pb-16 md:pb-24' : 'min-h-full pb-32 md:pb-80',
             writingMode === 'screenplay'
@@ -1398,147 +1492,20 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                         
                         {/* Phase B: View Settings */}
                         {writingMode === 'simple' && (
-                            <div className="relative">
+                            <div>
                                 <Button 
                                     variant="ghost" 
                                     size="sm"
                                     onClick={() => setShowViewSettings(!showViewSettings)}
                                     className={cn(
                                         TOP_ACTION_PILL_BASE,
-                                        "inline-flex",
+                                        "inline-flex md:hidden",
                                         showViewSettings ? "text-emerald-500 bg-white border-emerald-200/80" : "text-slate-400 hover:text-slate-600 hover:bg-white"
                                     )}
                                 >
                                     <Type className="w-3 h-3 mr-1" />
                                     View
                                 </Button>
-
-                                {showViewSettings && (
-                                    <>
-                                        <div 
-                                            className="fixed inset-0 z-[60]" 
-                                            onClick={() => setShowViewSettings(false)} 
-                                        />
-                                        <div className="scene-editor-floating-panel absolute right-0 top-8 w-64 bg-white/95 backdrop-blur-xl border border-slate-200 shadow-2xl rounded-2xl p-4 z-[70] animate-in fade-in slide-in-from-top-2 duration-200">
-                                            <div className="space-y-4">
-                                                {/* Font Choice */}
-                                                <div>
-                                                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2 block">Typography</label>
-                                                    <div className="grid grid-cols-2 bg-slate-50 p-1 rounded-xl gap-1">
-                                                        {[
-                                                            { id: 'Newsreader', label: 'Newsreader', serif: true },
-                                                            { id: 'Lora', label: 'Lora', serif: true },
-                                                            { id: 'Inter', label: 'Inter', serif: false },
-                                                            { id: 'Atkinson Hyperlegible', label: 'Atkinson', serif: false }
-                                                        ].map((font) => (
-                                                            <button
-                                                                key={font.id}
-                                                                onClick={() => updateViewSetting('fontFamily', font.id)}
-                                                                className={cn(
-                                                                    "py-1.5 px-2 rounded-lg text-[11px] font-medium transition-all text-center",
-                                                                    viewSettings.fontFamily === font.id 
-                                                                        ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200" 
-                                                                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/50"
-                                                                )}
-                                                                style={{ fontFamily: VIEW_FONT_STACKS[font.id] ?? font.id }}
-                                                            >
-                                                                {font.label}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                {/* Font Size */}
-                                                <div>
-                                                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2 block">Font Size</label>
-                                                    <div className="flex bg-slate-50 p-1 rounded-xl gap-1">
-                                                        {['16px', '18px', '22px'].map((size) => (
-                                                            <button
-                                                                key={size}
-                                                                onClick={() => updateViewSetting('fontSize', size)}
-                                                                className={cn(
-                                                                    "flex-1 py-1 px-2 rounded-lg text-xs font-medium transition-all",
-                                                                    viewSettings.fontSize === size 
-                                                                        ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200" 
-                                                                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/50"
-                                                                )}
-                                                            >
-                                                                {size === '16px' ? 'Small' : size === '18px' ? 'Medium' : 'Large'}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                {/* Line Height */}
-                                                <div>
-                                                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2 block">Line Height</label>
-                                                    <div className="flex bg-slate-50 p-1 rounded-xl gap-1">
-                                                        {['1.5', '1.8', '2.2'].map((lh) => (
-                                                            <button
-                                                                key={lh}
-                                                                onClick={() => updateViewSetting('lineHeight', lh)}
-                                                                className={cn(
-                                                                    "flex-1 py-1 px-2 rounded-lg text-xs font-medium transition-all",
-                                                                    viewSettings.lineHeight === lh 
-                                                                        ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200" 
-                                                                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/50"
-                                                                )}
-                                                            >
-                                                                {lh === '1.5' ? 'Tight' : lh === '1.8' ? 'Normal' : 'Relaxed'}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                {/* Page Width */}
-                                                <div>
-                                                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2 block">Page Width</label>
-                                                    <div className="flex bg-slate-50 p-1 rounded-xl gap-1">
-                                                        {['896px', '1152px', '100%'].map((width) => (
-                                                            <button
-                                                                key={width}
-                                                                onClick={() => updateViewSetting('maxWidth', width)}
-                                                                className={cn(
-                                                                    "flex-1 py-1 px-2 rounded-lg text-xs font-medium transition-all",
-                                                                    viewSettings.maxWidth === width 
-                                                                        ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200" 
-                                                                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/50"
-                                                                )}
-                                                            >
-                                                                {width === '896px' ? 'Narrow' : width === '1152px' ? 'Default' : 'Full'}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                {/* Alignment */}
-                                                <div>
-                                                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2 block">Alignment</label>
-                                                    <div className="flex bg-slate-50 p-1 rounded-xl gap-1">
-                                                        {[
-                                                            { id: 'left', icon: AlignLeft, label: 'Left' },
-                                                            { id: 'justify', icon: AlignJustify, label: 'Justified' }
-                                                        ].map((item) => (
-                                                            <button
-                                                                key={item.id}
-                                                                onClick={() => updateViewSetting('textAlign', item.id)}
-                                                                className={cn(
-                                                                    "flex-1 py-1 px-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-2",
-                                                                    viewSettings.textAlign === item.id 
-                                                                        ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200" 
-                                                                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/50"
-                                                                )}
-                                                            >
-                                                                <item.icon className="w-3 h-3" />
-                                                                {item.label}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
                             </div>
                         )}
 
@@ -1569,12 +1536,377 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 )}
             </div>
 
+            {writingMode === 'simple' && (
+                <>
+                    <aside
+                        className={cn(
+                            "scene-editor-view-drawer fixed inset-y-0 right-0 z-[90] hidden overflow-hidden transition-[width,opacity,transform,border-color] duration-500 ease-in-out md:flex md:max-w-none",
+                            showViewSettings
+                                ? "md:w-[320px] lg:w-[380px] md:opacity-100 md:translate-x-0"
+                                : "md:w-0 md:opacity-0 md:translate-x-4 md:pointer-events-none"
+                        )}
+                        style={desktopViewDrawerBounds
+                            ? {
+                                top: desktopViewDrawerBounds.top,
+                                right: DESKTOP_VIEW_DRAWER_RAIL_WIDTH,
+                                height: desktopViewDrawerBounds.height,
+                            }
+                            : undefined}
+                    >
+                        <div className="scene-editor-view-drawer-shell flex h-full w-[320px] flex-col overflow-hidden border-l border-[#d8ddcf] bg-[linear-gradient(180deg,#f5f4ef_0%,#fbf9f5_52%,#f8f6f1_100%)] shadow-[inset_1px_0_0_rgba(255,255,255,0.45),-18px_0_40px_rgba(84,99,84,0.04)] lg:w-[380px]">
+                            <div className="shrink-0 border-b border-[#ddd8ce] bg-[linear-gradient(180deg,rgba(251,249,245,0.96)_0%,rgba(245,244,239,0.92)_100%)] px-5 py-4 backdrop-blur-sm md:px-6">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="min-w-0">
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#8fa0c0]">Manuscript View</p>
+                                        <h3 className="mt-1 text-sm font-serif font-bold italic tracking-tight text-slate-800">Reading comfort</h3>
+                                        <p className="mt-2 max-w-[26ch] text-xs leading-5 text-slate-600">
+                                            Adjust this prose view for this device only. Your manuscript content and exports stay unchanged.
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowViewSettings(false)}
+                                        aria-label="Close manuscript view panel"
+                                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-slate-300 transition-all hover:bg-white/70 hover:text-slate-600"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="custom-scrollbar flex-1 overflow-y-auto px-5 py-5 md:px-6">
+                                <div className="space-y-5">
+                                    <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Typeface</p>
+                                        <div className="mt-3 grid grid-cols-2 gap-2">
+                                            {PROSE_EDITOR_FONTS.map((font) => (
+                                                <button
+                                                    key={font.id}
+                                                    type="button"
+                                                    onClick={() => updateViewSetting('fontFamily', font.id)}
+                                                    className={cn(
+                                                        "rounded-2xl border px-3 py-3 text-center text-[13px] transition-all",
+                                                        viewSettings.fontFamily === font.id
+                                                            ? "border-[#cfd7c8] bg-white text-slate-900 shadow-[0_8px_20px_rgba(84,99,84,0.08)]"
+                                                            : "border-transparent bg-[#f4f5f1] text-slate-500 hover:border-[#dbe2d2] hover:bg-white/90 hover:text-slate-800"
+                                                    )}
+                                                    style={{ fontFamily: PROSE_EDITOR_FONT_STACKS[font.id] ?? font.id }}
+                                                >
+                                                    {font.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </section>
+
+                                    <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Font Size</p>
+                                        <div className="mt-3 flex gap-2 rounded-[1.4rem] bg-[#f1f4ec] p-1">
+                                            {(['16px', '18px', '22px'] as ProseEditorViewSettings['fontSize'][]).map((size) => (
+                                                <button
+                                                    key={size}
+                                                    type="button"
+                                                    onClick={() => updateViewSetting('fontSize', size)}
+                                                    className={cn(
+                                                        "flex-1 rounded-[1.1rem] px-3 py-2 text-sm transition-all",
+                                                        viewSettings.fontSize === size
+                                                            ? "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
+                                                            : "text-slate-500 hover:text-slate-800"
+                                                    )}
+                                                >
+                                                    {size === '16px' ? 'Small' : size === '18px' ? 'Medium' : 'Large'}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </section>
+
+                                    <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Line Height</p>
+                                        <div className="mt-3 flex gap-2 rounded-[1.4rem] bg-[#f1f4ec] p-1">
+                                            {(['1.5', '1.8', '2.2'] as ProseEditorViewSettings['lineHeight'][]).map((lh) => (
+                                                <button
+                                                    key={lh}
+                                                    type="button"
+                                                    onClick={() => updateViewSetting('lineHeight', lh)}
+                                                    className={cn(
+                                                        "flex-1 rounded-[1.1rem] px-3 py-2 text-sm transition-all",
+                                                        viewSettings.lineHeight === lh
+                                                            ? "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
+                                                            : "text-slate-500 hover:text-slate-800"
+                                                    )}
+                                                >
+                                                    {lh === '1.5' ? 'Tight' : lh === '1.8' ? 'Normal' : 'Relaxed'}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </section>
+
+                                    <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div>
+                                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Paragraph Spacing</p>
+                                                <p className="mt-1 text-xs leading-5 text-slate-500">Controls the space between prose blocks, lists, and quotes.</p>
+                                            </div>
+                                        </div>
+                                        <div className="mt-3 flex gap-2 rounded-[1.4rem] bg-[#f1f4ec] p-1">
+                                            {[
+                                                { value: '0.9em', label: 'Compact' },
+                                                { value: '1.25em', label: 'Classic' },
+                                                { value: '1.6em', label: 'Airy' }
+                                            ].map((spacing) => (
+                                                <button
+                                                    key={spacing.value}
+                                                    type="button"
+                                                    onClick={() => updateViewSetting('paragraphSpacing', spacing.value as ProseEditorViewSettings['paragraphSpacing'])}
+                                                    className={cn(
+                                                        "flex-1 rounded-[1.1rem] px-3 py-2 text-sm transition-all",
+                                                        viewSettings.paragraphSpacing === spacing.value
+                                                            ? "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
+                                                            : "text-slate-500 hover:text-slate-800"
+                                                    )}
+                                                >
+                                                    {spacing.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </section>
+
+                                    <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Page Width</p>
+                                        <div className="mt-3 flex gap-2 rounded-[1.4rem] bg-[#f1f4ec] p-1">
+                                            {(['896px', '1152px', '100%'] as ProseEditorViewSettings['maxWidth'][]).map((width) => (
+                                                <button
+                                                    key={width}
+                                                    type="button"
+                                                    onClick={() => updateViewSetting('maxWidth', width)}
+                                                    className={cn(
+                                                        "flex-1 rounded-[1.1rem] px-3 py-2 text-sm transition-all",
+                                                        viewSettings.maxWidth === width
+                                                            ? "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
+                                                            : "text-slate-500 hover:text-slate-800"
+                                                    )}
+                                                >
+                                                    {width === '896px' ? 'Narrow' : width === '1152px' ? 'Default' : 'Full'}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </section>
+
+                                    <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Alignment</p>
+                                        <div className="mt-3 flex gap-2 rounded-[1.4rem] bg-[#f1f4ec] p-1">
+                                            {([
+                                                { id: 'left', icon: AlignLeft, label: 'Left' },
+                                                { id: 'justify', icon: AlignJustify, label: 'Justified' }
+                                            ] as { id: ProseEditorViewSettings['textAlign']; icon: typeof AlignLeft; label: string }[]).map((item) => (
+                                                <button
+                                                    key={item.id}
+                                                    type="button"
+                                                    onClick={() => updateViewSetting('textAlign', item.id)}
+                                                    className={cn(
+                                                        "flex flex-1 items-center justify-center gap-2 rounded-[1.1rem] px-3 py-2 text-sm transition-all",
+                                                        viewSettings.textAlign === item.id
+                                                            ? "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
+                                                            : "text-slate-500 hover:text-slate-800"
+                                                    )}
+                                                >
+                                                    <item.icon className="h-3.5 w-3.5" />
+                                                    {item.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </section>
+
+                                    <div className="rounded-[1.5rem] border border-[#d8e2d3] bg-[#eef4ed] px-4 py-3 text-[11px] leading-5 text-[#485748]">
+                                        Comfortable reading only: type, spacing, width, and alignment do not change your saved manuscript structure or export formatting.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+
+                    {showViewSettings && (
+                        <aside className="scene-editor-view-drawer fixed inset-y-0 right-0 z-[90] flex w-full max-w-[24rem] animate-in slide-in-from-right-full duration-300 sm:max-w-[25rem] md:hidden">
+                            <div className="scene-editor-view-drawer-shell flex h-full w-full flex-col overflow-hidden border-l border-[#d8ddcf] bg-[linear-gradient(180deg,#f5f4ef_0%,#fbf9f5_52%,#f8f6f1_100%)] shadow-[inset_1px_0_0_rgba(255,255,255,0.45),-18px_0_40px_rgba(84,99,84,0.04)]">
+                                <div className="shrink-0 border-b border-[#ddd8ce] bg-[linear-gradient(180deg,rgba(251,249,245,0.96)_0%,rgba(245,244,239,0.92)_100%)] px-5 py-4 backdrop-blur-sm md:px-6">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="min-w-0">
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#8fa0c0]">Manuscript View</p>
+                                    <h3 className="mt-1 text-sm font-serif font-bold italic tracking-tight text-slate-800">Reading comfort</h3>
+                                    <p className="mt-2 max-w-[26ch] text-xs leading-5 text-slate-600">
+                                        Adjust this prose view for this device only. Your manuscript content and exports stay unchanged.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowViewSettings(false)}
+                                    aria-label="Close manuscript view panel"
+                                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-slate-300 transition-all hover:bg-white/70 hover:text-slate-600"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="custom-scrollbar flex-1 overflow-y-auto px-5 py-5 md:px-6">
+                            <div className="space-y-5">
+                                <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Typeface</p>
+                                    <div className="mt-3 grid grid-cols-2 gap-2">
+                                        {PROSE_EDITOR_FONTS.map((font) => (
+                                            <button
+                                                key={font.id}
+                                                type="button"
+                                                onClick={() => updateViewSetting('fontFamily', font.id)}
+                                                className={cn(
+                                                    "rounded-2xl border px-3 py-3 text-center text-[13px] transition-all",
+                                                    viewSettings.fontFamily === font.id
+                                                        ? "border-[#cfd7c8] bg-white text-slate-900 shadow-[0_8px_20px_rgba(84,99,84,0.08)]"
+                                                        : "border-transparent bg-[#f4f5f1] text-slate-500 hover:border-[#dbe2d2] hover:bg-white/90 hover:text-slate-800"
+                                                )}
+                                                style={{ fontFamily: PROSE_EDITOR_FONT_STACKS[font.id] ?? font.id }}
+                                            >
+                                                {font.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Font Size</p>
+                                    <div className="mt-3 flex gap-2 rounded-[1.4rem] bg-[#f1f4ec] p-1">
+                                        {(['16px', '18px', '22px'] as ProseEditorViewSettings['fontSize'][]).map((size) => (
+                                            <button
+                                                key={size}
+                                                type="button"
+                                                onClick={() => updateViewSetting('fontSize', size)}
+                                                className={cn(
+                                                    "flex-1 rounded-[1.1rem] px-3 py-2 text-sm transition-all",
+                                                    viewSettings.fontSize === size
+                                                        ? "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
+                                                        : "text-slate-500 hover:text-slate-800"
+                                                )}
+                                            >
+                                                {size === '16px' ? 'Small' : size === '18px' ? 'Medium' : 'Large'}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Line Height</p>
+                                    <div className="mt-3 flex gap-2 rounded-[1.4rem] bg-[#f1f4ec] p-1">
+                                        {(['1.5', '1.8', '2.2'] as ProseEditorViewSettings['lineHeight'][]).map((lh) => (
+                                            <button
+                                                key={lh}
+                                                type="button"
+                                                onClick={() => updateViewSetting('lineHeight', lh)}
+                                                className={cn(
+                                                    "flex-1 rounded-[1.1rem] px-3 py-2 text-sm transition-all",
+                                                    viewSettings.lineHeight === lh
+                                                        ? "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
+                                                        : "text-slate-500 hover:text-slate-800"
+                                                )}
+                                            >
+                                                {lh === '1.5' ? 'Tight' : lh === '1.8' ? 'Normal' : 'Relaxed'}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Paragraph Spacing</p>
+                                            <p className="mt-1 text-xs leading-5 text-slate-500">Controls the space between prose blocks, lists, and quotes.</p>
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 flex gap-2 rounded-[1.4rem] bg-[#f1f4ec] p-1">
+                                        {[
+                                            { value: '0.9em', label: 'Compact' },
+                                            { value: '1.25em', label: 'Classic' },
+                                            { value: '1.6em', label: 'Airy' }
+                                        ].map((spacing) => (
+                                            <button
+                                                key={spacing.value}
+                                                type="button"
+                                                onClick={() => updateViewSetting('paragraphSpacing', spacing.value as ProseEditorViewSettings['paragraphSpacing'])}
+                                                className={cn(
+                                                    "flex-1 rounded-[1.1rem] px-3 py-2 text-sm transition-all",
+                                                    viewSettings.paragraphSpacing === spacing.value
+                                                        ? "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
+                                                        : "text-slate-500 hover:text-slate-800"
+                                                )}
+                                            >
+                                                {spacing.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Page Width</p>
+                                    <div className="mt-3 flex gap-2 rounded-[1.4rem] bg-[#f1f4ec] p-1">
+                                        {(['896px', '1152px', '100%'] as ProseEditorViewSettings['maxWidth'][]).map((width) => (
+                                            <button
+                                                key={width}
+                                                type="button"
+                                                onClick={() => updateViewSetting('maxWidth', width)}
+                                                className={cn(
+                                                    "flex-1 rounded-[1.1rem] px-3 py-2 text-sm transition-all",
+                                                    viewSettings.maxWidth === width
+                                                        ? "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
+                                                        : "text-slate-500 hover:text-slate-800"
+                                                )}
+                                            >
+                                                {width === '896px' ? 'Narrow' : width === '1152px' ? 'Default' : 'Full'}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Alignment</p>
+                                    <div className="mt-3 flex gap-2 rounded-[1.4rem] bg-[#f1f4ec] p-1">
+                                        {([
+                                            { id: 'left', icon: AlignLeft, label: 'Left' },
+                                            { id: 'justify', icon: AlignJustify, label: 'Justified' }
+                                        ] as { id: ProseEditorViewSettings['textAlign']; icon: typeof AlignLeft; label: string }[]).map((item) => (
+                                            <button
+                                                key={item.id}
+                                                type="button"
+                                                onClick={() => updateViewSetting('textAlign', item.id)}
+                                                className={cn(
+                                                    "flex flex-1 items-center justify-center gap-2 rounded-[1.1rem] px-3 py-2 text-sm transition-all",
+                                                    viewSettings.textAlign === item.id
+                                                        ? "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
+                                                        : "text-slate-500 hover:text-slate-800"
+                                                )}
+                                            >
+                                                <item.icon className="h-3.5 w-3.5" />
+                                                {item.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                <div className="rounded-[1.5rem] border border-[#d8e2d3] bg-[#eef4ed] px-4 py-3 text-[11px] leading-5 text-[#485748]">
+                                    Comfortable reading only: type, spacing, width, and alignment do not change your saved manuscript structure or export formatting.
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+                        </aside>
+                    )}
+                </>
+            )}
+
             <div 
                 ref={editorPageRef}
                 style={isMounted && writingMode === 'simple' ? {
                     '--editor-font': resolvedEditorFont,
                     '--editor-font-size': viewSettings.fontSize,
                     '--editor-line-height': viewSettings.lineHeight,
+                    '--editor-paragraph-spacing': viewSettings.paragraphSpacing,
                     '--editor-max-width': viewSettings.maxWidth,
                     '--editor-text-align': viewSettings.textAlign,
                     maxWidth: viewSettings.maxWidth,

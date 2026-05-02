@@ -5,6 +5,53 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-02 - Prose editor font registry and manuscript view controls
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Implemented Block 1 and Block 2 of the editor/font polish task only.
+- Added a shared prose editor font registry in `lib/editor/fonts.ts` so prose font labels and CSS stacks no longer live inline in `SceneEditor.tsx`.
+- Added shared prose manuscript-view settings parsing/defaults in `lib/editor/view-settings.ts`, preserving the existing `storyline_editor_prefs` localStorage key and backward compatibility for older saved preferences.
+- Expanded the prose-only font roster using the existing `next/font/google` pattern by adding:
+  - `Source Serif 4`
+  - `Merriweather`
+- Updated `SceneEditor.tsx` so prose manuscript view controls now use the shared registry/settings helpers and include:
+  - clearer manuscript-view messaging
+  - explicit display-only/export-safe copy
+  - paragraph spacing controls
+- Updated `app/globals.css` so prose paragraph/list/blockquote spacing responds to the new prose-only paragraph-spacing setting.
+- Kept screenplay behavior isolated:
+  - no changes to `lib/tiptap/screenplay.ts`
+  - no changes to `lib/tiptap/screenplay-keyboard.ts`
+  - no changes to export logic
+- Verified the code with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+The prose editor now has a centralized font registry and a clearer manuscript-view surface with paragraph spacing support, while screenplay behavior and export logic remain untouched. Manual browser verification is still needed for prose preference persistence, prose save stability, and screenplay regression coverage.
+
+### Next recommended step
+
+- Run a browser/manual regression pass for:
+  - prose scene load/save
+  - existing saved prose font preference compatibility
+  - new prose fonts rendering correctly
+  - paragraph spacing affecting display only
+  - refresh persistence of prose display settings
+  - screenplay block controls and Enter/Tab/Shift-Tab/Backspace behavior
+  - viewer/read-only mode
+- Continue any later editor/font work from the remaining blocks only. Do not redo the shared registry or prose paragraph-spacing foundation.
+
+### Risks or warnings
+
+- `npm run lint` still fails because of a broad pre-existing repo lint backlog, including long-standing issues inside `SceneEditor.tsx` and many unrelated files. This pass did not clear that backlog.
+- The prose settings surface is still local-device only by design in this phase.
+
+---
 ## 2026-05-02 - AI trial cost finalization hardened with provider-reported usage fallback
 
 ### Current branch

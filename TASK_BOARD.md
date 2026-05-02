@@ -22,17 +22,16 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 
 ## Next
 
-- Editor/font system polish — targeted creative-writing upgrade, not a Google Docs clone:
-  - Centralize the editor font registry instead of keeping font choices scattered across `SceneEditor`, global CSS, and layout imports.
-  - Expand prose font choices modestly with writer-friendly options while keeping clear labels and CSS font stacks.
-  - Improve the writing settings surface for manuscript display controls.
-  - Add paragraph spacing controls.
+- Editor/font system follow-up note:
+  - Block 1 and Block 2 are complete: shared prose font registry, expanded prose font choices, clearer manuscript-view controls, and prose-only paragraph spacing are already in place.
+  - Future work should continue from later blocks rather than redoing the registry/display-settings foundation.
+- Editor/font system polish â€” targeted creative-writing upgrade, not a Google Docs clone:
   - Consider focus mode and/or typewriter mode as writer-comfort features.
   - Verify whether a proper writing-surface word count and find/search already exist; add them only if missing or too hidden.
   - Consider adding link support and visible horizontal-rule support if they fit the writing workflow.
   - Improve export parity for existing editor marks/nodes where sensible, especially blockquote, highlight, strike, images, and comments.
   - Keep screenplay mode disciplined: avoid arbitrary styling freedom; consider only limited reader-comfort controls.
-  - Cross-reference: future/nice-to-have proofing and review ideas are documented in `docs/technical-debt-roadmap.md` under `Future Plans — Editor, Fonts, and Proofing`.
+  - Cross-reference: future/nice-to-have proofing and review ideas are documented in `docs/technical-debt-roadmap.md` under `Future Plans â€” Editor, Fonts, and Proofing`.
 
 ## Later
 
@@ -64,6 +63,13 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Consider adding an `AGENTS.md` or `CONTRIBUTING.md` if agents need stricter operating rules.
 
 ## Done
+- Completed editor/font polish Block 1 and Block 2:
+  - centralized the prose editor font registry in shared editor utilities
+  - expanded prose font choices with `Source Serif 4` and `Merriweather`
+  - preserved the existing `storyline_editor_prefs` localStorage key and backward compatibility for older saved prose preferences
+  - improved the prose manuscript-view settings surface with clearer display-only guidance
+  - added prose-only paragraph spacing controls
+  - kept screenplay behavior and export logic untouched
 - Added explicit short-text analyzer feedback for empty / under-50-character scenes and made collapsed structure parents auto-expand when a new child is added, without changing analyzer API rules or structure CRUD/reorder logic.
 - Stabilized empty-screenplay Backspace/analyzer behavior by updating `lib/tiptap/screenplay-keyboard.ts` so the default empty paragraph no longer converts on Backspace and empty screenplay nodes consume Backspace safely, and by updating `lib/story/scene-text.ts` so empty screenplay blocks no longer count as analyzable text. Screenplay formatting/export logic was left untouched.
 - Simplified the scene editor heading metadata so it now shows a single `SCREENPLAY` or `DRAFT` label, keeps the scene title primary, and hides `Last edited by you` while preserving collaborator attribution for other editors.

@@ -151,6 +151,13 @@ export default function RecoveryTab({
 
     const searchParams = useSearchParams()
 
+    useEffect(() => {
+        if (!isReadOnly) return
+
+        setActiveSection('trash')
+        setTrashFilter('feedback')
+    }, [isReadOnly])
+
     const refreshRecoveryView = async () => {
         if (isLocalProject && onLocalDataChanged) {
             await onLocalDataChanged()
@@ -349,23 +356,27 @@ export default function RecoveryTab({
 
     // Process and filter trash items
     const trashItems = useMemo(() => {
-        const items: any[] = [
-            ...deletedNodes.map(n => ({ ...n, trashType: 'structure', icon: BookOpen, typeLabel: n.type.charAt(0).toUpperCase() + n.type.slice(1) })),
-            ...deletedCharacters.map(c => ({ ...c, trashType: 'assets', icon: Users, typeLabel: 'Character', title: c.name })),
-            ...deletedIdeas.map(i => ({ ...i, trashType: 'assets', icon: Lightbulb, typeLabel: 'Idea' })),
-            ...deletedLocations.map(l => ({ ...l, trashType: 'assets', icon: MapPin, typeLabel: 'Location', title: l.name })),
-            ...deletedObjects.map(o => ({ ...o, trashType: 'assets', icon: Package, typeLabel: 'Object', title: o.name })),
-            ...deletedResponses.map(r => ({ ...r, trashType: 'ai', icon: Sparkles, typeLabel: 'AI Response', title: r.prompt_summary || 'AI Response' })),
-            ...deletedComments.map((comment: any) => ({
-                ...comment,
-                trashType: 'feedback',
-                icon: FileText,
-                typeLabel: comment.parent_id ? 'Feedback Reply' : 'Feedback Thread',
-                title: comment.content === 'Add your feedback...'
-                    ? (comment.anchor_data?.text || 'Feedback comment')
-                    : (comment.content || 'Feedback comment'),
-            }))
-        ]
+        const feedbackItems = deletedComments.map((comment: any) => ({
+            ...comment,
+            trashType: 'feedback',
+            icon: FileText,
+            typeLabel: comment.parent_id ? 'Feedback Reply' : 'Feedback Thread',
+            title: comment.content === 'Add your feedback...'
+                ? (comment.anchor_data?.text || 'Feedback comment')
+                : (comment.content || 'Feedback comment'),
+        }))
+
+        const items: any[] = isReadOnly
+            ? feedbackItems.filter((comment) => comment.can_restore || comment.can_permanently_delete)
+            : [
+                ...deletedNodes.map(n => ({ ...n, trashType: 'structure', icon: BookOpen, typeLabel: n.type.charAt(0).toUpperCase() + n.type.slice(1) })),
+                ...deletedCharacters.map(c => ({ ...c, trashType: 'assets', icon: Users, typeLabel: 'Character', title: c.name })),
+                ...deletedIdeas.map(i => ({ ...i, trashType: 'assets', icon: Lightbulb, typeLabel: 'Idea' })),
+                ...deletedLocations.map(l => ({ ...l, trashType: 'assets', icon: MapPin, typeLabel: 'Location', title: l.name })),
+                ...deletedObjects.map(o => ({ ...o, trashType: 'assets', icon: Package, typeLabel: 'Object', title: o.name })),
+                ...deletedResponses.map(r => ({ ...r, trashType: 'ai', icon: Sparkles, typeLabel: 'AI Response', title: r.prompt_summary || 'AI Response' })),
+                ...feedbackItems,
+            ]
 
         return items
             .sort((a, b) => new Date(b.deleted_at).getTime() - new Date(a.deleted_at).getTime())
@@ -376,7 +387,7 @@ export default function RecoveryTab({
                     item.typeLabel.toLowerCase().includes(searchQuery.toLowerCase())
                 return matchesFilter && matchesSearch
             })
-    }, [deletedNodes, deletedCharacters, deletedIdeas, deletedLocations, deletedObjects, deletedResponses, deletedComments, trashFilter, searchQuery])
+    }, [deletedNodes, deletedCharacters, deletedIdeas, deletedLocations, deletedObjects, deletedResponses, deletedComments, isReadOnly, trashFilter, searchQuery])
 
     // Filter and group history entries
     const filteredHistory = useMemo(() => {
@@ -398,7 +409,11 @@ export default function RecoveryTab({
         return Array.from(scenesMap.entries()).map(([id, title]) => ({ id, title }))
     }, [historyEntries])
 
-    const sections = isLocalProject
+    const sections = isReadOnly
+        ? [
+            { id: 'trash', label: 'Trash', icon: Trash2 },
+        ]
+        : isLocalProject
         ? [
             { id: 'trash', label: 'Trash', icon: Trash2 },
         ]
@@ -406,6 +421,16 @@ export default function RecoveryTab({
             { id: 'trash', label: 'Trash', icon: Trash2 },
             { id: 'history', label: 'History', icon: History },
             { id: 'snapshots', label: 'Snapshots', icon: Layers },
+        ]
+
+    const trashFilters = isReadOnly
+        ? [{ id: 'feedback', label: 'Feedback' }]
+        : [
+            { id: 'all', label: 'All Items' },
+            { id: 'structure', label: 'Story Structure' },
+            { id: 'assets', label: 'Story Assets' },
+            { id: 'ai', label: 'AI Content' },
+            { id: 'feedback', label: 'Feedback' }
         ]
 
     return (
@@ -458,13 +483,7 @@ export default function RecoveryTab({
                             <div className="flex flex-col gap-4 min-w-0 lg:flex-row lg:items-center lg:justify-between">
                                 <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center">
                                     <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto rounded-full bg-white p-1 shadow-sm ring-1 ring-slate-100 no-scrollbar lg:w-fit lg:max-w-full lg:gap-1 lg:overflow-visible">
-                                        {[
-                                            { id: 'all', label: 'All Items' },
-                                            { id: 'structure', label: 'Story Structure' },
-                                            { id: 'assets', label: 'Story Assets' },
-                                            { id: 'ai', label: 'AI Content' },
-                                            { id: 'feedback', label: 'Feedback' }
-                                        ].map(f => (
+                                        {trashFilters.map(f => (
                                             <button
                                                 key={f.id}
                                                 onClick={() => setTrashFilter(f.id as TrashFilter)}
@@ -512,9 +531,13 @@ export default function RecoveryTab({
                                         <Trash2 className="w-10 h-10 text-stone-100" />
                                     </div>
                                     <h2 className="text-3xl font-serif italic text-slate-800 mb-4">Trash is clear</h2>
-                                    <p className="text-[10px] font-sans tracking-[0.4em] uppercase text-stone-300 mb-6 font-bold">No deleted assets found</p>
+                                    <p className="text-[10px] font-sans tracking-[0.4em] uppercase text-stone-300 mb-6 font-bold">
+                                        {isReadOnly ? 'No deleted feedback found' : 'No deleted assets found'}
+                                    </p>
                                     <p className="text-slate-500 font-medium leading-relaxed italic text-base max-w-sm">
-                                        Deleted scenes, chapters, and assets will appear here.
+                                        {isReadOnly
+                                            ? 'Deleted feedback you can restore or permanently remove will appear here.'
+                                            : 'Deleted scenes, chapters, and assets will appear here.'}
                                     </p>
                                 </div>
                             ) : (

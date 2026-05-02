@@ -56,6 +56,9 @@ type Project = Database['public']['Tables']['projects']['Row'] & {
     cover_url?: string | null
     is_local?: boolean
     storage_mode?: 'local-only' | 'cloud-enabled'
+    owner_display_name?: string | null
+    owner_avatar_url?: string | null
+    owner_email?: string | null
     members?: Array<{
         user_id: string
         role: string
@@ -71,6 +74,22 @@ function getAvatarInitials(name: string | null | undefined, fallback = 'U') {
     return value.includes(' ')
         ? value.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()
         : value.slice(0, 2).toUpperCase()
+}
+
+function getInitialsFromEmail(email: string | null | undefined, fallback = 'U') {
+    const localPart = email?.split('@')[0]?.trim()
+    if (!localPart) return fallback
+
+    const tokens = localPart
+        .split(/[._-]+/)
+        .map((token) => token.trim())
+        .filter(Boolean)
+
+    if (tokens.length >= 2) {
+        return `${tokens[0][0] ?? ''}${tokens[1][0] ?? ''}`.toUpperCase()
+    }
+
+    return localPart.slice(0, 2).toUpperCase() || fallback
 }
 
 const LIBRARY_REFRESH_ON_RETURN_KEY = 'storyline-library-refresh-on-return'
@@ -587,7 +606,16 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
     }, [])
 
     const hasCover = !!project.cover_url
-    const members = project.members || []
+    const members = (project.members || []).map((member) =>
+        member.user_id === project.user_id
+            ? {
+                ...member,
+                display_name: member.display_name ?? project.owner_display_name ?? null,
+                avatar_url: member.avatar_url ?? project.owner_avatar_url ?? null,
+            }
+            : member
+    )
+    const ownerInitialFallback = getInitialsFromEmail(project.owner_email, 'U')
     const activeCollaborators = members.filter(member => member.role !== 'owner')
     const visibleMembers = activeCollaborators.length > 0 ? members : []
     const isShared = activeCollaborators.length > 0
@@ -886,7 +914,9 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                                                     "text-[8px] font-bold uppercase",
                                                     hasCover ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
                                                 )}>
-                                                    {getAvatarInitials(member.display_name)}
+                                                    {member.user_id === project.user_id
+                                                        ? getAvatarInitials(member.display_name, ownerInitialFallback)
+                                                        : getAvatarInitials(member.display_name)}
                                                 </AvatarFallback>
                                             </Avatar>
                                         </TooltipTrigger>

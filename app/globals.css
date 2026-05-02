@@ -143,10 +143,6 @@ body {
   cursor: text;
 }
 
-.editor-content p {
-  margin-bottom: 1.5em;
-}
-
 /* TipTap Placeholder Refinement */
 .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
@@ -965,6 +961,26 @@ body {
   line-height: inherit !important;
 }
 
+.editor-novel-overrides.ProseMirror > * + *,
+.editor-novel-overrides .ProseMirror > * + * {
+  margin-top: 0 !important;
+}
+
+.editor-novel-overrides.ProseMirror p,
+.editor-novel-overrides .ProseMirror p {
+  margin: 0 !important;
+}
+
+.editor-novel-overrides.ProseMirror p + p,
+.editor-novel-overrides .ProseMirror p + p {
+  margin-top: var(--editor-paragraph-spacing, 1.25em) !important;
+}
+
+.editor-novel-overrides.ProseMirror p:last-child,
+.editor-novel-overrides .ProseMirror p:last-child {
+  margin-bottom: 0 !important;
+}
+
 .editor-novel-overrides h1,
 .editor-novel-overrides h2,
 .editor-novel-overrides blockquote {
@@ -997,7 +1013,7 @@ body {
 .editor-novel-overrides.ProseMirror ol,
 .editor-novel-overrides .ProseMirror ul,
 .editor-novel-overrides .ProseMirror ol {
-  margin: 1.15em 0 1.35em !important;
+  margin: calc(var(--editor-paragraph-spacing, 1.25em) * 0.9) 0 !important;
   padding-left: 1.75em !important;
 }
 
@@ -1014,12 +1030,17 @@ body {
 .editor-novel-overrides.ProseMirror li,
 .editor-novel-overrides .ProseMirror li {
   display: list-item;
-  margin: 0.45em 0 !important;
+  margin: 0 !important;
+}
+
+.editor-novel-overrides.ProseMirror li + li,
+.editor-novel-overrides .ProseMirror li + li {
+  margin-top: calc(var(--editor-paragraph-spacing, 1.25em) * 0.35) !important;
 }
 
 .editor-novel-overrides.ProseMirror blockquote,
 .editor-novel-overrides .ProseMirror blockquote {
-  margin: 1.6em 0 !important;
+  margin: calc(var(--editor-paragraph-spacing, 1.25em) * 1.2) 0 !important;
   padding: 0.75em 0 0.75em 1.35em !important;
   border-left: 2px solid rgba(148, 163, 184, 0.55);
   color: #475569;
@@ -1030,12 +1051,12 @@ body {
 
 .editor-novel-overrides.ProseMirror blockquote p,
 .editor-novel-overrides .ProseMirror blockquote p {
-  margin-bottom: 0.6em !important;
+  margin: 0 !important;
 }
 
-.editor-novel-overrides.ProseMirror blockquote p:last-child,
-.editor-novel-overrides .ProseMirror blockquote p:last-child {
-  margin-bottom: 0 !important;
+.editor-novel-overrides.ProseMirror blockquote p + p,
+.editor-novel-overrides .ProseMirror blockquote p + p {
+  margin-top: calc(var(--editor-paragraph-spacing, 1.25em) * 0.45) !important;
 }
 
 /* Special case for highlight to ensure background color doesn't wrap oddly at larger sizes */

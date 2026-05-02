@@ -135,7 +135,7 @@ export default function CommentsPanel({
     
     const [filterByNode, setFilterByNode] = useState(true)
     const [showResolved, setShowResolved] = useState(false)
-    const [authorFilter, setAuthorFilter] = useState<'new' | 'all' | 'mine' | 'collaborators' | 'ai' | 'hidden'>('all')
+    const [authorFilter, setAuthorFilter] = useState<'new' | 'all' | 'mine' | 'owner' | 'collaborators' | 'ai' | 'hidden'>('all')
     const [newCommentText, setNewCommentText] = useState('')
     const [replyToId, setReplyToId] = useState<string | null>(null)
     const [replyText, setReplyText] = useState('')
@@ -151,10 +151,15 @@ export default function CommentsPanel({
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
     useEffect(() => {
-        if (isLocalOnly && ['new', 'collaborators', 'ai', 'hidden'].includes(authorFilter)) {
+        if (isLocalOnly && ['new', 'owner', 'collaborators', 'ai', 'hidden'].includes(authorFilter)) {
+            setAuthorFilter('all')
+            return
+        }
+
+        if (role === 'owner' && authorFilter === 'owner') {
             setAuthorFilter('all')
         }
-    }, [authorFilter, isLocalOnly])
+    }, [authorFilter, isLocalOnly, role])
 
     useEffect(() => {
         let cancelled = false
@@ -583,6 +588,7 @@ export default function CommentsPanel({
         return canSeeRecursive
     }, [commentById, currentUserId, projectOwnerId, role, shareOwnerFeedback])
     const canFilterByAuthor = !!currentUserId
+    const shouldShowOwnerFilter = !isLocalOnly && role !== 'owner' && !!projectOwnerId
 
     const getVisibleReplies = useMemo(() => {
         return (parentId: string) => comments.filter(c => {
@@ -656,8 +662,16 @@ export default function CommentsPanel({
             list = list.filter(c => c.author_id === currentUserId)
         }
 
+        if (authorFilter === 'owner' && !isLocalOnly) {
+            list = list.filter(c => c.author_id === projectOwnerId)
+        }
+
         if (authorFilter === 'collaborators' && !isLocalOnly && currentUserId) {
-            list = list.filter(c => c.author_id !== currentUserId)
+            list = list.filter(c => {
+                if (c.author_id === currentUserId) return false
+                if (role !== 'owner' && c.author_id === projectOwnerId) return false
+                return true
+            })
         }
 
         if (authorFilter === 'ai' && !isLocalOnly) {
@@ -679,7 +693,7 @@ export default function CommentsPanel({
             }
             return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         })
-    }, [authorFilter, visibleCommentsByHiddenState, newThreadIds, activeNodeId, currentUserId, filterByNode, isLocalOnly, showResolved])
+    }, [activeNodeId, authorFilter, currentUserId, filterByNode, isLocalOnly, newThreadIds, projectOwnerId, role, showResolved, visibleCommentsByHiddenState])
 
     // Meta-counts for UI feedback
     const resolvedCount = useMemo(() =>
@@ -703,8 +717,17 @@ export default function CommentsPanel({
     const collaboratorCount = useMemo(() => {
         if (!currentUserId) return 0
 
-        return visibleCommentsByHiddenState.visible.filter(c => c.author_id !== currentUserId).length
-    }, [visibleCommentsByHiddenState.visible, currentUserId])
+        return visibleCommentsByHiddenState.visible.filter(c => {
+            if (c.author_id === currentUserId) return false
+            if (role !== 'owner' && c.author_id === projectOwnerId) return false
+            return true
+        }).length
+    }, [visibleCommentsByHiddenState.visible, currentUserId, projectOwnerId, role])
+
+    const ownerCount = useMemo(() => {
+        if (!shouldShowOwnerFilter) return 0
+        return visibleCommentsByHiddenState.visible.filter(c => c.author_id === projectOwnerId).length
+    }, [projectOwnerId, shouldShowOwnerFilter, visibleCommentsByHiddenState.visible])
 
     const aiCount = useMemo(() =>
         visibleCommentsByHiddenState.visible.filter(c => c.anchor_data?.type === 'ai-analysis').length,
@@ -916,6 +939,20 @@ export default function CommentsPanel({
                         </button>
                         {!isLocalOnly && (
                             <>
+                                {shouldShowOwnerFilter && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setAuthorFilter('owner')}
+                                        className={cn(
+                                            "rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all duration-300",
+                                            authorFilter === 'owner'
+                                                ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 ring-2 ring-indigo-50/50"
+                                                : "bg-white/60 text-slate-500 border border-slate-200/50 hover:bg-white hover:text-indigo-600 hover:border-indigo-100"
+                                        )}
+                                    >
+                                        Owner {ownerCount}
+                                    </button>
+                                )}
                                 <button
                                     type="button"
                                     onClick={() => setAuthorFilter('collaborators')}

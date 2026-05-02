@@ -231,6 +231,7 @@ Future agents: treat this workflow as established. Before asking the user about 
 | Desktop layout | Not tested | - | - | Confirm normal working layout. |
 | Account Settings hierarchy and mobile polish | Needs retest | AI agent | 2026-05-01 | Manual signed-in regression is still needed for desktop hierarchy, mobile/narrow viewport stacking, Midnight theme, AI-off/no-key/limited-trial states, and existing email/password/delete flows. |
 | Font/readability audit | Needs retest | - | - | Focused AI Partner pass landed: footer warning removed, preview note moved to first-use context preview, and low-contrast helper text was darkened. Browser validation is still needed. |
+| Prose manuscript view controls and font registry | Needs retest | AI agent | 2026-05-02 | Block 1/2 landed: prose font registry moved into shared editor utilities, `Source Serif 4` and `Merriweather` were added, and `SceneEditor.tsx` now includes prose-only paragraph spacing plus clearer display-only manuscript view controls. Manual browser validation is still needed for prose load/save, existing saved preference compatibility, refresh persistence, and confirming screenplay mode was not regressed. |
 | Screenplay editor width on mobile | Not tested | - | - | Editor becomes narrow after typing. |
 | Swipe/tap sidebar close behavior | Not tested | - | - | Compare swipe vs tap-outside UX. |
 | Local mode image loading | Not tested | - | - | Confirm images load correctly in local mode. |
@@ -258,6 +259,7 @@ Future agents: treat this workflow as established. Before asking the user about 
 
 Newest confirmations go at the top.
 
+| 2026-05-02 | AI agent | TypeScript compile after prose editor font registry and manuscript-view controls | Passed | `npx tsc --noEmit --pretty false` passed after centralizing prose editor font definitions, adding `Source Serif 4` and `Merriweather`, and adding prose-only paragraph spacing / manuscript-view settings helpers. |
 | 2026-04-30 | AI agent | TypeScript compile after project-open 404 layout fix | Passed | `npx tsc --noEmit --pretty false` passed after changing the project layout loader to avoid 404s caused by missing owner `project_members` rows. |
 | 2026-05-02 | AI agent | TypeScript compile after provider-usage trial-cost hardening | Passed | `npx tsc --noEmit --pretty false` passed after updating app-managed AI helper and scene analyzer finalization to prefer provider-reported token usage and record the costing method in trial metadata. |
 | 2026-05-02 | User | Local dev test account workflow end-to-end | Passed | User verified the script used `.local/test-account.env`, created `dev-test@example.com`, and then reported the same account already exists on a second run. |

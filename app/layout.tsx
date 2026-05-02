@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Atkinson_Hyperlegible, Inter, Lora, Manrope, Newsreader } from 'next/font/google'
+import { Atkinson_Hyperlegible, Inter, Lora, Manrope, Merriweather, Newsreader, Source_Serif_4 } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/providers/ThemeProvider'
 import { Toaster } from 'sonner'
@@ -37,6 +37,20 @@ const atkinson = Atkinson_Hyperlegible({
   variable: '--font-atkinson',
 })
 
+const sourceSerif4 = Source_Serif_4({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  style: ['normal', 'italic'],
+  variable: '--font-source-serif-4',
+})
+
+const merriweather = Merriweather({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  style: ['normal', 'italic'],
+  variable: '--font-merriweather',
+})
+
 export const metadata: Metadata = {
   title: 'Storyline — Write Your Story',
   description: 'A beginner-friendly writing app for books and screenplays. Start writing today.',
@@ -51,7 +65,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${manrope.variable} ${newsreader.variable} ${lora.variable} ${inter.variable} ${atkinson.variable}`}
+      className={`${manrope.variable} ${newsreader.variable} ${lora.variable} ${inter.variable} ${atkinson.variable} ${sourceSerif4.variable} ${merriweather.variable}`}
     >
       <body className="bg-background antialiased">
         <ThemeProvider>

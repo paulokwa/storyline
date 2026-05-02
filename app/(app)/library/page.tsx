@@ -1,4 +1,5 @@
 ﻿import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { requireVerifiedUser } from '@/lib/supabase/auth'
 import ProjectGrid from '@/components/library/ProjectGrid'
@@ -20,6 +21,7 @@ type ProjectWithMembers = ProjectRow & {
 
 export default async function LibraryPage() {
     const supabase = await createClient()
+    const adminClient = createAdminClient()
     const user = await requireVerifiedUser()
 
     const { data: profile } = await supabase
@@ -77,34 +79,90 @@ export default async function LibraryPage() {
 
     const ownerIds = Array.from(new Set(allProjectRows.map((project) => project.user_id).filter(Boolean)))
     const ownerProfilesById = new Map<string, MemberProfile>()
+    const ownerEmailsByProjectId = new Map<string, string>()
 
     if (ownerIds.length > 0) {
-        const { data: ownerProfiles } = await supabase
-            .from('profiles')
-            .select('id, display_name, avatar_url')
-            .in('id', ownerIds)
+        const ownerProfiles = await Promise.all(
+            ownerIds.map(async (ownerId) => {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('display_name, avatar_url')
+                    .eq('id', ownerId)
+                    .maybeSingle()
 
-        ownerProfiles?.forEach((profile) => {
-            ownerProfilesById.set(profile.id, {
-                display_name: profile.display_name,
-                avatar_url: profile.avatar_url,
+                return profile ? { ownerId, profile } : null
             })
+        )
+
+        ownerProfiles.forEach((entry) => {
+            if (!entry) return
+            ownerProfilesById.set(entry.ownerId, {
+                display_name: entry.profile.display_name,
+                avatar_url: entry.profile.avatar_url,
+            })
+        })
+
+        const missingOwnerIds = ownerIds.filter((ownerId) => !ownerProfilesById.has(ownerId))
+        if (adminClient && missingOwnerIds.length > 0) {
+            const adminOwnerProfiles = await Promise.all(
+                missingOwnerIds.map(async (ownerId) => {
+                    const { data: profile } = await adminClient
+                        .from('profiles')
+                        .select('display_name, avatar_url')
+                        .eq('id', ownerId)
+                        .maybeSingle()
+
+                    return profile ? { ownerId, profile } : null
+                })
+            )
+
+            adminOwnerProfiles.forEach((entry) => {
+                if (!entry) return
+                ownerProfilesById.set(entry.ownerId, {
+                    display_name: entry.profile.display_name,
+                    avatar_url: entry.profile.avatar_url,
+                })
+            })
+        }
+    }
+
+    if (allProjectRows.length > 0) {
+        const ownerMembers = await Promise.all(
+            allProjectRows.map(async (project) => {
+                const { data } = await supabase.rpc('get_project_members_extended', { project_id_arg: project.id })
+                const ownerMember = (data ?? []).find((member) => member.user_id === project.user_id || member.role === 'owner')
+                return ownerMember?.email ? { projectId: project.id, email: ownerMember.email } : null
+            })
+        )
+
+        ownerMembers.forEach((entry) => {
+            if (!entry) return
+            ownerEmailsByProjectId.set(entry.projectId, entry.email)
         })
     }
 
     const mapProject = (p: ProjectWithMembers) => ({
         ...p,
-        role: p.project_members?.find((m) => m.user_id === user.id)?.role || ('viewer' as ProjectMemberRole),
+        owner_display_name: ownerProfilesById.get(p.user_id)?.display_name ?? null,
+        owner_avatar_url: ownerProfilesById.get(p.user_id)?.avatar_url ?? null,
+        owner_email: ownerEmailsByProjectId.get(p.id) ?? null,
+        role:
+            p.project_members?.find((m) => m.user_id === user.id)?.role
+            || (p.user_id === user.id ? ('owner' as ProjectMemberRole) : ('viewer' as ProjectMemberRole)),
         members: (() => {
+            const ownerProfile = ownerProfilesById.get(p.user_id)
             const members = p.project_members?.map((m) => ({
                 role: m.role,
                 user_id: m.user_id,
-                display_name: m.profiles?.display_name ?? null,
-                avatar_url: m.profiles?.avatar_url ?? null
+                display_name: m.user_id === p.user_id
+                    ? (m.profiles?.display_name ?? ownerProfile?.display_name ?? null)
+                    : (m.profiles?.display_name ?? null),
+                avatar_url: m.user_id === p.user_id
+                    ? (m.profiles?.avatar_url ?? ownerProfile?.avatar_url ?? null)
+                    : (m.profiles?.avatar_url ?? null)
             })) || []
 
             if (!members.some((member) => member.user_id === p.user_id)) {
-                const ownerProfile = ownerProfilesById.get(p.user_id)
                 members.unshift({
                     role: 'owner',
                     user_id: p.user_id,

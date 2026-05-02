@@ -7,7 +7,6 @@ import {
     LOCAL_STORE_NAMES,
     bulkPutLocalRecords,
     deleteLocalRecord,
-    deleteLocalRecordsByProjectId,
     getAllLocalRecords,
     getLocalRecord,
     getLocalRecordsByProjectId,
@@ -44,12 +43,85 @@ export type CreateLocalProjectInput = InitialProjectInput & {
     userId: string
 }
 
+const PROJECT_LINKED_LOCAL_STORES = [
+    LOCAL_STORE_NAMES.structureNodes,
+    LOCAL_STORE_NAMES.scenes,
+    LOCAL_STORE_NAMES.characters,
+    LOCAL_STORE_NAMES.ideas,
+    LOCAL_STORE_NAMES.locations,
+    LOCAL_STORE_NAMES.objects,
+    LOCAL_STORE_NAMES.comments,
+    LOCAL_STORE_NAMES.projectAssets,
+    LOCAL_STORE_NAMES.sceneAssets,
+    LOCAL_STORE_NAMES.entityAssets,
+    LOCAL_STORE_NAMES.aiResponses,
+] as const
+
+let legacyLocalProjectNormalizationPromise: Promise<void> | null = null
+
 function nowIso() {
     return new Date().toISOString()
 }
 
 function createLocalId(prefix: string) {
     return `${LOCAL_PROJECT_ID_PREFIX}${prefix}_${crypto.randomUUID()}`
+}
+
+async function normalizeLegacyLocalProjects() {
+    if (legacyLocalProjectNormalizationPromise) {
+        return legacyLocalProjectNormalizationPromise
+    }
+
+    legacyLocalProjectNormalizationPromise = (async () => {
+        const projects = await getAllLocalRecords<LocalProjectRow>(LOCAL_STORE_NAMES.projects)
+        const legacyProjects = projects.filter((project) => {
+            const isMarkedLocal = project.storage_mode === 'local-only' || project.is_local === true
+            return isMarkedLocal && !isLocalProjectId(project.id)
+        })
+
+        for (const legacyProject of legacyProjects) {
+            const nextProjectId = createLocalId('project')
+            const linkedRecords = await Promise.all(
+                PROJECT_LINKED_LOCAL_STORES.map(async (storeName) => ({
+                    storeName,
+                    records: await getLocalRecordsByProjectId<Array<{ id: string; project_id: string }>[number]>(
+                        storeName,
+                        legacyProject.id
+                    ),
+                }))
+            )
+
+            const nextProject: LocalProjectRow = {
+                ...legacyProject,
+                id: nextProjectId,
+                is_local: true,
+                storage_mode: 'local-only',
+                updated_at: nowIso(),
+            }
+
+            await putLocalRecord(LOCAL_STORE_NAMES.projects, nextProject)
+
+            await Promise.all(
+                linkedRecords.map(({ storeName, records }) =>
+                    bulkPutLocalRecords(
+                        storeName,
+                        records.map((record) => ({
+                            ...record,
+                            project_id: nextProjectId,
+                        }))
+                    )
+                )
+            )
+
+            await deleteLocalRecord(LOCAL_STORE_NAMES.projects, legacyProject.id)
+        }
+    })()
+
+    try {
+        await legacyLocalProjectNormalizationPromise
+    } finally {
+        legacyLocalProjectNormalizationPromise = null
+    }
 }
 
 function createLocalProjectRow(input: CreateLocalProjectInput, blueprint: ProjectBlueprint): LocalProjectRow {
@@ -189,6 +261,7 @@ export async function requireLocalProject(projectId: string) {
 }
 
 export async function listLocalProjects() {
+    await normalizeLegacyLocalProjects()
     const projects = await getAllLocalRecords<LocalProjectRow>(LOCAL_STORE_NAMES.projects)
     return projects.sort((a, b) => {
         const aIndex = a.order_index ?? 0
@@ -238,15 +311,18 @@ export async function restoreLocalProject(projectId: string) {
 }
 
 export async function destroyLocalProject(projectId: string) {
+    const linkedRecords = await Promise.all(
+        PROJECT_LINKED_LOCAL_STORES.map(async (storeName) => ({
+            storeName,
+            records: await getLocalRecordsByProjectId<{ id: string }>(storeName, projectId),
+        }))
+    )
+
     await Promise.all([
         deleteLocalRecord(LOCAL_STORE_NAMES.projects, projectId),
-        deleteLocalRecordsByProjectId(LOCAL_STORE_NAMES.structureNodes, projectId),
-        deleteLocalRecordsByProjectId(LOCAL_STORE_NAMES.scenes, projectId),
-        deleteLocalRecordsByProjectId(LOCAL_STORE_NAMES.characters, projectId),
-        deleteLocalRecordsByProjectId(LOCAL_STORE_NAMES.ideas, projectId),
-        deleteLocalRecordsByProjectId(LOCAL_STORE_NAMES.locations, projectId),
-        deleteLocalRecordsByProjectId(LOCAL_STORE_NAMES.objects, projectId),
-        deleteLocalRecordsByProjectId(LOCAL_STORE_NAMES.aiResponses, projectId),
+        ...linkedRecords.flatMap(({ storeName, records }) =>
+            records.map((record) => deleteLocalRecord(storeName, record.id))
+        ),
     ])
 }
 

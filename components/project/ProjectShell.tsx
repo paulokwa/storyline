@@ -113,6 +113,7 @@ const TABS = [
 const LOCAL_ONLY_TABS = TABS.filter(({ slug }) =>
     ['story', 'characters', 'ideas', 'locations', 'objects', 'assets', 'recovery'].includes(slug)
 )
+const VIEWER_HIDDEN_TABS = new Set(['characters', 'ideas', 'locations', 'objects', 'assets'])
 const LOCAL_MODE_EDUCATION_PENDING_KEY = 'storyline-local-mode-education-pending'
 const LOCAL_MODE_EDUCATION_SHOWN_KEY = 'storyline-local-mode-education-shown'
 
@@ -468,7 +469,10 @@ function ProjectShellInner({
     const supportsComments = true
     const supportsAssets = true
     const sceneAssetsLabel = project.type === 'tv_script' ? 'Visual References' : 'Gallery'
-    const visibleTabs = isLocalOnly ? LOCAL_ONLY_TABS : TABS
+    const baseTabs = isLocalOnly ? LOCAL_ONLY_TABS : TABS
+    const visibleTabs = role === 'viewer'
+        ? baseTabs.filter(({ slug }) => !VIEWER_HIDDEN_TABS.has(slug))
+        : baseTabs
     const { commentsPanelOpen, setCommentsPanelOpen } = useComments()
     
     // Responsive checks
@@ -641,6 +645,12 @@ function ProjectShellInner({
 
     const isStoryTab = pathname.includes('/story')
     const activeTab = TABS.find(t => pathname.includes(`/${t.slug}`))?.slug ?? 'story'
+
+    useEffect(() => {
+        if (role !== 'viewer') return
+        if (!VIEWER_HIDDEN_TABS.has(activeTab)) return
+        router.replace(`/project/${project.id}/story`)
+    }, [activeTab, project.id, role, router])
 
     const [showAiHint, setShowAiHint] = useState(false)
 
@@ -1113,6 +1123,8 @@ function CollaborativeAvatars({
     const showOwnerBadge = role !== 'owner' && owner.user_id !== currentUserId
     const ownerPresence = presenceUsers.find(user => user.user_id === owner.user_id)
     const memberUsers = members.filter(member => member.user_id !== owner.user_id)
+    const membersByUserId = new Map(members.map((member) => [member.user_id, member]))
+    const currentRoleLabel = role === 'owner' ? 'Owner' : role === 'editor' ? 'Editor' : 'Viewer'
     const usersToRender = role === 'owner'
         ? memberUsers
         : presenceUsers
@@ -1122,10 +1134,10 @@ function CollaborativeAvatars({
                 return true
             })
             .map(user => ({
-                role: 'viewer' as Database['public']['Enums']['project_role'],
+                role: membersByUserId.get(user.user_id)?.role ?? ('viewer' as Database['public']['Enums']['project_role']),
                 user_id: user.user_id,
-                display_name: user.display_name,
-                avatar_url: null,
+                display_name: membersByUserId.get(user.user_id)?.display_name ?? user.display_name,
+                avatar_url: membersByUserId.get(user.user_id)?.avatar_url ?? null,
             }))
 
     const visibleUsers = usersToRender.slice(0, MAX_VISIBLE)
@@ -1140,7 +1152,30 @@ function CollaborativeAvatars({
     }
     
     return (
-        <div className="flex items-center -space-x-1.5 hover:-space-x-1 transition-all duration-300">
+        <div className="flex items-center gap-2">
+            {role !== 'owner' && (
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <span className={cn(
+                            "inline-flex h-7 items-center rounded-full border px-3 text-[9px] font-bold uppercase tracking-[0.18em]",
+                            role === 'editor'
+                                ? "border-indigo-200 bg-indigo-50 text-indigo-700"
+                                : "border-slate-200 bg-slate-100 text-slate-600"
+                        )}>
+                            {currentRoleLabel}
+                        </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="flex flex-col gap-0.5 px-3 py-2 rounded-xl shadow-xl border-slate-200">
+                        <p className="text-xs font-bold text-slate-900">{currentRoleLabel} access</p>
+                        <p className="text-[10px] text-slate-500 font-medium">
+                            {role === 'editor'
+                                ? 'You can edit shared project content.'
+                                : 'You can read shared project content.'}
+                        </p>
+                    </TooltipContent>
+                </Tooltip>
+            )}
+            <div className="flex items-center -space-x-1.5 hover:-space-x-1 transition-all duration-300">
             {showOwnerBadge && (
                 <Tooltip>
                     <TooltipTrigger>
@@ -1214,6 +1249,7 @@ function CollaborativeAvatars({
                     +{remainingCount}
                 </div>
             )}
+            </div>
         </div>
     )
 }

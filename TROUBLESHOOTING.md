@@ -484,6 +484,35 @@ Add a short entry using this format:
 
 ---
 
+## Issue: Opening a local `.storyline` file routes to `/project/<uuid>/story` and lands on 404
+
+### Symptoms
+
+- Opening or updating a local project from `Open Project File` navigates to `/project/<uuid>/story`.
+- The route shows the app's 404 page even though the project was imported into IndexedDB.
+- The failing project ID is a plain UUID instead of a `local_...` ID.
+
+### Cause
+
+- The route loaders use the `local_` prefix to decide whether a project is local-only or cloud-backed.
+- Some older local projects in IndexedDB can still carry legacy plain-UUID project IDs.
+- If `restoreLocalBackup(...)` overwrites one of those legacy local projects, it preserves that legacy project ID, so the app navigates into the cloud route and `notFound()`s.
+
+### Fix
+
+- Normalize legacy local project rows in IndexedDB to fresh `local_project_*` IDs before the library/import chooser uses them.
+- Rewrite linked local records to the new local project ID so existing local routes, saves, and scene operations keep following the local-only path.
+
+### Verification
+
+- `npx tsc --noEmit --pretty false`
+
+### Notes
+
+- This fix is intentionally scoped to local project IDs. Screenplay behavior and cloud project routing are unchanged.
+
+---
+
 ## Issue: Library Recent sort stays stale after browser back
 
 ### Symptoms

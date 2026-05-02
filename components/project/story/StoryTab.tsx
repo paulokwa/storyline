@@ -13,7 +13,7 @@ import LinkedContext from './LinkedContext'
 import SceneAnalysisPanel from './SceneAnalysisPanel'
 import { ReaderControls } from './ReaderMode'
 
-import { PanelLeftOpen, BookOpen, Sparkles, X, Wand2, BarChart3, Clapperboard, Book, Download, Square, MessageSquare, Image as ImageIcon, Mic, MicOff, HelpCircle } from 'lucide-react'
+import { PanelLeftOpen, BookOpen, Sparkles, X, Wand2, BarChart3, Clapperboard, Book, Download, Square, MessageSquare, Image as ImageIcon, Mic, MicOff, HelpCircle, Type } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { Database, WritingMode } from '@/lib/supabase/types'
@@ -34,6 +34,10 @@ import { AiSafeguardDialogs } from '@/components/project/ai/AiSafeguardDialogs'
 import { readStoredSceneNodeId, resolveSceneNodeId, writeStoredSceneNodeId } from '@/lib/project/active-scene'
 import { getSceneTextForAi } from '@/lib/story/scene-text'
 import type { ProjectStorageMode } from '@/lib/persistence/project-mode'
+import {
+    MANUSCRIPT_VIEW_STATE_EVENT,
+    TOGGLE_MANUSCRIPT_VIEW_EVENT,
+} from '@/lib/editor/manuscript-view-events'
 import { toast } from 'sonner'
 
 const MIN_SCENE_ANALYSIS_CHARS = 50
@@ -104,7 +108,8 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         currentSelectionText,
         currentChapterText,
         isDictating,
-        requestDictation
+        requestDictation,
+        role,
     } = useProjectActions()
     const { exportAction, statsAction, canExport } = useProjectActionsStore()
     const { commentsPanelOpen, setCommentsPanelOpen, fetchComments, setActiveCommentId } = useComments()
@@ -119,14 +124,29 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     const [isConfirmingCost, setIsConfirmingCost] = useState(false)
     const [isExtremeContext, setIsExtremeContext] = useState(false)
     const [aiAccessContext, setAiAccessContext] = useState<AiAccessContext>('partner')
+    const [manuscriptViewOpen, setManuscriptViewOpen] = useState(false)
 
     useEffect(() => {
         if (project?.id) {
             fetchComments(project.id)
         }
     }, [fetchComments, isLocalOnly, project?.id])
+
+    useEffect(() => {
+        const handleManuscriptViewState = (event: Event) => {
+            const nextState =
+                event instanceof CustomEvent && typeof event.detail?.open === 'boolean'
+                    ? event.detail.open
+                    : false
+
+            setManuscriptViewOpen(nextState)
+        }
+
+        window.addEventListener(MANUSCRIPT_VIEW_STATE_EVENT, handleManuscriptViewState as EventListener)
+        return () => window.removeEventListener(MANUSCRIPT_VIEW_STATE_EVENT, handleManuscriptViewState as EventListener)
+    }, [])
     const writingMode = (project.writing_mode ?? 'simple') as WritingMode
-    
+
     const editorRef = useRef<SceneEditorRef>(null)
     const hasInitializedSelectionRef = useRef(false)
     const sceneNodeIds = useMemo(
@@ -617,6 +637,15 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         analyzeScene()
     }
 
+    const setManuscriptView = useCallback((open: boolean) => {
+        window.dispatchEvent(
+            new CustomEvent(TOGGLE_MANUSCRIPT_VIEW_EVENT, {
+                detail: { open },
+            })
+        )
+        setManuscriptViewOpen(open)
+    }, [])
+
     const handleToggleAiPanel = () => {
         const nextState = !aiPanelOpen
         if (nextState) {
@@ -625,6 +654,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             setAnalysisResult(null)
             setCommentsPanelOpen(false)
             setSceneAssetsOpen(false)
+            setManuscriptView(false)
         }
         setAiPanelOpen(nextState)
     }
@@ -634,9 +664,10 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         if (nextState) {
             setAiPanelOpen(false)
             setSceneAssetsOpen(false)
+            setManuscriptView(false)
         }
         setCommentsPanelOpen(nextState)
-    }, [commentsPanelOpen, setAiPanelOpen, setCommentsPanelOpen, setSceneAssetsOpen])
+    }, [commentsPanelOpen, setAiPanelOpen, setCommentsPanelOpen, setManuscriptView, setSceneAssetsOpen])
 
     const handleToggleAssets = useCallback(() => {
         if (!activeNodeId || !activeScene) return
@@ -644,9 +675,10 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         if (nextState) {
             setAiPanelOpen(false)
             setCommentsPanelOpen(false)
+            setManuscriptView(false)
         }
         setSceneAssetsOpen(nextState)
-    }, [activeNodeId, activeScene, sceneAssetsOpen, setAiPanelOpen, setCommentsPanelOpen, setSceneAssetsOpen])
+    }, [activeNodeId, activeScene, sceneAssetsOpen, setAiPanelOpen, setCommentsPanelOpen, setManuscriptView, setSceneAssetsOpen])
 
     const handleCloseAiPanel = () => {
         setAiAccessContext('partner')
@@ -658,7 +690,23 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         setCommentsPanelOpen(false)
         setSceneAssetsOpen(false)
         setAiAccessContext('partner')
-    }, [setAiPanelOpen, setCommentsPanelOpen, setSceneAssetsOpen])
+        setManuscriptView(false)
+    }, [setAiPanelOpen, setCommentsPanelOpen, setManuscriptView, setSceneAssetsOpen])
+
+    const handleToggleManuscriptView = useCallback(() => {
+        const nextState = !manuscriptViewOpen
+        if (nextState) {
+            setAiPanelOpen(false)
+            setCommentsPanelOpen(false)
+            setSceneAssetsOpen(false)
+        }
+        setManuscriptView(nextState)
+    }, [manuscriptViewOpen, setAiPanelOpen, setCommentsPanelOpen, setManuscriptView, setSceneAssetsOpen])
+
+    useEffect(() => {
+        if (writingMode === 'simple' && activeScene && activeNodeId) return
+        setManuscriptView(false)
+    }, [activeNodeId, activeScene, setManuscriptView, writingMode])
 
     const desktopOpenPanel = aiPanelOpen
         ? 'ai'
@@ -739,7 +787,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             {/* Main editor area */}
             <div data-tour="main-editor" className="story-workspace flex-1 flex flex-col overflow-hidden bg-[#fbf9f5] w-full">
                 {/* Linked Context (Sticky) */}
-                {activeNodeId && activeScene && !isLocalOnly && (
+                {activeNodeId && activeScene && !isLocalOnly && role !== 'viewer' && (
                     <div className="story-workspace-topbar bg-[#fbf9f5] border-b border-slate-100 z-10">
                         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-start sm:items-center justify-between gap-4">
                             <div className="flex-1 snap-row">
@@ -774,7 +822,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 )}
 
                 {/* Editor content (Scrolls internally) */}
-                <div className="flex-1 overflow-y-auto w-full scroll-smooth custom-scrollbar">
+                <div data-story-scroll-region className="flex-1 overflow-y-auto w-full scroll-smooth custom-scrollbar">
                     <div className="max-w-full mx-auto">
                         {activeNodeId === 'virtual-root' ? (
                             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -984,13 +1032,20 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
 
             {/* Desktop / tablet utility rail */}
             <div className="hidden md:flex h-full shrink-0">
-                {desktopOpenPanel && (
-                    <div className={cn(
-                        "h-full w-[320px] lg:w-[380px] flex-col overflow-hidden border-l transition-all duration-300 ease-in-out",
-                        theme === 'midnight'
-                            ? "flex border-slate-500/20 bg-[linear-gradient(180deg,rgba(19,28,45,0.96)_0%,rgba(16,24,38,0.98)_100%)] shadow-[-10px_0_30px_rgba(2,6,23,0.18)]"
-                            : "flex border-[#d8ddcf] bg-white"
-                    )}>
+                <div className={cn(
+                    "h-full shrink-0 overflow-hidden transition-[width,opacity,transform,border-color] duration-500 ease-in-out",
+                    desktopOpenPanel
+                        ? "w-[320px] lg:w-[380px] opacity-100 translate-x-0"
+                        : "w-0 opacity-0 translate-x-4 pointer-events-none",
+                    theme === 'midnight'
+                        ? desktopOpenPanel
+                            ? "border-l border-slate-500/20 bg-[linear-gradient(180deg,rgba(19,28,45,0.96)_0%,rgba(16,24,38,0.98)_100%)] shadow-[-10px_0_30px_rgba(2,6,23,0.18)]"
+                            : "border-l border-transparent bg-transparent shadow-none"
+                        : desktopOpenPanel
+                            ? "border-l border-[#d8ddcf] bg-white"
+                            : "border-l border-transparent bg-transparent shadow-none"
+                )}>
+                    <div className="h-full w-[320px] lg:w-[380px] flex-col overflow-hidden">
                         {desktopOpenPanel === 'ai' && (
                             <AiHelperPanel
                                 projectId={project.id}
@@ -1048,7 +1103,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                             />
                         )}
                     </div>
-                )}
+                </div>
 
                 <div
                     className={cn(
@@ -1113,6 +1168,31 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                     </TooltipTrigger>
                                     <TooltipContent side="left">AI Partner</TooltipContent>
                                 </Tooltip>
+
+                                {writingMode === 'simple' && activeNodeId && activeScene && (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                            type="button"
+                                            onClick={handleToggleManuscriptView}
+                                            className={cn(
+                                                "flex h-9 w-9 items-center justify-center rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2",
+                                                manuscriptViewOpen
+                                                    ? theme === 'midnight'
+                                                        ? "bg-white/10 text-amber-100 shadow-sm ring-1 ring-white/10"
+                                                        : "bg-white text-[#546354] shadow-sm"
+                                                    : theme === 'midnight'
+                                                        ? "text-slate-300 hover:bg-white/8 hover:text-amber-100 focus-visible:ring-slate-300/20"
+                                                        : "text-slate-500 hover:bg-white/80 hover:text-[#546354] focus-visible:ring-[#546354]/20"
+                                            )}
+                                            aria-label="Manuscript view"
+                                        >
+                                            <Type className="h-4 w-4" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left">Manuscript View</TooltipContent>
+                                    </Tooltip>
+                                )}
 
                                 <Tooltip>
                                     <TooltipTrigger asChild>
