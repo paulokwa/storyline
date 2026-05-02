@@ -1136,7 +1136,6 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
     const canShowSelectionToolbar =
         !!editor &&
-        !isFindOpen &&
         (!isReadOnly || (role === 'viewer' && allowViewerFeedback))
 
     useEffect(() => {
