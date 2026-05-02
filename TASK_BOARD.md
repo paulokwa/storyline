@@ -25,7 +25,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 
 ## Later
 
-- Structure tree performance improvements for large projects.
+
 - Advanced offline / pending sync beyond current `localStorage` fallback.
 - Stronger destructive action guards for high-impact deletes.
 - Writing UX polish: focus, paper transitions, font sizing, and themes.
