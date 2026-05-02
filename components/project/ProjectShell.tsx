@@ -84,7 +84,7 @@ import OnboardingTour from './OnboardingTour'
 import { queueAiTourStart } from '@/lib/ai/tour'
 import { WORKSPACE_TOUR_PENDING_KEY } from '@/lib/project/tour'
 import { OPEN_SHORTCUTS_EVENT } from '@/lib/project/shortcuts'
-import { PROSE_FOCUS_MODE_STATE_EVENT } from '@/lib/editor/view-settings'
+import { FOCUS_MODE_STATE_EVENT } from '@/lib/editor/manuscript-view-events'
 
 type Project = Database['public']['Tables']['projects']['Row']
 type ProjectOwner = {
@@ -672,8 +672,8 @@ function ProjectShellInner({
             setIsProseFocusModeActive(nextState)
         }
 
-        window.addEventListener(PROSE_FOCUS_MODE_STATE_EVENT, handleFocusModeState as EventListener)
-        return () => window.removeEventListener(PROSE_FOCUS_MODE_STATE_EVENT, handleFocusModeState as EventListener)
+        window.addEventListener(FOCUS_MODE_STATE_EVENT, handleFocusModeState as EventListener)
+        return () => window.removeEventListener(FOCUS_MODE_STATE_EVENT, handleFocusModeState as EventListener)
     }, [])
 
     useEffect(() => {

@@ -85,12 +85,13 @@ import {
     DEFAULT_PROSE_EDITOR_VIEW_SETTINGS,
     EDITOR_VIEW_SETTINGS_STORAGE_KEY,
     normalizeProseEditorViewSettings,
-    PROSE_FOCUS_MODE_STATE_EVENT,
     type ProseEditorViewSettings,
 } from '@/lib/editor/view-settings'
 import { PROSE_EDITOR_FONTS, PROSE_EDITOR_FONT_STACKS } from '@/lib/editor/fonts'
 import {
+    FOCUS_MODE_STATE_EVENT,
     MANUSCRIPT_VIEW_STATE_EVENT,
+    TOGGLE_FOCUS_MODE_EVENT,
     TOGGLE_MANUSCRIPT_VIEW_EVENT,
 } from '@/lib/editor/manuscript-view-events'
 
@@ -607,6 +608,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [desktopViewDrawerBounds, setDesktopViewDrawerBounds] = useState<{ top: number; height: number } | null>(null)
 
     const resolvedEditorFont = PROSE_EDITOR_FONT_STACKS[viewSettings.fontFamily] ?? PROSE_EDITOR_FONT_STACKS.Newsreader
+    const isFocusMode = viewSettings.focusMode
     const isProseFocusMode = writingMode === 'simple' && viewSettings.focusMode
     const isProseTypewriterMode = writingMode === 'simple' && viewSettings.typewriterMode
     const androidViewportWidth = typeof window === 'undefined'
@@ -648,7 +650,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     }
 
     useEffect(() => {
-        if (!isProseFocusMode) return
+        if (!isFocusMode) return
 
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
@@ -663,30 +665,44 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
         window.addEventListener('keydown', handleKeyDown)
         return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [isProseFocusMode])
+    }, [isFocusMode])
 
     useEffect(() => {
-        if (isProseFocusMode && showViewSettings) {
-            setShowViewSettings(false)
-        }
-    }, [isProseFocusMode, showViewSettings])
-
-    useEffect(() => {
-        const isActive = writingMode === 'simple' && isProseFocusMode
         window.dispatchEvent(
-            new CustomEvent(PROSE_FOCUS_MODE_STATE_EVENT, {
-                detail: { active: isActive },
+            new CustomEvent(FOCUS_MODE_STATE_EVENT, {
+                detail: { active: isFocusMode },
             })
         )
 
         return () => {
             window.dispatchEvent(
-                new CustomEvent(PROSE_FOCUS_MODE_STATE_EVENT, {
+                new CustomEvent(FOCUS_MODE_STATE_EVENT, {
                     detail: { active: false },
                 })
             )
         }
-    }, [isProseFocusMode, writingMode])
+    }, [isFocusMode])
+
+    useEffect(() => {
+        const handleToggleFocusMode = (event: Event) => {
+            const requestedState =
+                event instanceof CustomEvent && typeof event.detail?.open === 'boolean'
+                    ? event.detail.open
+                    : null
+
+            setViewSettings((previous) => {
+                const nextSettings = {
+                    ...previous,
+                    focusMode: requestedState ?? !previous.focusMode,
+                }
+                localStorage.setItem(EDITOR_VIEW_SETTINGS_STORAGE_KEY, JSON.stringify(nextSettings))
+                return nextSettings
+            })
+        }
+
+        window.addEventListener(TOGGLE_FOCUS_MODE_EVENT, handleToggleFocusMode as EventListener)
+        return () => window.removeEventListener(TOGGLE_FOCUS_MODE_EVENT, handleToggleFocusMode as EventListener)
+    }, [])
 
     // Sync with external title (StructureTree changes)
     useEffect(() => {
@@ -1468,7 +1484,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                     'scene-editor-shell-screenplay py-10 px-4 sm:px-8',
                     isMidnight ? 'bg-transparent' : 'bg-[#f0f0ed]'
                 )
-                : isProseFocusMode
+                : isFocusMode
                     ? 'scene-editor-focus-mode px-3 sm:px-8 md:px-12 max-w-6xl mx-auto pt-3'
                     : 'px-4 sm:px-12 md:px-24 max-w-6xl mx-auto pt-4'
         )}>
@@ -1555,7 +1571,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 </div>
             )}
             {/* Header info bar */}
-            {!isProseFocusMode && (
+            {!isFocusMode && (
             <div className="flex flex-col mb-10">
                 <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="flex min-w-0 items-center gap-2">
@@ -2094,7 +2110,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 </>
             )}
 
-            {isProseFocusMode && (
+            {isFocusMode && (
                 <div className="sticky top-3 z-[95] mb-4 flex justify-end">
                     <Button
                         variant="ghost"

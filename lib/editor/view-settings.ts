@@ -5,7 +5,6 @@ import {
 } from '@/lib/editor/fonts'
 
 export const EDITOR_VIEW_SETTINGS_STORAGE_KEY = 'storyline_editor_prefs'
-export const PROSE_FOCUS_MODE_STATE_EVENT = 'storyline:prose-focus-mode-state'
 
 export type ProseEditorTextAlign = 'left' | 'justify'
 

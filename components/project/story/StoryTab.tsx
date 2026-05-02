@@ -13,7 +13,7 @@ import LinkedContext from './LinkedContext'
 import SceneAnalysisPanel from './SceneAnalysisPanel'
 import { ReaderControls } from './ReaderMode'
 
-import { PanelLeftOpen, BookOpen, Sparkles, X, Wand2, BarChart3, Clapperboard, Book, Download, Square, MessageSquare, Image as ImageIcon, Mic, MicOff, HelpCircle, Type } from 'lucide-react'
+import { PanelLeftOpen, BookOpen, Sparkles, X, Wand2, BarChart3, Clapperboard, Book, Download, Square, MessageSquare, Image as ImageIcon, Mic, MicOff, HelpCircle, Type, Maximize2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { Database, WritingMode } from '@/lib/supabase/types'
@@ -35,10 +35,11 @@ import { readStoredSceneNodeId, resolveSceneNodeId, writeStoredSceneNodeId } fro
 import { getSceneTextForAi } from '@/lib/story/scene-text'
 import type { ProjectStorageMode } from '@/lib/persistence/project-mode'
 import {
+    FOCUS_MODE_STATE_EVENT,
     MANUSCRIPT_VIEW_STATE_EVENT,
+    TOGGLE_FOCUS_MODE_EVENT,
     TOGGLE_MANUSCRIPT_VIEW_EVENT,
 } from '@/lib/editor/manuscript-view-events'
-import { PROSE_FOCUS_MODE_STATE_EVENT } from '@/lib/editor/view-settings'
 import { toast } from 'sonner'
 
 const MIN_SCENE_ANALYSIS_CHARS = 50
@@ -126,7 +127,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     const [isExtremeContext, setIsExtremeContext] = useState(false)
     const [aiAccessContext, setAiAccessContext] = useState<AiAccessContext>('partner')
     const [manuscriptViewOpen, setManuscriptViewOpen] = useState(false)
-    const [isProseFocusModeActive, setIsProseFocusModeActive] = useState(false)
+    const [isFocusModeActive, setIsFocusModeActive] = useState(false)
 
     useEffect(() => {
         if (project?.id) {
@@ -154,11 +155,11 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 event instanceof CustomEvent && typeof event.detail?.active === 'boolean'
                     ? event.detail.active
                     : false
-            setIsProseFocusModeActive(nextState)
+            setIsFocusModeActive(nextState)
         }
 
-        window.addEventListener(PROSE_FOCUS_MODE_STATE_EVENT, handleFocusModeState as EventListener)
-        return () => window.removeEventListener(PROSE_FOCUS_MODE_STATE_EVENT, handleFocusModeState as EventListener)
+        window.addEventListener(FOCUS_MODE_STATE_EVENT, handleFocusModeState as EventListener)
+        return () => window.removeEventListener(FOCUS_MODE_STATE_EVENT, handleFocusModeState as EventListener)
     }, [])
     const writingMode = (project.writing_mode ?? 'simple') as WritingMode
 
@@ -718,6 +719,14 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         setManuscriptView(nextState)
     }, [manuscriptViewOpen, setAiPanelOpen, setCommentsPanelOpen, setManuscriptView, setSceneAssetsOpen])
 
+    const handleToggleFocusMode = useCallback(() => {
+        window.dispatchEvent(
+            new CustomEvent(TOGGLE_FOCUS_MODE_EVENT, {
+                detail: { open: !isFocusModeActive },
+            })
+        )
+    }, [isFocusModeActive])
+
     useEffect(() => {
         if (writingMode === 'simple' && activeScene && activeNodeId) return
         setManuscriptView(false)
@@ -732,15 +741,15 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 : null
 
     useEffect(() => {
-        if (!isProseFocusModeActive) return
+        if (!isFocusModeActive) return
         setSidebarOpen(false)
         closeRightPanels()
-    }, [closeRightPanels, isProseFocusModeActive, setSidebarOpen])
+    }, [closeRightPanels, isFocusModeActive, setSidebarOpen])
 
     return (
         <div className="flex flex-1 min-h-0 overflow-hidden relative">
             {/* Backdrop for mobile */}
-            {!isProseFocusModeActive && (sidebarOpen || aiPanelOpen || commentsPanelOpen || sceneAssetsOpen) && (
+            {!isFocusModeActive && (sidebarOpen || aiPanelOpen || commentsPanelOpen || sceneAssetsOpen) && (
                 <div 
                     className={cn(
                         "md:hidden absolute inset-0 bg-black/20 backdrop-blur-sm z-30 transition-all duration-500",
@@ -759,7 +768,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 className={cn(
                     'flex flex-col transition-all duration-500 ease-in-out overflow-hidden z-40 md:z-20',
                     'absolute top-0 bottom-0 left-0 md:relative md:inset-auto md:h-full',
-                    isProseFocusModeActive
+                    isFocusModeActive
                         ? 'w-0 border-none opacity-0 -translate-x-full pointer-events-none'
                         : sidebarOpen
                         ? 'w-[280px] lg:w-[320px] border-r border-slate-200 opacity-100 translate-x-0 bg-[#f5f4ef]'
@@ -768,7 +777,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                             : 'structure-collapsed-rail w-0 border-none opacity-0 -translate-x-full md:w-14 md:translate-x-0 md:opacity-100 md:border-r md:border-[#d8ddcf] md:bg-[#eef1e8] md:shadow-[inset_-1px_0_0_rgba(84,99,84,0.06)]'
                 )}
             >
-                {!isProseFocusModeActive && sidebarOpen ? (
+                {!isFocusModeActive && sidebarOpen ? (
                     <div className="w-[280px] lg:w-[320px] h-full min-h-0 flex flex-col overflow-hidden">
                         <StructureTree
                             project={project}
@@ -810,7 +819,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             {/* Main editor area */}
             <div data-tour="main-editor" className="story-workspace flex-1 flex flex-col overflow-hidden bg-[#fbf9f5] w-full">
                 {/* Linked Context (Sticky) */}
-                {activeNodeId && activeScene && !isLocalOnly && role !== 'viewer' && !isProseFocusModeActive && (
+                {activeNodeId && activeScene && !isLocalOnly && role !== 'viewer' && !isFocusModeActive && (
                     <div className="story-workspace-topbar bg-[#fbf9f5] border-b border-slate-100 z-10">
                         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-start sm:items-center justify-between gap-4">
                             <div className="flex-1 snap-row">
@@ -846,7 +855,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
 
                 {/* Editor content (Scrolls internally) */}
                 <div data-story-scroll-region className="flex-1 overflow-y-auto w-full scroll-smooth custom-scrollbar">
-                    <div className={cn("max-w-full mx-auto", isProseFocusModeActive && "px-2 sm:px-4 lg:px-6")}>
+                    <div className={cn("max-w-full mx-auto", isFocusModeActive && "px-2 sm:px-4 lg:px-6")}>
                         {activeNodeId === 'virtual-root' ? (
                             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
                                 <div className="w-24 h-24 bg-indigo-50 rounded-[2.5rem] flex items-center justify-center text-indigo-400 relative">
@@ -979,7 +988,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             {/* Mobile slide-out panels */}
             <div className={cn(
                 'story-ai-sidebar bg-white flex flex-col transition-all duration-300 ease-in-out overflow-hidden z-40 absolute top-0 bottom-0 right-0 md:hidden',
-                !isProseFocusModeActive && aiPanelOpen ? 'w-[320px] opacity-100 translate-x-0 border-l border-slate-200' : 'w-0 border-none opacity-0 translate-x-full'
+                !isFocusModeActive && aiPanelOpen ? 'w-[320px] opacity-100 translate-x-0 border-l border-slate-200' : 'w-0 border-none opacity-0 translate-x-full'
             )}>
                 <div className="w-[320px] h-full flex flex-col">
                     <AiHelperPanel
@@ -1021,7 +1030,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
 
             <div className={cn(
                 'bg-white flex flex-col border-l border-slate-200 transition-all duration-300 ease-in-out overflow-hidden z-40 absolute top-0 bottom-0 right-0 md:hidden',
-                !isProseFocusModeActive && commentsPanelOpen ? 'w-[320px] opacity-100 translate-x-0' : 'w-0 border-none opacity-0 translate-x-full'
+                !isFocusModeActive && commentsPanelOpen ? 'w-[320px] opacity-100 translate-x-0' : 'w-0 border-none opacity-0 translate-x-full'
             )}>
                 <div className="w-[320px] h-full flex flex-col">
                     <CommentsPanel 
@@ -1040,7 +1049,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             {activeNodeId && activeScene && (
                 <div className={cn(
                     'bg-white flex flex-col border-l border-slate-200 transition-all duration-300 ease-in-out overflow-hidden z-40 absolute top-0 bottom-0 right-0 md:hidden',
-                    !isProseFocusModeActive && sceneAssetsOpen ? 'w-[320px] opacity-100 translate-x-0' : 'w-0 border-none opacity-0 translate-x-full'
+                    !isFocusModeActive && sceneAssetsOpen ? 'w-[320px] opacity-100 translate-x-0' : 'w-0 border-none opacity-0 translate-x-full'
                 )}>
                     <div className="w-[320px] h-full flex flex-col">
                         <SceneAssetsPanel 
@@ -1054,7 +1063,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             )}
 
             {/* Desktop / tablet utility rail */}
-            <div className={cn("hidden md:flex h-full shrink-0", isProseFocusModeActive && "hidden")}>
+            <div className="hidden md:flex h-full shrink-0">
                 <div className={cn(
                     "h-full shrink-0 overflow-hidden transition-[width,opacity,transform,border-color] duration-500 ease-in-out",
                     desktopOpenPanel
@@ -1214,6 +1223,31 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                         </button>
                                     </TooltipTrigger>
                                     <TooltipContent side="left">Manuscript View</TooltipContent>
+                                    </Tooltip>
+                                )}
+
+                                {writingMode === 'screenplay' && activeNodeId && activeScene && (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                            type="button"
+                                            onClick={handleToggleFocusMode}
+                                            className={cn(
+                                                "flex h-9 w-9 items-center justify-center rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2",
+                                                isFocusModeActive
+                                                    ? theme === 'midnight'
+                                                        ? "bg-white/10 text-amber-100 shadow-sm ring-1 ring-white/10"
+                                                        : "bg-white text-[#546354] shadow-sm"
+                                                    : theme === 'midnight'
+                                                        ? "text-slate-300 hover:bg-white/8 hover:text-amber-100 focus-visible:ring-slate-300/20"
+                                                        : "text-slate-500 hover:bg-white/80 hover:text-[#546354] focus-visible:ring-[#546354]/20"
+                                            )}
+                                            aria-label={isFocusModeActive ? 'Exit focus mode' : 'Enter focus mode'}
+                                        >
+                                            <Maximize2 className="h-4 w-4" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left">{isFocusModeActive ? 'Exit Focus Mode' : 'Focus Mode'}</TooltipContent>
                                     </Tooltip>
                                 )}
 
