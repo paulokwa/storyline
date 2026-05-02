@@ -1193,7 +1193,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                         onClick={() => router.push(`/project/${project.id}/help`)}
                                         data-tour="help-icon"
                                         className={cn(
-                                            "hidden lg:flex h-9 w-9 items-center justify-center rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2",
+                                            "flex h-9 w-9 items-center justify-center rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2",
                                             theme === 'midnight'
                                                 ? "text-slate-300 hover:bg-white/8 hover:text-[#dbe5ff] focus-visible:ring-slate-300/20"
                                                 : "text-slate-500 hover:bg-white/80 hover:text-primary focus-visible:ring-[#546354]/20"

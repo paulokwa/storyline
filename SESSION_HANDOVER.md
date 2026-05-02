@@ -5,6 +5,40 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-01 - Tablet Story row declutter and Help rail alignment
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Adjusted the Story workspace tablet pattern so the horizontal action row no longer duplicates every editor utility.
+- Kept `Analyze` and `Ask AI` in the top Story action row for tablet, preserving their existing handlers and visual prominence.
+- Removed tablet-row duplicates for `Read Aloud`, `Dictate`, `Feedback`, and `Gallery` / `Visual References` by limiting those row icons to mobile only in `components/project/ProjectShell.tsx`.
+- Moved the project-scoped tablet Help entrypoint into the existing right utility rail by hiding the smaller-screen header Help button from `md` up and showing the rail Help trigger at tablet as well as desktop.
+- Preserved the exact Help route `router.push(\`/project/${project.id}/help\`)` and kept `data-tour="help-icon"` on the visible rail Help trigger.
+- Verified the refinement with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+Tablet Story layout now keeps the top AI pair while pushing the remaining editor utilities, including Help, into the right rail. Mobile still retains the fuller horizontal tool row, and desktop remains unchanged.
+
+### Next recommended step
+
+Run a browser validation pass:
+- tablet width in Sanctuary and Midnight
+- confirm the top row only shows `Analyze` and `Ask AI`
+- confirm `Read Aloud`, `Dictate`, `Feedback`, `Gallery` / `Visual References`, and `Help` are available from the right rail
+- confirm mobile still shows the fuller horizontal tool row
+- confirm desktop right rail behavior is unchanged
+
+### Risks or warnings
+
+- This session verified compile only, not a live tablet browser pass.
+- The previously attempted tablet-labelled-rail direction was intentionally not kept; the current tablet pattern is top-row AI pair plus right-rail utilities.
+
+---
 ## 2026-05-01 - Desktop Story shell alignment and Help rail move
 
 ### Current branch

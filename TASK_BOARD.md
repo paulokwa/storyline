@@ -71,6 +71,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Consider adding an `AGENTS.md` or `CONTRIBUTING.md` if agents need stricter operating rules.
 
 ## Done
+- Refined the Story workspace tablet layout so the top action row now keeps only `Analyze` and `Ask AI`, while `Read Aloud`, `Dictate`, `Feedback`, `Gallery` / `Visual References`, and `Help` live in the right rail on tablet.
 - Tightened desktop Story shell alignment and moved the project-scoped desktop Help action into the Story right rail while preserving the existing Help route and tour anchor.
 - Reworked the Story workspace desktop/tablet right side into a shared utility rail so AI Partner, Feedback, and `Gallery` / `Visual References` share one vertical access point, while Analyze, Dictate, and Read Aloud now live on the same rail as direct actions.
 - Fixed the Midnight-mode AI Partner composer regression so the lower chat/prompt area and `PremiumEditor` prompt surface no longer stay light in dark theme.

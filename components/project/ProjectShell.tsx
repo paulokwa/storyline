@@ -881,7 +881,7 @@ function ProjectShellInner({
                                         size="sm"
                                         onClick={() => router.push(`/project/${project.id}/help`)}
                                         data-tour="help-icon"
-                                        className="h-9 w-9 p-0 rounded-xl bg-black/5 text-slate-500 hover:text-primary hover:bg-primary/5 transition-all lg:hidden"
+                                        className="h-9 w-9 p-0 rounded-xl bg-black/5 text-slate-500 hover:text-primary hover:bg-primary/5 transition-all md:hidden"
                                     >
                                         <HelpCircle className="w-5 h-5" />
                                     </Button>
@@ -959,80 +959,82 @@ function ProjectShellInner({
                                     </div>
                                     )}
 
-                                    {/* Reading/Interaction */}
-                                    <ReaderControls 
-                                        getSelection={() => currentSelectionText}
-                                        getScene={() => currentSceneText}
-                                        getChapter={() => currentChapterText}
-                                        getSceneChunks={() => splitReaderBlocks(currentSceneText)}
-                                        getChapterChunks={() => splitReaderBlocks(currentChapterText)}
-                                        mode="icon-only"
-                                    />
+                                    <div className="contents md:hidden">
+                                        {/* Reading/Interaction */}
+                                        <ReaderControls 
+                                            getSelection={() => currentSelectionText}
+                                            getScene={() => currentSceneText}
+                                            getChapter={() => currentChapterText}
+                                            getSceneChunks={() => splitReaderBlocks(currentSceneText)}
+                                            getChapterChunks={() => splitReaderBlocks(currentChapterText)}
+                                            mode="icon-only"
+                                        />
 
-                                    {/* Dictate */}
-                                    <span className="shrink-0">
-                                    <Tooltip>
-                                        <TooltipTrigger>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={requestDictation}
-                                                className={cn(
-                                                    "rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center shrink-0 border border-transparent",
-                                                    isDictating ? "bg-red-50 text-red-600 border-red-100 font-bold shadow-sm animate-pulse" : "bg-black/5 text-slate-500 hover:bg-black/10"
-                                                )}
-                                            >
-                                                {isDictating ? <Mic className="w-4 h-4 text-red-500" /> : <MicOff className="w-4 h-4" />}
-                                            </Button>
-                                        </TooltipTrigger>
-                                             <TooltipContent side="bottom">Dictate</TooltipContent>
-                                     </Tooltip>
-                                     </span>
+                                        {/* Dictate */}
+                                        <span className="shrink-0">
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={requestDictation}
+                                                    className={cn(
+                                                        "rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center shrink-0 border border-transparent",
+                                                        isDictating ? "bg-red-50 text-red-600 border-red-100 font-bold shadow-sm animate-pulse" : "bg-black/5 text-slate-500 hover:bg-black/10"
+                                                    )}
+                                                >
+                                                    {isDictating ? <Mic className="w-4 h-4 text-red-500" /> : <MicOff className="w-4 h-4" />}
+                                                </Button>
+                                            </TooltipTrigger>
+                                                 <TooltipContent side="bottom">Dictate</TooltipContent>
+                                         </Tooltip>
+                                         </span>
 
-                                     {/* Feedback */}
-                                     {supportsComments && <span className="shrink-0">
-                                     <Tooltip>
-                                        <TooltipTrigger>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={handleToggleComments}
-                                                className={cn(
-                                                    "rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center shrink-0 border border-transparent",
-                                                    commentsPanelOpen ? "bg-rose-50 text-rose-600 border-rose-100 font-bold shadow-sm" : "bg-black/5 text-slate-500 hover:bg-black/10"
-                                                )}
-                                            >
-                                                <MessageSquare className="w-4 h-4" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                         <TooltipContent side="bottom">Feedback</TooltipContent>
-                                     </Tooltip>
-                                     </span>}
+                                         {/* Feedback */}
+                                         {supportsComments && <span className="shrink-0">
+                                         <Tooltip>
+                                            <TooltipTrigger>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={handleToggleComments}
+                                                    className={cn(
+                                                        "rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center shrink-0 border border-transparent",
+                                                        commentsPanelOpen ? "bg-rose-50 text-rose-600 border-rose-100 font-bold shadow-sm" : "bg-black/5 text-slate-500 hover:bg-black/10"
+                                                    )}
+                                                >
+                                                    <MessageSquare className="w-4 h-4" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                             <TooltipContent side="bottom">Feedback</TooltipContent>
+                                         </Tooltip>
+                                         </span>}
 
-                                     {/* Gallery */}
-                                     {supportsAssets && <span className="shrink-0">
-                                     <Tooltip>
-                                         <TooltipTrigger>
-                                             <Button
-                                                 variant="ghost"
-                                                 size="sm"
-                                                 onClick={handleToggleAssets}
-                                                 disabled={!activeNodeId || activeNodeId === 'virtual-root'}
-                                                 className={cn(
-                                                     "rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center shrink-0 border border-transparent",
-                                                     !activeNodeId || activeNodeId === 'virtual-root'
-                                                         ? "bg-black/5 text-slate-300"
-                                                         : sceneAssetsOpen
-                                                             ? "bg-emerald-50 text-emerald-600 border-emerald-100 font-bold shadow-sm"
-                                                             : "bg-black/5 text-slate-500 hover:bg-black/10"
-                                                 )}
-                                             >
-                                                 <ImageIcon className="w-4 h-4" />
-                                             </Button>
-                                         </TooltipTrigger>
-                                         <TooltipContent side="bottom">{sceneAssetsLabel}</TooltipContent>
-                                     </Tooltip>
-                                     </span>}
+                                         {/* Gallery */}
+                                         {supportsAssets && <span className="shrink-0">
+                                         <Tooltip>
+                                             <TooltipTrigger>
+                                                 <Button
+                                                     variant="ghost"
+                                                     size="sm"
+                                                     onClick={handleToggleAssets}
+                                                     disabled={!activeNodeId || activeNodeId === 'virtual-root'}
+                                                     className={cn(
+                                                         "rounded-xl transition-all h-9 w-9 p-0 flex items-center justify-center shrink-0 border border-transparent",
+                                                         !activeNodeId || activeNodeId === 'virtual-root'
+                                                             ? "bg-black/5 text-slate-300"
+                                                             : sceneAssetsOpen
+                                                                 ? "bg-emerald-50 text-emerald-600 border-emerald-100 font-bold shadow-sm"
+                                                                 : "bg-black/5 text-slate-500 hover:bg-black/10"
+                                                     )}
+                                                 >
+                                                     <ImageIcon className="w-4 h-4" />
+                                                 </Button>
+                                             </TooltipTrigger>
+                                             <TooltipContent side="bottom">{sceneAssetsLabel}</TooltipContent>
+                                         </Tooltip>
+                                         </span>}
+                                    </div>
 
                                 </div>
                             )}
