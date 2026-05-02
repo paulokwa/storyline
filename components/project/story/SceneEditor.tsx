@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useImperativeHandle, forwardRef, useR
 import { useEditor, EditorContent, type Editor as TiptapEditor } from '@tiptap/react'
 import { BubbleMenu } from '@tiptap/react/menus'
 import type { VirtualElement } from '@floating-ui/dom'
-import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state'
+import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -397,52 +397,48 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const hasFindMatches = findMatches.length > 0
 
     const revealFindMatch = useCallback((editorInstance: TiptapEditor, match: SceneSearchMatch) => {
-        const { state, view } = editorInstance
-        const nextSelection = TextSelection.create(state.doc, match.from, match.to)
+        const { view } = editorInstance
         const shell = editorShellRef.current
         const scrollContainer = (shell?.closest('[data-story-scroll-region]') as HTMLElement | null) ?? null
-        const startCoords = view.coordsAtPos(match.from)
-        const endCoords = view.coordsAtPos(Math.max(match.to - 1, match.from))
-        const top = Math.min(startCoords.top, endCoords.top)
-        const bottom = Math.max(startCoords.bottom, endCoords.bottom)
+        window.requestAnimationFrame(() => {
+            const activeMatchElement = view.dom.querySelector('.scene-editor-find-match-active') as HTMLElement | null
+            if (!activeMatchElement) return
 
-        let shouldScroll = true
+            const matchRect = activeMatchElement.getBoundingClientRect()
 
-        if (scrollContainer) {
+            if (!scrollContainer) {
+                activeMatchElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                    inline: 'nearest',
+                })
+                return
+            }
+
             const containerRect = scrollContainer.getBoundingClientRect()
             const visibilityPadding = 72
-            shouldScroll =
-                top < containerRect.top + visibilityPadding ||
-                bottom > containerRect.bottom - visibilityPadding
-        }
+            const shouldScroll =
+                matchRect.top < containerRect.top + visibilityPadding ||
+                matchRect.bottom > containerRect.bottom - visibilityPadding
 
-        const transaction = state.tr.setSelection(nextSelection)
+            if (!shouldScroll) return
 
-        if (!scrollContainer && shouldScroll) {
-            transaction.scrollIntoView()
-        }
+            const relativeTop = matchRect.top - containerRect.top + scrollContainer.scrollTop
+            const matchHeight = Math.max(matchRect.height, 24)
+            const targetScrollTop = Math.max(
+                0,
+                relativeTop - (scrollContainer.clientHeight - matchHeight) / 2
+            )
 
-        view.dispatch(transaction)
-        view.focus()
-
-        if (!scrollContainer || !shouldScroll) return
-
-        const containerRect = scrollContainer.getBoundingClientRect()
-        const relativeTop = top - containerRect.top + scrollContainer.scrollTop
-        const matchHeight = Math.max(bottom - top, 24)
-        const targetScrollTop = Math.max(
-            0,
-            relativeTop - (scrollContainer.clientHeight - matchHeight) / 2
-        )
-
-        typewriterProgrammaticScrollRef.current = true
-        scrollContainer.scrollTo({
-            top: targetScrollTop,
-            behavior: 'smooth',
+            typewriterProgrammaticScrollRef.current = true
+            scrollContainer.scrollTo({
+                top: targetScrollTop,
+                behavior: 'smooth',
+            })
+            window.setTimeout(() => {
+                typewriterProgrammaticScrollRef.current = false
+            }, 220)
         })
-        window.setTimeout(() => {
-            typewriterProgrammaticScrollRef.current = false
-        }, 220)
     }, [])
 
     const updateWordCountState = useCallback((editorInstance: TiptapEditor) => {
@@ -1103,9 +1099,6 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         const activeMatch = findMatches[activeFindMatchIndex]
         if (!activeMatch) return
 
-        const { from, to } = editor.state.selection
-        if (from === activeMatch.from && to === activeMatch.to) return
-
         revealFindMatch(editor, activeMatch)
     }, [editor, findMatches, activeFindMatchIndex, revealFindMatch])
 
@@ -1130,7 +1123,18 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         return () => window.removeEventListener('keydown', handleKeyDown)
     }, [openFindPanel])
 
-    const canShowSelectionToolbar = !!editor && (!isReadOnly || (role === 'viewer' && allowViewerFeedback))
+    useEffect(() => {
+        if (!isFindOpen) return
+
+        selectionVirtualElementRef.current = null
+        setAndroidToolbarPosition(null)
+        setCurrentSelectionText('')
+    }, [isFindOpen, setCurrentSelectionText])
+
+    const canShowSelectionToolbar =
+        !!editor &&
+        !isFindOpen &&
+        (!isReadOnly || (role === 'viewer' && allowViewerFeedback))
 
     useEffect(() => {
         if (!editor || !isProseTypewriterMode || isReadOnly) return

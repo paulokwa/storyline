@@ -5,6 +5,42 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-02 - Current-scene find focus-steal / formatting-toolbar regression fix
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Fixed the follow-up regression where typing into current-scene find would highlight the first match by creating a normal editor selection, which:
+  - popped the formatting toolbar over the document
+  - stole focus from the find input after the first typed character
+- Updated `components/project/story/SceneEditor.tsx` so current-scene find now:
+  - reveals the active match by scrolling to the active decoration instead of creating a normal editor text selection
+  - keeps focus in the find input while typing
+  - suppresses the floating formatting toolbar while the find panel is open
+- Preserved ordinary manual text selection behavior outside the find flow, so normal highlighting can still raise the formatting toolbar.
+- Verified the change with `npx tsc --noEmit --pretty false`.
+- Ran `npm run lint`; it still fails on the repo's broad pre-existing lint backlog, including unrelated `no-explicit-any`, `react/no-unescaped-entities`, and older script/app issues outside this task.
+
+### Current status
+
+Current-scene find should now behave like a search tool instead of a formatting selection flow. Typing in the find box should keep focus in the box, and the formatting toolbar should stay out of the way until the user intentionally selects text normally.
+
+### Next recommended step
+
+- Manually verify:
+  - `Ctrl/Cmd + F` opens current-scene find
+  - typing multiple characters keeps focus in the search field
+  - the formatting toolbar does not appear from find-only navigation
+  - normal manual text selection still opens the formatting toolbar outside the find flow
+
+### Risks or warnings
+
+- This fix intentionally avoids using a normal editor selection during find navigation. Active-result clarity now depends on the active decoration and scroll reveal rather than the browser's selection paint.
+
+---
 ## 2026-05-02 - Current-scene find polish follow-up
 
 ### Current branch
