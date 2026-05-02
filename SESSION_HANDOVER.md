@@ -5,6 +5,34 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-02 - Moved deferred Supabase/Zustand items fully into technical debt roadmap
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Reviewed the two remaining broad technical-debt reminders on `TASK_BOARD.md`.
+- Confirmed both topics were already documented in `docs/technical-debt-roadmap.md`.
+- Removed the duplicate Task Board entries so the board stays focused on more active work.
+- Tightened the roadmap wording so future agents see the real state clearly:
+  - Supabase generated `Database` types already exist; the remaining work is legacy `any` cleanup in older areas
+  - Zustand is already present; broader state consolidation should only happen if a concrete maintenance problem emerges
+
+### Current status
+
+Those two items now live only in `docs/technical-debt-roadmap.md` as future/deferred work rather than active board items.
+
+### Next recommended step
+
+- Leave those topics parked unless a specific implementation task surfaces that justifies tackling one incrementally.
+
+### Risks or warnings
+
+- This was a documentation cleanup only. No product code changed.
+
+---
 ## 2026-05-02 - Clarified technical-debt wording for Supabase types and Zustand
 
 ### Current branch

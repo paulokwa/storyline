@@ -37,15 +37,17 @@ This document tracks identified architectural risks, technical debt, and reliabi
 ## Medium Priority Later
 
 ### 1. Unified Type Safety (Supabase Generics)
-*   **Why it matters**: There is widespread use of `(supabase as any)` and `any` types in data-heavy components.
+*   **Why it matters**: Generated `Database` types already exist, but there is still scattered `(supabase as any)` and `any` usage in older data-heavy areas.
 *   **Risk if ignored**: Silent runtime errors and regression risks during database schema changes.
-*   **Suggested Implementation**: Wire the generated `Database` types from `lib/supabase/types.ts` into every `createClient` call and component prop definition.
+*   **Current state**: Shared Supabase clients already use the generated `Database` types. The remaining work is incremental cleanup in older persistence, recovery, comments, export, and sidebar code.
+*   **Suggested Implementation**: Reduce legacy `any` usage one problem area at a time rather than attempting a whole-app typing rewrite.
 *   **Priority**: Medium
 
 ### 2. State Management Consolidation (Zustand)
-*   **Why it matters**: Component state (active scene, writing mode, sidebar status) is currently managed via prop-drilling from `StoryTab` down to nested children.
-*   **Risk if ignored**: Maintainability becomes "painful" as the app grows; excessive re-renders.
-*   **Suggested Implementation**: Move shared UI and Project state into a centralized Zustand store (e.g., `useProjectStore`).
+*   **Why it matters**: Some shared UI state is still coordinated through local component trees and prop-drilling.
+*   **Risk if ignored**: Maintainability can become painful if a specific workflow starts needing the same state in too many places.
+*   **Current state**: Zustand is already in use for `projectActionsStore`, so this is not a missing dependency problem.
+*   **Suggested Implementation**: Only broaden Zustand usage when a concrete shared-state pain point justifies it; do not migrate state into a global store just for architectural neatness.
 *   **Priority**: Medium
 
 ### 3. Structure Tree Performance
