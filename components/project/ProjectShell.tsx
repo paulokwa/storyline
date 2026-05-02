@@ -715,12 +715,12 @@ function ProjectShellInner({
         <TooltipProvider>
             <div className="project-shell-root h-full min-h-0 flex-1 flex flex-col overflow-hidden">
                 {/* Project header */}
-                <div className="project-shell-header bg-secondary/50 backdrop-blur-sm px-4 sm:px-6 lg:px-8 border-b border-border">
-                    <div className="w-full">
+                <div className="project-shell-header bg-secondary/50 backdrop-blur-sm px-4 sm:px-6 lg:px-10 xl:px-12 border-b border-border">
+                    <div className="w-full max-w-[1440px] mx-auto">
                     {/* Top row */}
 
-                    <div className="flex items-center gap-2 pt-4 pb-2 border-b border-black/5 md:border-none">
-                        <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center gap-3 pt-4 pb-2 border-b border-black/5 md:border-none lg:gap-5">
+                        <div className="flex items-center gap-1.5 shrink-0 lg:gap-2">
                             <Tooltip>
                                 <TooltipTrigger>
                                     <Link 
@@ -780,7 +780,7 @@ function ProjectShellInner({
                             )}
                         </div>
 
-                        <div className="flex items-center gap-2 overflow-hidden flex-1 px-1">
+                        <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden border-l border-black/5 pl-3 lg:gap-3 lg:pl-4">
                             {!editingTitle ? (
                                 <>
                                     <div className={cn(
@@ -829,7 +829,7 @@ function ProjectShellInner({
                             )}
                         </div>
 
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3 lg:gap-4">
                             {!isLocalOnly && <AvatarPortal owner={owner} members={members} currentUserId={currentUserId} role={role} />}
                             
                             {supportsAi && isStoryTab && (
@@ -881,7 +881,7 @@ function ProjectShellInner({
                                         size="sm"
                                         onClick={() => router.push(`/project/${project.id}/help`)}
                                         data-tour="help-icon"
-                                        className="h-9 w-9 p-0 rounded-xl bg-black/5 text-slate-500 hover:text-primary hover:bg-primary/5 transition-all"
+                                        className="h-9 w-9 p-0 rounded-xl bg-black/5 text-slate-500 hover:text-primary hover:bg-primary/5 transition-all lg:hidden"
                                     >
                                         <HelpCircle className="w-5 h-5" />
                                     </Button>
@@ -1039,8 +1039,8 @@ function ProjectShellInner({
                         </div>
                     </div>
 
-                    <div className="project-shell-tabs mt-1 flex justify-center">
-                        <div className="snap-row flex gap-1">
+                    <div className="project-shell-tabs mt-1 flex justify-center lg:mt-2">
+                        <div className="snap-row flex gap-1 lg:gap-1.5">
                             {visibleTabs.map(({ slug, label, icon: Icon }) => (
                                 <Link
                                     key={slug}

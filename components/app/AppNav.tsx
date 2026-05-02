@@ -77,12 +77,12 @@ export default function AppNav({ user }: { user: User }) {
     } = useProjectActionsStore()
 
     return (
-        <nav className={`app-nav-shell sticky top-0 z-40 shrink-0 px-4 sm:px-6 lg:px-8 ${
+        <nav className={`app-nav-shell sticky top-0 z-40 shrink-0 px-4 sm:px-6 lg:px-10 xl:px-12 ${
             isMidnight
                 ? 'bg-[#182237]/88 backdrop-blur-xl border-b border-slate-500/20 shadow-[0_10px_30px_rgba(2,6,23,0.18)]'
                 : 'bg-white/80 backdrop-blur-sm border-b border-slate-200'
         }`}>
-            <div className={`app-nav-inner max-w-[1440px] mx-auto h-14 flex items-center justify-between ${
+            <div className={`app-nav-inner max-w-[1440px] mx-auto h-14 flex items-center justify-between gap-6 ${
                 isMidnight ? 'border-b border-white/0' : ''
             }`}>
                 <Link href="/library" className="app-nav-brand flex items-center gap-2 group">

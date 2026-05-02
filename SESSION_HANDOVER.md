@@ -5,6 +5,43 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-01 - Desktop Story shell alignment and Help rail move
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Tightened desktop outer shell padding in `components/app/AppNav.tsx` so the brand and top-right global controls sit slightly further inboard.
+- Refined the desktop project header grouping in `components/project/ProjectShell.tsx` so Home/Structure and project identity read more like one workspace header cluster.
+- Kept all existing project tab routes and behavior intact while tightening desktop tab/header spacing.
+- Moved the project-scoped desktop Help trigger into the Story right rail in `components/project/story/StoryTab.tsx`.
+- Preserved the exact Help route: `router.push(\`/project/${project.id}/help\`)`.
+- Moved the existing `data-tour="help-icon"` anchor onto the new desktop rail Help trigger so the tour still targets the visible desktop Help control.
+- Hid the old project-header Help button on desktop only, while keeping smaller-screen help access in place.
+- Verified the change with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+Desktop Story workspace alignment is tighter, and the project Help action now lives in the right rail on desktop while keeping the same route and tour anchor.
+
+### Next recommended step
+
+Run a browser validation pass:
+- desktop Story workspace in Sanctuary
+- desktop Story workspace in Midnight
+- verify only one visible desktop project Help button exists
+- click desktop rail Help and confirm `/project/[id]/help`
+- confirm the tour/help onboarding still points to the moved rail Help trigger
+- verify tablet/mobile still use the existing smaller-screen Help access path
+
+### Risks or warnings
+
+- This session verified compile only, not a live browser interaction pass.
+- Focused eslint on `AppNav.tsx`, `ProjectShell.tsx`, and `StoryTab.tsx` still reports large pre-existing lint debt in the touched shell files, including existing `no-explicit-any` errors not introduced by this change.
+
+---
 ## 2026-05-01 - Story workspace multipurpose right rail
 
 ### Current branch

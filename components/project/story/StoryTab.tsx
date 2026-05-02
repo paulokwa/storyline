@@ -13,7 +13,7 @@ import LinkedContext from './LinkedContext'
 import SceneAnalysisPanel from './SceneAnalysisPanel'
 import { ReaderControls } from './ReaderMode'
 
-import { PanelLeftOpen, BookOpen, Sparkles, X, Wand2, BarChart3, Clapperboard, Book, Download, Square, MessageSquare, Image as ImageIcon, Mic, MicOff } from 'lucide-react'
+import { PanelLeftOpen, BookOpen, Sparkles, X, Wand2, BarChart3, Clapperboard, Book, Download, Square, MessageSquare, Image as ImageIcon, Mic, MicOff, HelpCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { Database, WritingMode } from '@/lib/supabase/types'
@@ -1165,6 +1165,26 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                         </button>
                                     </TooltipTrigger>
                                     <TooltipContent side="left">Dictate</TooltipContent>
+                                </Tooltip>
+
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                        type="button"
+                                        onClick={() => router.push(`/project/${project.id}/help`)}
+                                        data-tour="help-icon"
+                                        className={cn(
+                                            "hidden lg:flex h-9 w-9 items-center justify-center rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2",
+                                            theme === 'midnight'
+                                                ? "text-slate-300 hover:bg-white/8 hover:text-[#dbe5ff] focus-visible:ring-slate-300/20"
+                                                : "text-slate-500 hover:bg-white/80 hover:text-primary focus-visible:ring-[#546354]/20"
+                                        )}
+                                        aria-label="Help center"
+                                        >
+                                            <HelpCircle className="h-4 w-4" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left">Help center</TooltipContent>
                                 </Tooltip>
 
                                 <ReaderControls
