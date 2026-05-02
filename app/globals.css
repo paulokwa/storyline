@@ -153,6 +153,32 @@ body {
   transition: opacity 0.3s ease;
 }
 
+.ProseMirror .scene-editor-find-match {
+  background: rgba(212, 224, 204, 0.72);
+  border-radius: 0.28rem;
+  box-shadow: inset 0 -1px 0 rgba(84, 99, 84, 0.16);
+  transition: background-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.ProseMirror .scene-editor-find-match.scene-editor-find-match-active {
+  background: rgba(126, 154, 124, 0.32);
+  box-shadow:
+    inset 0 0 0 1px rgba(84, 99, 84, 0.2),
+    0 0 0 1px rgba(84, 99, 84, 0.08);
+}
+
+[data-theme='midnight'] .ProseMirror .scene-editor-find-match {
+  background: rgba(139, 163, 143, 0.2);
+  box-shadow: inset 0 -1px 0 rgba(170, 192, 173, 0.16);
+}
+
+[data-theme='midnight'] .ProseMirror .scene-editor-find-match.scene-editor-find-match-active {
+  background: rgba(170, 192, 173, 0.3);
+  box-shadow:
+    inset 0 0 0 1px rgba(170, 192, 173, 0.28),
+    0 0 0 1px rgba(170, 192, 173, 0.12);
+}
+
 /* Story Image Block */
 .story-image-container {
   display: block;

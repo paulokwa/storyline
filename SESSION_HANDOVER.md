@@ -5,6 +5,53 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-02 - Current-scene find polish follow-up
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Followed up on the current-scene find work in `components/project/story/SceneEditor.tsx` after manual testing found unreliable next/previous snapping.
+- Fixed active-result snapping by:
+  - creating a real editor text selection for the active match
+  - focusing the editor even when the find input previously held focus
+  - revealing the match inside the nearest scene scroll region only when it is outside a comfortable visible band
+- Added lightweight current-scene match highlighting with a contained ProseMirror decoration plugin registered only inside `SceneEditor.tsx`.
+- Styled passive and active find matches in `app/globals.css`, including Midnight-specific colors.
+- Kept highlight cleanup automatic by clearing the decoration state when:
+  - the find UI closes
+  - the query is cleared
+  - the scene changes
+- Preserved current-scene-only, case-insensitive, plain-text behavior and left screenplay node/keyboard files untouched.
+- Verified the change with `npx tsc --noEmit --pretty false`.
+- Ran `npm run lint`; it still fails on the repo's broad pre-existing lint backlog, including unrelated `no-explicit-any`, `react/no-unescaped-entities`, and older script/app issues outside this task.
+
+### Current status
+
+Current-scene find now both navigates and visually marks matches. Next/previous should visibly move to the active result, and all matches stay subtly highlighted with a clearer active state until find is closed or reset.
+
+### Next recommended step
+
+- Run a browser/manual regression pass for:
+  - prose multi-match next/previous snapping
+  - all-match highlight visibility and active-match clarity
+  - no-results state
+  - close/reset clearing highlight decorations
+  - scene-switch reset
+  - Focus Mode and Typewriter Mode regression
+  - screenplay matching across Scene Heading, Action, Character, Parenthetical, Dialogue, and Transition
+  - viewer/read-only safety
+  - local and cloud parity
+- Do not broaden the next pass into replace, project-wide search, structure search, title jump search, links, horizontal rules, or export parity.
+
+### Risks or warnings
+
+- Highlighting is decoration-based and editor-local, which keeps scope contained, but it still needs browser validation across prose/screenplay and both themes.
+- `npm run lint` remains noisy and failing due pre-existing repo-wide debt; this pass did not attempt lint cleanup.
+
+---
 ## 2026-05-02 - Editor current-scene find Block 3B Safe Pass 2
 
 ### Current branch

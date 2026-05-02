@@ -84,7 +84,9 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
   - supports a visible `Find` control plus scoped `Ctrl/Cmd + F` when focus is already inside the editor shell
   - includes a search field, match count, next/previous navigation, and close/reset behavior on scene switch
   - keeps matching case-insensitive and local to the current scene only
-  - deliberately deferred match highlighting, replace, and any project-wide or structure search
+  - follow-up polish fixed active-result snapping by focusing the editor, selecting the active match, and revealing it inside the scene scroll region
+  - added subtle in-scene match highlighting with a distinct active-match treatment, cleaned up automatically when find closes or the scene changes
+  - still does not add replace or any project-wide or structure search
 - Added a dismiss `X` to the migrated local backup warning banner:
   - dismissal is component-state only for the current page/component lifecycle
   - the banner still reappears after refresh or when reopening the local backup project

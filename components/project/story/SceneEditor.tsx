@@ -4,6 +4,8 @@ import { useState, useCallback, useEffect, useImperativeHandle, forwardRef, useR
 import { useEditor, EditorContent, type Editor as TiptapEditor } from '@tiptap/react'
 import { BubbleMenu } from '@tiptap/react/menus'
 import type { VirtualElement } from '@floating-ui/dom'
+import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state'
+import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Highlight from '@tiptap/extension-highlight'
@@ -103,6 +105,7 @@ const ANDROID_NATIVE_SELECTION_TOOLBAR_HEIGHT = 52
 const SELECTION_TOOLBAR_HEIGHT = 48
 const SELECTION_TOOLBAR_GAP = 12
 type BubbleMenuPlacement = 'top' | 'bottom'
+const SCENE_FIND_HIGHLIGHTS_PLUGIN_KEY = new PluginKey<DecorationSet>('sceneFindHighlights')
 
 const cloneDOMRect = (rect: DOMRect | DOMRectReadOnly) =>
     DOMRect.fromRect({
@@ -152,6 +155,23 @@ const findSceneSearchMatches = (
 
     return matches
 }
+
+const buildSceneFindDecorations = (
+    doc: TiptapEditor['state']['doc'],
+    matches: SceneSearchMatch[],
+    activeMatchIndex: number
+) =>
+    DecorationSet.create(
+        doc,
+        matches.map((match, index) =>
+            Decoration.inline(match.from, match.to, {
+                class:
+                    index === activeMatchIndex
+                        ? 'scene-editor-find-match scene-editor-find-match-active'
+                        : 'scene-editor-find-match',
+            })
+        )
+    )
 
 type AndroidToolbarPosition = {
     top: number
@@ -375,6 +395,55 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const hasSelectedWords = selectedWordCount > 0
     const hasFindQuery = findQuery.trim().length > 0
     const hasFindMatches = findMatches.length > 0
+
+    const revealFindMatch = useCallback((editorInstance: TiptapEditor, match: SceneSearchMatch) => {
+        const { state, view } = editorInstance
+        const nextSelection = TextSelection.create(state.doc, match.from, match.to)
+        const shell = editorShellRef.current
+        const scrollContainer = (shell?.closest('[data-story-scroll-region]') as HTMLElement | null) ?? null
+        const startCoords = view.coordsAtPos(match.from)
+        const endCoords = view.coordsAtPos(Math.max(match.to - 1, match.from))
+        const top = Math.min(startCoords.top, endCoords.top)
+        const bottom = Math.max(startCoords.bottom, endCoords.bottom)
+
+        let shouldScroll = true
+
+        if (scrollContainer) {
+            const containerRect = scrollContainer.getBoundingClientRect()
+            const visibilityPadding = 72
+            shouldScroll =
+                top < containerRect.top + visibilityPadding ||
+                bottom > containerRect.bottom - visibilityPadding
+        }
+
+        const transaction = state.tr.setSelection(nextSelection)
+
+        if (!scrollContainer && shouldScroll) {
+            transaction.scrollIntoView()
+        }
+
+        view.dispatch(transaction)
+        view.focus()
+
+        if (!scrollContainer || !shouldScroll) return
+
+        const containerRect = scrollContainer.getBoundingClientRect()
+        const relativeTop = top - containerRect.top + scrollContainer.scrollTop
+        const matchHeight = Math.max(bottom - top, 24)
+        const targetScrollTop = Math.max(
+            0,
+            relativeTop - (scrollContainer.clientHeight - matchHeight) / 2
+        )
+
+        typewriterProgrammaticScrollRef.current = true
+        scrollContainer.scrollTo({
+            top: targetScrollTop,
+            behavior: 'smooth',
+        })
+        window.setTimeout(() => {
+            typewriterProgrammaticScrollRef.current = false
+        }, 220)
+    }, [])
 
     const updateWordCountState = useCallback((editorInstance: TiptapEditor) => {
         const totalText = editorInstance.getText()
@@ -962,6 +1031,42 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
     useEffect(() => {
         if (!editor) return
+
+        const plugin = new Plugin({
+            key: SCENE_FIND_HIGHLIGHTS_PLUGIN_KEY,
+            state: {
+                init: (_, state) => DecorationSet.create(state.doc, []),
+                apply: (transaction, decorationSet) => {
+                    const nextDecorations = transaction.getMeta(SCENE_FIND_HIGHLIGHTS_PLUGIN_KEY)
+                    if (nextDecorations) {
+                        return buildSceneFindDecorations(
+                            transaction.doc,
+                            nextDecorations.matches,
+                            nextDecorations.activeMatchIndex
+                        )
+                    }
+
+                    return transaction.docChanged
+                        ? decorationSet.map(transaction.mapping, transaction.doc)
+                        : decorationSet
+                },
+            },
+            props: {
+                decorations(state) {
+                    return SCENE_FIND_HIGHLIGHTS_PLUGIN_KEY.getState(state)
+                },
+            },
+        })
+
+        editor.registerPlugin(plugin)
+
+        return () => {
+            editor.unregisterPlugin(SCENE_FIND_HIGHLIGHTS_PLUGIN_KEY)
+        }
+    }, [editor])
+
+    useEffect(() => {
+        if (!editor) return
         updateWordCountState(editor)
     }, [editor, scene.id, scene.content, updateWordCountState])
 
@@ -982,6 +1087,17 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     }, [editor, findQuery, hasFindQuery, searchDocVersion])
 
     useEffect(() => {
+        if (!editor) return
+
+        editor.view.dispatch(
+            editor.state.tr.setMeta(SCENE_FIND_HIGHLIGHTS_PLUGIN_KEY, {
+                matches: hasFindQuery ? findMatches : [],
+                activeMatchIndex: hasFindQuery ? activeFindMatchIndex : -1,
+            })
+        )
+    }, [editor, findMatches, activeFindMatchIndex, hasFindQuery])
+
+    useEffect(() => {
         if (!editor || activeFindMatchIndex < 0) return
 
         const activeMatch = findMatches[activeFindMatchIndex]
@@ -990,8 +1106,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         const { from, to } = editor.state.selection
         if (from === activeMatch.from && to === activeMatch.to) return
 
-        editor.chain().setTextSelection({ from: activeMatch.from, to: activeMatch.to }).scrollIntoView().run()
-    }, [editor, findMatches, activeFindMatchIndex])
+        revealFindMatch(editor, activeMatch)
+    }, [editor, findMatches, activeFindMatchIndex, revealFindMatch])
 
     useEffect(() => {
         resetFindState()
