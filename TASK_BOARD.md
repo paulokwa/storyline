@@ -71,6 +71,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Consider adding an `AGENTS.md` or `CONTRIBUTING.md` if agents need stricter operating rules.
 
 ## Done
+- Simplified the scene editor heading metadata so it now shows a single `SCREENPLAY` or `DRAFT` label, keeps the scene title primary, and hides `Last edited by you` while preserving collaborator attribution for other editors.
 - Refined the Story workspace tablet layout so the top action row now keeps only `Analyze` and `Ask AI`, while `Read Aloud`, `Dictate`, `Feedback`, `Gallery` / `Visual References`, and `Help` live in the right rail on tablet.
 - Tightened desktop Story shell alignment and moved the project-scoped desktop Help action into the Story right rail while preserving the existing Help route and tour anchor.
 - Reworked the Story workspace desktop/tablet right side into a shared utility rail so AI Partner, Feedback, and `Gallery` / `Visual References` share one vertical access point, while Analyze, Dictate, and Read Aloud now live on the same rail as direct actions.

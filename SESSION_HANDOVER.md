@@ -5,6 +5,42 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-01 - Scene editor heading metadata simplification
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Simplified the scene editor heading metadata in `components/project/story/SceneEditor.tsx`.
+- Replaced the old duplicated mode/context line (`Screenplay — Scene` / `Draft — Scene`) with a single minimal label:
+  - `SCREENPLAY` for screenplay mode
+  - `DRAFT` for prose/book draft mode
+- Kept the scene title as the primary heading.
+- Hid the self-attribution line when the current user is the last editor by suppressing the `lastEditorName === 'you'` display case only.
+- Preserved collaborator attribution when another person edited the scene, while tightening the copy to `Edited by [name]`.
+- Left save state, active collaborator presence, autosave behavior, collaboration logic, and editor/save logic unchanged.
+- Verified the change with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+The editor heading is quieter and less repetitive. It still shows the scene title, save state, active collaborator presence, and external collaborator attribution when useful, without repeating scene context already visible in the Structure panel.
+
+### Next recommended step
+
+Run a browser validation pass:
+- book/prose scene heading in Sanctuary and Midnight
+- screenplay scene heading in Sanctuary and Midnight
+- confirm `Last edited by you` no longer appears after self-edits
+- confirm `Edited by [collaborator]` still appears when another person is the last editor
+- confirm save-state text and active collaborator presence still render as before
+
+### Risks or warnings
+
+- This session verified compile only, not a live browser/collaboration pass.
+
+---
 ## 2026-05-01 - Tablet Story row declutter and Help rail alignment
 
 ### Current branch

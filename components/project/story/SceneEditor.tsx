@@ -1352,7 +1352,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="flex min-w-0 items-center gap-2">
                         <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 font-sans">
-                            {writingMode === 'screenplay' ? 'Screenplay' : 'Draft'} — {label}
+                            {writingMode === 'screenplay' ? 'SCREENPLAY' : 'DRAFT'}
                         </span>
                         {activeSceneUsers.length > 0 && (
                             <div className="hidden sm:flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300 ml-4">
@@ -1561,10 +1561,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             : "font-serif text-3xl sm:text-4xl text-[#31332f]"
                     )}
                 />
-                {lastEditorName && (
+                {lastEditorName && lastEditorName !== 'you' && (
                     <div className="flex items-center gap-1.5 mt-2 text-[10px] text-slate-400 font-bold uppercase tracking-wider animate-in fade-in duration-500">
                         <Clock className="w-3 h-3" />
-                        <span>Last edited by {lastEditorName}</span>
+                        <span>Edited by {lastEditorName}</span>
                     </div>
                 )}
             </div>
