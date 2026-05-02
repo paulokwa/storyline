@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "font:audit": "node scripts/font-audit.js"
+    "font:audit": "node scripts/font-audit.js",
+    "create:test-account": "tsx scripts/create-test-account.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.53",
@@ -58,6 +59,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

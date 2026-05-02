@@ -66,6 +66,13 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Hardened Library sort persistence so it initializes from browser storage with a `Recent` fallback instead of defaulting through `Custom`.
 - Fixed incomplete guided setup resume drift by persisting the guided flow sub-step alongside the saved guided draft.
 - Normalized the Library incomplete-setup delete confirmation to match the regular project-card confirmation treatment more closely.
+- Added a local-only dev test account workflow:
+  - removed committed test credential references from continuity docs
+  - documented the workflow in `docs/dev-test-account.md`
+  - added `scripts/create-test-account.ts`
+  - added `npm run create:test-account`
+  - ensured `.local/test-account.env` and `.env.test.local` are gitignored
+- Fixed standalone `create:test-account` script compatibility with plain Node and `tsx` by removing the shared `server-only` import from `lib/supabase/admin.ts`.
 - Added full-app dark mode regression pass test case to `TESTING.md`.
 - Hardened project Help shortcuts access:
   - added direct `Open keyboard shortcuts` actions in `/project/[id]/help`

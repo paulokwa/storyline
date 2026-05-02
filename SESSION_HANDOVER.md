@@ -5,6 +5,66 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-02 - Test account script Node compatibility fix
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Reproduced the test-account script failure path from the user's local terminal output.
+- Confirmed there was no matching prior troubleshooting entry.
+- Fixed `lib/supabase/admin.ts` so standalone Node and `tsx` scripts can import it by removing the shared `import 'server-only'` marker.
+- Added a troubleshooting entry for the `Cannot find module 'server-only'` failure mode.
+- Verified the change with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+The repo-side module error is fixed. The next local run should get past the earlier `server-only` crash and either create the account, report that it already exists, or fail on missing local env configuration.
+
+### Next recommended step
+
+- Run `npm run create:test-account` again locally.
+- If it now reports missing env vars, create `.local/test-account.env` and ensure the server-side Supabase env vars are available in your local shell or env files.
+
+### Risks or warnings
+
+- I could not fully execute `npm run create:test-account` in this sandbox because `tsx` and `esbuild` child-process spawn is blocked here (`spawn EPERM`), so runtime verification is compile-only on my side.
+
+---
+## 2026-05-01 - Local-only dev test account workflow
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Removed the committed dev test credential references from `MASTER_BRIEF.md` and `TESTING.md`.
+- Added a local-only test account workflow doc at `docs/dev-test-account.md`.
+- Added `scripts/create-test-account.ts` to read `TEST_ACCOUNT_EMAIL` and `TEST_ACCOUNT_PASSWORD` from a gitignored local env file and create or verify the auth user through the server-only Supabase admin client.
+- Updated `.gitignore` to ignore `.local/` in addition to the existing local env ignore rules.
+- Added `create:test-account` to `package.json` and installed `tsx` so the script can run as `npm run create:test-account`.
+- Verified the changes with:
+  - `npx tsc --noEmit --pretty false`
+  - `git check-ignore -v .local/test-account.env .env.test.local`
+
+### Current status
+
+The repo now documents a reusable dev test account workflow without keeping credentials in tracked files. Each machine must create its own local env file before running the script.
+
+### Next recommended step
+
+- Create `.local/test-account.env` locally with `TEST_ACCOUNT_EMAIL` and `TEST_ACCOUNT_PASSWORD`.
+- Run `npm run create:test-account`.
+- If old committed test credentials were used outside this repo, rotate or retire that account.
+
+### Risks or warnings
+
+- The script was compile-verified and gitignore-verified, but it was not executed in that session to avoid creating or mutating a real auth user without an intentional local credential file.
+
+---
 ## 2026-05-01 - Analyzer short-text feedback and structure auto-expand on add
 
 ### Current branch

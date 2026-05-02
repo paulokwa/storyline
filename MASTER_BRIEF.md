@@ -69,14 +69,9 @@ Use these instead:
 - `TROUBLESHOOTING.md` for reusable failure patterns and proven fixes
 - commit messages for implementation details
 
-## Test Credentials
+## Local Dev Test Account
 
-These credentials are used for testing the application in this environment.
-
-- **Email**: `skytra7@gmail.com`
-- **Password**: `LqE6Yd5$sf#j3yiD`
-
-See `TESTING.md` for more details on test accounts.
+Local dev test account: see `docs/dev-test-account.md`. Credentials are intentionally stored only in gitignored local env files and must never be committed.
 
 ## Supporting Reference Docs
 

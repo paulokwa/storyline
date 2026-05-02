@@ -89,11 +89,11 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 
 ---
 
-# Test Credentials
-		
-| Account | Email | Password | Role |
-|---|---|---|---|
-| Primary Test | `skytra7@gmail.com` | `LqE6Yd5$sf#j3yiD` | Owner / Tester |
+# Test Account Workflow
+
+Use the local-only development workflow in `docs/dev-test-account.md`.
+
+Credentials must live only in a gitignored local env file such as `.local/test-account.env` and must never be committed.
 
 ---
 
@@ -179,6 +179,7 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 
 | Test | Status | Tested by | Date tested | Notes |
 |---|---|---|---|---|
+| Local dev test account workflow | Needs retest | AI agent | 2026-05-02 | The original workflow landed and ignore rules were verified, but a real local run exposed a Node compatibility issue from `lib/supabase/admin.ts` importing `server-only`. That import is now removed and `npx tsc --noEmit --pretty false` passes. Re-run `npm run create:test-account` locally to verify end-to-end behavior. |
 | New user sees free trial messaging | Not tested | - | - | Confirm trial message is visible and understandable. |
 | Existing user account state displays correctly | Not tested | - | - | Confirm no incorrect trial prompts. |
 | Account deletion with trial data | Not tested | - | - | Confirm cleanup/hardening works as expected. |
@@ -256,6 +257,8 @@ Only successful verified tests should be committed. Failed or blocked tests shou
 Newest confirmations go at the top.
 
 | 2026-04-30 | AI agent | TypeScript compile after project-open 404 layout fix | Passed | `npx tsc --noEmit --pretty false` passed after changing the project layout loader to avoid 404s caused by missing owner `project_members` rows. |
+| 2026-05-02 | AI agent | Test account script compatibility fix compile check | Passed | Removed the shared `server-only` import from `lib/supabase/admin.ts` so standalone Node and `tsx` scripts can import the admin helper, and `npx tsc --noEmit --pretty false` passed. |
+| 2026-05-01 | AI agent | Local dev test account workflow verification | Passed | `npx tsc --noEmit --pretty false` passed, `npm run create:test-account` is wired, and `git check-ignore -v` confirms `.local/test-account.env` and `.env.test.local` are ignored. |
 | 2026-05-01 | AI agent | Help shortcuts access compile and focused lint | Passed | `npx tsc --noEmit --pretty false` passed after wiring project Help into the shortcuts modal, and focused `npx eslint` passed for `components/project/help/HelpTab.tsx`, `lib/help.ts`, and `lib/project/shortcuts.ts`. |
 | 2026-04-30 | AI agent | TypeScript compile after library back-refresh fix | Passed | `npx tsc --noEmit --pretty false` passed after adding a library-return refresh flag so `Recent` order can re-fetch after opening a project card and returning. |
 | 2026-05-01 | AI agent | Focused auth hardening compile and lint | Passed | `npx tsc --noEmit --pretty false` and focused `npx eslint` passed after adding guarded auth redirects and the shared client helper. |
