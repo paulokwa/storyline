@@ -73,6 +73,8 @@ Use these instead:
 
 Local dev test account: see `docs/dev-test-account.md`. Credentials are intentionally stored only in gitignored local env files and must never be committed.
 
+Agents: when a dev/test login is needed, read `docs/dev-test-account.md` first and prefer `npm run create:test-account` over asking the user to restate the setup. Treat the workflow as already established and machine-local.
+
 ## Supporting Reference Docs
 
 - `docs/technical-debt-roadmap.md` is a deeper reference file for reliability and technical debt issues. It explains why certain items matter and gives implementation guidance. It is not the active task list; use `TASK_BOARD.md` for active priorities and `TESTING.md` for verification.

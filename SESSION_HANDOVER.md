@@ -27,10 +27,11 @@ The repo-side module error is fixed, and the local test-account workflow has now
 
 - Keep using `.local/test-account.env` for local-only test credentials.
 - Re-run `npm run create:test-account` whenever a machine needs to create or verify its own local dev account.
+- Future agents should read `docs/dev-test-account.md` first instead of asking the user to restate the workflow.
 
 ### Risks or warnings
 
-- The user's local verification passed, but the script fix that loads `.env.local` still needs committing and pushing from this session.
+- None for the workflow itself. Credentials remain intentionally machine-local and gitignored.
 
 ---
 ## 2026-05-01 - Local-only dev test account workflow

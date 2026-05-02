@@ -95,6 +95,8 @@ Use the local-only development workflow in `docs/dev-test-account.md`.
 
 Credentials must live only in a gitignored local env file such as `.local/test-account.env` and must never be committed.
 
+Future agents: treat this workflow as established. Before asking the user about test-account setup, read `docs/dev-test-account.md` and prefer `npm run create:test-account` to verify or create the machine-local account.
+
 ---
 
 # Tests To Do
