@@ -25,6 +25,8 @@ export function getSceneTextForAi(content: unknown): string {
 
     return rootChildren
         .map((node) => {
+            const rawText = getNodeText(node.content)
+            const trimmedText = rawText.trim()
 
             switch (node.type) {
                 case 'storyImage': {
@@ -33,17 +35,17 @@ export function getSceneTextForAi(content: unknown): string {
                     return `[Illustration: ${alt}${caption ? ` - Caption: ${caption}` : ''}]`
                 }
                 case 'screenplaySceneHeading':
-                    return `SCENE HEADING: ${getNodeText(node.content).toUpperCase()}`
+                    return trimmedText ? `SCENE HEADING: ${trimmedText.toUpperCase()}` : ''
                 case 'screenplayCharacter':
-                    return `CHARACTER: ${getNodeText(node.content).toUpperCase()}`
+                    return trimmedText ? `CHARACTER: ${trimmedText.toUpperCase()}` : ''
                 case 'screenplayParenthetical':
-                    return `PARENTHETICAL: (${getNodeText(node.content)})`
+                    return trimmedText ? `PARENTHETICAL: (${trimmedText})` : ''
                 case 'screenplayDialogue':
-                    return `DIALOGUE: ${getNodeText(node.content)}`
+                    return trimmedText ? `DIALOGUE: ${trimmedText}` : ''
                 case 'screenplayAction':
-                    return `ACTION: ${getNodeText(node.content)}`
+                    return trimmedText ? `ACTION: ${trimmedText}` : ''
                 case 'screenplayTransition':
-                    return `TRANSITION: ${getNodeText(node.content).toUpperCase()}`
+                    return trimmedText ? `TRANSITION: ${trimmedText.toUpperCase()}` : ''
                 default:
                     if (node.content) {
                         return node.content.map((child) => child.text || '').join('')

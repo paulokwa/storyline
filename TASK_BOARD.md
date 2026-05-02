@@ -71,6 +71,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Consider adding an `AGENTS.md` or `CONTRIBUTING.md` if agents need stricter operating rules.
 
 ## Done
+- Stabilized empty-screenplay Backspace/analyzer behavior by updating `lib/tiptap/screenplay-keyboard.ts` so the default empty paragraph no longer converts on Backspace and empty screenplay nodes consume Backspace safely, and by updating `lib/story/scene-text.ts` so empty screenplay blocks no longer count as analyzable text. Screenplay formatting/export logic was left untouched.
 - Simplified the scene editor heading metadata so it now shows a single `SCREENPLAY` or `DRAFT` label, keeps the scene title primary, and hides `Last edited by you` while preserving collaborator attribution for other editors.
 - Refined the Story workspace tablet layout so the top action row now keeps only `Analyze` and `Ask AI`, while `Read Aloud`, `Dictate`, `Feedback`, `Gallery` / `Visual References`, and `Help` live in the right rail on tablet.
 - Tightened desktop Story shell alignment and moved the project-scoped desktop Help action into the Story right rail while preserving the existing Help route and tour anchor.

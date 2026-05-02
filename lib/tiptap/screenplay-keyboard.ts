@@ -115,17 +115,35 @@ export const ScreenplayKeyboard = Extension.create({
         const { state } = editor
         const { selection } = state
         const { $from, empty } = selection
+        const screenplayNodes = new Set([
+          'screenplaySceneHeading',
+          'screenplayAction',
+          'screenplayCharacter',
+          'screenplayParenthetical',
+          'screenplayDialogue',
+          'screenplayTransition',
+        ])
 
         if (!empty || $from.parentOffset !== 0) {
           return false
         }
 
         const node = $from.parent
-        if (node.type.name !== 'screenplayAction' && node.content.size === 0) {
+        if (node.content.size !== 0) {
+          return false
+        }
+
+        if (!screenplayNodes.has(node.type.name)) {
+          return true
+        }
+
+        if (node.type.name !== 'screenplayAction') {
           return editor.commands.setNode('screenplayAction')
         }
 
-        return false
+        // Prevent ProseMirror from collapsing the empty screenplay root into
+        // a cursor position that feels like a "jump" at the top-left corner.
+        return true
       }
     }
   },

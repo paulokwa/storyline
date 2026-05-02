@@ -5,6 +5,45 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-01 - Screenplay empty-backspace cursor stabilization
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Investigated the screenplay-only empty-editor Backspace issue where pressing Backspace in an empty scene could make the cursor jump and briefly toggle the `Analyze this` action state.
+- Confirmed two likely causes, both outside screenplay export/output formatting:
+  - the screenplay-specific `Backspace` shortcut in `lib/tiptap/screenplay-keyboard.ts` was converting any empty start-of-line block, including the default empty paragraph, into `screenplayAction`
+  - `lib/story/scene-text.ts` treated empty screenplay blocks like `ACTION:` as non-empty scene text for AI/analyzer state
+- Updated the custom screenplay keyboard shortcut so:
+  - empty non-action screenplay blocks still normalize back to `screenplayAction`
+  - already-empty screenplay nodes at the start consume Backspace instead of falling through to default ProseMirror behavior
+  - the default empty paragraph no longer gets converted on Backspace just because the screenplay keyboard extension is active
+- Updated `getSceneTextForAi` so empty screenplay blocks no longer count as non-empty AI scene text.
+- Kept the fix isolated away from screenplay node definitions, export serializers, save/collaboration logic, and screenplay output formatting.
+- Verified the change with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+The screenplay keyboard layer should no longer convert the empty root block on Backspace, and empty screenplay blocks should no longer make `Analyze this` behave as if the scene contains real text. Screenplay formatting structure and output logic were left untouched.
+
+### Next recommended step
+
+Run a browser validation pass in a screenplay project:
+- open an empty scene
+- press Backspace once and again
+- confirm the cursor no longer jumps down/up
+- confirm `Analyze this` stays dimmed in the empty scene
+- confirm Enter, Tab, and Shift-Tab screenplay flows still work for Scene Heading, Action, Character, Parenthetical, Dialogue, and Transition blocks
+
+### Risks or warnings
+
+- This session verified compile only, not the live editor interaction.
+- If the cursor still visibly shifts on Backspace after this, the next inspection point should be selection normalization inside the live TipTap/ProseMirror view rather than screenplay formatting logic.
+
+---
 ## 2026-05-01 - Scene editor heading metadata simplification
 
 ### Current branch
