@@ -2,6 +2,9 @@
 
 import React, { createContext, useContext, useRef, useState } from 'react'
 import { getDeviceFingerprint } from '@/lib/client/device-fingerprint'
+import { toast } from 'sonner'
+
+const MIN_SCENE_ANALYSIS_CHARS = 50
 
 interface ProjectContextType {
     role: 'owner' | 'editor' | 'viewer'
@@ -81,7 +84,22 @@ export function ProjectProvider({
     const requestDictation = () => setDictationRequest(Date.now())
 
     const analyzeScene = async () => {
-        if (!currentSceneText.trim()) return
+        const trimmedSceneText = currentSceneText.trim()
+
+        if (!trimmedSceneText) {
+            toast.info('Add a little scene text first.', {
+                description: 'Scene analysis needs some writing in the editor before it can help.',
+            })
+            return
+        }
+
+        if (trimmedSceneText.length < MIN_SCENE_ANALYSIS_CHARS) {
+            toast.info('Write a bit more before analyzing.', {
+                description: `Scene analysis needs at least ${MIN_SCENE_ANALYSIS_CHARS} characters of scene text.`,
+            })
+            return
+        }
+
         analysisAbortRef.current?.abort()
         const controller = new AbortController()
         analysisAbortRef.current = controller
@@ -94,7 +112,7 @@ export function ProjectProvider({
                 headers: { 'Content-Type': 'application/json' },
                 signal: controller.signal,
                 body: JSON.stringify({
-                    sceneText: currentSceneText,
+                    sceneText: trimmedSceneText,
                     requestId: crypto.randomUUID(),
                     deviceFingerprint,
                 }),
@@ -103,10 +121,22 @@ export function ProjectProvider({
                 const data = await res.json()
                 setAnalysisResult(data)
                 setAiPanelOpen(false) // Close AI Partner when showing analysis
+            } else {
+                const errorCode = await res.text()
+                if (errorCode === 'SCENE_TOO_SHORT') {
+                    toast.info('Write a bit more before analyzing.', {
+                        description: `Scene analysis needs at least ${MIN_SCENE_ANALYSIS_CHARS} characters of scene text.`,
+                    })
+                } else if (errorCode === 'SCENE_TOO_LARGE') {
+                    toast.error('This scene is too large to analyze at once.')
+                } else if (errorCode !== 'RATE_LIMITED') {
+                    toast.error('Scene analysis could not run right now.')
+                }
             }
         } catch (e) {
             if (!(e instanceof DOMException && e.name === 'AbortError')) {
                 console.error('Analysis failed', e)
+                toast.error('Scene analysis could not run right now.')
             }
         } finally {
             if (analysisAbortRef.current === controller) {

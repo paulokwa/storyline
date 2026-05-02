@@ -103,6 +103,7 @@ export default function StructureTree({
         overIndex: number | null;
         neighborIds: string[];
     }>({ draggingId: null, overId: null, overIndex: null, neighborIds: [] });
+    const [expandRequest, setExpandRequest] = useState<{ nodeId: string; nonce: number } | null>(null)
     const [indentStep, setIndentStep] = useState(20)
 
     useEffect(() => {
@@ -155,6 +156,7 @@ export default function StructureTree({
             title: `${CHILD_DISPLAY_NAMES[parent.type as keyof typeof CHILD_DISPLAY_NAMES] ?? childType.charAt(0).toUpperCase() + childType.slice(1)} ${siblingsOfType.length + 1}`,
             orderIndex: siblings.length,
         })
+        setExpandRequest({ nodeId: parent.id, nonce: Date.now() })
         const updatedNodes = [...nodes, newNode]
         onNodesChange(updatedNodes)
 
@@ -399,6 +401,7 @@ export default function StructureTree({
                                                         depth={0}
                                                         indentStep={indentStep}
                                                         dragState={dragState}
+                                                        expandRequest={expandRequest}
                                                         onSelect={onNodeSelect}
                                                         onToggleSelection={onNodeToggleSelection}
                                                         selectedNodeIds={selectedNodeIds}
@@ -453,10 +456,11 @@ interface NodeItemProps {
     confirmingDeleteId: string | null
     onRequestDelete: (id: string | null) => void
     dragState?: { draggingId: string | null; overId: string | null; overIndex: number | null; neighborIds: string[] }
+    expandRequest?: { nodeId: string; nonce: number } | null
 }
 
 const NodeItem = React.memo(({
-    node, nodes, projectType, index, activeNodeId, selectedNodeIds = [], depth, indentStep, dragState, onSelect, onToggleSelection, onAddChild, onDelete, onRename, confirmingDeleteId, onRequestDelete
+    node, nodes, projectType, index, activeNodeId, selectedNodeIds = [], depth, indentStep, dragState, expandRequest, onSelect, onToggleSelection, onAddChild, onDelete, onRename, confirmingDeleteId, onRequestDelete
 }: NodeItemProps) => {
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'
@@ -498,6 +502,12 @@ const NodeItem = React.memo(({
     const isActive = activeNodeId === node.id
     const isSelected = selectedNodeIds.includes(node.id)
     const displayTitle = useMemo(() => truncateLongWords(node.title), [node.title])
+
+    useEffect(() => {
+        if (expandRequest?.nodeId === node.id && node.type !== 'scene') {
+            setExpanded(true)
+        }
+    }, [expandRequest, node.id, node.type])
 
     function handleClick(e: React.MouseEvent) {
         e.stopPropagation()
@@ -784,6 +794,7 @@ const NodeItem = React.memo(({
                                             depth={depth + 1}
                                             indentStep={indentStep}
                                             dragState={dragState}
+                                            expandRequest={expandRequest}
                                             onSelect={onSelect}
                                             onToggleSelection={onToggleSelection}
                                             onAddChild={onAddChild}
@@ -827,6 +838,7 @@ const NodeItem = React.memo(({
     if (prev.indentStep !== next.indentStep) return false;
     if (prev.confirmingDeleteId !== next.confirmingDeleteId) return false;
     if (prev.dragState !== next.dragState) return false;
+    if (prev.expandRequest !== next.expandRequest) return false;
 
     return true;
 });

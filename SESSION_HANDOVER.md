@@ -5,6 +5,46 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-01 - Analyzer short-text feedback and structure auto-expand on add
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Investigated the missing scene-analyzer feedback and confirmed the API rejects scenes under 50 characters with `SCENE_TOO_SHORT`, while the client currently offered little or no user-facing explanation depending on the entrypoint.
+- Added shared analyzer feedback in `components/project/ProjectContext.tsx` so analysis now explains when:
+  - the scene is empty
+  - the scene is too short for analysis
+  - the scene is too large
+  - the analyzer fails unexpectedly
+- Added the same empty/short guard in `components/project/story/StoryTab.tsx` so the Story rail no longer silently stops before the shared analyzer path runs.
+- Investigated the structure add-node UX and confirmed collapsed parents stayed collapsed because expansion was tracked as local `NodeItem` UI state with no add-time expansion signal.
+- Updated `components/project/story/StructureTree.tsx` so adding under a collapsed parent now sends a UI-only expand request, causing that parent to open immediately and reveal the newly added child.
+- Kept both fixes away from editor save logic, Tiptap content logic, screenplay formatting/output, and structure CRUD/reorder behavior.
+- Verified the changes with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+Scene analysis should now give clear short-text feedback instead of failing silently, and adding a child node under a collapsed structure item should immediately expand that parent so the new child is visible. The user reported a light smoke check looked good, with deeper testing still pending.
+
+### Next recommended step
+
+Run a browser validation pass:
+- click `Analyze this` with an empty scene
+- click `Analyze this` with a very short scene under 50 characters
+- confirm the user gets clear feedback in both cases
+- confirm normal analysis still runs on longer scenes
+- add a scene under a collapsed chapter/act and confirm the parent expands immediately
+- add an act under a collapsed episode and confirm the parent expands immediately
+
+### Risks or warnings
+
+- This session verified compile only, not a live browser pass.
+- The structure expansion change is UI state only, but it should still be checked on both desktop and tablet/narrow layouts because NodeItem has responsive interaction states.
+
+---
 ## 2026-05-01 - Screenplay empty-backspace cursor stabilization
 
 ### Current branch
@@ -27,7 +67,7 @@ Agents should update this file before ending a session.
 
 ### Current status
 
-The screenplay keyboard layer should no longer convert the empty root block on Backspace, and empty screenplay blocks should no longer make `Analyze this` behave as if the scene contains real text. Screenplay formatting structure and output logic were left untouched.
+The screenplay keyboard layer should no longer convert the empty root block on Backspace, and empty screenplay blocks should no longer make `Analyze this` behave as if the scene contains real text. Screenplay formatting structure and output logic were left untouched. The user reported the issue appears fixed in a light smoke check, with deeper testing still pending.
 
 ### Next recommended step
 

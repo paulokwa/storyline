@@ -34,6 +34,9 @@ import { AiSafeguardDialogs } from '@/components/project/ai/AiSafeguardDialogs'
 import { readStoredSceneNodeId, resolveSceneNodeId, writeStoredSceneNodeId } from '@/lib/project/active-scene'
 import { getSceneTextForAi } from '@/lib/story/scene-text'
 import type { ProjectStorageMode } from '@/lib/persistence/project-mode'
+import { toast } from 'sonner'
+
+const MIN_SCENE_ANALYSIS_CHARS = 50
 
 type Project = Database['public']['Tables']['projects']['Row']
 type StructureNode = Database['public']['Tables']['structure_nodes']['Row']
@@ -568,7 +571,20 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     }, [activeNodeId])
 
     const handleAnalyzeTrigger = () => {
-        if (!currentSceneText) return
+        const trimmedSceneText = currentSceneText.trim()
+        if (!trimmedSceneText) {
+            toast.info('Add a little scene text first.', {
+                description: 'Scene analysis needs some writing in the editor before it can help.',
+            })
+            return
+        }
+
+        if (trimmedSceneText.length < MIN_SCENE_ANALYSIS_CHARS) {
+            toast.info('Write a bit more before analyzing.', {
+                description: `Scene analysis needs at least ${MIN_SCENE_ANALYSIS_CHARS} characters of scene text.`,
+            })
+            return
+        }
 
         const analyzerAccessIssue = getAiAccessIssue(aiSettings, 'analyzer')
         if (analyzerAccessIssue) {
@@ -580,7 +596,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         }
         
         const analysis = analyzeContextSize(
-            currentSceneText, 
+            trimmedSceneText, 
             aiSettings.billing_mode === 'ollama' ? 'ollama' : aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider,
             aiSettings.billing_mode === 'byok' && aiSettings.ai_provider === 'gemini'
                 ? (aiSettings.ai_fallback_enabled ? 'gemini-1.5-flash' : 'gemini-1.5-pro')
