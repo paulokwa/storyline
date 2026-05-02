@@ -723,6 +723,14 @@ body {
   background: rgba(37, 49, 77, 0.88) !important;
 }
 
+.scene-editor-focus-mode .scene-editor-page {
+  max-width: min(1060px, 100%) !important;
+}
+
+.scene-editor-focus-mode .scene-editor-focus-exit {
+  backdrop-filter: blur(8px);
+}
+
 [data-theme='midnight'] .reader-controls-shell,
 [data-theme='midnight'] .reader-floating-player,
 [data-theme='midnight'] .reader-controls-menu {

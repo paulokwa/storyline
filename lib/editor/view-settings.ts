@@ -5,6 +5,7 @@ import {
 } from '@/lib/editor/fonts'
 
 export const EDITOR_VIEW_SETTINGS_STORAGE_KEY = 'storyline_editor_prefs'
+export const PROSE_FOCUS_MODE_STATE_EVENT = 'storyline:prose-focus-mode-state'
 
 export type ProseEditorTextAlign = 'left' | 'justify'
 
@@ -15,6 +16,8 @@ export type ProseEditorViewSettings = {
     maxWidth: '896px' | '1152px' | '100%'
     textAlign: ProseEditorTextAlign
     fontFamily: ProseEditorFontId
+    focusMode: boolean
+    typewriterMode: boolean
 }
 
 export const DEFAULT_PROSE_EDITOR_VIEW_SETTINGS: ProseEditorViewSettings = {
@@ -24,6 +27,8 @@ export const DEFAULT_PROSE_EDITOR_VIEW_SETTINGS: ProseEditorViewSettings = {
     maxWidth: '1152px',
     textAlign: 'left',
     fontFamily: DEFAULT_PROSE_EDITOR_FONT_ID,
+    focusMode: false,
+    typewriterMode: false,
 }
 
 const VALID_FONT_IDS = new Set<ProseEditorFontId>(PROSE_EDITOR_FONTS.map((font) => font.id))
@@ -59,5 +64,13 @@ export function normalizeProseEditorViewSettings(value: unknown): ProseEditorVie
         fontFamily: VALID_FONT_IDS.has(candidate.fontFamily as ProseEditorFontId)
             ? (candidate.fontFamily as ProseEditorFontId)
             : DEFAULT_PROSE_EDITOR_VIEW_SETTINGS.fontFamily,
+        focusMode:
+            typeof candidate.focusMode === 'boolean'
+                ? candidate.focusMode
+                : DEFAULT_PROSE_EDITOR_VIEW_SETTINGS.focusMode,
+        typewriterMode:
+            typeof candidate.typewriterMode === 'boolean'
+                ? candidate.typewriterMode
+                : DEFAULT_PROSE_EDITOR_VIEW_SETTINGS.typewriterMode,
     }
 }

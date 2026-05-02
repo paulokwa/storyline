@@ -84,6 +84,7 @@ import OnboardingTour from './OnboardingTour'
 import { queueAiTourStart } from '@/lib/ai/tour'
 import { WORKSPACE_TOUR_PENDING_KEY } from '@/lib/project/tour'
 import { OPEN_SHORTCUTS_EVENT } from '@/lib/project/shortcuts'
+import { PROSE_FOCUS_MODE_STATE_EVENT } from '@/lib/editor/view-settings'
 
 type Project = Database['public']['Tables']['projects']['Row']
 type ProjectOwner = {
@@ -653,6 +654,7 @@ function ProjectShellInner({
     }, [activeTab, project.id, role, router])
 
     const [showAiHint, setShowAiHint] = useState(false)
+    const [isProseFocusModeActive, setIsProseFocusModeActive] = useState(false)
 
     useEffect(() => {
         if (aiPanelOpen) {
@@ -660,6 +662,19 @@ function ProjectShellInner({
             setShowAiHint(false)
         }
     }, [aiPanelOpen])
+
+    useEffect(() => {
+        const handleFocusModeState = (event: Event) => {
+            const nextState =
+                event instanceof CustomEvent && typeof event.detail?.active === 'boolean'
+                    ? event.detail.active
+                    : false
+            setIsProseFocusModeActive(nextState)
+        }
+
+        window.addEventListener(PROSE_FOCUS_MODE_STATE_EVENT, handleFocusModeState as EventListener)
+        return () => window.removeEventListener(PROSE_FOCUS_MODE_STATE_EVENT, handleFocusModeState as EventListener)
+    }, [])
 
     useEffect(() => {
         if (!supportsAi || !isStoryTab || aiPanelOpen || role === 'viewer') return
@@ -701,6 +716,7 @@ function ProjectShellInner({
 
     const { speak, speechState } = useSpeech()
     const isReading = speechState === 'speaking'
+    const shouldSuppressHeaderChrome = isStoryTab && isProseFocusModeActive
 
     // Global shortcut for the shortcuts panel
     useEffect(() => {
@@ -725,6 +741,7 @@ function ProjectShellInner({
         <TooltipProvider>
             <div className="project-shell-root h-full min-h-0 flex-1 flex flex-col overflow-hidden">
                 {/* Project header */}
+                {!shouldSuppressHeaderChrome && (
                 <div className="project-shell-header bg-secondary/50 backdrop-blur-sm px-4 sm:px-6 lg:px-10 border-b border-border">
                     <div className="w-full max-w-[1440px] mx-auto">
                     {/* Top row */}
@@ -1073,7 +1090,8 @@ function ProjectShellInner({
                         </div>
                     </div>
                 </div>
-            </div>
+                </div>
+                )}
 
             {/* Page content */}
             <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">

@@ -38,6 +38,7 @@ import {
     MANUSCRIPT_VIEW_STATE_EVENT,
     TOGGLE_MANUSCRIPT_VIEW_EVENT,
 } from '@/lib/editor/manuscript-view-events'
+import { PROSE_FOCUS_MODE_STATE_EVENT } from '@/lib/editor/view-settings'
 import { toast } from 'sonner'
 
 const MIN_SCENE_ANALYSIS_CHARS = 50
@@ -125,6 +126,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
     const [isExtremeContext, setIsExtremeContext] = useState(false)
     const [aiAccessContext, setAiAccessContext] = useState<AiAccessContext>('partner')
     const [manuscriptViewOpen, setManuscriptViewOpen] = useState(false)
+    const [isProseFocusModeActive, setIsProseFocusModeActive] = useState(false)
 
     useEffect(() => {
         if (project?.id) {
@@ -144,6 +146,19 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
 
         window.addEventListener(MANUSCRIPT_VIEW_STATE_EVENT, handleManuscriptViewState as EventListener)
         return () => window.removeEventListener(MANUSCRIPT_VIEW_STATE_EVENT, handleManuscriptViewState as EventListener)
+    }, [])
+
+    useEffect(() => {
+        const handleFocusModeState = (event: Event) => {
+            const nextState =
+                event instanceof CustomEvent && typeof event.detail?.active === 'boolean'
+                    ? event.detail.active
+                    : false
+            setIsProseFocusModeActive(nextState)
+        }
+
+        window.addEventListener(PROSE_FOCUS_MODE_STATE_EVENT, handleFocusModeState as EventListener)
+        return () => window.removeEventListener(PROSE_FOCUS_MODE_STATE_EVENT, handleFocusModeState as EventListener)
     }, [])
     const writingMode = (project.writing_mode ?? 'simple') as WritingMode
 
@@ -716,10 +731,16 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 ? 'assets'
                 : null
 
+    useEffect(() => {
+        if (!isProseFocusModeActive) return
+        setSidebarOpen(false)
+        closeRightPanels()
+    }, [closeRightPanels, isProseFocusModeActive, setSidebarOpen])
+
     return (
         <div className="flex flex-1 min-h-0 overflow-hidden relative">
             {/* Backdrop for mobile */}
-            {(sidebarOpen || aiPanelOpen || commentsPanelOpen || sceneAssetsOpen) && (
+            {!isProseFocusModeActive && (sidebarOpen || aiPanelOpen || commentsPanelOpen || sceneAssetsOpen) && (
                 <div 
                     className={cn(
                         "md:hidden absolute inset-0 bg-black/20 backdrop-blur-sm z-30 transition-all duration-500",
@@ -738,14 +759,16 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 className={cn(
                     'flex flex-col transition-all duration-500 ease-in-out overflow-hidden z-40 md:z-20',
                     'absolute top-0 bottom-0 left-0 md:relative md:inset-auto md:h-full',
-                    sidebarOpen
+                    isProseFocusModeActive
+                        ? 'w-0 border-none opacity-0 -translate-x-full pointer-events-none'
+                        : sidebarOpen
                         ? 'w-[280px] lg:w-[320px] border-r border-slate-200 opacity-100 translate-x-0 bg-[#f5f4ef]'
                         : theme === 'midnight'
                             ? 'w-0 border-none opacity-0 -translate-x-full md:w-14 md:translate-x-0 md:opacity-100 md:border-r md:border-slate-500/20 md:bg-[linear-gradient(180deg,rgba(19,28,45,0.96)_0%,rgba(16,24,38,0.98)_100%)] md:shadow-[inset_-1px_0_0_rgba(148,163,184,0.08),10px_0_30px_rgba(2,6,23,0.18)]'
                             : 'structure-collapsed-rail w-0 border-none opacity-0 -translate-x-full md:w-14 md:translate-x-0 md:opacity-100 md:border-r md:border-[#d8ddcf] md:bg-[#eef1e8] md:shadow-[inset_-1px_0_0_rgba(84,99,84,0.06)]'
                 )}
             >
-                {sidebarOpen ? (
+                {!isProseFocusModeActive && sidebarOpen ? (
                     <div className="w-[280px] lg:w-[320px] h-full min-h-0 flex flex-col overflow-hidden">
                         <StructureTree
                             project={project}
@@ -787,7 +810,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             {/* Main editor area */}
             <div data-tour="main-editor" className="story-workspace flex-1 flex flex-col overflow-hidden bg-[#fbf9f5] w-full">
                 {/* Linked Context (Sticky) */}
-                {activeNodeId && activeScene && !isLocalOnly && role !== 'viewer' && (
+                {activeNodeId && activeScene && !isLocalOnly && role !== 'viewer' && !isProseFocusModeActive && (
                     <div className="story-workspace-topbar bg-[#fbf9f5] border-b border-slate-100 z-10">
                         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-start sm:items-center justify-between gap-4">
                             <div className="flex-1 snap-row">
@@ -823,7 +846,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
 
                 {/* Editor content (Scrolls internally) */}
                 <div data-story-scroll-region className="flex-1 overflow-y-auto w-full scroll-smooth custom-scrollbar">
-                    <div className="max-w-full mx-auto">
+                    <div className={cn("max-w-full mx-auto", isProseFocusModeActive && "px-2 sm:px-4 lg:px-6")}>
                         {activeNodeId === 'virtual-root' ? (
                             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
                                 <div className="w-24 h-24 bg-indigo-50 rounded-[2.5rem] flex items-center justify-center text-indigo-400 relative">
@@ -956,7 +979,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             {/* Mobile slide-out panels */}
             <div className={cn(
                 'story-ai-sidebar bg-white flex flex-col transition-all duration-300 ease-in-out overflow-hidden z-40 absolute top-0 bottom-0 right-0 md:hidden',
-                aiPanelOpen ? 'w-[320px] opacity-100 translate-x-0 border-l border-slate-200' : 'w-0 border-none opacity-0 translate-x-full'
+                !isProseFocusModeActive && aiPanelOpen ? 'w-[320px] opacity-100 translate-x-0 border-l border-slate-200' : 'w-0 border-none opacity-0 translate-x-full'
             )}>
                 <div className="w-[320px] h-full flex flex-col">
                     <AiHelperPanel
@@ -998,7 +1021,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
 
             <div className={cn(
                 'bg-white flex flex-col border-l border-slate-200 transition-all duration-300 ease-in-out overflow-hidden z-40 absolute top-0 bottom-0 right-0 md:hidden',
-                commentsPanelOpen ? 'w-[320px] opacity-100 translate-x-0' : 'w-0 border-none opacity-0 translate-x-full'
+                !isProseFocusModeActive && commentsPanelOpen ? 'w-[320px] opacity-100 translate-x-0' : 'w-0 border-none opacity-0 translate-x-full'
             )}>
                 <div className="w-[320px] h-full flex flex-col">
                     <CommentsPanel 
@@ -1017,7 +1040,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             {activeNodeId && activeScene && (
                 <div className={cn(
                     'bg-white flex flex-col border-l border-slate-200 transition-all duration-300 ease-in-out overflow-hidden z-40 absolute top-0 bottom-0 right-0 md:hidden',
-                    sceneAssetsOpen ? 'w-[320px] opacity-100 translate-x-0' : 'w-0 border-none opacity-0 translate-x-full'
+                    !isProseFocusModeActive && sceneAssetsOpen ? 'w-[320px] opacity-100 translate-x-0' : 'w-0 border-none opacity-0 translate-x-full'
                 )}>
                     <div className="w-[320px] h-full flex flex-col">
                         <SceneAssetsPanel 
@@ -1031,7 +1054,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             )}
 
             {/* Desktop / tablet utility rail */}
-            <div className="hidden md:flex h-full shrink-0">
+            <div className={cn("hidden md:flex h-full shrink-0", isProseFocusModeActive && "hidden")}>
                 <div className={cn(
                     "h-full shrink-0 overflow-hidden transition-[width,opacity,transform,border-color] duration-500 ease-in-out",
                     desktopOpenPanel

@@ -51,7 +51,6 @@ import {
     AlignJustify,
     MoveHorizontal,
     Maximize2,
-    Settings2,
     Mic,
     MicOff,
     Waves,
@@ -86,6 +85,7 @@ import {
     DEFAULT_PROSE_EDITOR_VIEW_SETTINGS,
     EDITOR_VIEW_SETTINGS_STORAGE_KEY,
     normalizeProseEditorViewSettings,
+    PROSE_FOCUS_MODE_STATE_EVENT,
     type ProseEditorViewSettings,
 } from '@/lib/editor/view-settings'
 import { PROSE_EDITOR_FONTS, PROSE_EDITOR_FONT_STACKS } from '@/lib/editor/fonts'
@@ -312,6 +312,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [androidToolbarWidth, setAndroidToolbarWidth] = useState(0)
     const editorShellRef = useRef<HTMLDivElement | null>(null)
     const editorPageRef = useRef<HTMLDivElement | null>(null)
+    const typewriterScrollFrameRef = useRef<number | null>(null)
+    const typewriterProgrammaticScrollRef = useRef(false)
+    const typewriterLastScrollRef = useRef(0)
     const activeReaderBlockRef = useRef<HTMLElement | null>(null)
     const [readerHighlightRect, setReaderHighlightRect] = useState<{
         top: number
@@ -604,6 +607,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [desktopViewDrawerBounds, setDesktopViewDrawerBounds] = useState<{ top: number; height: number } | null>(null)
 
     const resolvedEditorFont = PROSE_EDITOR_FONT_STACKS[viewSettings.fontFamily] ?? PROSE_EDITOR_FONT_STACKS.Newsreader
+    const isProseFocusMode = writingMode === 'simple' && viewSettings.focusMode
+    const isProseTypewriterMode = writingMode === 'simple' && viewSettings.typewriterMode
     const androidViewportWidth = typeof window === 'undefined'
         ? 0
         : (window.visualViewport?.width ?? window.innerWidth)
@@ -641,6 +646,47 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         setViewSettings(newSettings)
         localStorage.setItem(EDITOR_VIEW_SETTINGS_STORAGE_KEY, JSON.stringify(newSettings))
     }
+
+    useEffect(() => {
+        if (!isProseFocusMode) return
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setViewSettings((previous) => {
+                    if (!previous.focusMode) return previous
+                    const nextSettings = { ...previous, focusMode: false }
+                    localStorage.setItem(EDITOR_VIEW_SETTINGS_STORAGE_KEY, JSON.stringify(nextSettings))
+                    return nextSettings
+                })
+            }
+        }
+
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [isProseFocusMode])
+
+    useEffect(() => {
+        if (isProseFocusMode && showViewSettings) {
+            setShowViewSettings(false)
+        }
+    }, [isProseFocusMode, showViewSettings])
+
+    useEffect(() => {
+        const isActive = writingMode === 'simple' && isProseFocusMode
+        window.dispatchEvent(
+            new CustomEvent(PROSE_FOCUS_MODE_STATE_EVENT, {
+                detail: { active: isActive },
+            })
+        )
+
+        return () => {
+            window.dispatchEvent(
+                new CustomEvent(PROSE_FOCUS_MODE_STATE_EVENT, {
+                    detail: { active: false },
+                })
+            )
+        }
+    }, [isProseFocusMode, writingMode])
 
     // Sync with external title (StructureTree changes)
     useEffect(() => {
@@ -798,6 +844,71 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     }, [writingMode, scene.id])
 
     const canShowSelectionToolbar = !!editor && (!isReadOnly || (role === 'viewer' && allowViewerFeedback))
+
+    useEffect(() => {
+        if (!editor || !isProseTypewriterMode || isReadOnly) return
+
+        const shell = editorShellRef.current
+        const container = (shell?.closest('[data-story-scroll-region]') as HTMLElement | null) ?? null
+        if (!container) return
+
+        const onScroll = () => {
+            if (!typewriterProgrammaticScrollRef.current) {
+                typewriterLastScrollRef.current = Date.now()
+            }
+        }
+
+        const syncToCursor = () => {
+            const now = Date.now()
+            if (now - typewriterLastScrollRef.current < 220) return
+
+            const selectionTop = editor.view.coordsAtPos(editor.state.selection.from).top
+            const containerRect = container.getBoundingClientRect()
+            const targetTop = containerRect.top + containerRect.height * 0.38
+            const delta = selectionTop - targetTop
+
+            if (Math.abs(delta) < 28) return
+
+            const nextScrollTop = container.scrollTop + delta * 0.7
+            const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight)
+            const clampedScrollTop = Math.max(0, Math.min(nextScrollTop, maxScrollTop))
+
+            if (Math.abs(clampedScrollTop - container.scrollTop) < 4) return
+
+            typewriterProgrammaticScrollRef.current = true
+            container.scrollTo({
+                top: clampedScrollTop,
+                behavior: Math.abs(delta) > 120 ? 'smooth' : 'auto',
+            })
+            window.setTimeout(() => {
+                typewriterProgrammaticScrollRef.current = false
+            }, 130)
+        }
+
+        const scheduleSync = () => {
+            if (typewriterScrollFrameRef.current !== null) {
+                window.cancelAnimationFrame(typewriterScrollFrameRef.current)
+            }
+            typewriterScrollFrameRef.current = window.requestAnimationFrame(() => {
+                syncToCursor()
+            })
+        }
+
+        container.addEventListener('scroll', onScroll, { passive: true })
+        editor.on('selectionUpdate', scheduleSync)
+        editor.on('transaction', scheduleSync)
+
+        return () => {
+            container.removeEventListener('scroll', onScroll)
+            editor.off('selectionUpdate', scheduleSync)
+            editor.off('transaction', scheduleSync)
+            if (typewriterScrollFrameRef.current !== null) {
+                window.cancelAnimationFrame(typewriterScrollFrameRef.current)
+                typewriterScrollFrameRef.current = null
+            }
+            typewriterProgrammaticScrollRef.current = false
+        }
+    }, [editor, isProseTypewriterMode, isReadOnly])
 
     const getSceneReaderBlocks = useCallback(() => {
         if (!editor) return []
@@ -1357,7 +1468,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                     'scene-editor-shell-screenplay py-10 px-4 sm:px-8',
                     isMidnight ? 'bg-transparent' : 'bg-[#f0f0ed]'
                 )
-                : 'px-4 sm:px-12 md:px-24 max-w-6xl mx-auto pt-4'
+                : isProseFocusMode
+                    ? 'scene-editor-focus-mode px-3 sm:px-8 md:px-12 max-w-6xl mx-auto pt-3'
+                    : 'px-4 sm:px-12 md:px-24 max-w-6xl mx-auto pt-4'
         )}>
             {/* Realtime Conflict / Update Banners */}
             {showUpdateBanner && !showConflictModal && (
@@ -1442,6 +1555,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 </div>
             )}
             {/* Header info bar */}
+            {!isProseFocusMode && (
             <div className="flex flex-col mb-10">
                 <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="flex min-w-0 items-center gap-2">
@@ -1535,6 +1649,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                     </div>
                 )}
             </div>
+            )}
 
             {writingMode === 'simple' && (
                 <>
@@ -1716,8 +1831,46 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                         </div>
                                     </section>
 
+                                    <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Writing Comfort</p>
+                                        <div className="mt-3 space-y-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => updateViewSetting('focusMode', !viewSettings.focusMode)}
+                                                className={cn(
+                                                    "flex w-full items-center justify-between rounded-[1.1rem] border px-3 py-2.5 text-left text-sm transition-all",
+                                                    viewSettings.focusMode
+                                                        ? "border-[#cfd7c8] bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
+                                                        : "border-transparent bg-[#f4f5f1] text-slate-600 hover:border-[#dbe2d2] hover:bg-white/90 hover:text-slate-900"
+                                                )}
+                                            >
+                                                <span className="flex items-center gap-2">
+                                                    <Maximize2 className="h-3.5 w-3.5" />
+                                                    Focus Mode
+                                                </span>
+                                                <span className="text-[11px] font-semibold uppercase tracking-wide">{viewSettings.focusMode ? 'On' : 'Off'}</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => updateViewSetting('typewriterMode', !viewSettings.typewriterMode)}
+                                                className={cn(
+                                                    "flex w-full items-center justify-between rounded-[1.1rem] border px-3 py-2.5 text-left text-sm transition-all",
+                                                    viewSettings.typewriterMode
+                                                        ? "border-[#cfd7c8] bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
+                                                        : "border-transparent bg-[#f4f5f1] text-slate-600 hover:border-[#dbe2d2] hover:bg-white/90 hover:text-slate-900"
+                                                )}
+                                            >
+                                                <span className="flex items-center gap-2">
+                                                    <MoveHorizontal className="h-3.5 w-3.5" />
+                                                    Typewriter Mode
+                                                </span>
+                                                <span className="text-[11px] font-semibold uppercase tracking-wide">{viewSettings.typewriterMode ? 'On' : 'Off'}</span>
+                                            </button>
+                                        </div>
+                                    </section>
+
                                     <div className="rounded-[1.5rem] border border-[#d8e2d3] bg-[#eef4ed] px-4 py-3 text-[11px] leading-5 text-[#485748]">
-                                        Comfortable reading only: type, spacing, width, and alignment do not change your saved manuscript structure or export formatting.
+                                        Comfortable writing only: type, spacing, focus, and typewriter settings do not change your saved manuscript structure or export formatting.
                                     </div>
                                 </div>
                             </div>
@@ -1889,8 +2042,49 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     </div>
                                 </section>
 
+                                <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Writing Comfort</p>
+                                    <div className="mt-3 space-y-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => updateViewSetting('focusMode', !viewSettings.focusMode)}
+                                            className={cn(
+                                                "flex w-full items-center justify-between rounded-[1.1rem] border px-3 py-2.5 text-left text-sm transition-all",
+                                                viewSettings.focusMode
+                                                    ? "border-[#cfd7c8] bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
+                                                    : "border-transparent bg-[#f4f5f1] text-slate-600 hover:border-[#dbe2d2] hover:bg-white/90 hover:text-slate-900"
+                                            )}
+                                        >
+                                            <span className="flex items-center gap-2">
+                                                <Maximize2 className="h-3.5 w-3.5" />
+                                                Focus Mode
+                                            </span>
+                                            <span className="text-[11px] font-semibold uppercase tracking-wide">{viewSettings.focusMode ? 'On' : 'Off'}</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => updateViewSetting('typewriterMode', !viewSettings.typewriterMode)}
+                                            className={cn(
+                                                "flex w-full items-center justify-between rounded-[1.1rem] border px-3 py-2.5 text-left text-sm transition-all",
+                                                viewSettings.typewriterMode
+                                                    ? "border-[#cfd7c8] bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
+                                                    : "border-transparent bg-[#f4f5f1] text-slate-600 hover:border-[#dbe2d2] hover:bg-white/90 hover:text-slate-900"
+                                            )}
+                                        >
+                                            <span className="flex items-center gap-2">
+                                                <MoveHorizontal className="h-3.5 w-3.5" />
+                                                Typewriter Mode
+                                            </span>
+                                            <span className="text-[11px] font-semibold uppercase tracking-wide">{viewSettings.typewriterMode ? 'On' : 'Off'}</span>
+                                        </button>
+                                        <p className="px-1 text-[11px] leading-5 text-slate-500">
+                                            Keeps the active typing area comfortably positioned during longer scenes.
+                                        </p>
+                                    </div>
+                                </section>
+
                                 <div className="rounded-[1.5rem] border border-[#d8e2d3] bg-[#eef4ed] px-4 py-3 text-[11px] leading-5 text-[#485748]">
-                                    Comfortable reading only: type, spacing, width, and alignment do not change your saved manuscript structure or export formatting.
+                                    Comfortable writing only: type, spacing, focus, and typewriter settings do not change your saved manuscript structure or export formatting.
                                 </div>
                             </div>
                             </div>
@@ -1898,6 +2092,23 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                         </aside>
                     )}
                 </>
+            )}
+
+            {isProseFocusMode && (
+                <div className="sticky top-3 z-[95] mb-4 flex justify-end">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => updateViewSetting('focusMode', false)}
+                        className={cn(
+                            TOP_ACTION_PILL_BASE,
+                            "scene-editor-focus-exit inline-flex items-center gap-1.5"
+                        )}
+                    >
+                        <X className="h-3.5 w-3.5" />
+                        Exit Focus
+                    </Button>
+                </div>
             )}
 
             <div 
