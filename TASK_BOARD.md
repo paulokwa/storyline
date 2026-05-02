@@ -77,6 +77,10 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
   - dismissal is component-state only for the current page/component lifecycle
   - the banner still reappears after refresh or when reopening the local backup project
   - `Open Cloud Version`, delete/trash behavior, and migration logic were left unchanged
+- Added a visible storage-state badge beside the project title in the header:
+  - `Cloud`, `Local`, and `Local backup` states now show without relying on avatar hover
+  - migrated local backups keep a slightly more cautionary badge treatment
+  - the migrated-backup banner remains separate and still reappears on reopen/refresh
 - Added explicit short-text analyzer feedback for empty / under-50-character scenes and made collapsed structure parents auto-expand when a new child is added, without changing analyzer API rules or structure CRUD/reorder logic.
 - Stabilized empty-screenplay Backspace/analyzer behavior by updating `lib/tiptap/screenplay-keyboard.ts` so the default empty paragraph no longer converts on Backspace and empty screenplay nodes consume Backspace safely, and by updating `lib/story/scene-text.ts` so empty screenplay blocks no longer count as analyzable text. Screenplay formatting/export logic was left untouched.
 - Simplified the scene editor heading metadata so it now shows a single `SCREENPLAY` or `DRAFT` label, keeps the scene title primary, and hides `Last edited by you` while preserving collaborator attribution for other editors.

@@ -5,6 +5,40 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-02 - Header local/cloud status badge
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Added a visible compact project-status badge in the `ProjectShell` header beside the project title.
+- Kept the storage indicator in the project identity area instead of hiding it behind avatar hover.
+- Added three states with tooltip copy:
+  - `Cloud`
+  - `Local`
+  - `Local backup`
+- Kept migrated-local-backup banner behavior separate, so the banner still appears on open and can still be dismissed only for the current page/session while the header badge remains visible.
+- Verified the change with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+Project storage state is now visible at a glance in the header/navbar across project views. Migrated local backups keep a slightly more cautionary badge treatment without changing migration logic or banner behavior.
+
+### Next recommended step
+
+- Run a browser/manual regression pass for:
+  - cloud project header badge copy and placement
+  - local-only project header badge copy and placement
+  - migrated local backup header badge visibility before and after dismissing the banner
+  - narrow/mobile header wrapping behavior
+
+### Risks or warnings
+
+- Browser validation is still needed for header spacing on narrow layouts and Midnight theme appearance.
+
+---
 ## 2026-05-02 - Migrated local backup banner session-only dismiss
 
 ### Current branch

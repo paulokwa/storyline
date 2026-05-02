@@ -11,6 +11,8 @@ import {
     BookOpen, Users, Lightbulb,
     ChevronLeft, Settings, Check, X, Home,
     Tv,
+    Cloud,
+    HardDrive,
     Download,
     MapPin,
     Package,
@@ -29,7 +31,8 @@ import {
     MicOff,
     HelpCircle,
     PenLine,
-    Square
+    Square,
+    TriangleAlert
 } from 'lucide-react'
 import { ShortcutsLegend } from './ShortcutsLegend'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
@@ -79,6 +82,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Badge } from "../ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import OnboardingTour from './OnboardingTour'
 import { queueAiTourStart } from '@/lib/ai/tour'
@@ -97,6 +101,43 @@ type ProjectMemberSummary = {
     user_id: string
     display_name: string | null
     avatar_url: string | null
+}
+
+type HeaderProject = Project & {
+    migrated_to_cloud_project_id?: string | null
+}
+
+function getStorageBadgeConfig(project: HeaderProject, storageMode: ProjectStorageMode) {
+    if (storageMode === 'local-only' && project.migrated_to_cloud_project_id) {
+        return {
+            label: 'Local backup',
+            shortLabel: 'Backup',
+            tooltip: 'This is a local backup of a cloud-migrated project. Changes here will not sync.',
+            icon: TriangleAlert,
+            className:
+                'border-amber-200/80 bg-amber-50/90 text-amber-800 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.06)]',
+        }
+    }
+
+    if (storageMode === 'local-only') {
+        return {
+            label: 'Local',
+            shortLabel: 'Local',
+            tooltip: 'Local project. Changes stay on this device unless saved/exported.',
+            icon: HardDrive,
+            className:
+                'border-[#d9e1d5] bg-[#f5f4ef] text-[#546354] shadow-[inset_0_0_0_1px_rgba(84,99,84,0.04)]',
+        }
+    }
+
+    return {
+        label: 'Cloud',
+        shortLabel: 'Cloud',
+        tooltip: 'Cloud project. Changes sync online.',
+        icon: Cloud,
+        className:
+            'border-emerald-200/80 bg-emerald-50/85 text-emerald-800 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.05)]',
+    }
 }
 
 const TABS = [
@@ -470,6 +511,7 @@ function ProjectShellInner({
     const supportsComments = true
     const supportsAssets = true
     const sceneAssetsLabel = project.type === 'tv_script' ? 'Visual References' : 'Gallery'
+    const storageBadge = getStorageBadgeConfig(project as HeaderProject, storageMode)
     const baseTabs = isLocalOnly ? LOCAL_ONLY_TABS : TABS
     const visibleTabs = role === 'viewer'
         ? baseTabs.filter(({ slug }) => !VIEWER_HIDDEN_TABS.has(slug))
@@ -829,9 +871,33 @@ function ProjectShellInner({
                                                 setEditingTitle(true)
                                             }
                                         }}
-                                        className="text-sm sm:text-lg font-serif italic text-slate-800 hover:text-indigo-600 transition-colors truncate text-left"
+                                        className="min-w-0 text-left"
                                     >
-                                        {project.title}
+                                        <div className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
+                                            <span className="truncate text-sm font-serif italic text-slate-800 transition-colors hover:text-indigo-600 sm:text-lg">
+                                                {project.title}
+                                            </span>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Badge
+                                                        variant="outline"
+                                                        title={storageBadge.tooltip}
+                                                        className={cn(
+                                                            'h-6 max-w-full rounded-full px-2.5 text-[10px] font-semibold tracking-[0.08em] uppercase',
+                                                            'gap-1.5 whitespace-nowrap sm:text-[11px]',
+                                                            storageBadge.className
+                                                        )}
+                                                    >
+                                                        <storageBadge.icon className="h-3 w-3 shrink-0" />
+                                                        <span className="sm:hidden">{storageBadge.shortLabel}</span>
+                                                        <span className="hidden sm:inline">{storageBadge.label}</span>
+                                                    </Badge>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="bottom" sideOffset={8} className="max-w-64 rounded-xl border-[#e8e3da] bg-white px-3 py-2 text-xs leading-5 text-slate-700 shadow-xl">
+                                                    {storageBadge.tooltip}
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </div>
                                     </button>
                                 </>
                             ) : (
