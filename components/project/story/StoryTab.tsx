@@ -11,8 +11,9 @@ import { queueAiTourStart } from '@/lib/ai/tour'
 import SceneAssetsPanel from './SceneAssetsPanel'
 import LinkedContext from './LinkedContext'
 import SceneAnalysisPanel from './SceneAnalysisPanel'
+import { ReaderControls } from './ReaderMode'
 
-import { PanelLeftOpen, BookOpen, Sparkles, X, Wand2, BarChart3, Clapperboard, Book, Download, Square } from 'lucide-react'
+import { PanelLeftOpen, BookOpen, Sparkles, X, Wand2, BarChart3, Clapperboard, Book, Download, Square, MessageSquare, Image as ImageIcon, Mic, MicOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { Database, WritingMode } from '@/lib/supabase/types'
@@ -96,11 +97,16 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         activeLocations, setActiveLocations,
         activeObjects, setActiveObjects,
         selectedNodeIds, setSelectedNodeIds,
-        setShowStructureHint
+        setShowStructureHint,
+        currentSelectionText,
+        currentChapterText,
+        isDictating,
+        requestDictation
     } = useProjectActions()
     const { exportAction, statsAction, canExport } = useProjectActionsStore()
     const { commentsPanelOpen, setCommentsPanelOpen, fetchComments, setActiveCommentId } = useComments()
     const isLocalOnly = storageMode === 'local-only'
+    const sceneAssetsLabel = project.type === 'tv_script' ? 'Visual References' : 'Gallery'
     
     const [nodes, setNodes] = useState(initialNodes)
     const [scenes, setScenes] = useState(initialScenes)
@@ -601,14 +607,50 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             setAiAccessContext('partner')
             queueAiTourStart()
             setAnalysisResult(null)
+            setCommentsPanelOpen(false)
+            setSceneAssetsOpen(false)
         }
         setAiPanelOpen(nextState)
     }
+
+    const handleToggleComments = useCallback(() => {
+        const nextState = !commentsPanelOpen
+        if (nextState) {
+            setAiPanelOpen(false)
+            setSceneAssetsOpen(false)
+        }
+        setCommentsPanelOpen(nextState)
+    }, [commentsPanelOpen, setAiPanelOpen, setCommentsPanelOpen, setSceneAssetsOpen])
+
+    const handleToggleAssets = useCallback(() => {
+        if (!activeNodeId || !activeScene) return
+        const nextState = !sceneAssetsOpen
+        if (nextState) {
+            setAiPanelOpen(false)
+            setCommentsPanelOpen(false)
+        }
+        setSceneAssetsOpen(nextState)
+    }, [activeNodeId, activeScene, sceneAssetsOpen, setAiPanelOpen, setCommentsPanelOpen, setSceneAssetsOpen])
 
     const handleCloseAiPanel = () => {
         setAiAccessContext('partner')
         setAiPanelOpen(false)
     }
+
+    const closeRightPanels = useCallback(() => {
+        setAiPanelOpen(false)
+        setCommentsPanelOpen(false)
+        setSceneAssetsOpen(false)
+        setAiAccessContext('partner')
+    }, [setAiPanelOpen, setCommentsPanelOpen, setSceneAssetsOpen])
+
+    const desktopOpenPanel = aiPanelOpen
+        ? 'ai'
+        : commentsPanelOpen
+            ? 'comments'
+            : sceneAssetsOpen
+                ? 'assets'
+                : null
 
     return (
         <div className="flex flex-1 min-h-0 overflow-hidden relative">
@@ -621,9 +663,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                     )}
                     onClick={() => {
                         setSidebarOpen(false)
-                        handleCloseAiPanel()
-                        setCommentsPanelOpen(false)
-                        setSceneAssetsOpen(false)
+                        closeRightPanels()
                     }}
                 />
             )}
@@ -711,48 +751,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                 allNodes={nodes}
                                 />
                             </div>
-                            <div className="flex items-center gap-4 shrink-0">
-                                <div className="story-action-cluster hidden lg:flex items-center gap-1.5 p-1 bg-violet-50/50 rounded-2xl border border-violet-100/50">
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={isAnalyzing ? stopAnalysis : handleAnalyzeTrigger}
-                                                    disabled={!isAnalyzing && !currentSceneText}
-                                                    className={cn(
-                                                        "rounded-xl transition-all h-9 w-9 p-0",
-                                                        isAnalyzing ? "bg-white text-violet-600 shadow-sm animate-pulse font-bold ring-2 ring-violet-200/70" : "text-slate-500 hover:bg-white hover:text-violet-600"
-                                                    )}
-                                                >
-                                                    {isAnalyzing ? <Square className="w-3.5 h-3.5 fill-current" /> : <Wand2 className="w-4 h-4" />}
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent side="bottom" sideOffset={7}>{isAnalyzing ? 'Stop analysis' : 'Analyze this scene with AI'}</TooltipContent>
-                                        </Tooltip>
-
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={handleToggleAiPanel}
-                                                    className={cn(
-                                                        "rounded-xl transition-all h-9 w-9 p-0",
-                                                        aiPanelOpen ? "bg-white text-indigo-600 shadow-sm font-bold" : "text-slate-500 hover:bg-white hover:text-indigo-600"
-                                                    )}
-                                                >
-                                                    <Sparkles className="w-4 h-4" />
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent side="bottom" sideOffset={7}>Ask AI Partner</TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                </div>
-
-
-                            </div>
+                            <div className="flex items-center gap-4 shrink-0" />
                         </div>
 
                     </div>
@@ -890,85 +889,54 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 </div>
             </div>
 
-            {/* AI Helper Sidebar */}
+            {/* Mobile slide-out panels */}
             <div className={cn(
-                'story-ai-sidebar bg-white flex flex-col transition-all duration-300 ease-in-out overflow-hidden z-40 md:z-20',
-                'absolute top-0 bottom-0 right-0 md:relative md:inset-auto md:h-full',
-                aiPanelOpen 
-                    ? 'w-[320px] lg:w-[380px] opacity-100 translate-x-0 border-l border-slate-200'
-                    : theme === 'midnight'
-                        ? 'w-0 border-none opacity-0 translate-x-full md:w-14 md:translate-x-0 md:opacity-100 md:border-l md:border-slate-500/20 md:bg-[linear-gradient(180deg,rgba(19,28,45,0.96)_0%,rgba(16,24,38,0.98)_100%)] md:shadow-[inset_1px_0_0_rgba(148,163,184,0.08),-10px_0_30px_rgba(2,6,23,0.18)]'
-                        : 'ai-collapsed-rail w-0 border-none opacity-0 translate-x-full md:w-14 md:translate-x-0 md:opacity-100 md:border-l md:border-[#d8ddcf] md:bg-[#eef1e8] md:shadow-[inset_1px_0_0_rgba(84,99,84,0.06)]'
+                'story-ai-sidebar bg-white flex flex-col transition-all duration-300 ease-in-out overflow-hidden z-40 absolute top-0 bottom-0 right-0 md:hidden',
+                aiPanelOpen ? 'w-[320px] opacity-100 translate-x-0 border-l border-slate-200' : 'w-0 border-none opacity-0 translate-x-full'
             )}>
-                {aiPanelOpen ? (
-                    <div className="w-[320px] lg:w-[380px] h-full flex flex-col">
-                        <AiHelperPanel
-                            projectId={project.id}
-                            projectTitle={project.title}
-                            sceneText={currentSceneText}
-                            sceneCharacters={activeScene?.scene_characters ?? []}
-                            sceneIdeas={activeScene?.scene_ideas ?? []}
-                            sceneLocations={activeScene?.scene_locations ?? []}
-                            sceneObjects={activeScene?.scene_objects ?? []}
-                            linkedCharacters={projectCharacters.filter(c => activeCharacters[c.id] !== false && activeScene?.scene_characters?.some((sc: any) => sc.characters?.id === c.id))}
-                            linkedIdeas={projectIdeas.filter(i => activeIdeas[i.id] !== false && activeScene?.scene_ideas?.some((si: any) => si.ideas?.id === i.id))}
-                            linkedLocations={projectLocations.filter(l => activeLocations[l.id] !== false && activeScene?.scene_locations?.some((sl: any) => sl.locations?.id === l.id))}
-                            linkedObjects={projectObjects.filter(o => activeObjects[o.id] !== false && activeScene?.scene_objects?.some((so: any) => so.objects?.id === o.id))}
-                            linkedAiFeedback={projectAiFeedback.filter(response => response.source_scene_id === activeScene?.id)}
-                            projectCharacters={projectCharacters}
-                            projectIdeas={projectIdeas}
-                            projectLocations={projectLocations}
-                            projectObjects={projectObjects}
-                            projectAiFeedback={projectAiFeedback}
-                            selectedNodes={orderedExplicitSelectedNodes}
-                            allNodes={nodes}
-                            allScenes={scenes}
-                            projectRelationships={projectRelationships}
-                            projectType={project.type as any}
-                            projectPremise={project.premise}
-                            projectTone={project.tone}
-                            aiSettings={aiSettings}
-                            accessContext={aiAccessContext}
-                            allowViewerFeedback={project.allow_viewer_feedback ?? false}
-                            activeNodeId={activeNodeId}
-                            activeSceneId={activeScene?.id}
-                            onClose={handleCloseAiPanel}
-                            onClearSelection={() => setSelectedNodeIds([])}
-                            onInsert={(content) => editorRef.current?.insertContent(content)}
-                        />
-                    </div>
-                ) : (
-                    <div className="hidden md:flex h-full w-full items-center justify-center px-2 py-6">
-                        <button
-                            type="button"
-                            onClick={handleToggleAiPanel}
-                            data-tour="ai-sidebar-trigger"
-                            className={cn(
-                                "group flex h-full w-full flex-col items-center justify-center rounded-[1.5rem] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2",
-                                theme === 'midnight'
-                                    ? "border border-slate-400/15 bg-[linear-gradient(180deg,rgba(34,48,74,0.48)_0%,rgba(26,37,58,0.58)_100%)] text-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_18px_40px_-30px_rgba(0,0,0,0.6)] hover:border-slate-300/20 hover:bg-[linear-gradient(180deg,rgba(44,63,98,0.56)_0%,rgba(32,47,74,0.66)_100%)] hover:text-slate-100 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_20px_44px_-28px_rgba(15,23,42,0.72)] focus-visible:ring-slate-300/20"
-                                    : "ai-collapsed-rail-button border border-[#d5dccd] bg-[#f6f8f1] text-[#4f5d79] hover:bg-[#eef2e8] hover:shadow-[0_12px_30px_rgba(79,93,121,0.12)] focus-visible:ring-[#4f5d79]/20"
-                            )}
-                            aria-label="Show AI Partner panel"
-                        >
-                            <Sparkles className="mb-4 h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
-                            <span className="[writing-mode:vertical-rl] rotate-180 text-[10px] font-bold uppercase tracking-[0.24em]">
-                                AI Partner
-                            </span>
-                        </button>
-                    </div>
-                )}
+                <div className="w-[320px] h-full flex flex-col">
+                    <AiHelperPanel
+                        projectId={project.id}
+                        projectTitle={project.title}
+                        sceneText={currentSceneText}
+                        sceneCharacters={activeScene?.scene_characters ?? []}
+                        sceneIdeas={activeScene?.scene_ideas ?? []}
+                        sceneLocations={activeScene?.scene_locations ?? []}
+                        sceneObjects={activeScene?.scene_objects ?? []}
+                        linkedCharacters={projectCharacters.filter(c => activeCharacters[c.id] !== false && activeScene?.scene_characters?.some((sc: any) => sc.characters?.id === c.id))}
+                        linkedIdeas={projectIdeas.filter(i => activeIdeas[i.id] !== false && activeScene?.scene_ideas?.some((si: any) => si.ideas?.id === i.id))}
+                        linkedLocations={projectLocations.filter(l => activeLocations[l.id] !== false && activeScene?.scene_locations?.some((sl: any) => sl.locations?.id === l.id))}
+                        linkedObjects={projectObjects.filter(o => activeObjects[o.id] !== false && activeScene?.scene_objects?.some((so: any) => so.objects?.id === o.id))}
+                        linkedAiFeedback={projectAiFeedback.filter(response => response.source_scene_id === activeScene?.id)}
+                        projectCharacters={projectCharacters}
+                        projectIdeas={projectIdeas}
+                        projectLocations={projectLocations}
+                        projectObjects={projectObjects}
+                        projectAiFeedback={projectAiFeedback}
+                        selectedNodes={orderedExplicitSelectedNodes}
+                        allNodes={nodes}
+                        allScenes={scenes}
+                        projectRelationships={projectRelationships}
+                        projectType={project.type as any}
+                        projectPremise={project.premise}
+                        projectTone={project.tone}
+                        aiSettings={aiSettings}
+                        accessContext={aiAccessContext}
+                        allowViewerFeedback={project.allow_viewer_feedback ?? false}
+                        activeNodeId={activeNodeId}
+                        activeSceneId={activeScene?.id}
+                        onClose={handleCloseAiPanel}
+                        onClearSelection={() => setSelectedNodeIds([])}
+                        onInsert={(content) => editorRef.current?.insertContent(content)}
+                    />
+                </div>
             </div>
 
-            {/* Comments Sidebar */}
             <div className={cn(
-                'bg-white flex flex-col border-l border-slate-200 transition-all duration-300 ease-in-out overflow-hidden z-40 md:z-20',
-                'absolute top-0 bottom-0 right-0 md:relative md:inset-auto md:h-full',
-                commentsPanelOpen 
-                    ? 'w-[320px] lg:w-[380px] opacity-100 translate-x-0' 
-                    : 'w-0 border-none opacity-0 translate-x-full md:translate-x-0 md:opacity-100'
+                'bg-white flex flex-col border-l border-slate-200 transition-all duration-300 ease-in-out overflow-hidden z-40 absolute top-0 bottom-0 right-0 md:hidden',
+                commentsPanelOpen ? 'w-[320px] opacity-100 translate-x-0' : 'w-0 border-none opacity-0 translate-x-full'
             )}>
-                <div className="w-[320px] lg:w-[380px] h-full flex flex-col">
+                <div className="w-[320px] h-full flex flex-col">
                     <CommentsPanel 
                         projectId={project.id}
                         projectOwnerId={project.user_id}
@@ -982,16 +950,12 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 </div>
             </div>
 
-            {/* Scene Assets Sidebar */}
             {activeNodeId && activeScene && (
                 <div className={cn(
-                    'bg-white flex flex-col border-l border-slate-200 transition-all duration-300 ease-in-out overflow-hidden z-40 md:z-20',
-                    'absolute top-0 bottom-0 right-0 md:relative md:inset-auto md:h-full',
-                    sceneAssetsOpen 
-                        ? 'w-[320px] lg:w-[380px] opacity-100 translate-x-0' 
-                        : 'w-0 border-none opacity-0 translate-x-full md:translate-x-0 md:opacity-100'
+                    'bg-white flex flex-col border-l border-slate-200 transition-all duration-300 ease-in-out overflow-hidden z-40 absolute top-0 bottom-0 right-0 md:hidden',
+                    sceneAssetsOpen ? 'w-[320px] opacity-100 translate-x-0' : 'w-0 border-none opacity-0 translate-x-full'
                 )}>
-                    <div className="w-[320px] lg:w-[380px] h-full flex flex-col">
+                    <div className="w-[320px] h-full flex flex-col">
                         <SceneAssetsPanel 
                             projectId={project.id}
                             sceneId={activeScene.id}
@@ -1001,6 +965,223 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                     </div>
                 </div>
             )}
+
+            {/* Desktop / tablet utility rail */}
+            <div className="hidden md:flex h-full shrink-0">
+                {desktopOpenPanel && (
+                    <div className={cn(
+                        "h-full w-[320px] lg:w-[380px] flex-col overflow-hidden border-l transition-all duration-300 ease-in-out",
+                        theme === 'midnight'
+                            ? "flex border-slate-500/20 bg-[linear-gradient(180deg,rgba(19,28,45,0.96)_0%,rgba(16,24,38,0.98)_100%)] shadow-[-10px_0_30px_rgba(2,6,23,0.18)]"
+                            : "flex border-[#d8ddcf] bg-white"
+                    )}>
+                        {desktopOpenPanel === 'ai' && (
+                            <AiHelperPanel
+                                projectId={project.id}
+                                projectTitle={project.title}
+                                sceneText={currentSceneText}
+                                sceneCharacters={activeScene?.scene_characters ?? []}
+                                sceneIdeas={activeScene?.scene_ideas ?? []}
+                                sceneLocations={activeScene?.scene_locations ?? []}
+                                sceneObjects={activeScene?.scene_objects ?? []}
+                                linkedCharacters={projectCharacters.filter(c => activeCharacters[c.id] !== false && activeScene?.scene_characters?.some((sc: any) => sc.characters?.id === c.id))}
+                                linkedIdeas={projectIdeas.filter(i => activeIdeas[i.id] !== false && activeScene?.scene_ideas?.some((si: any) => si.ideas?.id === i.id))}
+                                linkedLocations={projectLocations.filter(l => activeLocations[l.id] !== false && activeScene?.scene_locations?.some((sl: any) => sl.locations?.id === l.id))}
+                                linkedObjects={projectObjects.filter(o => activeObjects[o.id] !== false && activeScene?.scene_objects?.some((so: any) => so.objects?.id === o.id))}
+                                linkedAiFeedback={projectAiFeedback.filter(response => response.source_scene_id === activeScene?.id)}
+                                projectCharacters={projectCharacters}
+                                projectIdeas={projectIdeas}
+                                projectLocations={projectLocations}
+                                projectObjects={projectObjects}
+                                projectAiFeedback={projectAiFeedback}
+                                selectedNodes={orderedExplicitSelectedNodes}
+                                allNodes={nodes}
+                                allScenes={scenes}
+                                projectRelationships={projectRelationships}
+                                projectType={project.type as any}
+                                projectPremise={project.premise}
+                                projectTone={project.tone}
+                                aiSettings={aiSettings}
+                                accessContext={aiAccessContext}
+                                allowViewerFeedback={project.allow_viewer_feedback ?? false}
+                                activeNodeId={activeNodeId}
+                                activeSceneId={activeScene?.id}
+                                onClose={handleCloseAiPanel}
+                                onClearSelection={() => setSelectedNodeIds([])}
+                                onInsert={(content) => editorRef.current?.insertContent(content)}
+                            />
+                        )}
+                        {desktopOpenPanel === 'comments' && (
+                            <CommentsPanel 
+                                projectId={project.id}
+                                projectOwnerId={project.user_id}
+                                shareOwnerFeedback={project.share_owner_feedback ?? false}
+                                allowViewerFeedback={project.allow_viewer_feedback ?? false}
+                                activeNodeId={activeNodeId}
+                                activeSceneId={activeScene?.id}
+                                onSelectNode={handleSceneSelect}
+                                onClose={() => setCommentsPanelOpen(false)}
+                            />
+                        )}
+                        {desktopOpenPanel === 'assets' && activeScene && (
+                            <SceneAssetsPanel 
+                                projectId={project.id}
+                                sceneId={activeScene.id}
+                                projectType={project.type as any}
+                                onClose={() => setSceneAssetsOpen(false)}
+                            />
+                        )}
+                    </div>
+                )}
+
+                <div
+                    className={cn(
+                        "story-utility-rail flex h-full w-14 flex-col items-center justify-center border-l px-2 py-6",
+                        theme === 'midnight'
+                            ? "border-slate-500/20 bg-[linear-gradient(180deg,rgba(19,28,45,0.96)_0%,rgba(16,24,38,0.98)_100%)] shadow-[inset_1px_0_0_rgba(148,163,184,0.08),-10px_0_30px_rgba(2,6,23,0.18)]"
+                            : "bg-[#eef1e8] border-[#d8ddcf] shadow-[inset_1px_0_0_rgba(84,99,84,0.06)]"
+                    )}
+                >
+                    <div
+                        className={cn(
+                            "flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[1.5rem] px-0 py-5 transition-all duration-300",
+                            theme === 'midnight'
+                                ? "border border-slate-400/15 bg-[linear-gradient(180deg,rgba(34,48,74,0.48)_0%,rgba(26,37,58,0.58)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_18px_40px_-30px_rgba(0,0,0,0.6)]"
+                                : "border border-[#d5dccd] bg-[#f6f8f1] shadow-[0_12px_30px_rgba(84,99,84,0.08)]"
+                        )}
+                    >
+                        <TooltipProvider>
+                            <div className="flex w-full flex-col items-center gap-2">
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                        type="button"
+                                        onClick={isAnalyzing ? stopAnalysis : handleAnalyzeTrigger}
+                                        disabled={!isAnalyzing && !currentSceneText}
+                                        className={cn(
+                                            "flex h-9 w-9 items-center justify-center rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-45",
+                                            isAnalyzing
+                                                ? "bg-violet-100 text-violet-700 shadow-sm ring-2 ring-violet-200/70"
+                                                : theme === 'midnight'
+                                                        ? "text-slate-300 hover:bg-white/8 hover:text-violet-200 focus-visible:ring-slate-300/20"
+                                                        : "text-slate-500 hover:bg-white/80 hover:text-violet-700 focus-visible:ring-[#546354]/20"
+                                            )}
+                                            aria-label={isAnalyzing ? 'Stop analysis' : 'Analyze this scene'}
+                                        >
+                                            {isAnalyzing ? <Square className="h-4 w-4 fill-current" /> : <Wand2 className="h-4 w-4" />}
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left">{isAnalyzing ? 'Stop analysis' : 'Analyze this scene'}</TooltipContent>
+                                </Tooltip>
+
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                        type="button"
+                                        onClick={handleToggleAiPanel}
+                                        data-tour="ai-sidebar-trigger"
+                                        className={cn(
+                                            "flex h-9 w-9 items-center justify-center rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2",
+                                            aiPanelOpen
+                                                ? theme === 'midnight'
+                                                    ? "bg-white/10 text-indigo-200 shadow-sm ring-1 ring-white/10"
+                                                        : "bg-white text-indigo-600 shadow-sm"
+                                                    : theme === 'midnight'
+                                                        ? "text-slate-300 hover:bg-white/8 hover:text-indigo-200 focus-visible:ring-slate-300/20"
+                                                        : "text-slate-500 hover:bg-white/80 hover:text-indigo-600 focus-visible:ring-[#546354]/20"
+                                            )}
+                                            aria-label="Open AI Partner rail"
+                                        >
+                                            <Sparkles className="h-4 w-4" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left">AI Partner</TooltipContent>
+                                </Tooltip>
+
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                        type="button"
+                                        onClick={handleToggleAssets}
+                                        disabled={!activeNodeId || !activeScene}
+                                        className={cn(
+                                            "flex h-9 w-9 items-center justify-center rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-45",
+                                            sceneAssetsOpen
+                                                ? theme === 'midnight'
+                                                    ? "bg-white/10 text-emerald-200 shadow-sm ring-1 ring-white/10"
+                                                        : "bg-white text-emerald-600 shadow-sm"
+                                                    : theme === 'midnight'
+                                                        ? "text-slate-300 hover:bg-white/8 hover:text-emerald-200 focus-visible:ring-slate-300/20"
+                                                        : "text-slate-500 hover:bg-white/80 hover:text-emerald-600 focus-visible:ring-[#546354]/20"
+                                            )}
+                                            aria-label={sceneAssetsLabel}
+                                        >
+                                            <ImageIcon className="h-4 w-4" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left">{sceneAssetsLabel}</TooltipContent>
+                                </Tooltip>
+
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                        type="button"
+                                        onClick={handleToggleComments}
+                                        className={cn(
+                                            "flex h-9 w-9 items-center justify-center rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2",
+                                            commentsPanelOpen
+                                                ? theme === 'midnight'
+                                                    ? "bg-white/10 text-rose-200 shadow-sm ring-1 ring-white/10"
+                                                        : "bg-white text-rose-600 shadow-sm"
+                                                    : theme === 'midnight'
+                                                        ? "text-slate-300 hover:bg-white/8 hover:text-rose-200 focus-visible:ring-slate-300/20"
+                                                        : "text-slate-500 hover:bg-white/80 hover:text-rose-600 focus-visible:ring-[#546354]/20"
+                                            )}
+                                            aria-label="Feedback"
+                                        >
+                                            <MessageSquare className="h-4 w-4" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left">Feedback</TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                        type="button"
+                                        onClick={requestDictation}
+                                        className={cn(
+                                            "flex h-9 w-9 items-center justify-center rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2",
+                                            isDictating
+                                                ? theme === 'midnight'
+                                                    ? "bg-red-500/12 text-red-200 shadow-sm ring-1 ring-red-300/25"
+                                                        : "bg-white text-red-600 shadow-sm"
+                                                    : theme === 'midnight'
+                                                        ? "text-slate-300 hover:bg-white/8 hover:text-red-200 focus-visible:ring-slate-300/20"
+                                                        : "text-slate-500 hover:bg-white/80 hover:text-red-600 focus-visible:ring-[#546354]/20"
+                                            )}
+                                            aria-label="Dictate"
+                                        >
+                                            {isDictating ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left">Dictate</TooltipContent>
+                                </Tooltip>
+
+                                <ReaderControls
+                                    getSelection={() => currentSelectionText}
+                                    getScene={() => currentSceneText}
+                                    getChapter={() => currentChapterText}
+                                    getSceneChunks={() => currentSceneText.split(/\n{2,}/).map((block) => block.replace(/\s+/g, ' ').trim()).filter(Boolean)}
+                                    getChapterChunks={() => currentChapterText.split(/\n{2,}/).map((block) => block.replace(/\s+/g, ' ').trim()).filter(Boolean)}
+                                    mode="icon-only"
+                                    align="right"
+                                    side="left"
+                                />
+                            </div>
+                        </TooltipProvider>
+                    </div>
+                </div>
+            </div>
 
             {showExportHint && portalRoot && createPortal(
                 <div className="mr-2 animate-in fade-in slide-in-from-right-4 duration-500 hidden sm:flex items-center">

@@ -1542,59 +1542,6 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             </div>
                         )}
 
-                        <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => setCommentsPanelOpen(true)}
-                            className={cn(
-                                TOP_ACTION_PILL_BASE,
-                                "lg:inline-flex text-slate-400 hover:text-primary hover:bg-white"
-                            )}
-                        >
-                            <MessageSquare className="w-3 h-3 mr-1" />
-                             Feedback
-                        </Button>
-                        
-                        <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => setSceneAssetsOpen(!sceneAssetsOpen)}
-                            className={cn(
-                                TOP_ACTION_PILL_BASE,
-                                "md:inline-flex",
-                                sceneAssetsOpen ? "text-emerald-500 bg-white border-emerald-200/80" : "text-slate-400 hover:text-emerald-600 hover:bg-white"
-                            )}
-                        >
-                            <ImageIcon className="w-3 h-3 mr-1" />
-                             {isScreenplayMode ? 'Visual References' : 'Gallery'}
-                        </Button>
-
-                        {!isReadOnly && speechSupported && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={toggleDictation}
-                                className={cn(
-                                    TOP_ACTION_PILL_BASE,
-                                    "lg:inline-flex",
-                                    isRecording 
-                                        ? "text-red-500 bg-red-50 border-red-200/80 hover:bg-red-100 animate-pulse" 
-                                        : "text-slate-400 hover:text-slate-600 hover:bg-white"
-                                )}
-                            >
-                                {isRecording ? <Mic className="w-3 h-3 mr-1" /> : <MicOff className="w-3 h-3 mr-1" />}
-                                {isRecording ? 'Listening...' : 'Dictate'}
-                            </Button>
-                        )}
-                        
-                        <div className="hidden lg:flex items-center">
-                            <ReaderControls 
-                                getSelection={() => editor?.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to) || ''}
-                                getScene={() => editor?.getText() || ''}
-                                getChapter={() => currentChapterText}
-                                getSceneChunks={getSceneReaderBlocks}
-                            />
-                        </div>
                     </div>
                 </div>
                 

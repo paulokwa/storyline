@@ -32,7 +32,7 @@ export function ReaderControls({
     getChapterChunks?: () => string[],
     mode?: 'full' | 'settings-only' | 'icon-only',
     align?: 'left' | 'right',
-    side?: 'top' | 'bottom'
+    side?: 'top' | 'bottom' | 'left' | 'right'
 }) {
     const { supported, speechState, pause, resume, stop, voices, selectedVoice, setVoice, rate, changeRate, speak, speakSegments } = useSpeech()
     const { theme } = useTheme()

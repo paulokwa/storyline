@@ -5,6 +5,55 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-01 - Story workspace multipurpose right rail
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Reviewed the existing Story workspace side-panel architecture and confirmed the current right side only exposed a collapsed AI Partner rail on desktop/tablet, while Feedback and scene Gallery/Visual References used separate independent slide-outs.
+- Checked the user's Stitch concept (`Story Workspace: Redesign Concept`) and extracted only the relevant interaction idea: a slim icon-based utility rail that keeps secondary tools peripheral without copying the full screen design.
+- Refactored `components/project/story/StoryTab.tsx` so desktop/tablet now use one shared right-side utility rail for:
+  - Analyze
+  - AI Partner
+  - `Gallery` for books / `Visual References` for screenplays
+  - Feedback
+  - Dictate
+  - Read Aloud
+- Preserved existing behavior:
+  - AI Partner, Feedback, and Gallery/Visual References still open their usual slide-out panels
+  - Analyze still runs the existing analysis flow
+  - Dictate still triggers the existing dictation request flow
+  - Read Aloud still uses the existing reader dropdown
+- Kept the old mobile behavior intact by leaving the mobile slide-out panels in place and limiting the new rail to `md+`.
+- Updated `components/project/story/ReaderMode.tsx` so the reader dropdown can open to the left when used inside the new right rail.
+- Verified the implementation with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+The Story workspace now has a single desktop/tablet utility rail on the right, reducing duplicate top-of-editor utility controls and consolidating secondary tools into one calmer vertical access point.
+
+### Next recommended step
+
+Run a browser regression pass on desktop and tablet widths:
+- Story tab with no side panel open
+- open and close AI Partner from the new rail
+- open and close Feedback from the new rail
+- open and close `Gallery` in book mode
+- open and close `Visual References` in screenplay mode
+- trigger Analyze and confirm it still uses the current analysis flow
+- trigger Dictate and confirm the editor still responds correctly
+- open Read Aloud from the rail and confirm the dropdown opens to the left
+- confirm mobile still uses the existing toolbar/buttons and slide-outs
+
+### Risks or warnings
+
+- This session verified the change with TypeScript compile only, not a live browser interaction pass.
+- Focused eslint on `StoryTab.tsx` still reports a large pre-existing `no-explicit-any` backlog in that file, and `ReaderMode.tsx` still has a small pre-existing unused-variable warning set.
+
+---
 ## 2026-05-01 - AI Partner Midnight composer surface fix
 
 ### Current branch
