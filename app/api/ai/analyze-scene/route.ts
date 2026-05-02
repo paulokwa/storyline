@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
-import { DEFAULT_OPENAI_MODEL, extractOpenAiOutputText } from '@/lib/ai/providers'
+import { DEFAULT_OPENAI_MODEL, extractGeminiUsage, extractOpenAiOutputText, extractOpenAiUsage } from '@/lib/ai/providers'
 import { getAiRuntimeState } from '@/lib/ai/runtime'
 import {
     APP_MANAGED_OPENAI_MODEL,
     estimateTokensFromChars,
     estimateTrialReserveMicros,
+    resolveTrialFinalization,
+    type ProviderUsage,
 } from '@/lib/ai/trial'
 import { enforceAiRateLimit } from '@/lib/ai/rate-limit'
 import { logUsageEvent } from '@/lib/ai/trial-server'
@@ -230,6 +232,7 @@ export async function POST(req: Request) {
     const delimitedScene = `<scene>\n${trimmed}\n</scene>`
 
     let rawText = ''
+    let providerUsage: ProviderUsage | null = null
     if (ai_provider === 'gemini') {
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${api_key}`
 
@@ -303,6 +306,7 @@ export async function POST(req: Request) {
 
         try {
             const geminiData = await geminiResponse.json()
+            providerUsage = extractGeminiUsage(geminiData)
             const candidate = geminiData?.candidates?.[0]
 
             if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
@@ -413,6 +417,7 @@ export async function POST(req: Request) {
 
         try {
             const openAiData = await openAiResponse.json()
+            providerUsage = extractOpenAiUsage(openAiData)
             rawText = extractOpenAiOutputText(openAiData)
         } catch (err) {
             console.error('[analyze-scene] Failed to parse OpenAI JSON envelope:', err)
@@ -480,17 +485,27 @@ export async function POST(req: Request) {
     finalAnalysis.provider = ai_provider
 
     if (runtime.billingMode === 'app_managed_trial') {
+        const finalization = resolveTrialFinalization({
+            endpoint: 'analyze_scene',
+            inputChars: trimmed.length,
+            outputChars: cleaned.length,
+            providerUsage,
+        })
         await supabase.rpc('finalize_ai_trial_usage', {
             p_user_id: user.id,
             p_request_key: requestKey,
-            p_final_micros: estimateTrialReserveMicros({
-                endpoint: 'analyze_scene',
-                inputChars: trimmed.length,
-                outputChars: cleaned.length,
-            }),
+            p_final_micros: finalization.finalMicros,
             p_output_chars: cleaned.length,
             p_http_status: 200,
-            p_metadata: metadata,
+            p_metadata: {
+                ...metadata,
+                trial_costing: {
+                    method: finalization.usageSource,
+                    providerInputTokens: providerUsage?.inputTokens ?? null,
+                    providerOutputTokens: providerUsage?.outputTokens ?? null,
+                    providerTotalTokens: providerUsage?.totalTokens ?? null,
+                },
+            },
         })
     } else {
         await logUsageEvent({

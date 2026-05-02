@@ -5,6 +5,44 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-02 - AI trial cost finalization hardened with provider-reported usage fallback
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Reviewed the open technical-debt item for calibrating sponsored AI trial cost against real provider usage.
+- Confirmed the repo already had reserve/floor budgeting, usage-event logging, and an admin recalculation path, but final trial costing still relied on internal character-based estimates.
+- Updated the shared AI helpers so provider responses can extract usage metadata from:
+  - OpenAI response payloads and streamed completion events
+  - Gemini response payloads and streamed SSE chunks
+- Updated the app-managed AI helper and scene analyzer routes so final trial charging now:
+  - prefers provider-reported input/output token counts when available
+  - falls back to the existing estimate model when provider usage metadata is missing
+  - records the costing method plus provider token counts in trial finalization metadata for later audit
+- Verified the implementation with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+The original estimate-only finalization gap for app-managed helper/analyzer requests is now closed in code. The broader sponsored trial system still uses the existing reserve/floor safety model, but final debits can now align to provider-reported usage when the provider returns it.
+
+### Next recommended step
+
+- Run an admin/manual verification pass covering:
+  - successful helper request
+  - successful scene analysis request
+  - failed provider request
+  - cancelled/interrupted request
+  - confirming `ai_usage_events.metadata.trial_costing.method` shows `provider_reported` when usage metadata is available and `estimated` otherwise
+
+### Risks or warnings
+
+- This improves real-usage alignment for the trial-billed helper/analyzer paths, not every possible AI route.
+- Import detect remains blocked for app-managed trial, so it was intentionally not part of this hardening pass.
+
+---
 ## 2026-05-02 - Moved deferred Supabase/Zustand items fully into technical debt roadmap
 
 ### Current branch

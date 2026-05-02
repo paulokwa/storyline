@@ -26,7 +26,6 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 ## Later
 
 - Structure tree performance improvements for large projects.
-- AI trial cost model calibration against real provider usage.
 - Advanced offline / pending sync beyond current `localStorage` fallback.
 - Stronger destructive action guards for high-impact deletes.
 - Writing UX polish: focus, paper transitions, font sizing, and themes.
@@ -115,6 +114,10 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Added local Ollama usage-event logging integrity path:
   - client-side Ollama runs report `completed`, `failed`, and `cancelled` outcomes to `/api/ai/local-usage`
   - server-side route records those events into `ai_usage_events` with provider/billing-mode metadata for admin and abuse visibility
+- Hardened AI trial cost finalization against real provider usage where available:
+  - app-managed AI helper and scene analyzer now prefer provider-reported token usage for final trial costing instead of relying only on character-based output estimates
+  - the existing reserve/floor model remains as a fallback safety net when provider usage metadata is unavailable
+  - finalized trial usage now records whether costing used provider-reported usage or estimate fallback in request metadata for later audit
 - Browser regression completed for recent image/AI-availability changes:
   - user manually verified screenplay visual references behavior
   - user manually verified AI-off analyzer feedback

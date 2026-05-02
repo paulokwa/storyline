@@ -56,19 +56,13 @@ This document tracks identified architectural risks, technical debt, and reliabi
 *   **Suggested Implementation**: Implement `React.memo` for tree nodes and verify performance via React Profiler. Consider a virtualized list if the tree exceeds 500+ nodes.
 *   **Priority**: Medium
 
-### 4. AI Trial Cost Model Calibration
-*   **Why it matters**: The sponsored AI budget currently uses character-based token estimation and fixed reserve profiles rather than exact provider billing data.
-*   **Risk if ignored**: The internal `$2` cap stays approximate. It is protected against obvious overspend in app balance terms, but it may still undercount real provider cost for some request shapes.
-*   **Suggested Implementation**: Compare estimated cost against real provider usage during limited testing, tighten endpoint reserve profiles, and bias reserves toward conservative underspend for app-managed trial mode.
-*   **Priority**: Medium
-
-### 5. Local AI Usage Logging Integrity
+### 4. Local AI Usage Logging Integrity
 *   **Why it matters**: The Ollama logging endpoint is useful for admin analytics, but it currently trusts authenticated client posts for local usage event reporting.
 *   **Risk if ignored**: Admin reporting for local AI can become noisy or misleading, especially if clients post malformed or duplicated usage events.
 *   **Suggested Implementation**: Validate active mode before accepting local usage logs, deduplicate more aggressively, and clearly separate analytics-grade data from billing-grade data in admin views.
 *   **Priority**: Medium
 
-### 6. Help System Feature Audit & Rewrite
+### 5. Help System Feature Audit & Rewrite
 *   **Why it matters**: The current Help page likely focuses on obvious features and may miss hidden, advanced, or mode-specific functionality (local/cloud, AI, collaboration, backup, screenplay vs prose).
 *   **Risk if ignored**: Users cannot discover key features, leading to confusion, underuse of capabilities, and increased support burden.
 *   **Suggested Implementation**: Perform a two-phase process:

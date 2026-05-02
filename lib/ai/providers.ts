@@ -1,3 +1,5 @@
+import type { ProviderUsage } from '@/lib/ai/trial'
+
 export type CloudAiProvider = 'gemini' | 'openai'
 export type SupportedAiProvider = CloudAiProvider | 'ollama'
 
@@ -158,12 +160,76 @@ export async function createCloudTextStream({
     })
 }
 
+function asPositiveInteger(value: unknown) {
+    return typeof value === 'number' && Number.isFinite(value) && value >= 0
+        ? Math.round(value)
+        : 0
+}
+
+export function extractOpenAiUsage(payload: unknown): ProviderUsage | null {
+    if (!payload || typeof payload !== 'object') return null
+
+    const usage = (payload as {
+        usage?: {
+            input_tokens?: number
+            output_tokens?: number
+            total_tokens?: number
+        }
+    }).usage
+
+    if (!usage) return null
+
+    const inputTokens = asPositiveInteger(usage.input_tokens)
+    const outputTokens = asPositiveInteger(usage.output_tokens)
+    const totalTokens = asPositiveInteger(usage.total_tokens)
+
+    if (inputTokens === 0 && outputTokens === 0 && totalTokens === 0) {
+        return null
+    }
+
+    return {
+        inputTokens,
+        outputTokens,
+        totalTokens: totalTokens || null,
+        source: 'provider_reported',
+    }
+}
+
+export function extractGeminiUsage(payload: unknown): ProviderUsage | null {
+    if (!payload || typeof payload !== 'object') return null
+
+    const usage = (payload as {
+        usageMetadata?: {
+            promptTokenCount?: number
+            candidatesTokenCount?: number
+            totalTokenCount?: number
+        }
+    }).usageMetadata
+
+    if (!usage) return null
+
+    const inputTokens = asPositiveInteger(usage.promptTokenCount)
+    const outputTokens = asPositiveInteger(usage.candidatesTokenCount)
+    const totalTokens = asPositiveInteger(usage.totalTokenCount)
+
+    if (inputTokens === 0 && outputTokens === 0 && totalTokens === 0) {
+        return null
+    }
+
+    return {
+        inputTokens,
+        outputTokens,
+        totalTokens: totalTokens || null,
+        source: 'provider_reported',
+    }
+}
+
 export function createPlainTextStreamFromProviderResponse(
     provider: CloudAiProvider,
     response: Response,
     options?: {
         onChunk?: (text: string) => void
-        onComplete?: (fullText: string) => void | Promise<void>
+        onComplete?: (result: { fullText: string, usage: ProviderUsage | null }) => void | Promise<void>
         onAbort?: () => void | Promise<void>
         onError?: (error: unknown) => void | Promise<void>
     }
@@ -177,6 +243,7 @@ export function createPlainTextStreamFromProviderResponse(
             async start(controller) {
                 let buffer = ''
                 let fullText = ''
+                let usage: ProviderUsage | null = null
 
                 try {
                     while (true) {
@@ -192,6 +259,8 @@ export function createPlainTextStreamFromProviderResponse(
 
                             try {
                                 const data = JSON.parse(line.slice(6))
+                                const chunkUsage = extractGeminiUsage(data)
+                                if (chunkUsage) usage = chunkUsage
                                 const parts = data?.candidates?.[0]?.content?.parts
                                 if (!parts) continue
 
@@ -207,7 +276,7 @@ export function createPlainTextStreamFromProviderResponse(
                             }
                         }
                     }
-                    await options?.onComplete?.(fullText)
+                    await options?.onComplete?.({ fullText, usage })
                 } catch (error) {
                     if (isAbortLikeError(error)) {
                         await options?.onAbort?.()
@@ -230,6 +299,7 @@ export function createPlainTextStreamFromProviderResponse(
         async start(controller) {
             let buffer = ''
             let fullText = ''
+            let usage: ProviderUsage | null = null
 
             try {
                 while (true) {
@@ -253,6 +323,8 @@ export function createPlainTextStreamFromProviderResponse(
 
                         try {
                             const event = JSON.parse(payload)
+                            const eventUsage = extractOpenAiUsage(event?.response ?? event)
+                            if (eventUsage) usage = eventUsage
 
                             if (event.type === 'response.output_text.delta' && event.delta) {
                                 fullText += event.delta
@@ -268,7 +340,7 @@ export function createPlainTextStreamFromProviderResponse(
                         }
                     }
                 }
-                await options?.onComplete?.(fullText)
+                await options?.onComplete?.({ fullText, usage })
             } catch (error) {
                 if (isAbortLikeError(error)) {
                     await options?.onAbort?.()

@@ -4,7 +4,14 @@ export const APP_MANAGED_OPENAI_MODEL = 'gpt-4.1-mini'
 export const TRIAL_BUDGET_MICROS = 2_000_000
 export const LOW_BALANCE_MICROS = 250_000
 
-type TrialEndpoint = 'ai_helper' | 'analyze_scene' | 'import_ai_detect'
+export type TrialEndpoint = 'ai_helper' | 'analyze_scene' | 'import_ai_detect'
+
+export type ProviderUsage = {
+    inputTokens: number
+    outputTokens: number
+    totalTokens?: number | null
+    source: 'provider_reported' | 'estimated'
+}
 
 type EndpointCostProfile = {
     inputMicrosPer1kTokens: number
@@ -48,6 +55,18 @@ export function estimateTokensFromChars(text: string | number | null | undefined
     return Math.ceil(length / 4)
 }
 
+export function calculateTrialCostMicrosFromUsage(params: {
+    endpoint: TrialEndpoint
+    inputTokens: number
+    outputTokens: number
+}) {
+    const profile = ENDPOINT_COST_PROFILES[params.endpoint]
+    const inputMicros = Math.ceil((Math.max(params.inputTokens, 0) * profile.inputMicrosPer1kTokens) / 1000)
+    const outputMicros = Math.ceil((Math.max(params.outputTokens, 0) * profile.outputMicrosPer1kTokens) / 1000)
+
+    return Math.max(profile.minMicros, inputMicros + outputMicros)
+}
+
 export function formatMicrosAsUsd(micros: number | null | undefined) {
     const safe = Math.max(micros ?? 0, 0)
     return (safe / 1_000_000).toFixed(2)
@@ -74,6 +93,35 @@ export function estimateTrialReserveMicros(params: {
     const outputMicros = Math.ceil((outputTokens * profile.outputMicrosPer1kTokens) / 1000)
 
     return Math.max(profile.minMicros, inputMicros + outputMicros)
+}
+
+export function resolveTrialFinalization(params: {
+    endpoint: TrialEndpoint
+    inputChars: number
+    outputChars: number
+    providerUsage?: ProviderUsage | null
+}) {
+    const fallbackMicros = estimateTrialReserveMicros({
+        endpoint: params.endpoint,
+        inputChars: params.inputChars,
+        outputChars: params.outputChars,
+    })
+
+    if (!params.providerUsage) {
+        return {
+            finalMicros: fallbackMicros,
+            usageSource: 'estimated' as const,
+        }
+    }
+
+    return {
+        finalMicros: calculateTrialCostMicrosFromUsage({
+            endpoint: params.endpoint,
+            inputTokens: params.providerUsage.inputTokens,
+            outputTokens: params.providerUsage.outputTokens,
+        }),
+        usageSource: params.providerUsage.source,
+    }
 }
 
 export function getTrialStatusMessage(account: TrialStatusLike | null | undefined) {

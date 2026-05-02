@@ -12,6 +12,7 @@ import {
     estimateTokensFromChars,
     estimateTrialReserveMicros,
     getTrialStatusMessage,
+    resolveTrialFinalization,
 } from '@/lib/ai/trial'
 import { enforceAiRateLimit } from '@/lib/ai/rate-limit'
 import { logUsageEvent } from '@/lib/ai/trial-server'
@@ -487,19 +488,29 @@ export async function POST(req: Request) {
     }
 
     const stream = createPlainTextStreamFromProviderResponse(providerName, providerResponse, {
-        onComplete: async (fullText) => {
+        onComplete: async ({ fullText, usage }) => {
             if (runtime.billingMode === 'app_managed_trial') {
+                const finalization = resolveTrialFinalization({
+                    endpoint: 'ai_helper',
+                    inputChars: userMessage.length,
+                    outputChars: fullText.length,
+                    providerUsage: usage,
+                })
                 await supabase.rpc('finalize_ai_trial_usage', {
                     p_user_id: user.id,
                     p_request_key: requestKey,
-                    p_final_micros: estimateTrialReserveMicros({
-                        endpoint: 'ai_helper',
-                        inputChars: userMessage.length,
-                        outputChars: fullText.length,
-                    }),
+                    p_final_micros: finalization.finalMicros,
                     p_output_chars: fullText.length,
                     p_http_status: 200,
-                    p_metadata: metadata,
+                    p_metadata: {
+                        ...metadata,
+                        trial_costing: {
+                            method: finalization.usageSource,
+                            providerInputTokens: usage?.inputTokens ?? null,
+                            providerOutputTokens: usage?.outputTokens ?? null,
+                            providerTotalTokens: usage?.totalTokens ?? null,
+                        },
+                    },
                 })
                 return
             }
