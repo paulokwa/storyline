@@ -22,6 +22,17 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 
 ## Next
 
+- Editor/font system polish — targeted creative-writing upgrade, not a Google Docs clone:
+  - Centralize the editor font registry instead of keeping font choices scattered across `SceneEditor`, global CSS, and layout imports.
+  - Expand prose font choices modestly with writer-friendly options while keeping clear labels and CSS font stacks.
+  - Improve the writing settings surface for manuscript display controls.
+  - Add paragraph spacing controls.
+  - Consider focus mode and/or typewriter mode as writer-comfort features.
+  - Verify whether a proper writing-surface word count and find/search already exist; add them only if missing or too hidden.
+  - Consider adding link support and visible horizontal-rule support if they fit the writing workflow.
+  - Improve export parity for existing editor marks/nodes where sensible, especially blockquote, highlight, strike, images, and comments.
+  - Keep screenplay mode disciplined: avoid arbitrary styling freedom; consider only limited reader-comfort controls.
+  - Cross-reference: future/nice-to-have proofing and review ideas are documented in `docs/technical-debt-roadmap.md` under `Future Plans — Editor, Fonts, and Proofing`.
 
 ## Later
 
