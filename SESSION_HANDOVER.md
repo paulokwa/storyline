@@ -5,6 +5,48 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-02 - Editor writing-surface word count Block 3B Safe Pass 1
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Added a shared plain-text word-count helper in `lib/story/word-count.ts`.
+- Updated `lib/project-stats.ts` to reuse the shared helper so stats-page counts stay aligned with the editor count behavior.
+- Updated `components/project/story/SceneEditor.tsx` to show a compact writing-surface word count:
+  - current active scene word count
+  - selected-word count only when text is selected
+- Wired the count to editor create, content update, selection update, and scene-switch hydration so it updates while typing, deleting, pasting, and changing selection.
+- Kept the UI read-only and compact in the existing editor status area, with the same count still visible in Focus Mode beside `Exit Focus`.
+- Verified the change with `npx tsc --noEmit --pretty false`.
+- Ran `npm run lint`; it still fails on the repo's broad pre-existing lint backlog, including unrelated `no-explicit-any`, `react/no-unescaped-entities`, and script warnings/errors outside this task.
+
+### Current status
+
+Storyline now has a lightweight writing-surface word count for prose and screenplay without adding find/search, replace, links, export changes, or screenplay behavior changes. The selected-word count appears only when there is an active text selection.
+
+### Next recommended step
+
+- Run a browser/manual regression pass for:
+  - prose word count while typing, deleting, and pasting
+  - prose multi-paragraph selected-word count
+  - empty prose scenes showing `0 words`
+  - screenplay counts across Scene Heading, Action, Character, Parenthetical, Dialogue, and Transition blocks
+  - empty screenplay blocks not inflating the count
+  - screenplay cross-block selected-word counts
+  - Focus Mode and Typewriter Mode regression
+  - read-only/viewer mode remaining non-editable
+  - existing full stats page still looking correct
+- If Block 3B continues later, keep the next pass focused on find/search only. Do not broaden into replace, project-wide search infrastructure, or export parity from this word-count pass.
+
+### Risks or warnings
+
+- `npm run lint` remains noisy and failing due pre-existing repo-wide debt; this pass did not attempt a lint cleanup.
+- The editor count uses plain text from TipTap, by design. It does not use AI-oriented screenplay labels or backup/export estimation logic.
+
+---
 ## 2026-05-02 - Header local/cloud status badge
 
 ### Current branch

@@ -1,4 +1,5 @@
 import { Database, NodeType } from '@/lib/supabase/types'
+import { countWordsFromRichContent } from '@/lib/story/word-count'
 
 type Project = Database['public']['Tables']['projects']['Row']
 type StructureNode = Database['public']['Tables']['structure_nodes']['Row']
@@ -53,20 +54,8 @@ export interface ProjectStatsData {
     sceneBreakdown: SceneStats[]
 }
 
-// Simple Tiptap JSON to word count
 export function getWordCount(json: any): number {
-    if (!json || !json.content) return 0
-    let text = ''
-    
-    const extractText = (content: any[]) => {
-        content.forEach(node => {
-            if (node.text) text += node.text + ' '
-            if (node.content) extractText(node.content)
-        })
-    }
-    
-    extractText(json.content)
-    return text.trim() ? text.trim().split(/\s+/).length : 0
+    return countWordsFromRichContent(json)
 }
 
 export function getCharCount(json: any): number {

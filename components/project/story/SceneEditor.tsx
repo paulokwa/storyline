@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useImperativeHandle, forwardRef, useRef, useMemo } from 'react'
-import { useEditor, EditorContent } from '@tiptap/react'
+import { useEditor, EditorContent, type Editor as TiptapEditor } from '@tiptap/react'
 import { BubbleMenu } from '@tiptap/react/menus'
 import type { VirtualElement } from '@floating-ui/dom'
 import StarterKit from '@tiptap/starter-kit'
@@ -23,6 +23,7 @@ import { getUserSafely } from '@/lib/supabase/client-auth'
 import type { Database, WritingMode } from '@/lib/supabase/types'
 import { cn, getUserColor } from '@/lib/utils'
 import { getSceneTextForAi } from '@/lib/story/scene-text'
+import { countWordsFromText } from '@/lib/story/word-count'
 import { saveSceneContent } from '@/lib/persistence/scenes'
 
 declare module '@tiptap/core' {
@@ -244,6 +245,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         return () => {
             if (atHintTimerRef.current) clearTimeout(atHintTimerRef.current)
             setCurrentSelectionText('')
+            setSelectedWordCount(0)
         }
     }, [setCurrentSelectionText])
 
@@ -297,6 +299,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [isDirty, setIsDirty] = useState(false)
     const [isAssetSelectorOpen, setIsAssetSelectorOpen] = useState(false)
     const [activeBlockType, setActiveBlockType] = useState<string | null>(null)
+    const [sceneWordCount, setSceneWordCount] = useState(0)
+    const [selectedWordCount, setSelectedWordCount] = useState(0)
 
     // Versioning & Conflict State
     const [localVersion, setLocalVersion] = useState<number>(scene.version || 1)
@@ -323,6 +327,18 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         width: number
         height: number
     } | null>(null)
+    const hasSelectedWords = selectedWordCount > 0
+
+    const updateWordCountState = useCallback((editorInstance: TiptapEditor) => {
+        const totalText = editorInstance.getText()
+        const { from, to, empty } = editorInstance.state.selection
+        const selectionText = empty
+            ? ''
+            : editorInstance.state.doc.textBetween(from, to, ' ')
+
+        setSceneWordCount(countWordsFromText(totalText))
+        setSelectedWordCount(countWordsFromText(selectionText))
+    }, [])
 
     useEffect(() => {
         const supabase = createClient()
@@ -763,9 +779,11 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         editable: !isReadOnly,
         onCreate: ({ editor }) => {
             onTextChange?.(getSceneTextForAi(editor.getJSON()))
+            updateWordCountState(editor)
         },
         onUpdate: ({ editor, transaction }) => {
             onTextChange?.(getSceneTextForAi(editor.getJSON()))
+            updateWordCountState(editor)
             
             // Only trigger autosave if it's a user change
             const isInternal = transaction.getMeta('isInternal')
@@ -813,6 +831,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         onSelectionUpdate: ({ editor }) => {
             const type = editor.state.selection.$from.parent.type.name
             setActiveBlockType(type)
+            updateWordCountState(editor)
             setCurrentSelectionText(
                 editor.state.doc.textBetween(
                     editor.state.selection.from,
@@ -858,6 +877,11 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             }
         }
     }, [writingMode, scene.id])
+
+    useEffect(() => {
+        if (!editor) return
+        updateWordCountState(editor)
+    }, [editor, scene.id, scene.content, updateWordCountState])
 
     const canShowSelectionToolbar = !!editor && (!isReadOnly || (role === 'viewer' && allowViewerFeedback))
 
@@ -1044,6 +1068,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         selectionVirtualElementRef.current = null
         setAndroidToolbarPosition(null)
         setCurrentSelectionText('')
+        setSelectedWordCount(0)
 
         const selection = window.getSelection()
         selection?.removeAllRanges()
@@ -1466,6 +1491,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
     const label = projectType === 'tv_script' ? 'Scene' : 'Scene'
     const isDeleted = scene.deleted_at !== null
+    const totalWordLabel = `${sceneWordCount.toLocaleString()} ${sceneWordCount === 1 ? 'word' : 'words'}`
+    const selectedWordLabel = `${selectedWordCount.toLocaleString()} selected`
 
     // Sync editor settings without re-mounting
     useEffect(() => {
@@ -1609,6 +1636,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                         )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                            {hasSelectedWords ? `${selectedWordLabel} · ${totalWordLabel}` : totalWordLabel}
+                        </span>
                         {!isReadOnly && (
                              <span className={cn(
                                 "text-[10px] font-bold uppercase tracking-wider transition-colors duration-300 font-sans",
@@ -2111,7 +2141,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             )}
 
             {isFocusMode && (
-                <div className="sticky top-3 z-[95] mb-4 flex justify-end">
+                <div className="sticky top-3 z-[95] mb-4 flex items-center justify-between gap-3">
+                    <div className="min-w-0 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                        {hasSelectedWords ? `${selectedWordLabel} · ${totalWordLabel}` : totalWordLabel}
+                    </div>
                     <Button
                         variant="ghost"
                         size="sm"

@@ -73,6 +73,12 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
   - improved the prose manuscript-view settings surface with clearer display-only guidance
   - added prose-only paragraph spacing controls
   - kept screenplay behavior and export logic untouched
+- Completed editor/font polish Block 3B Safe Pass 1:
+  - added a lightweight writing-surface word count inside `SceneEditor.tsx`
+  - shows current scene words and selected-word count when text is selected
+  - uses a shared plain-text helper in `lib/story/word-count.ts` for prose and screenplay
+  - keeps the UI read-only and does not add find/search, replace, project totals, or links
+  - reused the shared counting helper in `lib/project-stats.ts` so editor and stats counts stay aligned
 - Added a dismiss `X` to the migrated local backup warning banner:
   - dismissal is component-state only for the current page/component lifecycle
   - the banner still reappears after refresh or when reopening the local backup project
