@@ -22,21 +22,6 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 
 ## Next
 
-- Manual signed-in regression pass for Account Settings polish:
-  - desktop hierarchy
-  - mobile/narrow viewport stacking
-  - midnight theme
-  - AI-off, no-key, and limited-trial states
-  - existing email/password/delete flows
-- Manual Help Center visual regression pass:
-  - `/help` and `/project/[id]/help`
-  - Sanctuary and Midnight themes
-  - search default, matched, and no-results states
-  - tablet and narrow/mobile layout
-  - confirm tour CTA behavior remains unchanged
-  - confirm project `Open keyboard shortcuts` actions open the shortcuts modal
-  - confirm `Shift + /` opens the modal only while focus is outside text inputs/editors
-
 
 ## Later
 
