@@ -5,6 +5,164 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-02 - Editor Focus Mode and Typewriter Mode Block 3A continuation
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Continued the editor/font polish task into Block 3A using Cursor after Codex/AG credits were unavailable.
+- Cursor implemented Focus Mode and Typewriter Mode only.
+- Cursor reported changes only in:
+  - `lib/editor/view-settings.ts`
+  - `components/project/story/SceneEditor.tsx`
+  - `app/globals.css`
+- Cursor reported `npx tsc --noEmit --pretty false` passed.
+- Cursor reported `npm run lint` still fails due broad pre-existing repo lint debt.
+- Cursor reported no changes to:
+  - `lib/tiptap/screenplay.ts`
+  - `lib/tiptap/screenplay-keyboard.ts`
+  - `lib/export/*`
+- No schema, migrations, packages, search/find, links, horizontal rules, spelling/grammar, dictionary, review mode, or export parity work was done.
+
+### Manual testing / user observations
+
+- Typewriter Mode appears to work.
+- Typewriter Mode may be subtle or invisible in very short scenes because it needs enough scroll distance to show its effect.
+- Initial Focus Mode was too subtle and mostly hid the scene title/header.
+- Cursor refined Focus Mode, and the refined version feels much better:
+  - reduced/hidden top project navigation chrome
+  - hidden left structure rail
+  - calmer writing surface
+  - visible `Exit Focus` control
+  - right utility rail remains visible
+- Remaining issue: in prose Focus Mode, the right-rail `T` / Manuscript View button remains visible but appears not to open anything. This is a visible-but-dead control and needs a small fix.
+
+### Product decisions made
+
+- Focus Mode is a writing-comfort/workspace action, not purely a prose typography setting.
+- Prose typography controls remain prose-only.
+- Screenplay should not expose prose font, paragraph spacing, or typography settings.
+- Screenplay should get a separate right-rail Focus control/icon that directly toggles Focus Mode.
+- Screenplay Focus Mode must only reduce surrounding app chrome and must not alter screenplay formatting, block semantics, keyboard behavior, fixed styling, or export behavior.
+- Typewriter Mode should remain prose-only for now.
+- The migrated-local-backup banner should remain visible every time a migrated local backup is opened, but may get a session-only/page-load-only dismiss `X`. It must not get a permanent “never show again” option.
+
+### Next recommended step
+
+Run a small Block 3A refinement pass only:
+- fix prose Focus Mode so the visible `T` / Manuscript View button either works or is hidden/disabled during Focus Mode
+- add screenplay right-rail Focus Mode access without exposing prose typography controls
+- keep Typewriter Mode unchanged
+- do not touch screenplay node definitions, screenplay keyboard logic, or export logic
+
+Before continuing, run:
+- `git status --short`
+- `git diff --stat`
+- `npx tsc --noEmit --pretty false`
+
+Do not assume the Cursor Block 3A work was committed/pushed unless local git confirms it.
+
+### Risks or warnings
+
+- Cursor Free credits ran out before the final refinement prompt could be run.
+- The current local Block 3A code may be uncommitted on Kwame’s machine.
+- Do not redo Block 1/2.
+- Do not broaden the task into search/find, links, export parity, spelling/grammar, dictionary, review mode, or document-suite features.
+
+### Stored next implementation prompt
+
+```text
+NO CHANGE TO RECOMMENDATION.
+
+You are continuing the Storyline editor/font polish task from TASK_BOARD.md.
+
+Read first:
+- MASTER_BRIEF.md
+- TASK_BOARD.md
+- SESSION_HANDOVER.md
+- TESTING.md
+
+Block 1/2 are complete. Cursor implemented Block 3A locally: Focus Mode + Typewriter Mode. Typewriter Mode appears to work. Refined prose Focus Mode is much better, but there is one remaining UX issue and one screenplay access refinement to implement.
+
+TASK: Continue Block 3A refinement only.
+
+Hard boundaries:
+- Do not touch `lib/tiptap/screenplay.ts`.
+- Do not touch `lib/tiptap/screenplay-keyboard.ts`.
+- Do not touch export logic.
+- Do not change screenplay node types.
+- Do not change screenplay Enter / Tab / Shift+Tab / Backspace behavior.
+- Do not expose prose font/spacing controls in screenplay.
+- Do not implement search/find, links, horizontal rules, export parity, spelling/grammar, dictionary, review mode, citations, headers/footers, page numbers, columns, compare documents, or any other feature.
+- Do not change schema.
+- Do not add packages.
+- Do not refactor the whole editor.
+
+Required refinement 1 — prose Focus Mode `T` control:
+- In prose Focus Mode, the right-rail `T` / Manuscript View button is visible but currently appears to do nothing.
+- Fix the visible-dead-control problem.
+- Preferred behavior: if safe, keep the `T` / Manuscript View button working during prose Focus Mode so users can adjust font, paragraph spacing, Typewriter Mode, and related view settings while focused.
+- Acceptable fallback: hide/disable the `T` button during Focus Mode if opening the panel is not safely supported.
+- Keep `Exit Focus` visible.
+- Escape must still exit Focus Mode.
+
+Required refinement 2 — screenplay Focus Mode access:
+- Add a right-rail Focus control for screenplay projects/scenes.
+- Use an existing icon from the app’s icon set if available. Prefer a focus/maximize/minimize/eye-style icon over a plain letter `F`.
+- Add a clear tooltip/label such as `Focus Mode`, `Enter Focus Mode`, or `Exit Focus Mode`.
+- The control should directly toggle Focus Mode on/off.
+- Do not expose the prose Manuscript View / `T` settings panel to screenplay.
+
+Screenplay Focus Mode behavior:
+- When enabled, hide/reduce surrounding non-essential app chrome similarly to prose Focus Mode.
+- Keep screenplay page/editor styling fixed.
+- Keep screenplay toolbar behavior intact.
+- Keep screenplay keyboard behavior intact.
+- Keep an obvious `Exit Focus` control.
+- Escape must exit Focus Mode.
+- Keep Typewriter Mode prose-only in this pass.
+
+Migrated local-backup banner:
+- Do not change this banner unless it can be done as a tiny safe follow-up in the same touched layout area.
+- If touched: add a session-only/page-load-only dismiss `X`; the banner must reappear next time the local backup project is opened.
+- Do not add permanent dismissal.
+- Do not change `Open Cloud Version` behavior.
+- If not touched, note it as a follow-up.
+
+Verification:
+Run:
+- `npx tsc --noEmit --pretty false`
+- `npm run lint` only if practical; do not chase unrelated pre-existing lint debt.
+
+Manual testing checklist:
+- Prose Focus Mode still works.
+- Prose `T` / Manuscript View is no longer visibly dead during Focus Mode.
+- Prose Typewriter Mode still works.
+- Prose font and paragraph spacing settings still work.
+- Screenplay has a right-rail Focus control.
+- Screenplay Focus Mode can be enabled and exited.
+- Escape exits screenplay Focus Mode.
+- Screenplay fixed styling remains intact.
+- Screenplay toolbar still shows Scene Heading, Action, Character, Parenthetical, Dialogue, Transition.
+- Screenplay Enter, Tab, Shift+Tab, and Backspace still work.
+- No prose typography controls appear in screenplay.
+- Autosave still works.
+- Viewer/read-only behavior is not broken.
+
+Report:
+- files changed
+- what changed
+- how prose Focus access works now
+- how screenplay Focus access works now
+- what was deliberately not changed
+- checks run
+- manual tests still needed
+```
+
+---
 ## 2026-05-02 - Prose editor font registry and manuscript view controls
 
 ### Current branch

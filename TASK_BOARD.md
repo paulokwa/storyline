@@ -22,9 +22,13 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 
 ## Next
 
-- Editor/font system follow-up note:
-  - Block 1 and Block 2 are complete: shared prose font registry, expanded prose font choices, clearer manuscript-view controls, and prose-only paragraph spacing are already in place.
-  - Future work should continue from later blocks rather than redoing the registry/display-settings foundation.
+- Editor/font system Block 3A follow-up:
+  - Focus Mode and Typewriter Mode have been implemented locally by Cursor and Typewriter Mode appears to work.
+  - Refined prose Focus Mode is much better, but before finalizing it, fix the visible-dead `T` / Manuscript View button during prose Focus Mode.
+  - Add a screenplay right-rail Focus control so screenplay users can enter Focus Mode without exposing prose typography controls.
+  - Keep Typewriter Mode prose-only for now.
+  - Do not touch screenplay node definitions, screenplay keyboard logic, or export logic.
+  - Treat the migrated-local-backup banner dismiss `X` as a small separate follow-up unless safely handled during this refinement; dismissal must be session/page-load only, not permanent.
 - Editor/font system polish â€” targeted creative-writing upgrade, not a Google Docs clone:
   - Consider focus mode and/or typewriter mode as writer-comfort features.
   - Verify whether a proper writing-surface word count and find/search already exist; add them only if missing or too hidden.
