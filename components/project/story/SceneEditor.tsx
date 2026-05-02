@@ -1760,7 +1760,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     }, [editor, isReadOnly])
 
     const findPanel = isFindOpen ? (
-        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-[1.1rem] border border-[#dde6d8] bg-white/92 px-3 py-2 shadow-[0_10px_30px_rgba(49,51,47,0.06)] backdrop-blur-sm">
+        <div className="flex flex-wrap items-center gap-2 rounded-[1.1rem] border border-[#dde6d8] bg-white/92 px-3 py-2 shadow-[0_10px_30px_rgba(49,51,47,0.06)] backdrop-blur-sm">
             <div className="relative min-w-[220px] flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                 <input
@@ -2014,8 +2014,6 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
                     </div>
                 </div>
-                {findPanel}
-                
                 <input
                     value={title}
                     onChange={(e) => {
@@ -2482,6 +2480,12 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                         </aside>
                     )}
                 </>
+            )}
+
+            {!isFocusMode && findPanel && (
+                <div className="sticky top-3 z-[94] mb-4">
+                    {findPanel}
+                </div>
             )}
 
             {isFocusMode && (
