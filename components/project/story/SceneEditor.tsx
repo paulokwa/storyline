@@ -1759,7 +1759,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         editor.setEditable(!isReadOnly)
     }, [editor, isReadOnly])
 
-    const findPanel = isFindOpen ? (
+    const renderFindPanel = () => {
+        if (!isFindOpen) return null
+
+        return (
         <div className="flex flex-wrap items-center gap-2 rounded-[1.1rem] border border-[#dde6d8] bg-white/92 px-3 py-2 shadow-[0_10px_30px_rgba(49,51,47,0.06)] backdrop-blur-sm">
             <div className="relative min-w-[220px] flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
@@ -1826,7 +1829,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 </Button>
             </div>
         </div>
-    ) : null
+        )
+    }
 
     return (
         <div
@@ -2482,9 +2486,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 </>
             )}
 
-            {!isFocusMode && findPanel && (
+            {!isFocusMode && isFindOpen && (
                 <div className="sticky top-3 z-[94] mb-4">
-                    {findPanel}
+                    {renderFindPanel()}
                 </div>
             )}
 
@@ -2524,7 +2528,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             </Button>
                         </div>
                     </div>
-                    {findPanel}
+                    {renderFindPanel()}
                 </div>
             )}
 
