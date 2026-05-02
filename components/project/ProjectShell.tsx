@@ -715,7 +715,7 @@ function ProjectShellInner({
         <TooltipProvider>
             <div className="project-shell-root h-full min-h-0 flex-1 flex flex-col overflow-hidden">
                 {/* Project header */}
-                <div className="project-shell-header bg-secondary/50 backdrop-blur-sm px-4 sm:px-6 lg:px-10 xl:px-12 border-b border-border">
+                <div className="project-shell-header bg-secondary/50 backdrop-blur-sm px-4 sm:px-6 lg:px-10 border-b border-border">
                     <div className="w-full max-w-[1440px] mx-auto">
                     {/* Top row */}
 

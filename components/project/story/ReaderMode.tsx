@@ -23,7 +23,9 @@ export function ReaderControls({
     getChapterChunks,
     mode = 'full',
     align = 'right',
-    side = 'bottom'
+    side = 'bottom',
+    triggerClassName,
+    tooltipLabel
 }: {
     getSelection: () => string,
     getScene: () => string,
@@ -33,6 +35,8 @@ export function ReaderControls({
     mode?: 'full' | 'settings-only' | 'icon-only',
     align?: 'left' | 'right',
     side?: 'top' | 'bottom' | 'left' | 'right'
+    triggerClassName?: string,
+    tooltipLabel?: string
 }) {
     const { supported, speechState, pause, resume, stop, voices, selectedVoice, setVoice, rate, changeRate, speak, speakSegments } = useSpeech()
     const { theme } = useTheme()
@@ -130,10 +134,11 @@ export function ReaderControls({
                         <div className="w-px h-4 bg-slate-200 mx-0.5" />
 
                         <DropdownMenu open={open} onOpenChange={setOpen}>
-                            <DropdownMenuTrigger
-                                onClick={() => {
-                                    refreshAvailableContent()
-                                }}
+                        <DropdownMenuTrigger
+                            aria-label="Read aloud options"
+                            onClick={() => {
+                                refreshAvailableContent()
+                            }}
                                 className={cn(
                                     "inline-flex h-7 w-7 items-center justify-center rounded-full p-0 transition-all outline-none",
                                     open ? "bg-slate-100 text-slate-700" : "text-slate-400 hover:text-slate-600"
@@ -159,24 +164,31 @@ export function ReaderControls({
                 </>
             ) : (
                 <DropdownMenu open={open} onOpenChange={setOpen}>
-                    <DropdownMenuTrigger
-                        onClick={() => {
-                            refreshAvailableContent()
-                        }}
-                        className={cn(
-                            mode === 'settings-only' ? "h-8 w-8 rounded-xl" : "h-9 w-9 rounded-xl",
-                            "inline-flex items-center justify-center p-0 transition-all outline-none",
-                            open 
-                                ? (mode === 'settings-only' ? "bg-indigo-50 text-indigo-600 shadow-sm" : "bg-indigo-50 text-slate-700 shadow-sm")
-                                : (mode === 'settings-only' ? "text-slate-400 hover:text-slate-600 hover:bg-slate-50" : "bg-black/5 text-slate-500 hover:bg-black/10")
-                        )}
-                    >
-                        {mode === 'settings-only' ? (
-                            <Settings2 className="w-4 h-4" />
-                        ) : (
-                            <Volume2 className={cn("w-4 h-4", speechState === 'speaking' && "animate-bounce")} />
-                        )}
-                    </DropdownMenuTrigger>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <DropdownMenuTrigger
+                                aria-label={mode === 'settings-only' ? 'Reader settings' : 'Read aloud options'}
+                                onClick={() => {
+                                    refreshAvailableContent()
+                                }}
+                                className={cn(
+                                    mode === 'settings-only' ? "h-8 w-8 rounded-xl" : "h-9 w-9 rounded-xl",
+                                    "inline-flex items-center justify-center p-0 transition-all outline-none",
+                                    open 
+                                        ? (mode === 'settings-only' ? "bg-indigo-50 text-indigo-600 shadow-sm" : "bg-indigo-50 text-slate-700 shadow-sm")
+                                        : (mode === 'settings-only' ? "text-slate-400 hover:text-slate-600 hover:bg-slate-50" : "bg-black/5 text-slate-500 hover:bg-black/10"),
+                                    triggerClassName
+                                )}
+                            >
+                                {mode === 'settings-only' ? (
+                                    <Settings2 className="w-4 h-4" />
+                                ) : (
+                                    <Volume2 className={cn("w-4 h-4", speechState === 'speaking' && "animate-bounce")} />
+                                )}
+                            </DropdownMenuTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent side={side}>{tooltipLabel ?? (mode === 'settings-only' ? 'Reader settings' : 'Read aloud')}</TooltipContent>
+                    </Tooltip>
                     
                     <DropdownMenuContent 
                         align={dropdownAlign} 

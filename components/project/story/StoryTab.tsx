@@ -1167,6 +1167,25 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                     <TooltipContent side="left">Dictate</TooltipContent>
                                 </Tooltip>
 
+                                <ReaderControls
+                                    getSelection={() => currentSelectionText}
+                                    getScene={() => currentSceneText}
+                                    getChapter={() => currentChapterText}
+                                    getSceneChunks={() => currentSceneText.split(/\n{2,}/).map((block) => block.replace(/\s+/g, ' ').trim()).filter(Boolean)}
+                                    getChapterChunks={() => currentChapterText.split(/\n{2,}/).map((block) => block.replace(/\s+/g, ' ').trim()).filter(Boolean)}
+                                    mode="icon-only"
+                                    align="right"
+                                    side="left"
+                                    tooltipLabel="Read aloud"
+                                    triggerClassName={cn(
+                                        "bg-transparent",
+                                        theme === 'midnight'
+                                            ? "text-slate-300 hover:bg-white/8 hover:text-indigo-200 focus-visible:ring-slate-300/20"
+                                            : "text-slate-500 hover:bg-white/80 hover:text-indigo-600 focus-visible:ring-[#546354]/20",
+                                        "data-[state=open]:bg-indigo-50 data-[state=open]:text-slate-700"
+                                    )}
+                                />
+
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <button
@@ -1186,17 +1205,6 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                     </TooltipTrigger>
                                     <TooltipContent side="left">Help center</TooltipContent>
                                 </Tooltip>
-
-                                <ReaderControls
-                                    getSelection={() => currentSelectionText}
-                                    getScene={() => currentSceneText}
-                                    getChapter={() => currentChapterText}
-                                    getSceneChunks={() => currentSceneText.split(/\n{2,}/).map((block) => block.replace(/\s+/g, ' ').trim()).filter(Boolean)}
-                                    getChapterChunks={() => currentChapterText.split(/\n{2,}/).map((block) => block.replace(/\s+/g, ' ').trim()).filter(Boolean)}
-                                    mode="icon-only"
-                                    align="right"
-                                    side="left"
-                                />
                             </div>
                         </TooltipProvider>
                     </div>
