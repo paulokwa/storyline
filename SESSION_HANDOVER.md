@@ -5,6 +5,36 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-02 - Migrated local backup banner session-only dismiss
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Added a dismiss `X` control to `components/project/local/MigratedBanner.tsx`.
+- Kept dismissal session-only by storing it only in component state with `useState`.
+- Preserved the existing warning copy, `Open Cloud Version` behavior, and delete-local-backup flow.
+- Verified the change with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+Migrated local backup projects still show the warning banner when opened, but the user can now hide it for the current page/component lifecycle without creating any persistent preference.
+
+### Next recommended step
+
+- Run a browser/manual check for the migrated local backup flow:
+  - open a migrated local backup and confirm the banner appears
+  - dismiss it and confirm it disappears
+  - refresh or reopen the local backup and confirm the banner returns
+  - confirm `Open Cloud Version` and delete/trash behavior are unchanged
+
+### Risks or warnings
+
+- Browser validation is still needed for the full migrated-local-backup flow.
+
+---
 ## 2026-05-02 - Editor Focus Mode and Typewriter Mode Block 3A continuation
 
 ### Current branch

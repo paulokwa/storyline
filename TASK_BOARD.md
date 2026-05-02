@@ -28,7 +28,6 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
   - Add a screenplay right-rail Focus control so screenplay users can enter Focus Mode without exposing prose typography controls.
   - Keep Typewriter Mode prose-only for now.
   - Do not touch screenplay node definitions, screenplay keyboard logic, or export logic.
-  - Treat the migrated-local-backup banner dismiss `X` as a small separate follow-up unless safely handled during this refinement; dismissal must be session/page-load only, not permanent.
 - Editor/font system polish â€” targeted creative-writing upgrade, not a Google Docs clone:
   - Consider focus mode and/or typewriter mode as writer-comfort features.
   - Verify whether a proper writing-surface word count and find/search already exist; add them only if missing or too hidden.
@@ -74,6 +73,10 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
   - improved the prose manuscript-view settings surface with clearer display-only guidance
   - added prose-only paragraph spacing controls
   - kept screenplay behavior and export logic untouched
+- Added a dismiss `X` to the migrated local backup warning banner:
+  - dismissal is component-state only for the current page/component lifecycle
+  - the banner still reappears after refresh or when reopening the local backup project
+  - `Open Cloud Version`, delete/trash behavior, and migration logic were left unchanged
 - Added explicit short-text analyzer feedback for empty / under-50-character scenes and made collapsed structure parents auto-expand when a new child is added, without changing analyzer API rules or structure CRUD/reorder logic.
 - Stabilized empty-screenplay Backspace/analyzer behavior by updating `lib/tiptap/screenplay-keyboard.ts` so the default empty paragraph no longer converts on Backspace and empty screenplay nodes consume Backspace safely, and by updating `lib/story/scene-text.ts` so empty screenplay blocks no longer count as analyzable text. Screenplay formatting/export logic was left untouched.
 - Simplified the scene editor heading metadata so it now shows a single `SCREENPLAY` or `DRAFT` label, keeps the scene title primary, and hides `Last edited by you` while preserving collaborator attribution for other editors.

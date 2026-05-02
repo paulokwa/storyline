@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Cloud, Trash2, ArrowUpRight, AlertCircle } from 'lucide-react'
+import { Cloud, Trash2, ArrowUpRight, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { destroyLocalProject } from '@/lib/persistence/local-projects'
 import { toast } from 'sonner'
@@ -25,7 +25,12 @@ interface MigratedBannerProps {
 export default function MigratedBanner({ projectId, cloudProjectId }: MigratedBannerProps) {
     const router = useRouter()
     const [isDeleting, setIsDeleting] = useState(false)
+    const [isDismissed, setIsDismissed] = useState(false)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
+    if (isDismissed) {
+        return null
+    }
 
     async function handleDelete() {
         setIsDeleting(true)
@@ -57,6 +62,17 @@ export default function MigratedBanner({ projectId, cloudProjectId }: MigratedBa
             </div>
 
             <div className="flex items-center gap-2">
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-blue-500 hover:bg-blue-100 hover:text-blue-700 h-8 w-8 p-0"
+                    onClick={() => setIsDismissed(true)}
+                    aria-label="Dismiss migration notice"
+                >
+                    <X className="w-3.5 h-3.5" />
+                </Button>
+
                 <Button 
                     variant="outline" 
                     size="sm" 
