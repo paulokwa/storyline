@@ -5,6 +5,36 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-02 - Clarified technical-debt wording for Supabase types and Zustand
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Reviewed the `TASK_BOARD.md` items for Supabase type safety and Zustand-based state management.
+- Confirmed both items were too broad as written:
+  - Supabase generated `Database` types already exist and the shared clients already use them
+  - Zustand is already present in `lib/store/projectActionsStore.ts`
+- Reworded the Task Board items to reflect the real remaining work:
+  - Supabase: incremental cleanup of legacy `as any` usage in older data-heavy code
+  - Zustand: only broaden usage if prop-drilling/shared UI coordination becomes a real maintenance problem
+
+### Current status
+
+Those two technical-debt items are now described in plainer, more accurate terms. They should no longer read like urgent whole-app rewrites.
+
+### Next recommended step
+
+- If tackling the Supabase type-safety item later, do it incrementally in one problem area at a time.
+- Do not start a broad Zustand migration unless a specific workflow is clearly suffering from current local state patterns.
+
+### Risks or warnings
+
+- This was a documentation/continuity clarification only. No code behavior changed.
+
+---
 ## 2026-05-02 - Testing checklist cleanup for Settings and Help
 
 ### Current branch

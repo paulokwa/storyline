@@ -25,8 +25,12 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 
 ## Later
 
-- Unified Supabase type safety using generated `Database` types.
-- State management consolidation, likely with Zustand.
+- Finish Supabase type-safety cleanup:
+  - generated `Database` types already exist and the shared Supabase clients already use them
+  - remaining work is reducing `as any` casts in older persistence, recovery, comments, export, and sidebar code so schema changes are caught earlier by TypeScript
+- Reassess broader state-management consolidation only if prop-drilling/local UI coordination becomes a real maintenance problem:
+  - Zustand is already in use for `projectActionsStore`
+  - do not migrate state into a global store just for the sake of it; only centralize shared project/workspace UI state when the current component structure is clearly getting in the way
 - Structure tree performance improvements for large projects.
 - AI trial cost model calibration against real provider usage.
 - Advanced offline / pending sync beyond current `localStorage` fallback.
