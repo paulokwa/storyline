@@ -261,3 +261,87 @@ This document tracks identified architectural risks, technical debt, and reliabi
     *   **Backup file size warning**: Warn users when a backup is likely to be very large (especially if assets like images are embedded).
 *   **Priority**: Low
 
+## Future Plans — Editor, Fonts, and Proofing
+
+These items are intentionally separated from the immediate editor polish task. They should not be interpreted as approval to build a Google Docs or Microsoft Word clone. Storyline should remain a focused creative-writing app with strong manuscript-writing comfort, screenplay-aware editing, reliable export, and compatibility with browser/third-party proofing tools.
+
+### 1. Custom dictionary / story dictionary
+*   **Why it matters**: Fiction projects often contain invented names, places, species, magic terms, technical jargon, and stylized language. Browser spellcheck will flag many of these repeatedly.
+*   **Current state**: No first-party custom dictionary or project dictionary has been identified. The app can reasonably rely on browser spellcheck and third-party tools for now.
+*   **Future implementation idea**:
+    *   Add a project-level "Story Dictionary" that stores approved custom words.
+    *   Allow words to be added manually from settings and, later, from editor context actions.
+    *   Consider optional Codex integration so character/location/object names can be treated as known story terms.
+    *   Keep this separate from full grammar checking.
+*   **Priority**: Future / Nice-to-have
+
+### 2. Ignore word for invented names and terms
+*   **Why it matters**: Writers need a quick way to stop seeing repeated false positives for invented words.
+*   **Current state**: Not implemented.
+*   **Future implementation idea**:
+    *   Provide a lightweight "Ignore in this project" action if/when the app gains its own proofing layer or story dictionary UI.
+    *   Store ignored terms per project, not globally, unless a later settings design explicitly supports global ignored words.
+    *   Avoid building this before a clear dictionary/proofing architecture exists.
+*   **Priority**: Future / Nice-to-have
+
+### 3. Codex-aware spellcheck hints
+*   **Why it matters**: Storyline already has a Codex-like story knowledge system. In the future, that system could help distinguish genuine typos from valid story terms.
+*   **Current state**: Codex/story entities exist, but no first-party spellcheck integration has been identified.
+*   **Future implementation idea**:
+    *   Treat Codex names and aliases as allowed project terms in a future proofing pass.
+    *   Optionally detect near-matches to Codex entries as possible typos, e.g. a misspelled character name.
+    *   Keep suggestions gentle and optional to avoid noisy editor behavior.
+*   **Priority**: Future / Nice-to-have
+
+### 4. Readability stats
+*   **Why it matters**: Some writers like quick feedback on sentence length, reading level, pacing density, or scene complexity.
+*   **Current state**: No dedicated readability stats were identified in the editor audit.
+*   **Future implementation idea**:
+    *   Add non-blocking readability stats as a review/analytics feature rather than intrusive inline warnings.
+    *   Consider scene-level and project-level summaries.
+    *   Avoid moralizing or prescriptive scoring; present stats as optional writing information.
+*   **Priority**: Future / Nice-to-have
+
+### 5. Suggested edits / review mode
+*   **Why it matters**: Collaboration may eventually benefit from suggested replacements rather than only comments.
+*   **Current state**: Inline comments/feedback exist, but full tracked changes or Google Docs-style suggestion mode is not implemented and is not required now.
+*   **Future implementation idea**:
+    *   Only revisit after collaboration and comments are stable.
+    *   If implemented, keep it narrow: suggested text replacements with accept/reject, not a full word-processor revision engine.
+    *   Define export behavior before implementation.
+*   **Priority**: Future / Larger candidate
+
+### 6. Compare documents
+*   **Why it matters**: Useful for advanced revision workflows, but it is expensive and complex relative to current product goals.
+*   **Current state**: Not implemented.
+*   **Future implementation idea**:
+    *   Defer unless users strongly request it.
+    *   Prefer version history / scene snapshots first if revision comparison becomes important.
+*   **Priority**: Future / Low
+
+### 7. Citations
+*   **Why it matters**: Helpful for academic/nonfiction workflows, but not central to a fiction/screenplay-first writing app.
+*   **Current state**: Not implemented.
+*   **Future implementation idea**:
+    *   Do not build unless Storyline deliberately expands into nonfiction/research workflows.
+    *   If ever added, keep it separate from the core creative editor.
+*   **Priority**: Future / Low
+
+### 8. Headers, footers, page numbers, and columns
+*   **Why it matters**: These are document layout features, not core creative drafting features.
+*   **Current state**: Not implemented as editor tools.
+*   **Future implementation idea**:
+    *   Keep out of the editor for now.
+    *   Consider page numbers only inside export templates or manuscript preview, not the live writing surface.
+    *   Avoid columns unless a future export/layout system specifically requires them.
+*   **Priority**: Future / Avoid for now
+
+### 9. Full export formatting templates
+*   **Why it matters**: Writers may eventually want manuscript presets, screenplay formatting presets, or publisher/submission-oriented export styles.
+*   **Current state**: Export exists across multiple formats, but editor display settings do not drive export formatting and formatter parity is uneven.
+*   **Future implementation idea**:
+    *   Design an explicit export formatting model instead of casually wiring live editor display preferences into export.
+    *   Start with a small set of presets, e.g. manuscript draft, compact proofing copy, screenplay standard.
+    *   Make preview and output match closely before exposing many options.
+*   **Priority**: Future / Medium candidate
+
