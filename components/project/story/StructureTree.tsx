@@ -535,7 +535,7 @@ const NodeItem = React.memo(({
         >
             <div
                 className={cn(
-                    'flex min-w-0 items-center gap-1.5 py-3 px-2 sm:px-3 mx-1 sm:mx-2 rounded-2xl cursor-pointer transition-all duration-300 text-sm mb-1 relative border border-transparent',
+                    'flex min-w-0 items-center gap-1.5 py-3 px-2 pr-3 sm:px-3 sm:pr-14 mx-1 sm:mx-2 rounded-2xl cursor-pointer transition-all duration-300 text-sm mb-1 relative border border-transparent',
                     isActive
                         ? 'bg-white text-[#546354] shadow-[0_8px_24px_rgba(0,0,0,0.06)] font-bold border-[#546354]/10 z-10'
                         : 'text-slate-500 hover:bg-white/60',
@@ -660,10 +660,12 @@ const NodeItem = React.memo(({
                         {/* Hover/Long Press actions — only when not confirming */}
                         {(!editing && !isReadOnly && confirmingDeleteId !== node.id) && (
                             <div className={cn(
-                                "ml-auto flex items-center gap-1 shrink-0 self-start transition-all duration-200",
-                                "opacity-0 pointer-events-none md:w-auto md:overflow-visible",
+                                "flex items-center gap-1 shrink-0 self-start transition-all duration-200",
+                                "absolute right-2 top-1/2 -translate-y-1/2 opacity-0 pointer-events-none",
                                 isActive && "opacity-100 pointer-events-auto",
-                                mobileOptionsActive ? "opacity-100 pointer-events-auto flex-1 justify-end" : "w-0 md:w-auto overflow-hidden md:overflow-visible"
+                                mobileOptionsActive
+                                    ? "opacity-100 pointer-events-auto"
+                                    : "w-0 overflow-hidden md:w-auto md:overflow-visible md:group-hover:opacity-100 md:group-hover:pointer-events-auto"
                             )} onClick={e => e.stopPropagation()}>
                                 {CHILD_TYPE[node.type as NodeType] && (
                                     <button
