@@ -511,3 +511,29 @@ Add a short entry using this format:
 - This is intentionally scoped to browser history restore, not generic tab focus, to avoid unnecessary refreshes.
 - Browser verification is still needed for the exact open-project then back flow.
 
+---
+
+## Issue: Standalone admin script fails with `Cannot find module 'server-only'`
+
+### Symptoms
+
+- Running a Node or `tsx` script that imports `lib/supabase/admin.ts` fails immediately.
+- The terminal shows `Error: Cannot find module 'server-only'`.
+
+### Cause
+
+- `lib/supabase/admin.ts` was shared by both Next server code and standalone scripts, but it imported the Next-only `server-only` package guard.
+
+### Fix
+
+- Remove the `import 'server-only'` marker from the shared admin helper so it can be imported by plain Node scripts.
+- Keep the helper server-side by usage: do not import it from client components, and do not expose the service role key to the browser.
+
+### Verification
+
+- `npx tsc --noEmit --pretty false`
+
+### Notes
+
+- If the script then fails on missing env vars, create the local credential file and ensure the server-only Supabase env vars are available locally.
+
