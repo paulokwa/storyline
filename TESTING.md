@@ -205,8 +205,8 @@ Future agents: treat this workflow as established. Before asking the user about 
 | Main tour launches correctly | Not tested | - | - | Confirm it does not conflict with other tours. |
 | AI tour launches correctly | Not tested | - | - | Confirm it does not overlap main tour. |
 | Help page covers current features | Not tested | - | - | Confirm coverage against real app features. |
-| Project Help shortcuts access | Needs retest | AI agent | 2026-05-01 | Added direct `Open keyboard shortcuts` actions in `/project/[id]/help`, clarified `Shift + /` copy, and routed those actions to the existing shortcuts modal. Browser validation is still needed for both the button flow and the keyboard trigger. |
-| Help Center Midnight and scanability polish | Needs retest | AI agent | 2026-05-01 | Shared `HelpTab` and scoped `globals.css` Midnight overrides landed. Browser validation is still needed for `/help` and `/project/[id]/help` in Sanctuary/Midnight, search states, tablet/mobile layout, and the tour CTA. |
+| Project Help shortcuts access | Needs retest | AI agent | 2026-05-01 | Browser validation is still needed to confirm project `Open keyboard shortcuts` actions open the shortcuts modal and `Shift + /` opens the modal only while focus is outside text inputs/editors. |
+| Help Center Midnight and scanability polish | Needs retest | AI agent | 2026-05-01 | Browser validation is still needed for `/help` and `/project/[id]/help` in Sanctuary and Midnight, default/matched/no-results search states, tablet and narrow/mobile layout, and confirming the tour CTA behavior remains unchanged. |
 | User-facing AI setup instructions | Not tested | - | - | Confirm non-technical users can follow them. |
 | Mobile tour performance | Not tested | - | - | Cover section may be too slow; check asset sizes. |
 
@@ -229,7 +229,7 @@ Future agents: treat this workflow as established. Before asking the user about 
 | Tablet portrait layout | Not tested | - | - | Confirm important views do not cut off. |
 | Mobile/narrow screen layout | Not tested | - | - | Confirm core flows remain usable. |
 | Desktop layout | Not tested | - | - | Confirm normal working layout. |
-| Account Settings hierarchy and mobile polish | Needs retest | AI agent | 2026-05-01 | Presentation-only `SettingsView` polish landed. Signed-in desktop/mobile/midnight, AI-off/no-key, limited-trial, and danger-zone browser checks are still needed. |
+| Account Settings hierarchy and mobile polish | Needs retest | AI agent | 2026-05-01 | Manual signed-in regression is still needed for desktop hierarchy, mobile/narrow viewport stacking, Midnight theme, AI-off/no-key/limited-trial states, and existing email/password/delete flows. |
 | Font/readability audit | Needs retest | - | - | Focused AI Partner pass landed: footer warning removed, preview note moved to first-use context preview, and low-contrast helper text was darkened. Browser validation is still needed. |
 | Screenplay editor width on mobile | Not tested | - | - | Editor becomes narrow after typing. |
 | Swipe/tap sidebar close behavior | Not tested | - | - | Compare swipe vs tap-outside UX. |

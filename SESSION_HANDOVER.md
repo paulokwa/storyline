@@ -5,6 +5,33 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-02 - Testing checklist cleanup for Settings and Help
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Reviewed the prior manual regression checklist for Account Settings and Help/shortcuts.
+- Confirmed the checklist is already represented in `TESTING.md` through the existing `Needs retest` rows rather than needing a separate Task Board block.
+- Tightened the `TESTING.md` notes so they now explicitly preserve the intended checks:
+  - Account Settings desktop hierarchy, mobile/narrow stacking, Midnight theme, AI-off/no-key/limited-trial states, and email/password/delete flows
+  - Help Center `/help` and `/project/[id]/help` Sanctuary/Midnight, search states, tablet/mobile layout, tour CTA behavior, project shortcuts-modal actions, and `Shift + /` behavior
+
+### Current status
+
+The manual regression checklist now lives more clearly in `TESTING.md`, and no duplicate Task Board block is needed for those same checks.
+
+### Next recommended step
+
+- Use the existing `TESTING.md` rows when running the signed-in Account Settings and Help Center manual regression passes.
+
+### Risks or warnings
+
+- This was a documentation cleanup only. No product code changed.
+
+---
 ## 2026-05-02 - Test account script Node compatibility fix
 
 ### Current branch
