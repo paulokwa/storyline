@@ -71,6 +71,7 @@ export const ScreenplayKeyboard = Extension.create({
         const node = $from.parent
 
         const cycle: Record<string, string> = {
+          'paragraph': 'screenplayCharacter',
           'screenplayAction': 'screenplayCharacter',
           'screenplayCharacter': 'screenplayParenthetical',
           'screenplayParenthetical': 'screenplayTransition',
@@ -95,6 +96,7 @@ export const ScreenplayKeyboard = Extension.create({
         const node = $from.parent
 
         const reverseCycle: Record<string, string> = {
+          'paragraph': 'screenplayTransition',
           'screenplayCharacter': 'screenplayAction',
           'screenplayParenthetical': 'screenplayCharacter',
           'screenplayTransition': 'screenplayParenthetical',

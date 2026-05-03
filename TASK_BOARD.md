@@ -98,6 +98,10 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Fixed screenplay `Enter` crash when a screenplay block contained a `hardBreak`:
   - updated `lib/tiptap/screenplay-keyboard.ts` so predictive `Enter` now splits the block first and then sets the next screenplay node type in a separate command
   - preserved screenplay node definitions and the existing `Tab` / `Shift + Tab` / `Backspace` behavior
+- Fixed screenplay `Tab` / `Shift + Tab` escaping focus into the Story right rail:
+  - updated `lib/tiptap/screenplay-keyboard.ts` so a plain `paragraph` in screenplay mode now participates in the screenplay cycle maps instead of returning `false`
+  - `Tab` now treats a plain paragraph like the baseline Action state and cycles to `screenplayCharacter`
+  - `Shift + Tab` now treats a plain paragraph like the baseline reverse Action state and cycles to `screenplayTransition`
 - Added a dismiss `X` to the migrated local backup warning banner:
   - dismissal is component-state only for the current page/component lifecycle
   - the banner still reappears after refresh or when reopening the local backup project

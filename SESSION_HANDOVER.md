@@ -5,6 +5,39 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-03 - Screenplay Tab focus-escape fix
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Fixed the screenplay `Tab` / `Shift + Tab` focus-escape issue in `lib/tiptap/screenplay-keyboard.ts`.
+- The root cause was that a fresh screenplay block can still be a plain `paragraph`, and the screenplay Tab-cycle maps only handled the custom screenplay node types.
+- When the current block was `paragraph`, the shortcut returned `false`, so the browser fell back to native focus traversal and moved into the Story right-rail buttons.
+- Updated the screenplay cycle maps so:
+  - `Tab` treats `paragraph` like the baseline Action state and converts it to `screenplayCharacter`
+  - `Shift + Tab` treats `paragraph` like the baseline Action reverse path and converts it to `screenplayTransition`
+- Verified the change with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+Screenplay Tab cycling should now stay inside the editor even when the current block is still a plain paragraph rather than a custom screenplay node.
+
+### Next recommended step
+
+- Run a browser/manual regression pass for screenplay:
+  - fresh empty screenplay scene `Tab`
+  - fresh empty screenplay scene `Shift + Tab`
+  - repeated forward/backward cycling across Action, Character, Parenthetical, Dialogue, Transition, and Scene Heading
+  - confirm right-rail buttons no longer receive focus from Tab while the editor is active
+
+### Risks or warnings
+
+- This is a narrow keyboard mapping fix only. It assumes a plain `paragraph` in screenplay mode should behave like the baseline Action state for Tab cycling.
+
+---
 ## 2026-05-03 - Screenplay Enter hardBreak crash fix
 
 ### Current branch
