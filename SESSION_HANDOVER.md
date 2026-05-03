@@ -5,6 +5,38 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-03 - Screenplay Enter hardBreak crash fix
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Fixed the screenplay runtime crash in `lib/tiptap/screenplay-keyboard.ts` where pressing `Enter` could throw `RangeError: Invalid content for node type hardBreak`.
+- Replaced the single chained `splitBlock().setNode(nextType)` flow with a two-step command sequence:
+  - `editor.commands.splitBlock()`
+  - `editor.commands.setNode(nextType)`
+- Added a troubleshooting entry to `TROUBLESHOOTING.md` documenting the symptom, cause, and safe fix.
+- Verified the change with `npx tsc --noEmit --pretty false`.
+
+### Current status
+
+The predictive screenplay `Enter` shortcut should no longer crash when the current block contains an inline hard break. Screenplay node definitions and other keyboard behaviors were left unchanged.
+
+### Next recommended step
+
+- Run a browser/manual regression pass for screenplay:
+  - `Enter` after normal single-line content
+  - `Enter` after content containing an inline line break
+  - `Enter` in Scene Heading, Action, Character, Parenthetical, Dialogue, and Transition
+  - `Tab`, `Shift + Tab`, and `Backspace` regression
+
+### Risks or warnings
+
+- This is a narrow keyboard-transaction fix only. Browser validation is still needed for the exact line-break reproduction path.
+
+---
 ## 2026-05-02 - Editor prose link support Block 4 Safe Pass 1
 
 ### Current branch

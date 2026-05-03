@@ -55,11 +55,12 @@ export const ScreenplayKeyboard = Extension.create({
           nextType = 'screenplayAction'
         }
 
-        return editor
-          .chain()
-          .splitBlock()
-          .setNode(nextType)
-          .run()
+        const didSplit = editor.commands.splitBlock()
+        if (!didSplit) {
+          return false
+        }
+
+        return editor.commands.setNode(nextType)
       },
 
       // Logic for Tab key: Cycling through element types

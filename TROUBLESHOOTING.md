@@ -275,6 +275,33 @@ Add a short entry using this format:
 
 - If `.next` cannot be deleted on Windows, a child `node.exe` process may still be holding cache files open.
 
+## Issue: Screenplay Enter crashes with `Invalid content for node type hardBreak`
+
+### Symptoms
+
+- Pressing `Enter` in screenplay mode can throw a runtime `RangeError`.
+- The error points at `lib/tiptap/screenplay-keyboard.ts` inside the predictive `Enter` shortcut.
+- The failing message is `Invalid content for node type hardBreak`.
+
+### Cause
+
+- The predictive screenplay `Enter` flow chained `splitBlock().setNode(nextType)` in one transaction.
+- When the current screenplay block contained a `hardBreak`, the chained `setNode(...)` could run against an invalid inline selection state after the split.
+
+### Fix
+
+- Split the action into two steps:
+  - call `editor.commands.splitBlock()` first
+  - then call `editor.commands.setNode(nextType)` in a separate command
+
+### Verification
+
+- `npx tsc --noEmit --pretty false`
+
+### Notes
+
+- Browser validation is still needed for screenplay `Enter` flows after regular text and after inline line breaks.
+
 ## Issue: Action icons hidden on iPad Pro / Large Tablets
 
 ### Symptoms

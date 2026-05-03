@@ -95,6 +95,9 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
   - rejected dangerous protocols like `javascript:` and `data:`
   - preserved safe read-only opening while avoiding accidental editable-click navigation
   - kept screenplay free of link UI and left horizontal rules, toolbar grouping, and export parity untouched
+- Fixed screenplay `Enter` crash when a screenplay block contained a `hardBreak`:
+  - updated `lib/tiptap/screenplay-keyboard.ts` so predictive `Enter` now splits the block first and then sets the next screenplay node type in a separate command
+  - preserved screenplay node definitions and the existing `Tab` / `Shift + Tab` / `Backspace` behavior
 - Added a dismiss `X` to the migrated local backup warning banner:
   - dismissal is component-state only for the current page/component lifecycle
   - the banner still reappears after refresh or when reopening the local backup project
