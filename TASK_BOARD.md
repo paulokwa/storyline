@@ -14,6 +14,52 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 
 ---
 
+## Pre-Task Check — Required Before Starting Any Task
+
+**Every AI agent must run this check before beginning any task from Now, Next, or Later.**
+
+The goal is to prevent re-doing work that was already completed or partially completed in a previous session.
+
+### Step 1 — Read the continuity files
+
+Before touching any code, read these files in order:
+
+1. `SESSION_HANDOVER.md` — most recent entry first. Note every task listed under "What was completed".
+2. `TESTING.md` — scan the status column for the relevant feature area. Look for `Passed`, `Needs retest`, `Failed`, or dated entries.
+3. `DECISION_LOG.md` — check for locked decisions that affect the task.
+4. `MASTER_BRIEF.md` — verify the task is still aligned with current product direction.
+
+### Step 2 — Check for evidence of prior work
+
+For the specific task you are about to start, look for:
+
+- An entry in `SESSION_HANDOVER.md` "What was completed" that matches or overlaps the task
+- A `Needs retest` row in `TESTING.md` for the same feature (meaning: code is done, browser validation pending)
+- A `Passed` row in `TESTING.md` (meaning: fully done and verified)
+- A relevant commit in `git log --oneline -20` that matches the task subject
+- Partial code in the relevant file that appears to implement some or all of the feature
+
+### Step 3 — Decide before you act
+
+| What you found | What to do |
+|---|---|
+| No evidence of prior work | Proceed with the task normally |
+| Partial implementation found | **Stop. Do not start.** Audit what exists, summarize the state, and report your best judgment on whether to complete, revert, or leave as-is. Wait for user confirmation before writing code. |
+| Full implementation found but test status is `Needs retest` | **Stop. Do not re-implement.** Report that the code is already done and that browser validation is the remaining step. Suggest the specific manual test needed. |
+| Full implementation found and test status is `Passed` | **Stop. Task is done.** Report that it is complete and move it to Done on the board if it is not already there. Do not reopen or modify it. |
+| Ambiguous — some signals but unclear if complete | **Stop. Audit first.** Read the relevant source files, summarize what is implemented, and give your best judgment. State your confidence level. Ask for confirmation before proceeding. |
+
+### Step 4 — Report before you start
+
+Before writing any code, state:
+
+- Which task you are starting
+- What you found in the continuity files for that task
+- Your decision (Proceed / Stop + audit)
+- If proceeding: your plan in 3–5 bullet points
+
+---
+
 ## Now
 
 - Continue typography and contrast audit beyond AI Partner, especially older low-contrast helper/meta text in less-used screens.
@@ -22,19 +68,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 
 ## Next
 
-- Editor/font system Block 3A follow-up:
-  - Focus Mode and Typewriter Mode have been implemented locally by Cursor and Typewriter Mode appears to work.
-  - Refined prose Focus Mode is much better, but before finalizing it, fix the visible-dead `T` / Manuscript View button during prose Focus Mode.
-  - Add a screenplay right-rail Focus control so screenplay users can enter Focus Mode without exposing prose typography controls.
-  - Keep Typewriter Mode prose-only for now.
-  - Do not touch screenplay node definitions, screenplay keyboard logic, or export logic.
-- Editor/font system polish â€” targeted creative-writing upgrade, not a Google Docs clone:
-  - Consider focus mode and/or typewriter mode as writer-comfort features.
-  - Verify whether a proper writing-surface word count and find/search already exist; add them only if missing or too hidden.
-  - Visible horizontal-rule support is still pending if it fits the writing workflow.
-  - Improve export parity for existing editor marks/nodes where sensible, especially blockquote, highlight, strike, images, and comments.
-  - Keep screenplay mode disciplined: avoid arbitrary styling freedom; consider only limited reader-comfort controls.
-  - Cross-reference: future/nice-to-have proofing and review ideas are documented in `docs/technical-debt-roadmap.md` under `Future Plans â€” Editor, Fonts, and Proofing`.
+
 
 ## Later
 
