@@ -31,7 +31,7 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Editor/font system polish â€” targeted creative-writing upgrade, not a Google Docs clone:
   - Consider focus mode and/or typewriter mode as writer-comfort features.
   - Verify whether a proper writing-surface word count and find/search already exist; add them only if missing or too hidden.
-  - Consider adding link support and visible horizontal-rule support if they fit the writing workflow.
+  - Visible horizontal-rule support is still pending if it fits the writing workflow.
   - Improve export parity for existing editor marks/nodes where sensible, especially blockquote, highlight, strike, images, and comments.
   - Keep screenplay mode disciplined: avoid arbitrary styling freedom; consider only limited reader-comfort controls.
   - Cross-reference: future/nice-to-have proofing and review ideas are documented in `docs/technical-debt-roadmap.md` under `Future Plans â€” Editor, Fonts, and Proofing`.
@@ -87,6 +87,14 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
   - follow-up polish fixed active-result snapping by focusing the editor, selecting the active match, and revealing it inside the scene scroll region
   - added subtle in-scene match highlighting with a distinct active-match treatment, cleaned up automatically when find closes or the scene changes
   - still does not add replace or any project-wide or structure search
+- Completed editor/font polish Block 4 Safe Pass 1:
+  - added explicit prose-only link support inside `SceneEditor.tsx`
+  - added a prose link button to the selection BubbleMenu and the floating mobile/tablet formatting toolbar
+  - added a compact add/edit/remove link dialog for selected prose text
+  - disabled automatic typed/pasted link creation and normalized bare domains like `example.com` to `https://example.com`
+  - rejected dangerous protocols like `javascript:` and `data:`
+  - preserved safe read-only opening while avoiding accidental editable-click navigation
+  - kept screenplay free of link UI and left horizontal rules, toolbar grouping, and export parity untouched
 - Added a dismiss `X` to the migrated local backup warning banner:
   - dismissal is component-state only for the current page/component lifecycle
   - the banner still reappears after refresh or when reopening the local backup project

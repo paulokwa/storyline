@@ -64,6 +64,8 @@ import {
     MessageSquarePlus,
     MessageCircle,
     ArrowRight,
+    Link2,
+    Unlink,
     Type as TypeIcon,
     ChevronUp,
     ChevronDown,
@@ -81,6 +83,15 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { ReaderControls } from './ReaderMode'
 import { toast } from 'sonner'
+import { Input } from '@/components/ui/input'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
 
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { useComments } from '@/components/project/CommentsContext'
@@ -262,6 +273,56 @@ const TOP_ACTION_PILL_BASE =
 const SCREENPLAY_INLINE_IMAGE_DISABLED_MESSAGE = 'Inline images are disabled in screenplay mode. Use Scene Visual References instead.'
 const DESKTOP_VIEW_DRAWER_RAIL_WIDTH = 56
 const DESKTOP_VIEW_DRAWER_CLOSE_MS = 500
+const ALLOWED_LINK_PROTOCOLS = new Set(['http:', 'https:'])
+
+type StoredLinkSelection = {
+    from: number
+    to: number
+}
+
+const normalizeLinkUrl = (value: string) => {
+    const trimmed = value.trim()
+
+    if (!trimmed) {
+        return {
+            error: 'Enter a web address.',
+            normalizedUrl: null,
+        }
+    }
+
+    if (/^(javascript|data|vbscript):/i.test(trimmed)) {
+        return {
+            error: 'Only http and https links are allowed.',
+            normalizedUrl: null,
+        }
+    }
+
+    const withProtocol = /^[a-z][a-z0-9+.-]*:/i.test(trimmed)
+        ? trimmed
+        : `https://${trimmed}`
+
+    let parsedUrl: URL
+    try {
+        parsedUrl = new URL(withProtocol)
+    } catch {
+        return {
+            error: 'Enter a valid web address.',
+            normalizedUrl: null,
+        }
+    }
+
+    if (!ALLOWED_LINK_PROTOCOLS.has(parsedUrl.protocol)) {
+        return {
+            error: 'Only http and https links are allowed.',
+            normalizedUrl: null,
+        }
+    }
+
+    return {
+        error: null,
+        normalizedUrl: parsedUrl.toString(),
+    }
+}
 
 const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     scene,
@@ -361,6 +422,11 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     const [sceneWordCount, setSceneWordCount] = useState(0)
     const [selectedWordCount, setSelectedWordCount] = useState(0)
     const [isFindOpen, setIsFindOpen] = useState(false)
+    const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false)
+    const [linkSelection, setLinkSelection] = useState<StoredLinkSelection | null>(null)
+    const [linkDraftUrl, setLinkDraftUrl] = useState('')
+    const [linkDraftError, setLinkDraftError] = useState<string | null>(null)
+    const [linkHasExistingMark, setLinkHasExistingMark] = useState(false)
     const [findQuery, setFindQuery] = useState('')
     const [findMatches, setFindMatches] = useState<SceneSearchMatch[]>([])
     const [activeFindMatchIndex, setActiveFindMatchIndex] = useState(-1)
@@ -459,6 +525,14 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         setFindMatches([])
         setActiveFindMatchIndex(-1)
         setFindRevealRequest(0)
+    }, [])
+
+    const closeLinkDialog = useCallback(() => {
+        setIsLinkDialogOpen(false)
+        setLinkSelection(null)
+        setLinkDraftUrl('')
+        setLinkDraftError(null)
+        setLinkHasExistingMark(false)
     }, [])
 
     const openFindPanel = useCallback(() => {
@@ -875,11 +949,40 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
     // Memoize extensions to prevent unnecessary editor re-mounts
     const extensions = useMemo(() => {
+        const isScriptProject = projectType === 'tv_script'
         const base = [
             StarterKit.configure({
                 heading: { levels: [1, 2] },
                 bulletList: { keepMarks: true },
-                orderedList: { keepMarks: true }
+                orderedList: { keepMarks: true },
+                link: {
+                    autolink: false,
+                    linkOnPaste: false,
+                    defaultProtocol: 'https',
+                    openOnClick: 'whenNotEditable',
+                    enableClickSelection: false,
+                    protocols: ['http', 'https'],
+                    HTMLAttributes: {
+                        class: 'scene-editor-link',
+                        ...(isReadOnly
+                            ? {
+                                target: '_blank',
+                                rel: 'noopener noreferrer',
+                            }
+                            : {}),
+                    },
+                    isAllowedUri: (url, { defaultValidate }) => {
+                        if (!url) return false
+                        if (!defaultValidate(url)) return false
+
+                        try {
+                            const parsedUrl = new URL(url)
+                            return ALLOWED_LINK_PROTOCOLS.has(parsedUrl.protocol)
+                        } catch {
+                            return false
+                        }
+                    },
+                },
             }),
             Highlight.configure({ multicolor: true }),
             Placeholder.configure({
@@ -900,8 +1003,6 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             })
         ]
 
-        const isScriptProject = projectType === 'tv_script';
-
         if (writingMode === 'screenplay' || isScriptProject) {
             base.push(
                 ScreenplaySceneHeading,
@@ -918,7 +1019,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         }
 
         return base
-    }, [writingMode, projectType, aiSettings])
+    }, [writingMode, projectType, aiSettings, isReadOnly])
 
     const editor = useEditor({
         immediatelyRender: false,
@@ -1028,6 +1129,67 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         }
     }, [writingMode, scene.id])
 
+    const openLinkDialog = useCallback(() => {
+        if (!editor || isScreenplayMode) return
+
+        const { from, to, empty } = editor.state.selection
+        if (empty) {
+            toast.message('Select text to add or edit a link.')
+            return
+        }
+
+        const currentHref = editor.getAttributes('link').href
+        setLinkSelection({ from, to })
+        setLinkDraftUrl(typeof currentHref === 'string' ? currentHref : '')
+        setLinkDraftError(null)
+        setLinkHasExistingMark(typeof currentHref === 'string' && currentHref.length > 0)
+        setIsLinkDialogOpen(true)
+    }, [editor, isScreenplayMode])
+
+    const applyLinkDraft = useCallback(() => {
+        if (!editor || !linkSelection) return
+
+        const normalized = normalizeLinkUrl(linkDraftUrl)
+        if (normalized.error || !normalized.normalizedUrl) {
+            setLinkDraftError(normalized.error)
+            return
+        }
+
+        const didApply = editor
+            .chain()
+            .focus()
+            .setTextSelection(linkSelection)
+            .extendMarkRange('link')
+            .setLink({ href: normalized.normalizedUrl })
+            .run()
+
+        if (!didApply) {
+            toast.error('Could not apply that link.')
+            return
+        }
+
+        closeLinkDialog()
+    }, [closeLinkDialog, editor, linkDraftUrl, linkSelection])
+
+    const removeLinkDraft = useCallback(() => {
+        if (!editor || !linkSelection) return
+
+        const didRemove = editor
+            .chain()
+            .focus()
+            .setTextSelection(linkSelection)
+            .extendMarkRange('link')
+            .unsetLink()
+            .run()
+
+        if (!didRemove) {
+            toast.error('Could not remove that link.')
+            return
+        }
+
+        closeLinkDialog()
+    }, [closeLinkDialog, editor, linkSelection])
+
     useEffect(() => {
         if (!editor) return
 
@@ -1070,6 +1232,16 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     }, [editor, scene.id, scene.content, updateWordCountState])
 
     useEffect(() => {
+        if (!isLinkDialogOpen) return
+
+        window.requestAnimationFrame(() => {
+            const input = document.getElementById('scene-link-url') as HTMLInputElement | null
+            input?.focus()
+            input?.select()
+        })
+    }, [isLinkDialogOpen])
+
+    useEffect(() => {
         if (!editor || !hasFindQuery) {
             setFindMatches([])
             setActiveFindMatchIndex(-1)
@@ -1108,7 +1280,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     useEffect(() => {
         resetFindState()
         setSearchDocVersion(0)
-    }, [scene.id, resetFindState])
+        closeLinkDialog()
+    }, [scene.id, resetFindState, closeLinkDialog])
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -2672,6 +2845,13 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     tooltip="Highlight"
                                     showTooltip={false}
                                 />
+                                <ToolbarButton
+                                    onClick={openLinkDialog}
+                                    active={editor.isActive('link')}
+                                    icon={Link2}
+                                    tooltip={editor.isActive('link') ? 'Edit Link' : 'Add Link'}
+                                    showTooltip={false}
+                                />
                                 <div className="w-px h-4 bg-slate-200 mx-1" />
                                 <ToolbarButton
                                     onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
@@ -2828,6 +3008,12 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     active={editor.isActive('highlight')}
                                     icon={Highlighter}
                                     tooltip="Highlight"
+                                />
+                                <ToolbarButton
+                                    onClick={openLinkDialog}
+                                    active={editor.isActive('link')}
+                                    icon={Link2}
+                                    tooltip={editor.isActive('link') ? 'Edit Link' : 'Add Link'}
                                 />
                                 <div className="w-px h-4 bg-slate-200 mx-1" />
                                 <ToolbarButton
@@ -3007,6 +3193,84 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                     </button>
                 </div>
             )}
+
+            <Dialog open={isLinkDialogOpen} onOpenChange={(open) => {
+                if (!open) {
+                    closeLinkDialog()
+                }
+            }}>
+                <DialogContent className="sm:max-w-md rounded-[1.75rem] border border-slate-200/80 bg-white/95 p-0 shadow-2xl">
+                    <form
+                        onSubmit={(event) => {
+                            event.preventDefault()
+                            applyLinkDraft()
+                        }}
+                        className="flex flex-col"
+                    >
+                        <DialogHeader className="px-5 pt-5 pb-3">
+                            <DialogTitle className="flex items-center gap-2 text-lg font-serif text-slate-900">
+                                <Link2 className="h-4 w-4 text-[#546354]" />
+                                {linkHasExistingMark ? 'Edit Link' : 'Add Link'}
+                            </DialogTitle>
+                            <DialogDescription className="text-sm text-slate-500">
+                                Add a web link to the selected prose text. Only `http` and `https` links are allowed.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="px-5 pb-5 space-y-3">
+                            <div className="space-y-2">
+                                <label htmlFor="scene-link-url" className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
+                                    Web address
+                                </label>
+                                <Input
+                                    id="scene-link-url"
+                                    value={linkDraftUrl}
+                                    onChange={(event) => {
+                                        setLinkDraftUrl(event.target.value)
+                                        if (linkDraftError) {
+                                            setLinkDraftError(null)
+                                        }
+                                    }}
+                                    placeholder="https://example.com"
+                                    autoComplete="off"
+                                    spellCheck={false}
+                                    className={cn(
+                                        "h-10 rounded-xl border-slate-200/80 bg-[#fcfbf9] text-sm text-slate-700",
+                                        linkDraftError && "border-rose-300 focus-visible:border-rose-400 focus-visible:ring-rose-200"
+                                    )}
+                                />
+                            </div>
+                            {linkDraftError && (
+                                <p className="text-xs font-medium text-rose-600">{linkDraftError}</p>
+                            )}
+                            <p className="text-xs text-slate-500">
+                                Bare domains like `example.com` will be saved as `https://example.com`.
+                            </p>
+                        </div>
+
+                        <DialogFooter className="border-slate-200/80 bg-slate-50/80">
+                            {linkHasExistingMark && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={removeLinkDraft}
+                                    className="sm:mr-auto"
+                                >
+                                    <Unlink className="h-3.5 w-3.5" />
+                                    Remove Link
+                                </Button>
+                            )}
+                            <Button type="button" variant="outline" size="sm" onClick={closeLinkDialog}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" size="sm" className="bg-[#546354] text-white hover:bg-[#435243]">
+                                Apply Link
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
 
             <EditorAssetSelector
                 projectId={scene.project_id}

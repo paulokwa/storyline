@@ -5,6 +5,57 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-02 - Editor prose link support Block 4 Safe Pass 1
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Added explicit prose-only link support in `components/project/story/SceneEditor.tsx`.
+- Stopped relying on implicit StarterKit defaults by configuring TipTap link behavior intentionally:
+  - `autolink` disabled
+  - `linkOnPaste` disabled
+  - only `http` / `https` links allowed
+  - normal editable clicks do not navigate away
+  - read-only/viewer clicks can open safely in a new tab
+- Added a prose-only link button to both the prose BubbleMenu and the floating mobile/tablet formatting toolbar.
+- Added a small contained link dialog for:
+  - adding a link to selected prose text
+  - editing an existing link
+  - removing an existing link
+- Normalized bare domains like `example.com` to `https://example.com` and rejected dangerous protocols like `javascript:` and `data:`.
+- Kept screenplay protected by:
+  - no link UI in screenplay
+  - no screenplay node or keyboard changes
+  - no autolink/paste link productization path in screenplay
+- Added prose link styling in `app/globals.css` for Sanctuary and Midnight.
+- Verified the change with `npx tsc --noEmit --pretty false`.
+- Ran `npm run lint` and a focused `npx eslint components/project/story/SceneEditor.tsx`; both still fail on the repo's pre-existing lint backlog, including existing `no-explicit-any`, hook-dependency, and unescaped-entity issues already present in `SceneEditor.tsx` and elsewhere.
+
+### Current status
+
+Storyline now has explicit prose-only link authoring UI with a defined editable/read-only click policy, while leaving horizontal rules, toolbar regrouping, and export parity for later passes.
+
+### Next recommended step
+
+- Run a browser/manual regression pass for:
+  - add/edit/remove prose links
+  - bare-domain normalization
+  - dangerous-protocol rejection
+  - editable click behavior not navigating away
+  - read-only/viewer link opening
+  - local/cloud persistence
+  - screenplay remaining free of link UI and behavior regressions
+- If Block 4 continues after that, keep the next pass focused on visible horizontal rules only. Do not broaden into toolbar redesign or export parity yet.
+
+### Risks or warnings
+
+- Screenplay content can still load existing link marks safely because the shared TipTap schema still knows about links, but this pass intentionally does not expose screenplay link UI.
+- Export parity for links is still incomplete outside existing HTML/EPUB rendering paths and should remain a Block 5 concern.
+
+---
 ## 2026-05-02 - Current-scene find typing-bounce stabilization
 
 ### Current branch
