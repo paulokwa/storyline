@@ -2938,7 +2938,6 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     tooltip="Add Feedback"
                                     showTooltip={false}
                                 />
-                                <div className="w-px h-4 bg-slate-200 mx-1" />
                                 <ToolbarButton
                                     onClick={openAssetSelector}
                                     active={false}
@@ -3099,7 +3098,6 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     icon={MessageSquarePlus}
                                     tooltip="Add Feedback"
                                 />
-                                <div className="w-px h-4 bg-slate-200 mx-1" />
                                 <ToolbarButton
                                     onClick={openAssetSelector}
                                     active={false}
