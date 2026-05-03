@@ -1,7 +1,7 @@
 import { generateHTML } from '@tiptap/html'
 import type { ExportPayload, ExportOptions } from './buildExportPayload'
 
-import { exportExtensions } from './normalize'
+import { exportExtensionsNoComments } from './normalize'
 
 export function toHtml(payload: ExportPayload, options: ExportOptions): string {
     const { nodes, projectTitle, metadata } = payload
@@ -32,6 +32,12 @@ export function toHtml(payload: ExportPayload, options: ExportOptions): string {
         .story-image-container { margin: 2rem 0; text-align: center; }
         .story-image-img { max-width: 100%; height: auto; border-radius: 8px; }
         .story-image-caption-wrapper { font-size: 0.9em; color: #666; font-style: italic; margin-top: 8px; }
+        blockquote { border-left: 3px solid #ccc; margin: 1em 0; padding-left: 1em; color: #555; }
+        hr { border: none; border-top: 1px solid #ccc; margin: 2em 0; }
+        mark { background: #fff3a3; padding: 0 2px; }
+        a { color: #2563eb; text-decoration: underline; }
+        s { text-decoration: line-through; }
+        u { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -62,7 +68,7 @@ export function toHtml(payload: ExportPayload, options: ExportOptions): string {
                 html += `        <div class="summary">${node.summary}</div>\n`
             }
             if (node.content && (options.contentMode === 'prose_only' || options.contentMode === 'both')) {
-                const proseHtml = generateHTML(node.content, exportExtensions)
+                const proseHtml = generateHTML(node.content, exportExtensionsNoComments)
                 html += `        <div class="prose">${proseHtml}</div>\n`
             }
             html += `    </div>\n`

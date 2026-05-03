@@ -1,7 +1,7 @@
 import JSZip from 'jszip'
 import type { ExportPayload, ExportOptions } from './buildExportPayload'
 import { generateHTML } from '@tiptap/html'
-import { exportExtensions } from './normalize'
+import { exportExtensionsNoComments } from './normalize'
 
 export async function toEpub(payload: ExportPayload, options: ExportOptions): Promise<Blob> {
     const { nodes, projectTitle, metadata } = payload
@@ -44,7 +44,7 @@ export async function toEpub(payload: ExportPayload, options: ExportOptions): Pr
                 contentHtml += `<p><i>Summary: ${node.summary}</i></p>`
             }
             if (node.content && (options.contentMode === 'prose_only' || options.contentMode === 'both')) {
-                contentHtml += generateHTML(node.content, exportExtensions)
+                contentHtml += generateHTML(node.content, exportExtensionsNoComments)
             }
         }
     })
@@ -63,6 +63,12 @@ export async function toEpub(payload: ExportPayload, options: ExportOptions): Pr
         h3 { margin-top: 1em; font-style: italic; }
         p { margin: 1em 0; }
         .copyright { text-align: center; font-size: 0.8em; margin-top: 3em; }
+        blockquote { border-left: 3px solid #ccc; margin: 1em 0; padding-left: 1em; color: #555; }
+        hr { border: none; border-top: 1px solid #ccc; margin: 2em 0; }
+        mark { background: #fff3a3; padding: 0 2px; }
+        a { color: #2563eb; text-decoration: underline; }
+        s { text-decoration: line-through; }
+        u { text-decoration: underline; }
     </style>
 </head>
 <body>

@@ -32,6 +32,8 @@ export const exportExtensions = [
     CommentMark
 ]
 
+export const exportExtensionsNoComments = exportExtensions.filter(ext => ext !== CommentMark)
+
 /**
  * Ensures scene content is in valid TipTap JSON format.
  * If the input is HTML (legacy), converts it to JSON.
