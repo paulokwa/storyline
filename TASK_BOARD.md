@@ -66,6 +66,13 @@ Keep this lightweight. Move items between sections instead of rewriting the whol
 - Consider adding an `AGENTS.md` or `CONTRIBUTING.md` if agents need stricter operating rules.
 
 ## Done
+- Implemented Feedback Panel comment highlight polish:
+  - Wired the pre-existing `.comment-highlight.active` CSS class so clicking/jumping to a comment applies a visible amber ring to the inline span(s) via DOM query in `SceneEditor.tsx`
+  - Added a "Show Highlights" toggle button (Highlighter icon) in the Feedback panel header, backed by `showHighlights`/`setShowHighlights` in CommentsContext
+  - Suppresses all inline highlight visuals via `[data-highlights-hidden]` CSS without touching TipTap marks or stored comment data
+  - Scroll-to-comment fires only on explicit "Jump to position" (`scrollTrigger`) — not on bare comment card click
+  - No schema changes, no DB migrations, no filter chip logic changes
+  - Documented AI filter inconsistency and active-highlight-resolve edge case in `docs/technical-debt-roadmap.md` items #6 and #7
 - Completed editor/font polish Block 1 and Block 2:
   - centralized the prose editor font registry in shared editor utilities
   - expanded prose font choices with `Source Serif 4` and `Merriweather`

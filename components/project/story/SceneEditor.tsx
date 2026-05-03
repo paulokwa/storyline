@@ -383,15 +383,16 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
         localStorage.setItem('hide-tab-hint', 'true')
     }
 
-    const { 
-        setCommentsPanelOpen, 
-        addComment, 
-        activeCommentId, 
+    const {
+        setCommentsPanelOpen,
+        addComment,
+        activeCommentId,
         setActiveCommentId,
         comments,
         isLoading,
         scrollTrigger,
-        setComments
+        setComments,
+        showHighlights,
     } = useComments()
     const { activeSceneUsers, setMyStatus } = usePresence()
     const { theme } = useTheme()
@@ -1721,34 +1722,33 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
     const lastScrollTrigger = useRef(scrollTrigger)
 
-    // Sync active comment from sidebar to editor
+    // Sync active comment highlight and scroll position from sidebar to editor
     useEffect(() => {
-        if (!editor || !activeCommentId) return
+        if (!editor) return
 
+        const editorDom = editor.view.dom
+
+        // Clear previous active state from all comment mark spans
+        editorDom.querySelectorAll<HTMLElement>('.comment-highlight.active').forEach(el => {
+            el.classList.remove('active')
+        })
+
+        if (!activeCommentId) return
+
+        // Apply active state to all spans belonging to this comment (a comment can span multiple text nodes)
+        editorDom.querySelectorAll<HTMLElement>(`[data-comment-id="${activeCommentId}"]`).forEach(el => {
+            el.classList.add('active')
+        })
+
+        // Scroll only when triggered via jumpToComment (scrollTrigger increments)
         const shouldScroll = scrollTrigger !== lastScrollTrigger.current
         lastScrollTrigger.current = scrollTrigger
 
         if (!shouldScroll) return
 
-        const { state, view } = editor
-        let foundPos = -1
-        
-        state.doc.descendants((node, pos) => {
-            if (node.marks) {
-                const mark = node.marks.find(m => m.type.name === 'comment' && m.attrs.commentId === activeCommentId)
-                if (mark) {
-                    foundPos = pos
-                    return false
-                }
-            }
-        })
-
-        if (foundPos !== -1) {
-            // Highlight precisely? For now just scroll
-            const element = view.domAtPos(foundPos).node as HTMLElement
-            if (element instanceof HTMLElement) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-            }
+        const firstEl = editorDom.querySelector<HTMLElement>(`[data-comment-id="${activeCommentId}"]`)
+        if (firstEl) {
+            firstEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
         }
     }, [activeCommentId, editor, scrollTrigger])
 
@@ -1781,6 +1781,17 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
             editor.view.dispatch(transaction)
         }
     }, [comments, editor])
+
+    // Toggle data-highlights-hidden on the editor shell so CSS can suppress mark styling
+    useEffect(() => {
+        const shell = editorShellRef.current
+        if (!shell) return
+        if (showHighlights) {
+            shell.removeAttribute('data-highlights-hidden')
+        } else {
+            shell.setAttribute('data-highlights-hidden', 'true')
+        }
+    }, [showHighlights])
 
     async function handleAddInlineComment() {
         if (!editor) return

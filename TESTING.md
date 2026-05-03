@@ -197,6 +197,11 @@ Future agents: treat this workflow as established. Before asking the user about 
 | User cannot edit another user's feedback | Not tested | - | - | Must remain blocked. |
 | User cannot delete another user's feedback | Not tested | - | - | Hiding may be allowed if designed. |
 | New/reply notification behaviour | Not tested | - | - | Confirm new status clears once viewed. |
+| Comment highlight active ring | Needs retest | AI agent | 2026-05-03 | `.comment-highlight.active` CSS class now applied via DOM query in `SceneEditor.tsx`. Browser validation needed: click a comment card, confirm inline span shows amber ring; click another, confirm ring moves; deselect, confirm ring clears. |
+| Comment highlight jump-to-comment scroll | Needs retest | AI agent | 2026-05-03 | Scroll-to-span fires only on explicit "Jump to position" button (scrollTrigger increment), not on bare card click. Browser validation needed: clicking card should NOT scroll; clicking "Jump to position" should scroll editor to the highlighted span. |
+| Show Highlights toggle | Needs retest | AI agent | 2026-05-03 | `data-highlights-hidden` on `editorShellRef` toggles suppression of inline highlight backgrounds/borders via CSS in `globals.css`. Browser validation needed: toggle off → all highlight colors disappear, text readable; toggle on → highlights reappear; TipTap marks and comment data unchanged throughout. |
+| Show Highlights state across panel open/close | Needs retest | AI agent | 2026-05-03 | `showHighlights` lives in CommentsContext (never unmounted), so its value should survive closing and reopening the Feedback panel. Browser validation needed: toggle off, close panel, reopen panel, confirm highlights still suppressed. |
+| Comment highlight regression (filter chips) | Needs retest | AI agent | 2026-05-03 | Filter chips (All, Mine, Collaborators, AI, New, Hidden) must still work as before. Inline highlights must not follow filter state (deferred feature). Browser validation needed to confirm no regression. |
 
 ## Onboarding / Help / Tours
 
@@ -267,6 +272,7 @@ Future agents: treat this workflow as established. Before asking the user about 
 
 Newest confirmations go at the top.
 
+| 2026-05-03 | AI agent | TypeScript compile after Feedback Panel comment highlight polish | Passed | `npx tsc --noEmit` passed after wiring `.comment-highlight.active` DOM-query application, adding `showHighlights`/`setShowHighlights` to `CommentsContext`, adding the Highlighter toggle button to `CommentsPanel`, toggling `data-highlights-hidden` on `editorShellRef` in `SceneEditor.tsx`, and adding suppression CSS in `globals.css`. |
 | 2026-05-02 | AI agent | TypeScript compile after project header local/cloud status badge | Passed | `npx tsc --noEmit --pretty false` passed after adding a visible `Cloud` / `Local` / `Local backup` badge beside the project title in `components/project/ProjectShell.tsx`. |
 | 2026-05-02 | AI agent | TypeScript compile after current-scene find polish follow-up | Passed | `npx tsc --noEmit --pretty false` passed after tightening current-scene find snapping, adding decoration-based match highlighting in `SceneEditor.tsx`, and styling the highlights in `app/globals.css`. |
 | 2026-05-02 | AI agent | TypeScript compile after editor current-scene find Block 3B Safe Pass 2 | Passed | `npx tsc --noEmit --pretty false` passed after adding a local current-scene find panel with scoped `Ctrl/Cmd + F`, match counts, and next/previous navigation to `components/project/story/SceneEditor.tsx`. |

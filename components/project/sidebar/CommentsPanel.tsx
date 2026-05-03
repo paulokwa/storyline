@@ -4,13 +4,13 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { useComments } from '@/components/project/CommentsContext'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { useRouter } from 'next/navigation'
-import { 
-    MessageSquare, 
-    Send, 
-    CheckCircle2, 
-    Reply, 
-    Trash2, 
-    Edit3, 
+import {
+    MessageSquare,
+    Send,
+    CheckCircle2,
+    Reply,
+    Trash2,
+    Edit3,
     Clock,
     Filter,
     FilterX,
@@ -25,7 +25,8 @@ import {
     Globe,
     Lock,
     Eye,
-    EyeOff
+    EyeOff,
+    Highlighter,
 } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { Button } from '@/components/ui/button'
@@ -103,13 +104,13 @@ export default function CommentsPanel({
 }) {
     const router = useRouter()
     const isLocalOnly = isLocalProjectId(projectId)
-    const { 
-        comments, 
+    const {
+        comments,
         setComments,
-        isLoading, 
-        addComment, 
-        updateComment, 
-        deleteComment, 
+        isLoading,
+        addComment,
+        updateComment,
+        deleteComment,
         resolveComment,
         setCommentSharing,
         activeCommentId,
@@ -118,7 +119,9 @@ export default function CommentsPanel({
         sendTypingIndicator,
         detachedCommentIds,
         jumpToComment,
-        reorderComments
+        reorderComments,
+        showHighlights,
+        setShowHighlights,
     } = useComments()
     const { role } = useProjectActions()
     const supabase = createClient()
@@ -870,8 +873,8 @@ export default function CommentsPanel({
                                         onClick={() => setShowResolved(!showResolved)}
                                         className={cn(
                                             "h-8 w-8 rounded-xl transition-all",
-                                            showResolved 
-                                                ? "bg-emerald-50 text-emerald-600 shadow-sm ring-1 ring-emerald-100" 
+                                            showResolved
+                                                ? "bg-emerald-50 text-emerald-600 shadow-sm ring-1 ring-emerald-100"
                                                 : "text-slate-400 hover:bg-white/80 hover:text-emerald-500"
                                         )}
                                     >
@@ -879,6 +882,27 @@ export default function CommentsPanel({
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent side="bottom">{showResolved ? "Hide Resolved" : "Show Resolved"}</TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setShowHighlights(!showHighlights)}
+                                        className={cn(
+                                            "h-8 w-8 rounded-xl transition-all",
+                                            showHighlights
+                                                ? "bg-amber-50 text-amber-500 shadow-sm ring-1 ring-amber-100"
+                                                : "text-slate-400 hover:bg-white/80 hover:text-amber-500"
+                                        )}
+                                    >
+                                        <Highlighter className="w-4 h-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom">{showHighlights ? "Hide inline highlights" : "Show inline highlights"}</TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
 

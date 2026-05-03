@@ -60,6 +60,8 @@ interface CommentsContextType {
     scrollTrigger: number
     jumpToComment: (id: string) => void
     reorderComments: (orderedIds: string[]) => Promise<void>
+    showHighlights: boolean
+    setShowHighlights: (show: boolean) => void
 }
 
 const CommentsContext = createContext<CommentsContextType | undefined>(undefined)
@@ -74,6 +76,7 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
     const [detachedCommentIds, setDetachedCommentIds] = useState<Set<string>>(new Set())
     const [scrollTrigger, setScrollTrigger] = useState(0)
     const [currentUser, setCurrentUser] = useState<{ id: string, email: string } | null>(null)
+    const [showHighlights, setShowHighlights] = useState(true)
     
     const supabase = createClient() as any
     const channelRef = useRef<any>(null)
@@ -619,7 +622,9 @@ export function CommentsProvider({ projectId, children }: { projectId: string, c
             setDetachedCommentIds,
             scrollTrigger,
             jumpToComment,
-            reorderComments
+            reorderComments,
+            showHighlights,
+            setShowHighlights,
         }}>
             {children}
         </CommentsContext.Provider>

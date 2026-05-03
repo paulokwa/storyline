@@ -5,6 +5,43 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-03 - Feedback Panel: Comment Highlight Polish
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- **Audit only (no code changes):** Full read-only audit of the Feedback panel comment filtering and inline TipTap highlight system — filter chips, comment cards, inline highlights, comment ownership, collaborator comments, AI feedback, and hidden/new states.
+- **Active inline highlight wiring:** Replaced the dead active-comment scroll effect in `SceneEditor.tsx` with a DOM-query approach that actually applies and removes the `.comment-highlight.active` CSS class (which existed in `globals.css` but was never applied). Handles multi-span comments (where a TipTap mark spans multiple text nodes). Scrolls the editor to the highlighted span only when `jumpToComment()` is called (`scrollTrigger` increments), not on bare comment selection.
+- **Show Highlights toggle:** Added `showHighlights`/`setShowHighlights` to `CommentsContext` (provider + type). Added a `Highlighter` icon toggle button in the `CommentsPanel` header. Added `data-highlights-hidden` attribute toggling in `SceneEditor.tsx` on the outermost `editorShellRef` div. Added CSS under `[data-highlights-hidden]` in `globals.css` that suppresses all inline highlight visuals (background, border, shadow) with `!important` while leaving text and stored TipTap marks completely untouched.
+- **Technical debt additions:** Added two new items to `docs/technical-debt-roadmap.md` under "Lower Priority / Future Enhancements": AI filter consistency (`ai-feedback` type not matched by AI chip) and active-highlight-after-resolve edge case (ProseMirror status sync may drop the `.active` class when a comment is resolved while active).
+- **TypeScript:** Compile passed with zero new errors (`@emailjs/browser` pre-existing error unrelated to this session).
+
+### Current status
+
+Comment highlight polish is implemented and committed. The `Show Highlights` toggle button and active highlight ring are functional. No TipTap schema changes, no DB migrations, no changes to filter chip logic or comment creation/permissions.
+
+### Next recommended step
+
+- Run a manual browser regression pass for comment highlight polish:
+  1. Open a scene with existing inline comments
+  2. Click a comment card in Feedback panel → confirm the inline span gets a visible amber ring/bold treatment
+  3. Click "Jump to position" → confirm the editor scrolls to the highlighted span
+  4. Click the Highlighter button in Feedback header → confirm all inline highlight backgrounds/borders disappear, text remains readable
+  5. Toggle Highlighter back on → highlights reappear
+  6. Resolve a comment that is currently active → confirm resolved styling appears (ring may briefly reset, which is the known edge case documented in technical-debt-roadmap.md #7)
+  7. Confirm filter chips (All, Mine, Collaborators, AI, New, Hidden) still work as before
+  8. Confirm AI Helper and Scene Analysis panel behavior unchanged
+
+### Risks or warnings
+
+- **Known edge case (documented, not fixed):** When a comment is resolved while it is the active comment, the ProseMirror status-sync transaction re-renders the span, dropping the manually-applied `.active` class. The resolved styling appears correctly; only the active ring is lost until the next interaction. See `docs/technical-debt-roadmap.md` item #7.
+- **Deferred feature:** Making inline highlights follow the existing filter chips (All, Mine, Collaborators, etc.) requires lifting `authorFilter` from CommentsPanel local state into CommentsContext. This was explicitly deferred by the user — do NOT implement until asked.
+- **AI filter consistency:** The AI chip matches `anchor_data.type === 'ai-analysis'` only, not `'ai-feedback'`. Items from the AI Helper panel do not appear under the AI chip. Documented in technical-debt-roadmap.md item #6 — do NOT fix without explicit instruction.
+
+---
 ## 2026-05-03 - Screenplay Tab focus-escape fix
 
 ### Current branch

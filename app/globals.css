@@ -1190,6 +1190,21 @@ body {
   background-color: rgba(241, 245, 249, 0.8);
 }
 
+/* Suppress inline highlight visuals when the Show Highlights toggle is off.
+   Text remains fully readable; only the background, border, and cursor change.
+   The TipTap marks and stored comment data are untouched. */
+[data-highlights-hidden] .comment-highlight,
+[data-highlights-hidden] .comment-highlight:hover,
+[data-highlights-hidden] .comment-highlight.active,
+[data-highlights-hidden] .comment-highlight[data-comment-status="resolved"],
+[data-highlights-hidden] .comment-highlight[data-comment-status="resolved"]:hover {
+  background-color: transparent !important;
+  border-bottom-color: transparent !important;
+  box-shadow: none !important;
+  cursor: text;
+  opacity: 1;
+}
+
 [data-theme='midnight'] .characters-tab,
 [data-theme='midnight'] .characters-tab-empty,
 [data-theme='midnight'] .ideas-tab,

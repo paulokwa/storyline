@@ -294,6 +294,54 @@ Do not treat this as part of the current editor/font/export parity batch.
 
 *   **Priority**: Low
 
+### 6. Feedback Panel: AI filter consistency
+
+**Status:** Open
+**Priority:** Low-Medium
+**Area:** Feedback / Comments / AI Feedback
+
+**Issue:**
+The Feedback panel AI chip currently matches only:
+- `anchor_data.type === 'ai-analysis'`
+
+Feedback saved from the AI Helper panel uses:
+- `anchor_data.type === 'ai-feedback'`
+
+As a result, AI Helper feedback appears under All/Mine but not under the AI filter chip.
+
+**Why this matters:**
+Users may reasonably expect the AI filter to show all AI-generated feedback, not only Scene Analysis feedback.
+
+**Recommendation:**
+Confirm intended product behaviour. If the AI chip is meant to include all AI-generated feedback, update the filter/count/badge logic to include both `'ai-analysis'` and `'ai-feedback'`.
+
+**Notes:**
+Do this as a separate intentional change. Do not bundle it with comment highlight polish.
+
+*   **Priority**: Low-Medium
+
+### 7. Feedback Panel: Active highlight after resolving active comment
+
+**Status:** Open
+**Priority:** Low
+**Area:** Feedback / Comments / Editor Highlighting
+
+**Issue:**
+If a comment is resolved while it is the active comment, ProseMirror may recreate the inline comment span and drop the manually-applied `.active` class.
+
+**Current behaviour:**
+- The comment card remains selected.
+- The inline text receives the correct resolved styling.
+- The stronger active ring/highlight may disappear until the user clicks or jumps to the comment again.
+
+**Why this matters:**
+This is a minor visual polish edge case. It does not affect saved content, comment status, permissions, or manuscript readability.
+
+**Recommendation:**
+Only fix if this becomes noticeable in manual testing. Possible fix: reapply active styling after comment status sync, but avoid broad dependencies that cause the effect to run too often.
+
+*   **Priority**: Low
+
 ## Future Plans — Editor, Fonts, and Proofing
 
 These items are intentionally separated from the immediate editor polish task. They should not be interpreted as approval to build a Google Docs or Microsoft Word clone. Storyline should remain a focused creative-writing app with strong manuscript-writing comfort, screenplay-aware editing, reliable export, and compatibility with browser/third-party proofing tools.
