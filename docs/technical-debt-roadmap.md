@@ -240,9 +240,29 @@ This document tracks identified architectural risks, technical debt, and reliabi
 *   **Priority**: Low
 
 ### 1. Advanced Offline / Pending Sync
-*   **Description**: Beyond the current `localStorage` fallback, implement a robust "Pending Sync" queue that automatically uploads changes when the connection returns.
-*   **Implementation**: Service Worker or a background polling sync manager.
-*   **Priority**: Low
+
+*   **Description**: When a cloud scene save fails due to a network drop, the editor shows "Save failed" and stops retrying. If the user's connection is briefly lost while writing, their edits are at risk until they manually re-edit to trigger the next autosave. This task adds a persistent pending-sync queue so failed saves are held and automatically replayed when the connection returns.
+*   **Current behaviour (audited 2026-05-03)**:
+    *   `lib/persistence/scenes.ts → saveSceneContent()` wraps all Supabase saves in `withPersistenceRetry()` (3 attempts, exponential backoff 250ms–1500ms).
+    *   After all retries fail, `SceneEditor.tsx` sets `saveStatus = 'error'` and shows "Save failed".
+    *   The autosave effect gate (`if (saveStatus !== 'idle') return`) then prevents further retries until the user makes a new edit.
+    *   There is **no `navigator.onLine` / `online` / `offline` event handling** anywhere in the app.
+    *   There is **no pending-sync queue** — failed saves are silently dropped after the UI error.
+    *   `localStorage` is only used for UI preferences (theme, tour state), not for sync fallback. The task name is slightly misleading; the real gap is no queue at all.
+    *   IndexedDB (`lib/persistence/local-db.ts`, DB version 3, 12 stores) is the primary local storage for local-only projects. Cloud projects use Supabase exclusively.
+*   **Recommended implementation — Tier 2 (IndexedDB-persisted queue)**:
+    1.  Add a `pending_saves` store to IndexedDB (bump `DB_VERSION` to 4 in `local-db.ts`). Key by `scene.id` so there is only ever one pending save per scene (later writes overwrite earlier ones — correct, only latest matters).
+    2.  Create `lib/persistence/pending-sync.ts` with `enqueuePendingSave`, `dequeuePendingSave`, `getPendingSave`, and `getPendingSavesByProject` helpers.
+    3.  In `SceneEditor.tsx → saveContent`: when `saveSceneContent()` returns `{ status: 'error' }` AND `isRetryablePersistenceError(error)` AND the project is not local-only, enqueue the save and set `saveStatus = 'offline'` instead of `'error'`. Show "Offline — changes queued" in the status bar.
+    4.  Add a `window.addEventListener('online', ...)` effect in `SceneEditor`. When fired, reset `saveStatus` to `'idle'` so the existing 1.5s autosave picks up the dirty editor content. On successful save, also call `dequeuePendingSave(scene.id)`.
+    5.  On `SceneEditor` mount (scene change): call `getPendingSave(scene.id)`. If a pending save exists and its `local_version === scene.version` (nobody edited on the server while offline), restore the pending content into the editor, set `isDirty = true`, and let the autosave flush it. If `local_version < scene.version`, discard the stale pending save and clear it — the existing update-banner / conflict modal will surface the server-side change.
+*   **Version conflict handling**: Already solved. `saveSceneContent()` uses optimistic concurrency (`.eq('version', localVersion)`). If a collaborator edited while the user was offline, the replayed save returns `{ status: 'conflict' }` and the existing Collaboration Conflict modal fires — no new logic needed.
+*   **What to skip (Tier 3 — post-launch only)**:
+    *   Service Worker / Background Sync API — Chrome-only, major infra addition, overkill for a writing tool.
+    *   ProjectShell-level offline indicator for scenes that are not currently mounted.
+    *   Multi-scene background queue flush (only relevant if users switch scenes while offline).
+*   **Files to change**: `lib/persistence/local-db.ts`, `lib/persistence/pending-sync.ts` (new), `components/project/story/SceneEditor.tsx`
+*   **Priority**: Low — the existing 3× retry with backoff handles brief hiccups. The `.storyline` manual-save workflow also gives users an escape hatch. This becomes higher priority if offline writing is a marketed feature.
 
 ### 2. Destructive Action Guards
 *   **Description**: Add "Type 'DELETE' to confirm" modals for high-impact actions like deleting an entire Episode or Part.
