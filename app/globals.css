@@ -1115,6 +1115,20 @@ body {
   text-decoration-color: rgba(39, 72, 96, 0.72);
 }
 
+/* Horizontal rule / divider */
+.editor-novel-overrides.ProseMirror hr,
+.editor-novel-overrides .ProseMirror hr {
+  border: none;
+  border-top: 1.5px solid rgba(148, 163, 184, 0.35);
+  margin: 2em 0;
+  height: 0;
+}
+
+[data-theme='midnight'] .editor-novel-overrides.ProseMirror hr,
+[data-theme='midnight'] .editor-novel-overrides .ProseMirror hr {
+  border-top-color: rgba(148, 163, 184, 0.20);
+}
+
 [data-theme='midnight'] .editor-novel-overrides.ProseMirror h1,
 [data-theme='midnight'] .editor-novel-overrides .ProseMirror h1 {
   color: #f8fafc;

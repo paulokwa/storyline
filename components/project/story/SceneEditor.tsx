@@ -67,6 +67,7 @@ import {
     Link2,
     Unlink,
     ExternalLink,
+    SeparatorHorizontal,
     Type as TypeIcon,
     ChevronUp,
     ChevronDown,
@@ -2920,6 +2921,13 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     tooltip="Blockquote"
                                     showTooltip={false}
                                 />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().setHorizontalRule().run()}
+                                    active={false}
+                                    icon={SeparatorHorizontal}
+                                    tooltip="Insert divider"
+                                    showTooltip={false}
+                                />
 
                                 <div className="w-px h-4 bg-slate-200 mx-1" />
 
@@ -3077,6 +3085,12 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     active={editor.isActive('blockquote')}
                                     icon={Quote}
                                     tooltip="Blockquote"
+                                />
+                                <ToolbarButton
+                                    onClick={() => editor.chain().focus().setHorizontalRule().run()}
+                                    active={false}
+                                    icon={SeparatorHorizontal}
+                                    tooltip="Insert divider"
                                 />
                                 <div className="w-px h-4 bg-slate-200 mx-1" />
                                 <ToolbarButton
