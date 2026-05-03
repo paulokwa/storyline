@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useImperativeHandle, forwardRef, useRef, useMemo } from 'react'
-import { useEditor, EditorContent, type Editor as TiptapEditor } from '@tiptap/react'
+import { useEditor, EditorContent, getMarkRange, type Editor as TiptapEditor } from '@tiptap/react'
 import { BubbleMenu } from '@tiptap/react/menus'
 import type { VirtualElement } from '@floating-ui/dom'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
@@ -66,6 +66,7 @@ import {
     ArrowRight,
     Link2,
     Unlink,
+    ExternalLink,
     Type as TypeIcon,
     ChevronUp,
     ChevronDown,
@@ -959,7 +960,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                     autolink: false,
                     linkOnPaste: false,
                     defaultProtocol: 'https',
-                    openOnClick: 'whenNotEditable',
+                    openOnClick: false,
                     enableClickSelection: false,
                     protocols: ['http', 'https'],
                     HTMLAttributes: {
@@ -1107,13 +1108,33 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                 const { state } = view
                 console.log('Editor click at pos:', pos, 'Writing mode:', writingMode, 'Project type:', projectType)
                 if (!state?.doc?.resolve) return false
-                const mark = state.doc.resolve(pos).marks().find(m => m.type.name === 'comment')
-                if (mark) {
-                    const commentId = mark.attrs.commentId
-                    setActiveCommentId(commentId)
+                const $pos = state.doc.resolve(pos)
+                const marks = $pos.marks()
+
+                const commentMark = marks.find(m => m.type.name === 'comment')
+                if (commentMark) {
+                    setActiveCommentId(commentMark.attrs.commentId)
                     setCommentsPanelOpen(true)
                     return true
                 }
+
+                if (writingMode !== 'screenplay') {
+                    const linkMark = marks.find(m => m.type.name === 'link')
+                    if (linkMark) {
+                        const linkType = state.schema.marks.link
+                        const range = getMarkRange($pos, linkType)
+                        if (range) {
+                            setActiveCommentId(null)
+                            setLinkSelection({ from: range.from, to: range.to })
+                            setLinkDraftUrl(typeof linkMark.attrs.href === 'string' ? linkMark.attrs.href : '')
+                            setLinkDraftError(null)
+                            setLinkHasExistingMark(true)
+                            setIsLinkDialogOpen(true)
+                            return true
+                        }
+                    }
+                }
+
                 setActiveCommentId(null)
                 return false
             },
@@ -1189,6 +1210,16 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
         closeLinkDialog()
     }, [closeLinkDialog, editor, linkSelection])
+
+    const handleOpenLinkInTab = useCallback(() => {
+        if (!linkDraftUrl) return
+        const normalized = normalizeLinkUrl(linkDraftUrl)
+        if (normalized.error) {
+            setLinkDraftError(normalized.error)
+            return
+        }
+        window.open(normalized.normalizedUrl!, '_blank', 'noopener,noreferrer')
+    }, [linkDraftUrl])
 
     useEffect(() => {
         if (!editor) return
@@ -3248,7 +3279,7 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             </p>
                         </div>
 
-                        <DialogFooter className="border-slate-200/80 bg-slate-50/80">
+                        <DialogFooter className="mx-0 mb-0 rounded-b-[1.75rem] border-t border-slate-200/80 bg-slate-50/80">
                             {linkHasExistingMark && (
                                 <Button
                                     type="button"
@@ -3259,6 +3290,17 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                 >
                                     <Unlink className="h-3.5 w-3.5" />
                                     Remove Link
+                                </Button>
+                            )}
+                            {linkHasExistingMark && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleOpenLinkInTab}
+                                >
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                    Open
                                 </Button>
                             )}
                             <Button type="button" variant="outline" size="sm" onClick={closeLinkDialog}>
