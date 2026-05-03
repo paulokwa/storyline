@@ -38,6 +38,16 @@ export function toHtml(payload: ExportPayload, options: ExportOptions): string {
         a { color: #2563eb; text-decoration: underline; }
         s { text-decoration: line-through; }
         u { text-decoration: underline; }
+        .screenplay-scene-heading, .screenplay-action, .screenplay-character,
+        .screenplay-parenthetical, .screenplay-dialogue, .screenplay-transition {
+            font-family: 'Courier New', Courier, monospace; font-size: 1rem; line-height: 1.5; margin: 0 0 0.25em 0;
+        }
+        .screenplay-scene-heading { font-weight: bold; text-transform: uppercase; margin-top: 1.5em; }
+        .screenplay-action { margin-bottom: 0.5em; }
+        .screenplay-character { margin-left: 35%; text-transform: uppercase; margin-top: 1em; margin-bottom: 0; }
+        .screenplay-parenthetical { margin-left: 25%; margin-right: 20%; }
+        .screenplay-dialogue { margin-left: 20%; margin-right: 15%; margin-bottom: 0.5em; }
+        .screenplay-transition { text-align: right; text-transform: uppercase; margin-top: 1em; margin-bottom: 1em; }
     </style>
 </head>
 <body>

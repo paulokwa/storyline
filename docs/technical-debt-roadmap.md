@@ -261,6 +261,39 @@ This document tracks identified architectural risks, technical debt, and reliabi
     *   **Backup file size warning**: Warn users when a backup is likely to be very large (especially if assets like images are embedded).
 *   **Priority**: Low
 
+### 5. Portable image export and asset bundling
+
+Owners should eventually be able to export portable images, not only expiring image URLs or placeholders.
+
+Current state:
+- HTML/EPUB/Markdown may reference image URLs.
+- Cloud image URLs may be signed and expire.
+- Local/blob URLs may not be portable.
+- DOCX currently degrades images to placeholders.
+- Plain text placeholders are acceptable.
+
+Future implementation should audit:
+- local asset storage
+- cloud/Supabase signed URL expiry
+- image byte fetching
+- CORS/PDF rendering
+- EPUB image bundling
+- DOCX image embedding
+- Markdown asset-folder export
+- HTML asset-folder or base64 export
+- file-size warnings for large exports
+
+Recommended product behavior:
+- `.storyline` backup should preserve assets for restore.
+- HTML/EPUB/PDF should eventually preserve visible inline images.
+- Markdown can use image links or an asset folder.
+- DOCX embedded images are desirable but can come later.
+- Plain text should keep placeholders only.
+
+Do not treat this as part of the current editor/font/export parity batch.
+
+*   **Priority**: Low
+
 ## Future Plans — Editor, Fonts, and Proofing
 
 These items are intentionally separated from the immediate editor polish task. They should not be interpreted as approval to build a Google Docs or Microsoft Word clone. Storyline should remain a focused creative-writing app with strong manuscript-writing comfort, screenplay-aware editing, reliable export, and compatibility with browser/third-party proofing tools.
