@@ -73,7 +73,6 @@ Before writing any code, state:
 ## Later
 
 
-- Stronger destructive action guards for high-impact deletes.
 - Writing UX polish: focus, paper transitions, font sizing, and themes.
 - Backup and asset handling improvements for `.storyline` files, including file-size warnings for backups with base64-embedded assets.
 - Add clearer free trial indicators and onboarding copy for new users.

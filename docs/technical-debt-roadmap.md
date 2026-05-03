@@ -265,8 +265,21 @@ This document tracks identified architectural risks, technical debt, and reliabi
 *   **Priority**: Low — the existing 3× retry with backoff handles brief hiccups. The `.storyline` manual-save workflow also gives users an escape hatch. This becomes higher priority if offline writing is a marketed feature.
 
 ### 2. Destructive Action Guards
-*   **Description**: Add "Type 'DELETE' to confirm" modals for high-impact actions like deleting an entire Episode or Part.
-*   **Priority**: Low
+
+*   **Description**: Strengthen delete confirmations for high-impact actions, particularly deleting container structure nodes that have child content.
+*   **Current behaviour (audited 2026-05-03)**:
+    *   **Library project delete**: Two-step inline confirmation (click Trash → confirm panel with Cancel/Delete). Moves to trash (soft-delete), not immediate permanent loss. ✅ Adequate.
+    *   **Structure tree container nodes (Act, Part, Episode, Chapter)**: Two-step inline confirmation panel (`confirmingDeleteId` state in `StructureTree.tsx`) shows "Delete this Act?" with Cancel/Trash buttons. ✅ Two-step exists — but **no child-count warning**. Deleting an Act with 10 chapters and 30 scenes shows the same small amber panel as deleting a single empty scene. The user has no indication of how much nested content will be trashed.
+    *   **Characters, locations, ideas, objects**: Single-click direct delete with **no confirmation**. Lower stakes (planning entities, not prose) — items are removed immediately but are not prose content.
+    *   **Account deletion**: Has its own confirmation flow in `SettingsView.tsx`.
+    *   **No native browser dialogs remain** — all `window.confirm()` / `window.alert()` calls were replaced in a prior session.
+*   **Why not a launch blocker**: Structure node deletes go to recovery/trash, not permanent deletion, so accidental deletes are recoverable. The two-step guard prevents the most common accidents.
+*   **Recommended improvements (priority order)**:
+    1.  **Child-count warning on container node delete** (highest value): When the node being deleted has children, add a sub-line to the existing inline confirm panel: e.g., "This will also trash 3 chapters and 12 scenes." No modal needed — just add the count to the existing amber panel in `StructureTree.tsx`. Child count is computable from `childrenByParentId` in `StoryTab.tsx`.
+    2.  **Entity delete confirmation** (medium value): Add a single-step inline confirm for characters, locations, ideas, and objects tabs, matching the library card pattern. Currently these delete on first click with no guard.
+    3.  **"Type DELETE" for permanent destroy** (low value, post-launch only): Only relevant for the permanent destroy action in the trash view, not the soft-delete path.
+*   **Files to change**: `components/project/story/StructureTree.tsx`, `components/project/story/StoryTab.tsx`, `components/project/characters/CharactersTab.tsx`, `components/project/locations/LocationsTab.tsx`, `components/project/ideas/IdeasTab.tsx`, `components/project/objects/ObjectsTab.tsx`
+*   **Priority**: Low — not a launch blocker. The child-count warning (item 1 above) is the most valuable improvement and would take under a day.
 
 ### 3. Writing UX Polish
 *   **Description**: Implement subtle animations for cursor focus, smoother "paper" transitions, and customizable font-size/theme settings (Sepia/Dark).
