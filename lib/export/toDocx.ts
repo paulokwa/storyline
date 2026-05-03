@@ -3,6 +3,7 @@ import {
     Packer,
     Paragraph,
     TextRun,
+    ExternalHyperlink,
     HeadingLevel,
     AlignmentType,
     BorderStyle
@@ -14,20 +15,30 @@ function jsonToDocxElements(json: any): Paragraph[] {
     if (!json || !json.content || !Array.isArray(json.content)) return []
     
     return json.content.map((node: any) => {
-        // Safely extract text runs
-        const children: TextRun[] = []
-        
+        // Safely extract text runs (ExternalHyperlink is also a valid paragraph child)
+        const children: (TextRun | ExternalHyperlink)[] = []
+
         if (node.content && Array.isArray(node.content)) {
             node.content.forEach((c: any) => {
                 if (c.type === 'text') {
-                    children.push(new TextRun({
+                    const runOptions = {
                         text: c.text,
                         bold: c.marks?.some((m: any) => m.type === 'bold'),
                         italics: c.marks?.some((m: any) => m.type === 'italic'),
                         underline: c.marks?.some((m: any) => m.type === 'underline') ? {} : undefined,
                         strike: c.marks?.some((m: any) => m.type === 'strike'),
-                        highlight: c.marks?.some((m: any) => m.type === 'highlight') ? 'yellow' : undefined,
-                    }))
+                        highlight: c.marks?.some((m: any) => m.type === 'highlight') ? 'yellow' as const : undefined,
+                    }
+                    const linkMark = c.marks?.find((m: any) => m.type === 'link')
+                    const href = linkMark?.attrs?.href
+                    if (href && /^https?:\/\//i.test(href)) {
+                        children.push(new ExternalHyperlink({
+                            link: href,
+                            children: [new TextRun({ ...runOptions, style: 'Hyperlink' })]
+                        }))
+                    } else {
+                        children.push(new TextRun(runOptions))
+                    }
                 } else if (c.type === 'hardBreak') {
                     children.push(new TextRun({ text: "", break: 1 }))
                 }
