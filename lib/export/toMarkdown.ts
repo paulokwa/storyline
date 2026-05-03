@@ -14,6 +14,8 @@ function jsonToMarkdown(json: any): string {
                     if (c.marks?.some((m: any) => m.type === 'bold')) t = `**${t}**`
                     if (c.marks?.some((m: any) => m.type === 'italic')) t = `_${t}_`
                     if (c.marks?.some((m: any) => m.type === 'underline')) t = `<u>${t}</u>`
+                    if (c.marks?.some((m: any) => m.type === 'strike')) t = `~~${t}~~`
+                    if (c.marks?.some((m: any) => m.type === 'highlight')) t = `<mark>${t}</mark>`
                     return t
                 }
                 if (c.type === 'hardBreak') return '\n'

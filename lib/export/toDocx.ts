@@ -24,6 +24,8 @@ function jsonToDocxElements(json: any): Paragraph[] {
                         bold: c.marks?.some((m: any) => m.type === 'bold'),
                         italics: c.marks?.some((m: any) => m.type === 'italic'),
                         underline: c.marks?.some((m: any) => m.type === 'underline') ? {} : undefined,
+                        strike: c.marks?.some((m: any) => m.type === 'strike'),
+                        highlight: c.marks?.some((m: any) => m.type === 'highlight') ? 'yellow' : undefined,
                     }))
                 } else if (c.type === 'hardBreak') {
                     children.push(new TextRun({ text: "", break: 1 }))
