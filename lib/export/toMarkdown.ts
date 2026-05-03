@@ -16,6 +16,11 @@ function jsonToMarkdown(json: any): string {
                     if (c.marks?.some((m: any) => m.type === 'underline')) t = `<u>${t}</u>`
                     if (c.marks?.some((m: any) => m.type === 'strike')) t = `~~${t}~~`
                     if (c.marks?.some((m: any) => m.type === 'highlight')) t = `<mark>${t}</mark>`
+                    const linkMark = c.marks?.find((m: any) => m.type === 'link')
+                    if (linkMark) {
+                        const href = linkMark.attrs?.href
+                        if (href && /^https?:\/\//i.test(href)) t = `[${t}](${href})`
+                    }
                     return t
                 }
                 if (c.type === 'hardBreak') return '\n'
@@ -44,6 +49,16 @@ function jsonToMarkdown(json: any): string {
             
             case 'screenplayTransition':
                 return `\n> ${getText(node.content).toUpperCase()}`
+
+            case 'blockquote': {
+                const inner = node.content
+                    ?.map((child: any) => getText(child.content))
+                    .join('\n') || ''
+                return inner.split('\n').map((line: string) => `> ${line}`).join('\n')
+            }
+
+            case 'horizontalRule':
+                return '---'
 
             case 'bulletList':
                 return node.content?.map((item: any) => `- ${jsonToMarkdown(item).trim()}`).join('\n')

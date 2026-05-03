@@ -1,10 +1,11 @@
-import { 
-    Document, 
-    Packer, 
-    Paragraph, 
-    TextRun, 
-    HeadingLevel, 
-    AlignmentType
+import {
+    Document,
+    Packer,
+    Paragraph,
+    TextRun,
+    HeadingLevel,
+    AlignmentType,
+    BorderStyle
 } from 'docx'
 import type { ExportPayload, ExportOptions } from './buildExportPayload'
 
@@ -125,6 +126,42 @@ function jsonToDocxElements(json: any): Paragraph[] {
                     alignment: AlignmentType.CENTER,
                     spacing: { before: 400, after: 400 }
                 })
+
+            case 'blockquote': {
+                const bqParagraphs: Paragraph[] = []
+                node.content?.forEach((child: any) => {
+                    const bqRuns: TextRun[] = []
+                    if (child.content && Array.isArray(child.content)) {
+                        child.content.forEach((c: any) => {
+                            if (c.type === 'text') {
+                                bqRuns.push(new TextRun({
+                                    text: c.text,
+                                    bold: c.marks?.some((m: any) => m.type === 'bold'),
+                                    italics: c.marks?.some((m: any) => m.type === 'italic'),
+                                    underline: c.marks?.some((m: any) => m.type === 'underline') ? {} : undefined,
+                                    strike: c.marks?.some((m: any) => m.type === 'strike'),
+                                    highlight: c.marks?.some((m: any) => m.type === 'highlight') ? 'yellow' : undefined,
+                                    color: '555555',
+                                }))
+                            } else if (c.type === 'hardBreak') {
+                                bqRuns.push(new TextRun({ text: '', break: 1 }))
+                            }
+                        })
+                    }
+                    bqParagraphs.push(new Paragraph({
+                        children: bqRuns.length ? bqRuns : [new TextRun({ text: '' })],
+                        indent: { left: 720 },
+                        spacing: { before: 60, after: 120 },
+                        border: {
+                            left: { color: '888888', space: 4, style: BorderStyle.SINGLE, size: 12 }
+                        }
+                    }))
+                })
+                return bqParagraphs.length ? bqParagraphs : []
+            }
+
+            case 'horizontalRule':
+                return new Paragraph({ thematicBreak: true })
 
             case 'paragraph':
             default:
