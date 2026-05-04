@@ -616,6 +616,57 @@ body {
   scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
 }
 
+/* Comments panel – additional midnight overrides for referenced text, badges, and active states */
+[data-theme='midnight'] .comments-panel [class*="bg-slate-100"] {
+  background-color: rgba(20, 30, 52, 0.65) !important;
+}
+
+[data-theme='midnight'] .comments-panel [class*="bg-amber-100"],
+[data-theme='midnight'] .comments-panel [class*="bg-amber-50"] {
+  background-color: rgba(50, 35, 10, 0.65) !important;
+  border-color: rgba(180, 120, 30, 0.3) !important;
+}
+[data-theme='midnight'] .comments-panel [class*="text-amber-600"],
+[data-theme='midnight'] .comments-panel [class*="text-amber-500"] {
+  color: rgba(251, 191, 36, 0.88) !important;
+}
+
+[data-theme='midnight'] .comments-panel [class*="bg-violet-100"] {
+  background-color: rgba(38, 18, 62, 0.65) !important;
+  border-color: rgba(139, 92, 246, 0.3) !important;
+}
+[data-theme='midnight'] .comments-panel [class*="text-violet-600"] {
+  color: rgba(167, 139, 250, 0.88) !important;
+}
+
+[data-theme='midnight'] .comments-panel [class*="bg-blue-100"],
+[data-theme='midnight'] .comments-panel [class*="bg-blue-50"] {
+  background-color: rgba(14, 28, 55, 0.65) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+[data-theme='midnight'] .comments-panel [class*="text-blue-600"] {
+  color: rgba(96, 165, 250, 0.88) !important;
+}
+
+[data-theme='midnight'] .comments-panel [class*="bg-indigo-50"] {
+  background-color: rgba(30, 27, 75, 0.55) !important;
+}
+[data-theme='midnight'] .comments-panel [class*="border-indigo-200"] {
+  border-color: rgba(99, 102, 241, 0.32) !important;
+}
+
+[data-theme='midnight'] .comments-panel [class*="bg-emerald-50"] {
+  background-color: rgba(6, 38, 26, 0.55) !important;
+}
+[data-theme='midnight'] .comments-panel [class*="text-emerald-600"] {
+  color: rgba(52, 211, 153, 0.85) !important;
+}
+
+[data-theme='midnight'] .comments-panel [class*="border-\\[\\#d8ddcf\\]"],
+[data-theme='midnight'] .comments-panel [class*="border-\\[\\#ddd8ce\\]"] {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
 [data-theme='midnight'] .scene-editor-shell {
   color: hsl(var(--foreground));
 }
