@@ -5,6 +5,105 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-04 - In-App Launch Survey
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- **Supabase migration written:** `supabase/migrations/20260504_feedback_responses.sql` — creates `feedback_responses` table with RLS allowing authenticated insert and self-select. **Manual step required: Kwame must apply this migration in the Supabase dashboard before survey submissions will work.**
+
+- **API route:** `app/api/survey/route.ts` — POST handler, validates auth, sanitises all inputs, auto-captures `user_agent`. Table name cast to `any` until generated types are regenerated post-migration.
+
+- **LaunchSurveyModal (`components/survey/LaunchSurveyModal.tsx`):** 3-step modal (use case → satisfaction → free-text). Step 3 has Skip and Send. On submit/skip: posts to `/api/survey`, sets `localStorage` key `storyline_survey_v1` to `'completed'`, shows success toast. Dismiss X sets key to `'dismissed'`. Dynamically imported where used.
+
+- **FeedbackNudge (`components/survey/FeedbackNudge.tsx`):** Dismissible banner at bottom of library. Reads `localStorage` on mount — only renders if key is absent and `projectCount >= 1`. "Share thoughts" button opens the modal; X sets `'dismissed'`.
+
+- **Library wired:** `app/(app)/library/page.tsx` imports `FeedbackNudge` and passes `projects.length` as `projectCount`.
+
+- **HelpTab wired:** `components/project/help/HelpTab.tsx` Quick Links sidebar now includes a permanent `Share feedback` button that opens `LaunchSurveyModal`. Works in both `project` and `global` modes.
+
+- **TypeScript:** Clean (`npx tsc --noEmit --pretty false` exit 0).
+
+### Files changed
+
+- `supabase/migrations/20260504_feedback_responses.sql` — NEW
+- `app/api/survey/route.ts` — NEW
+- `components/survey/LaunchSurveyModal.tsx` — NEW
+- `components/survey/FeedbackNudge.tsx` — NEW
+- `app/(app)/library/page.tsx` — added `FeedbackNudge` import and render
+- `components/project/help/HelpTab.tsx` — added survey modal + Share Feedback button
+
+### Current status
+
+All code complete. TypeScript clean. **Migration not yet applied to Supabase — required before survey data is saved.**
+
+### Next recommended step
+
+1. **Apply migration:** In the Supabase dashboard, run the SQL in `supabase/migrations/20260504_feedback_responses.sql`.
+2. **Browser validation:**
+   - Library nudge: sign in with ≥1 project → confirm banner appears → dismiss → confirm gone → reload → confirm absent.
+   - Survey flow: click "Share thoughts" or "Share feedback" in Help → complete all 3 steps → confirm success toast → check `feedback_responses` table in Supabase.
+3. After migration, regenerate Supabase types (`npx supabase gen types typescript --linked`) so the `any` cast in `route.ts` can be removed.
+
+### Risks or warnings
+
+- The `any` cast in `app/api/survey/route.ts` is intentional and safe — it will be removed after types are regenerated post-migration.
+- Survey nudge uses only `localStorage` for deduplication (no server-side check). If a user clears storage, they will see the nudge again. This is acceptable for a launch survey.
+- All prior changes from this session (auth fix, AI Partner rename, Scene Analysis polish, AI FEEDBACK bucket fix, delete sync) are documented in the entry above.
+
+---
+## 2026-05-04 - Auth Fix, AI Partner Rename, Scene Analysis UX Polish, and Delete Sync
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- **AuthApiError stale-token fix (`lib/supabase/auth.ts`):** `getVerifiedUser()` previously only silenced `AuthSessionMissingError`. Added detection of `AuthApiError` with messages `'Invalid Refresh Token'` / `'Refresh Token Not Found'`. When matched: calls `supabase.auth.signOut({ scope: 'local' })` to clear the stale cookie silently and returns `null`. Eliminates noisy console errors on showcase page load for users with expired sessions. Entry added to `TROUBLESHOOTING.md`.
+
+- **First AI Partner use notice standalone (`AiHelperPanel.tsx`):** The first-use notice was rendering inside the AI Context Preview panel. Removed `setPreviewOpen(true)` from the first-use trigger; notice now renders independently at the same absolute position regardless of whether the preview panel is open.
+
+- **"Add to AI Partner" rename (`SceneAnalysisPanel.tsx`):** All instances of "Add to Assistant" and "Added to Assistant" renamed to "Add to AI Partner" / "Added to AI Partner" for consistency. Applies to analysis section items and suggestions.
+
+- **AI FEEDBACK bucket fix (`lib/persistence/project-content.ts`):** The `projectAiFeedback` query was filtering by `.eq('type', 'analysis_feedback')` but saves use `type: 'analysis'` (the only valid DB enum value). Changed query to `.eq('action', 'analysis_feedback')` — the correct discriminator. Items from Scene Analysis now land in the AI FEEDBACK bucket, not IDEAS.
+
+- **AI Memory integration confirmed for Scene Analysis items:** `loadSavedResponses()` uses `getAiResponses()` with no type/action filter, so analysis items already appear in AI Memory. No code change needed.
+
+- **Delete sync (`SavedResponsesTab.tsx`):** `deleteResponse()` now calls `router.refresh()` (from `next/navigation`) after soft-delete so the AI Partner context panel re-fetches on next navigation. Added `useRouter` import.
+
+- **Toast copy updated:** Scene Analysis "Add to AI Partner" success toast now reads "Saved to AI Partner & AI Memory" with a description pointing users to both locations.
+
+- **Tooltip rename (`StoryTab.tsx`):** `aria-label` and `TooltipContent` for the Scene Analysis icon changed from `'Analyze this scene'` to `'Scene Analysis'` for both book and screenplay project types.
+
+- **AI Partner empty-state copy:** Updated the hint text to `'Use "Add to AI Partner" in the Scene Analysis tool.'` to match the new button label.
+
+### Files changed
+
+- `lib/supabase/auth.ts` — stale-token silent cleanup
+- `components/project/story/AiHelperPanel.tsx` — first-use notice standalone, empty-state copy
+- `components/project/story/SceneAnalysisPanel.tsx` — "Add to AI Partner" rename, toast copy
+- `lib/persistence/project-content.ts` — query filter `.eq('action', 'analysis_feedback')`
+- `components/project/SavedResponsesTab.tsx` — `router.refresh()` after delete
+- `components/project/story/StoryTab.tsx` — tooltip label "Scene Analysis"
+- `TROUBLESHOOTING.md` — new entry for AuthApiError invalid refresh token
+
+### Current status
+
+All changes complete. TypeScript clean. Manual browser validation still needed (see Testing Tracker).
+
+### Next recommended step
+
+Manual browser smoke-test of:
+1. Scene Analysis → "Add to AI Partner" → item appears in AI FEEDBACK bucket (not IDEAS)
+2. Delete from AI Memory → AI Partner context updates on next navigation
+3. First-use notice appears standalone (not inside AI Context Preview)
+4. Showcase page loads without console AuthApiError for users with stale cookies
+
+---
 ## 2026-05-04 - Midnight Theme Readability Fixes + Scene Analysis "Add to Assistant" Bug Fix
 
 ### Current branch

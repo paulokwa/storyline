@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { requireVerifiedUser } from '@/lib/supabase/auth'
 import ProjectGrid from '@/components/library/ProjectGrid'
+import FeedbackNudge from '@/components/survey/FeedbackNudge'
 import type { Database } from '@/lib/supabase/types'
 
 export const metadata = { title: 'My Projects — Storyline' }
@@ -178,9 +179,12 @@ export default async function LibraryPage() {
     const projects = (projectsData as ProjectWithMembers[] | null)?.map(mapProject) || []
     const deletedProjects = (deletedData as ProjectWithMembers[] | null)?.map(mapProject) || []
 
+    const projectCount = projects.length
+
     return (
         <div className="library-page-shell flex h-full min-h-0 flex-1 flex-col overflow-auto bg-slate-50/50 custom-scrollbar">
             <ProjectGrid projects={projects} deletedProjects={deletedProjects} currentUserId={user.id} />
+            <FeedbackNudge projectCount={projectCount} />
         </div>
     )
 }

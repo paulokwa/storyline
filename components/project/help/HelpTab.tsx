@@ -10,6 +10,9 @@ import { Label } from '@/components/ui/label'
 import { HELP_TOPICS, matchHelpTopics, type HelpTopic } from '@/lib/help'
 import { queueWorkspaceTourStart } from '@/lib/project/tour'
 import { requestOpenShortcuts } from '@/lib/project/shortcuts'
+import dynamic from 'next/dynamic'
+
+const LaunchSurveyModal = dynamic(() => import('@/components/survey/LaunchSurveyModal'), { ssr: false })
 
 function HelpTopicCard({
   topic,
@@ -62,6 +65,7 @@ export default function HelpTab({ mode = 'project' }: { mode?: 'project' | 'glob
   const searchQuery = searchParams.get('q') ?? ''
   const [queryOverride, setQueryOverride] = useState<string | null>(null)
   const query = queryOverride ?? searchQuery
+  const [surveyOpen, setSurveyOpen] = useState(false)
 
   const results = useMemo(() => {
     if (!query.trim()) return HELP_TOPICS.slice(0, 6)
@@ -236,9 +240,18 @@ export default function HelpTab({ mode = 'project' }: { mode?: 'project' | 'glob
                 >
                   {mode === 'project' ? 'Open keyboard shortcuts' : 'Cloud sync guide'}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setSurveyOpen(true)}
+                  className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-left text-sm font-medium text-slate-800 shadow-sm transition hover:bg-white"
+                >
+                  Share feedback
+                </button>
               </div>
             </div>
           </aside>
+
+          <LaunchSurveyModal open={surveyOpen} onClose={() => setSurveyOpen(false)} />
         </div>
       </div>
     </div>

@@ -72,34 +72,7 @@ Before writing code, state:
 
 ## Now
 
-
-Terminal volicity the Ai refernces are diferent in the link bar and the 2 AI screens - needs to get sorted.
-
-
-### 1. Add lightweight in-app launch survey and feedback capture
-
-Build the in-app launch survey described in `docs/future-roadmap.md` and GitHub issue #5.
-
-Scope:
-
-- Add a small in-app survey or feedback flow, preferably reachable from Help or a clear `Send Feedback` entry point.
-- Keep it short, calm, and dismissible.
-- Store product feedback in Supabase instead of relying only on EmailJS/support email.
-- Capture safe context automatically where useful, such as page path, project type, writing mode, AI state, app version, and user agent.
-- Avoid rebuilding the existing support email/contact flow.
-- Avoid public forum/community tooling for now.
-
-Important distinction:
-
-- Support email is for private support issues.
-- The in-app survey is for structured product learning at launch.
-
-Reference:
-
-- `docs/future-roadmap.md` -> `Launch feedback, survey, and future community`
-- GitHub issue #5: `Add lightweight in-app launch survey and feedback capture`
-
-### 2. Continue typography and contrast audit beyond AI Partner
+### 1. Continue typography and contrast audit beyond AI Partner
 
 Continue auditing older low-contrast helper text, metadata, empty states, and secondary labels in less-used screens.
 
@@ -126,78 +99,11 @@ Before changing export code, check `TESTING.md`, `SESSION_HANDOVER.md`, and `doc
 
 ## Next
 
-### 1. Manual/browser regression pass for recent editor and feedback polish
 
-This is AI-assisted testing guidance, not product redesign.
-
-Check the latest relevant entries in `SESSION_HANDOVER.md` and `TESTING.md`, then guide Kwame through any manual browser tests that are still marked as needed.
-
-Likely areas:
-
-- Comment highlight polish
-- Show Highlights toggle
-- Current-scene find
-- Prose link support
-- Screenplay keyboard behavior
-- Export behavior
-- Help/Settings visual polish
-
-### 2. Atomic project scaffolding verification
-
-Verify that cloud project creation consistently uses the atomic RPC path and does not leave half-created projects on failure.
-
-Reference:
-
-- `docs/technical-debt-roadmap.md` -> `Atomic Project Scaffolding (RPC)`
-- `TESTING.md` -> atomic project scaffolding failure scenario
-
-Only implement fixes if the verification shows a real gap.
-
----
 
 ## Later
 
-These are AI-doable tasks, but they are not active yet. Future agents should only pull them forward when Kwame asks or when they become relevant to a current sprint.
 
-### 1. Advanced offline / pending sync queue
-
-Implement the IndexedDB-backed pending-save queue described in `docs/technical-debt-roadmap.md` if offline/cloud-save reliability becomes important enough to prioritize.
-
-This is different from future Google Drive sync. Google Drive sync is a product idea in `docs/future-roadmap.md`; pending sync is technical reliability work.
-
-### 2. Destructive action guard improvements
-
-Add clearer child-count warnings for deleting structure containers and consider safer entity delete confirmations if accidental deletes become a problem.
-
-Reference:
-
-- `docs/technical-debt-roadmap.md` -> `Destructive Action Guards`
-
-### 3. Feedback Panel AI filter consistency
-
-Decide and implement whether the Feedback panel AI chip should include both `ai-analysis` and `ai-feedback` comment types.
-
-Reference:
-
-- `docs/technical-debt-roadmap.md` -> `Feedback Panel: AI Filter Consistency`
-
-### 4. Portable image export and asset bundling
-
-Improve exported image portability when this becomes a priority.
-
-Reference:
-
-- `docs/technical-debt-roadmap.md` -> `Portable Image Export and Asset Bundling`
-
-### 5. Backup and asset handling improvements
-
-Improve local backup versioning and high-resolution asset serialization after the core launch path is stable.
-
-Reference:
-
-- `docs/technical-debt-roadmap.md` -> `Backup and Asset Handling`
-
----
 
 ## Not Here Anymore
 

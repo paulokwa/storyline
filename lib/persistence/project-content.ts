@@ -31,7 +31,7 @@ export async function loadStoryWorkspaceData(supabase: Supabase, projectId: stri
         supabase.from('ideas').select('*').eq('project_id', projectId).is('deleted_at', null).order('order_index'),
         supabase.from('locations').select('*').eq('project_id', projectId).is('deleted_at', null).order('order_index'),
         supabase.from('objects').select('*').eq('project_id', projectId).is('deleted_at', null).order('order_index'),
-        supabase.from('ai_responses').select('*').eq('project_id', projectId).eq('type', 'analysis_feedback').is('deleted_at', null).order('created_at', { ascending: false }),
+        supabase.from('ai_responses').select('*').eq('project_id', projectId).eq('action', 'analysis_feedback').is('deleted_at', null).order('created_at', { ascending: false }),
         supabase.from('scenes').select(`
             *,
             scene_characters(characters(*)),

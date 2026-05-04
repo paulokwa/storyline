@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { 
     Search, 
     Bookmark, 
@@ -58,6 +59,7 @@ interface SavedResponse {
 }
 
 export default function SavedResponsesTab({ projectId }: { projectId: string }) {
+    const router = useRouter()
     const [responses, setResponses] = useState<SavedResponse[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
@@ -185,6 +187,7 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
                 }
                 return next
             })
+            router.refresh()
         } catch (err: any) {
             console.error('Error soft deleting response:', err.message)
         } finally {

@@ -208,6 +208,31 @@ Future agents: treat this workflow as established. Before asking the user about 
 | Show Highlights state across panel open/close | Needs retest | AI agent | 2026-05-03 | `showHighlights` lives in CommentsContext (never unmounted), so its value should survive closing and reopening the Feedback panel. Browser validation needed: toggle off, close panel, reopen panel, confirm highlights still suppressed. |
 | Comment highlight regression (filter chips) | Needs retest | AI agent | 2026-05-03 | Filter chips (All, Mine, Collaborators, AI, New, Hidden) must still work as before. Inline highlights must not follow filter state (deferred feature). Browser validation needed to confirm no regression. |
 
+## Auth / Sessions
+
+| Test | Status | Tested by | Date tested | Notes |
+|---|---|---|---|---|
+| Stale refresh token silenced on showcase load | Needs retest | AI agent | 2026-05-04 | `lib/supabase/auth.ts` now detects `AuthApiError` with `'Invalid Refresh Token'` / `'Refresh Token Not Found'`, calls `signOut({ scope: 'local' })` silently, and returns null. Browser validation needed: load the showcase page with a logged-out or stale-session browser, confirm no `AuthApiError` console error appears. |
+
+## Scene Analysis / AI Partner
+
+| Test | Status | Tested by | Date tested | Notes |
+|---|---|---|---|---|
+| "Add to AI Partner" lands in AI FEEDBACK bucket | Needs retest | AI agent | 2026-05-04 | `lib/persistence/project-content.ts` query now filters by `.eq('action', 'analysis_feedback')`. Browser validation needed: run Scene Analysis → click "Add to AI Partner" → open AI Partner → confirm item is in AI FEEDBACK (not IDEAS). |
+| "Add to AI Partner" success toast mentions AI Memory | Needs retest | AI agent | 2026-05-04 | Toast should read "Saved to AI Partner & AI Memory" with description "Use it as context in AI Partner, or find it anytime under AI Memory." Browser validation needed. |
+| Deleting from AI Memory syncs AI Partner context | Needs retest | AI agent | 2026-05-04 | `SavedResponsesTab.tsx` calls `router.refresh()` after `softDeleteEntity`. Browser validation needed: add an item via Scene Analysis, open AI Memory, delete it, navigate back to Story tab → confirm item no longer appears in AI FEEDBACK. |
+| First AI Partner use notice is standalone | Needs retest | AI agent | 2026-05-04 | `AiHelperPanel.tsx` first-use notice renders independently — no longer inside the AI Context Preview container. Browser validation: on a project with no prior AI use, trigger the first AI call → confirm notice appears cleanly without the full AI Context Preview panel. |
+
+## Survey / Feedback
+
+| Test | Status | Tested by | Date tested | Notes |
+|---|---|---|---|---|
+| FeedbackNudge appears on library with ≥1 project | Needs retest | AI agent | 2026-05-04 | `FeedbackNudge` checks `localStorage` key `storyline_survey_v1` on mount. If absent and `projectCount >= 1`, the nudge banner appears at the bottom of the library. Browser validation needed: sign in with ≥1 project, confirm nudge appears; dismiss it, confirm it disappears and `localStorage` is set to `'dismissed'`; reload, confirm nudge does not reappear. |
+| Survey modal 3-step flow | Needs retest | AI agent | 2026-05-04 | `LaunchSurveyModal` shows step 1 (use-case 2×2 grid), step 2 (satisfaction 3-button row), step 3 (free-text optional). Clicking Skip on step 3 submits without feedback text; Send submits all data. Browser validation needed: complete all 3 steps, confirm success toast, confirm `localStorage` = `'completed'`. Also test the skip path. |
+| Survey POST route saves to feedback_responses | Needs retest | AI agent | 2026-05-04 | `app/api/survey/route.ts` POSTs to Supabase `feedback_responses` (migration must be applied first). Browser validation needed after migration is run: complete the survey and check Supabase `feedback_responses` table for the new row with correct `user_id`, `use_case`, `satisfaction`, and auto-captured `user_agent`. |
+| Share Feedback button in Help tab | Needs retest | AI agent | 2026-05-04 | `HelpTab.tsx` sidebar Quick Links now includes a `Share feedback` button that opens `LaunchSurveyModal`. Browser validation needed: open Help (project or global), confirm button is visible in the Quick Links sidebar card, click it, confirm modal opens and the survey flow works normally. |
+| Survey nudge absent if already dismissed | Needs retest | AI agent | 2026-05-04 | If `localStorage` `storyline_survey_v1` is `'dismissed'` or `'completed'`, nudge should not render. Browser validation needed: set the localStorage value manually and reload the library page, confirm nudge is absent. |
+
 ## Onboarding / Help / Tours
 
 | Test | Status | Tested by | Date tested | Notes |

@@ -56,18 +56,6 @@ This matters because mixed terms can make the app feel unfinished. It also affec
 
 Once Kwame chooses the terminology, AI can audit the app and update copy consistently.
 
-### AI Memory behavior for scene analysis
-
-Decide whether scene analysis outputs should save directly to AI Memory when the user chooses `Add to AI`.
-
-Questions to answer:
-
-- Should `Add to AI` mean the analysis becomes persistent memory/context?
-- Should users review or edit the memory first?
-- Should this apply to all analysis outputs or only certain types?
-- How should the app explain where the saved information goes?
-
-This should be decided before an AI agent changes the behavior.
 
 ### Branding and design help
 

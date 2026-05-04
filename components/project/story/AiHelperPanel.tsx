@@ -764,7 +764,6 @@ export default function AiHelperPanel({
         localStorage.setItem(storageKey, 'true')
         hasShownProjectPreviewNoticeRef.current = true
         setShowFirstUsePreviewNotice(true)
-        setPreviewOpen(true)
     }, [completion, isCloudLoading, isOllamaLoading, isPartnerBusy, projectId])
 
     const sceneTextRef = useRef(sceneText)
@@ -938,7 +937,7 @@ export default function AiHelperPanel({
                     label: item.title || 'AI Feedback',
                     preview: item.response || item.title || 'AI Feedback'
                 })),
-                emptyActionLabel: 'Use “Add to Assistant” in Book Analysis or Scene Analysis.',
+                emptyActionLabel: 'Use “Add to AI Partner” in the Scene Analysis tool.',
             },
             {
                 key: 'feedback' as const,
@@ -2619,7 +2618,30 @@ export default function AiHelperPanel({
             </div>
             {/* Input Area */}
             <div className="relative z-10 border-t border-[#ddd8ce] bg-[linear-gradient(180deg,rgba(245,244,239,0.9)_0%,rgba(251,249,245,0.96)_100%)]">
-                {previewOpen && (
+                {showFirstUsePreviewNotice && !previewOpen && (
+                    <div className="absolute inset-x-4 bottom-full z-20 mb-3 rounded-2xl border border-indigo-200 bg-indigo-50/80 p-3 text-left shadow-sm md:left-4 md:right-4">
+                        <div className="flex items-start gap-3">
+                            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-white text-indigo-500">
+                                <Info className="h-3.5 w-3.5" />
+                            </div>
+                            <div className="min-w-0 flex-1 space-y-1.5">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-700">First AI Partner use in this project</p>
+                                <p className="font-sans text-[11px] leading-relaxed text-slate-700">
+                                    AI only sees the scene text and linked context you send with an AI request. Using AI Partner does not change whether this project is local or cloud.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowFirstUsePreviewNotice(false)}
+                                className="rounded-full border border-indigo-200 bg-white p-1.5 text-indigo-400 transition-colors hover:text-indigo-700"
+                                aria-label="Dismiss AI Partner first-use note"
+                            >
+                                <X className="h-3 w-3" />
+                            </button>
+                        </div>
+                    </div>
+                )}
+            {previewOpen && (
                     <div className="absolute inset-x-4 bottom-full z-20 mb-3 rounded-[1.6rem] border border-[#ddd8ce] bg-[rgba(251,249,245,0.98)] shadow-[0_20px_60px_rgba(15,23,42,0.16)] backdrop-blur md:left-4 md:right-4">
                         <div className="flex items-center justify-between border-b border-[#ece6d9] px-4 py-3">
                             <div>
@@ -2636,29 +2658,6 @@ export default function AiHelperPanel({
                             </button>
                         </div>
                         <div className="max-h-80 overflow-y-auto px-4 py-3 text-[11px] font-mono whitespace-pre-wrap text-slate-600 space-y-4 overscroll-contain touch-auto custom-scrollbar md:max-h-64">
-                            {showFirstUsePreviewNotice && (
-                                <div className="rounded-2xl border border-indigo-200 bg-indigo-50/80 p-3 text-left shadow-sm">
-                                    <div className="flex items-start gap-3">
-                                        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-white text-indigo-500">
-                                            <Info className="h-3.5 w-3.5" />
-                                        </div>
-                                        <div className="min-w-0 flex-1 space-y-1.5">
-                                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-700">First AI Partner use in this project</p>
-                                            <p className="font-sans text-[11px] leading-relaxed text-slate-700">
-                                                AI only sees the scene text and linked context you send with an AI request. Using AI Partner does not change whether this project is local or cloud.
-                                            </p>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowFirstUsePreviewNotice(false)}
-                                            className="rounded-full border border-indigo-200 bg-white p-1.5 text-indigo-400 transition-colors hover:text-indigo-700"
-                                            aria-label="Dismiss AI Partner first-use note"
-                                        >
-                                            <X className="h-3 w-3" />
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
                             <div>
                                 <div className="mb-1 font-bold text-slate-500">{label.toUpperCase()}:</div>
                                 <div className="italic bg-white p-2 border border-slate-100 rounded-lg">{sceneTextRef.current.slice(-1000) || '(empty)'}</div>

@@ -593,3 +593,33 @@ Add a short entry using this format:
 
 - If the script then fails on missing env vars, create the local credential file and ensure the server-only Supabase env vars are available locally.
 
+---
+
+## Issue: `AuthApiError: Invalid Refresh Token: Refresh Token Not Found` on showcase page load
+
+### Symptoms
+
+- Console shows `AuthApiError: Invalid Refresh Token: Refresh Token Not Found` on first load.
+- App still loads the showcase page correctly and does not redirect.
+- Error appears in both local dev and production server logs.
+
+### Cause
+
+- A stale auth cookie from a previous session is present in the browser.
+- When `getVerifiedUser()` calls `supabase.auth.getUser()` server-side, Supabase tries to auto-refresh using that stale cookie and gets an `AuthApiError`.
+- The original code only silenced `AuthSessionMissingError`; `AuthApiError` with an invalid-token message fell through to `console.error()`.
+
+### Fix
+
+- In `lib/supabase/auth.ts`, detect the `AuthApiError` messages `'Invalid Refresh Token'` and `'Refresh Token Not Found'` and treat them as a missing session: call `supabase.auth.signOut({ scope: 'local' })` to clear the stale cookie, then return `null` silently.
+- The same pattern already exists for the browser-side client in `lib/supabase/client-auth.ts`.
+
+### Verification
+
+- `npx tsc --noEmit --pretty false`
+- Reload the local dev server with a stale auth cookie; the console error should no longer appear.
+
+### Notes
+
+- `signOut({ scope: 'local' })` clears the auth cookie from the response headers without making a server round-trip, so it is safe to call in a server component.
+

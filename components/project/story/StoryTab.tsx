@@ -1169,12 +1169,12 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                                         ? "text-slate-300 hover:bg-white/8 hover:text-violet-200 focus-visible:ring-slate-300/20"
                                                         : "text-slate-500 hover:bg-white/80 hover:text-violet-700 focus-visible:ring-[#546354]/20"
                                             )}
-                                            aria-label={isAnalyzing ? 'Stop analysis' : 'Analyze this scene'}
+                                            aria-label={isAnalyzing ? 'Stop analysis' : 'Scene Analysis'}
                                         >
                                             {isAnalyzing ? <Square className="h-4 w-4 fill-current" /> : <Wand2 className="h-4 w-4" />}
                                         </button>
                                     </TooltipTrigger>
-                                    <TooltipContent side="left">{isAnalyzing ? 'Stop analysis' : 'Analyze this scene'}</TooltipContent>
+                                    <TooltipContent side="left">{isAnalyzing ? 'Stop analysis' : 'Scene Analysis'}</TooltipContent>
                                 </Tooltip>
 
                                 <Tooltip>

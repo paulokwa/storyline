@@ -136,8 +136,8 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
             }
 
             setSavedToAssistantIds(prev => new Set(prev).add(id))
-            toast.success('Added to Assistant', {
-                description: 'This analyzer insight is now available in the AI Partner context drawer.'
+            toast.success('Saved to AI Partner & AI Memory', {
+                description: 'Use it as context in AI Partner, or find it anytime under AI Memory.'
             })
             router.refresh()
         } catch (err: any) {
@@ -308,7 +308,7 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
                                             {savedToAssistantIds.has(key) ? (
                                                 <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg">
                                                     <Check className="w-3 h-3" />
-                                                    Added to Assistant
+                                                    Added to AI Partner
                                                 </div>
                                             ) : (
                                                 <button 
@@ -321,7 +321,7 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
                                                     ) : (
                                                         <BrainCircuit className="w-3 h-3 group-hover/btn:scale-110 transition-transform" />
                                                     )}
-                                                    Add to Assistant
+                                                    Add to AI Partner
                                                 </button>
                                             )}
                                         </div>
@@ -369,7 +369,7 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
                                                         {savedToAssistantIds.has(i) ? (
                                                             <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg">
                                                                 <Check className="w-3 h-3" />
-                                                                Added to Assistant
+                                                                Added to AI Partner
                                                             </div>
                                                         ) : (
                                                             <button 
@@ -382,7 +382,7 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
                                                                 ) : (
                                                                     <BrainCircuit className="w-3 h-3 group-hover/btn:scale-110 transition-transform" />
                                                                 )}
-                                                                Add to Assistant
+                                                                Add to AI Partner
                                                             </button>
                                                         )}
                                                     </div>
