@@ -139,6 +139,8 @@ Future agents: treat this workflow as established. Before asking the user about 
 | Restore from backup (local) | Not tested | - | - | Confirm restore works and warnings are clear. |
 | Restore from backup (cloud) | Not tested | - | - | Confirm behavior or absence is intentional. |
 | Backup reminder trigger | Needs retest | - | - | User has not seen reminder trigger despite word growth. |
+| Backup large-file warning (image-heavy project) | Needs retest | AI agent | 2026-05-03 | `BackupBanner.tsx` and both backup callers in `ProjectShell.tsx` now show a `toast.warning` when the backup exceeds 20 MB. To test: open a local project, attach several images as visual references, then trigger a backup from the reminder banner and from the project menu. Confirm a yellow toast appears with wording like "Backup is X MB — your project contains embedded images which increase file size. This is normal." |
+| Backup no-warning for text-only project | Needs retest | AI agent | 2026-05-03 | Trigger a backup on a text-only local project (no attached images). Confirm no size warning toast appears. Also confirm the backup file still downloads correctly and `recordBackupComplete` still fires (reminder resets). |
 
 ## .storyline File Workflow (Save/Save As/Open)
 
