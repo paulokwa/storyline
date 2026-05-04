@@ -1437,6 +1437,22 @@ body {
   background: rgba(42, 56, 87, 0.88) !important;
 }
 
+[data-theme='midnight'] .ai-memory-tab [class*="border-\\[\\#e0ded9\\]"] {
+  border-color: rgba(96, 115, 151, 0.24) !important;
+}
+
+[data-theme='midnight'] .ai-memory-tab [class*="bg-amber-50"],
+[data-theme='midnight'] .ai-memory-tab [class*="bg-blue-50"],
+[data-theme='midnight'] .ai-memory-tab [class*="bg-emerald-50"],
+[data-theme='midnight'] .ai-memory-tab [class*="bg-indigo-50"] {
+  background: rgba(24, 34, 57, 0.88) !important;
+  border-color: rgba(96, 115, 151, 0.34) !important;
+}
+
+[data-theme='midnight'] .ai-memory-tab [class*="text-\\[\\#31332f\\]"] {
+  color: #eff4ff !important;
+}
+
 [data-theme='midnight'] .characters-tab input,
 [data-theme='midnight'] .ideas-tab input,
 [data-theme='midnight'] .locations-tab input,

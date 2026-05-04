@@ -76,11 +76,9 @@ async function normalizeLegacyLocalProjects() {
         const projects = await getAllLocalRecords<LocalProjectRow>(LOCAL_STORE_NAMES.projects)
         const legacyProjects = projects.filter((project) => {
             // Any project in IndexedDB without a local_ prefix is a legacy local project.
-            // Exclude projects that were already migrated to cloud, or are explicitly cloud-enabled
-            // (edge case: orphaned migration artefacts written back to IndexedDB).
+            // Exclude projects already migrated to cloud — they have a cloud project ID link.
             if (isLocalProjectId(project.id)) return false
             if (project.migrated_to_cloud_project_id) return false
-            if (project.storage_mode === 'cloud-enabled') return false
             return true
         })
 
