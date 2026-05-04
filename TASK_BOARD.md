@@ -1,299 +1,208 @@
 # Task Board
 
-Simple repo-based task tracking for agents and humans.
+This file is for active and upcoming work that an AI coding agent can actually implement in the repository.
 
-Keep this lightweight. Move items between sections instead of rewriting the whole file.
+If a task mainly requires Kwame to make a decision, record a video, choose branding, decide pricing, or do other non-coding launch work, it belongs in `docs/human-launch-checklist.md` instead.
 
-- Start future AI coding sessions by reading:
-  - `MASTER_BRIEF.md`
-  - `DECISION_LOG.md`
-  - `SESSION_HANDOVER.md`
-  - `TASK_BOARD.md`
-  - `TESTING.md`
-- Use the session end prompt to update `SESSION_HANDOVER.md`, `TASK_BOARD.md`, and `TESTING.md` after each coding session.
+If a task is a future product idea and not ready to build yet, it belongs in `docs/future-roadmap.md`.
+
+If a task is engineering hardening, reliability, security, performance, architecture, or data-integrity work, it belongs in `docs/technical-debt-roadmap.md` until it becomes active.
+
+Completed work should be summarized in `SESSION_HANDOVER.md`, `TESTING.md`, commit history, and PR/issue history. Do not let this board become a giant archive of everything that ever happened.
+
+---
+
+## Required Reading Before Starting
+
+Before touching code, read:
+
+1. `MASTER_BRIEF.md`
+2. `AGENTS.md`
+3. `TROUBLESHOOTING.md`
+4. `DECISION_LOG.md`
+5. `SESSION_HANDOVER.md`
+6. `TASK_BOARD.md`
+7. `TESTING.md`
+
+Also read the relevant roadmap file when the task points there:
+
+- `docs/technical-debt-roadmap.md` for engineering debt and hardening
+- `docs/future-roadmap.md` for future product ideas
+- `docs/human-launch-checklist.md` for human launch decisions and launch chores
 
 ---
 
 ## Pre-Task Check — Required Before Starting Any Task
 
-**Every AI agent must run this check before beginning any task from Now, Next, or Later.**
+Every AI agent must run this check before beginning any task from `Now`, `Next`, or `Later`.
 
 The goal is to prevent re-doing work that was already completed or partially completed in a previous session.
 
-### Step 1 — Read the continuity files
+### Step 1 — Check continuity files
 
-Before touching any code, read these files in order:
+For the task you are about to start, look for evidence in:
 
-1. `SESSION_HANDOVER.md` — most recent entry first. Note every task listed under "What was completed".
-2. `TESTING.md` — scan the status column for the relevant feature area. Look for `Passed`, `Needs retest`, `Failed`, or dated entries.
-3. `DECISION_LOG.md` — check for locked decisions that affect the task.
-4. `MASTER_BRIEF.md` — verify the task is still aligned with current product direction.
+- `SESSION_HANDOVER.md` under recent `What was completed` sections
+- `TESTING.md` for `Passed`, `Needs retest`, `Failed`, or dated entries
+- `DECISION_LOG.md` for locked decisions that affect the task
+- `MASTER_BRIEF.md` and `AGENTS.md` for workflow rules
+- Recent git history, especially `git log --oneline -20`
+- Relevant source files that may already contain partial implementation
 
-### Step 2 — Check for evidence of prior work
-
-For the specific task you are about to start, look for:
-
-- An entry in `SESSION_HANDOVER.md` "What was completed" that matches or overlaps the task
-- A `Needs retest` row in `TESTING.md` for the same feature (meaning: code is done, browser validation pending)
-- A `Passed` row in `TESTING.md` (meaning: fully done and verified)
-- A relevant commit in `git log --oneline -20` that matches the task subject
-- Partial code in the relevant file that appears to implement some or all of the feature
-
-### Step 3 — Decide before you act
+### Step 2 — Decide before editing
 
 | What you found | What to do |
 |---|---|
-| No evidence of prior work | Proceed with the task normally |
-| Partial implementation found | **Stop. Do not start.** Audit what exists, summarize the state, and report your best judgment on whether to complete, revert, or leave as-is. Wait for user confirmation before writing code. |
-| Full implementation found but test status is `Needs retest` | **Stop. Do not re-implement.** Report that the code is already done and that browser validation is the remaining step. Suggest the specific manual test needed. |
-| Full implementation found and test status is `Passed` | **Stop. Task is done.** Report that it is complete and move it to Done on the board if it is not already there. Do not reopen or modify it. |
-| Ambiguous — some signals but unclear if complete | **Stop. Audit first.** Read the relevant source files, summarize what is implemented, and give your best judgment. State your confidence level. Ask for confirmation before proceeding. |
+| No evidence of prior work | Proceed with the task normally. |
+| Partial implementation found | Stop and audit. Summarize what exists and ask Kwame whether to complete, revert, or leave it. |
+| Full implementation found but test status is `Needs retest` | Do not re-implement. Report that browser/manual validation is the remaining step. |
+| Full implementation found and test status is `Passed` | Task is done. Do not reopen it. |
+| Ambiguous evidence | Stop and audit first. Give a confidence level before recommending next action. |
 
-### Step 4 — Report before you start
+### Step 3 — Report before coding
 
-Before writing any code, state:
+Before writing code, state:
 
 - Which task you are starting
-- What you found in the continuity files for that task
-- Your decision (Proceed / Stop + audit)
-- If proceeding: your plan in 3–5 bullet points
+- What you found in the continuity files
+- Whether you are proceeding or stopping for audit
+- If proceeding, your plan in 3-5 practical steps
 
 ---
 
 ## Now
 
-- Continue typography and contrast audit beyond AI Partner, especially older low-contrast helper/meta text in less-used screens.
-- Check and fix export issues, starting with PDF, then verify the other export formats as well, especially screenplay-mode output errors.
+### 1. Add lightweight in-app launch survey and feedback capture
 
+Build the in-app launch survey described in `docs/future-roadmap.md` and GitHub issue #5.
+
+Scope:
+
+- Add a small in-app survey or feedback flow, preferably reachable from Help or a clear `Send Feedback` entry point.
+- Keep it short, calm, and dismissible.
+- Store product feedback in Supabase instead of relying only on EmailJS/support email.
+- Capture safe context automatically where useful, such as page path, project type, writing mode, AI state, app version, and user agent.
+- Avoid rebuilding the existing support email/contact flow.
+- Avoid public forum/community tooling for now.
+
+Important distinction:
+
+- Support email is for private support issues.
+- The in-app survey is for structured product learning at launch.
+
+Reference:
+
+- `docs/future-roadmap.md` -> `Launch feedback, survey, and future community`
+- GitHub issue #5: `Add lightweight in-app launch survey and feedback capture`
+
+### 2. Continue typography and contrast audit beyond AI Partner
+
+Continue auditing older low-contrast helper text, metadata, empty states, and secondary labels in less-used screens.
+
+Focus on readability and theme consistency, especially Sanctuary and Midnight.
+
+Do not redesign whole screens unless a focused contrast/readability fix requires it.
+
+### 3. Check and fix export issues, starting with PDF
+
+Audit and fix export problems, starting with PDF output and then verifying other export formats.
+
+Pay special attention to screenplay-mode export errors and format parity across:
+
+- PDF
+- DOCX
+- EPUB
+- HTML
+- Markdown
+- Plain text
+
+Before changing export code, check `TESTING.md`, `SESSION_HANDOVER.md`, and `docs/technical-debt-roadmap.md` for known export-related issues.
+
+---
 
 ## Next
 
+### 1. Manual/browser regression pass for recent editor and feedback polish
 
+This is AI-assisted testing guidance, not product redesign.
+
+Check the latest relevant entries in `SESSION_HANDOVER.md` and `TESTING.md`, then guide Kwame through any manual browser tests that are still marked as needed.
+
+Likely areas:
+
+- Comment highlight polish
+- Show Highlights toggle
+- Current-scene find
+- Prose link support
+- Screenplay keyboard behavior
+- Export behavior
+- Help/Settings visual polish
+
+### 2. Atomic project scaffolding verification
+
+Verify that cloud project creation consistently uses the atomic RPC path and does not leave half-created projects on failure.
+
+Reference:
+
+- `docs/technical-debt-roadmap.md` -> `Atomic Project Scaffolding (RPC)`
+- `TESTING.md` -> atomic project scaffolding failure scenario
+
+Only implement fixes if the verification shows a real gap.
+
+---
 
 ## Later
 
+These are AI-doable tasks, but they are not active yet. Future agents should only pull them forward when Kwame asks or when they become relevant to a current sprint.
 
-- Explore non-annoying support prompts for free local users, such as donate, review, share, or upgrade nudges.
-- Create YouTube/tutorial content for Ollama, Gemini API, OpenAI API, and general onboarding.
-- Consider offline sync options such as Google Drive.
+### 1. Advanced offline / pending sync queue
 
-## Decisions / Blockers
+Implement the IndexedDB-backed pending-save queue described in `docs/technical-debt-roadmap.md` if offline/cloud-save reliability becomes important enough to prioritize.
 
-- Review whether scene analysis outputs should save directly to AI Memory when the user chooses Add to AI.
-- Audit app-wide AI terminology and decide whether to use AI, Assistant, Muse, or another label consistently.
-- Update feature/showcase page after a root-and-branch feature audit. (Partial: showcase expanded 2026-05-04 based on known shipped features; full formal audit per technical-debt-roadmap.md still deferred.)
-- Rework help menu/page near launch after major feature changes settle; follow the detailed two-phase audit and rewrite process in `docs/technical-debt-roadmap.md` under "Help System Feature Audit & Rewrite" instead of asking AI to simply improve the page.
-- Decide launch trial/cloud pricing model before public launch, including trial length, cloud access limits, and showcase/onboarding copy.
-- Capture final showcase screenshots after app name, branding, and key UI polish are settled.
-- Update verification/welcome email branding after final app name is chosen.
-- Create browser icons/favicons after final branding decision.
-- Perform full app naming consistency pass after final app name is chosen.
-- Consider paying a designer/Fiverr freelancer for branding, assets, and landing/showcase polish.
-- Consider adding a GitHub Project board after the Markdown workflow proves useful.
-- Consider adding an `AGENTS.md` or `CONTRIBUTING.md` if agents need stricter operating rules.
+This is different from future Google Drive sync. Google Drive sync is a product idea in `docs/future-roadmap.md`; pending sync is technical reliability work.
 
-## Done
-- Implemented Feedback Panel comment highlight polish:
-  - Wired the pre-existing `.comment-highlight.active` CSS class so clicking/jumping to a comment applies a visible amber ring to the inline span(s) via DOM query in `SceneEditor.tsx`
-  - Added a "Show Highlights" toggle button (Highlighter icon) in the Feedback panel header, backed by `showHighlights`/`setShowHighlights` in CommentsContext
-  - Suppresses all inline highlight visuals via `[data-highlights-hidden]` CSS without touching TipTap marks or stored comment data
-  - Scroll-to-comment fires only on explicit "Jump to position" (`scrollTrigger`) — not on bare comment card click
-  - No schema changes, no DB migrations, no filter chip logic changes
-  - Documented AI filter inconsistency and active-highlight-resolve edge case in `docs/technical-debt-roadmap.md` items #6 and #7
-- Completed editor/font polish Block 1 and Block 2:
-  - centralized the prose editor font registry in shared editor utilities
-  - expanded prose font choices with `Source Serif 4` and `Merriweather`
-  - preserved the existing `storyline_editor_prefs` localStorage key and backward compatibility for older saved prose preferences
-  - improved the prose manuscript-view settings surface with clearer display-only guidance
-  - added prose-only paragraph spacing controls
-  - kept screenplay behavior and export logic untouched
-- Completed editor/font polish Block 3B Safe Pass 1:
-  - added a lightweight writing-surface word count inside `SceneEditor.tsx`
-  - shows current scene words and selected-word count when text is selected
-  - uses a shared plain-text helper in `lib/story/word-count.ts` for prose and screenplay
-  - keeps the UI read-only and does not add find/search, replace, project totals, or links
-  - reused the shared counting helper in `lib/project-stats.ts` so editor and stats counts stay aligned
-- Completed editor/font polish Block 3B Safe Pass 2:
-  - added a current-scene find surface inside `SceneEditor.tsx`
-  - supports a visible `Find` control plus scoped `Ctrl/Cmd + F` when focus is already inside the editor shell
-  - includes a search field, match count, next/previous navigation, and close/reset behavior on scene switch
-  - keeps matching case-insensitive and local to the current scene only
-  - follow-up polish fixed active-result snapping by focusing the editor, selecting the active match, and revealing it inside the scene scroll region
-  - added subtle in-scene match highlighting with a distinct active-match treatment, cleaned up automatically when find closes or the scene changes
-  - still does not add replace or any project-wide or structure search
-- Completed editor/font polish Block 4 Safe Pass 1:
-  - added explicit prose-only link support inside `SceneEditor.tsx`
-  - added a prose link button to the selection BubbleMenu and the floating mobile/tablet formatting toolbar
-  - added a compact add/edit/remove link dialog for selected prose text
-  - disabled automatic typed/pasted link creation and normalized bare domains like `example.com` to `https://example.com`
-  - rejected dangerous protocols like `javascript:` and `data:`
-  - preserved safe read-only opening while avoiding accidental editable-click navigation
-  - kept screenplay free of link UI and left horizontal rules, toolbar grouping, and export parity untouched
-- Fixed screenplay `Enter` crash when a screenplay block contained a `hardBreak`:
-  - updated `lib/tiptap/screenplay-keyboard.ts` so predictive `Enter` now splits the block first and then sets the next screenplay node type in a separate command
-  - preserved screenplay node definitions and the existing `Tab` / `Shift + Tab` / `Backspace` behavior
-- Fixed screenplay `Tab` / `Shift + Tab` escaping focus into the Story right rail:
-  - updated `lib/tiptap/screenplay-keyboard.ts` so a plain `paragraph` in screenplay mode now participates in the screenplay cycle maps instead of returning `false`
-  - `Tab` now treats a plain paragraph like the baseline Action state and cycles to `screenplayCharacter`
-  - `Shift + Tab` now treats a plain paragraph like the baseline reverse Action state and cycles to `screenplayTransition`
-- Added a dismiss `X` to the migrated local backup warning banner:
-  - dismissal is component-state only for the current page/component lifecycle
-  - the banner still reappears after refresh or when reopening the local backup project
-  - `Open Cloud Version`, delete/trash behavior, and migration logic were left unchanged
-- Added a visible storage-state badge beside the project title in the header:
-  - `Cloud`, `Local`, and `Local backup` states now show without relying on avatar hover
-  - migrated local backups keep a slightly more cautionary badge treatment
-  - the migrated-backup banner remains separate and still reappears on reopen/refresh
-- Added explicit short-text analyzer feedback for empty / under-50-character scenes and made collapsed structure parents auto-expand when a new child is added, without changing analyzer API rules or structure CRUD/reorder logic.
-- Stabilized empty-screenplay Backspace/analyzer behavior by updating `lib/tiptap/screenplay-keyboard.ts` so the default empty paragraph no longer converts on Backspace and empty screenplay nodes consume Backspace safely, and by updating `lib/story/scene-text.ts` so empty screenplay blocks no longer count as analyzable text. Screenplay formatting/export logic was left untouched.
-- Simplified the scene editor heading metadata so it now shows a single `SCREENPLAY` or `DRAFT` label, keeps the scene title primary, and hides `Last edited by you` while preserving collaborator attribution for other editors.
-- Refined the Story workspace tablet layout so the top action row now keeps only `Analyze` and `Ask AI`, while `Read Aloud`, `Dictate`, `Feedback`, `Gallery` / `Visual References`, and `Help` live in the right rail on tablet.
-- Tightened desktop Story shell alignment and moved the project-scoped desktop Help action into the Story right rail while preserving the existing Help route and tour anchor.
-- Reworked the Story workspace desktop/tablet right side into a shared utility rail so AI Partner, Feedback, and `Gallery` / `Visual References` share one vertical access point, while Analyze, Dictate, and Read Aloud now live on the same rail as direct actions.
-- Fixed the Midnight-mode AI Partner composer regression so the lower chat/prompt area and `PremiumEditor` prompt surface no longer stay light in dark theme.
-- Hardened Library sort persistence so it initializes from browser storage with a `Recent` fallback instead of defaulting through `Custom`.
-- Fixed incomplete guided setup resume drift by persisting the guided flow sub-step alongside the saved guided draft.
-- Normalized the Library incomplete-setup delete confirmation to match the regular project-card confirmation treatment more closely.
-- Added a local-only dev test account workflow:
-  - removed committed test credential references from continuity docs
-  - documented the workflow in `docs/dev-test-account.md`
-  - added `scripts/create-test-account.ts`
-  - added `npm run create:test-account`
-  - ensured `.local/test-account.env` and `.env.test.local` are gitignored
-- Fixed standalone `create:test-account` script compatibility with plain Node and `tsx` by removing the shared `server-only` import from `lib/supabase/admin.ts`.
-- Added full-app dark mode regression pass test case to `TESTING.md`.
-- Hardened project Help shortcuts access:
-  - added direct `Open keyboard shortcuts` actions in `/project/[id]/help`
-  - clarified shortcuts guidance to use `Shift + /` wording and the non-typing requirement
-  - wired project Help into the existing shortcuts modal with shared client-side event dispatch
-  - removed the duplicate in-tree shortcuts modal render from `ProjectShell`
-- Minimal Help Center Midnight + scanability polish:
-  - added a shared Help root class so `/help` and `/project/[id]/help` use the same scoped Help surface styling
-  - replaced hardcoded light Help surfaces with Sanctuary-compatible classes and added Help-specific Midnight selectors
-  - improved search prominence with a visible label and clearer search wrapper
-  - reduced secondary-card competition and tightened article-card spacing for better scanability
-  - tightened Help layout spacing on smaller screens without changing Help logic or content
-- Minimal Account Settings Sanctuary polish pass:
-  - reordered Settings to `Profile / Security`, `Appearance`, then `AI Partner Settings`
-  - separated profile, email, password, and danger-zone areas into clearer visual sections
-  - reduced AI-section dominance with calmer Sanctuary styling and plain-language copy
-  - improved trust-sensitive helper text readability
-  - replaced the glassy Appearance card treatment with a flatter Sanctuary surface
-  - improved narrow-screen stacking for the header, AI rows, and delete confirmation controls
-- Hardened Next 16 local dev-origin and auth navigation reliability:
-  - added `127.0.0.1` to `allowedDevOrigins` while keeping the existing LAN origin
-  - added guarded client-side auth redirects for login, signup, and reset-password so those pages surface a clear fallback message instead of spinning forever when navigation never leaves the current route
-  - documented the confirmed `.next` reset plus dev-origin fix in `TROUBLESHOOTING.md`
-- Hide incomplete summary export modes from Export Manuscript modal to avoid confusing users.
-- Hide incomplete Episodes/Scenes export scope options from Export Manuscript modal to avoid confusing users.
-- Fix Export Manuscript include toggles so they remain visible and the full row is clickable, not just the tiny switch.
-- Fix Export Manuscript include toggles so they actually affect exported structure headings consistently across formats.
-- Clarify Export Manuscript include switches with explicit On/Off state and conventional switch coloring.
-- Align Project Settings and Share modal footer actions to the Export Manuscript footer pattern and document it in `DESIGN.md`.
-- Improved inline image insertion discoverability in prose/book mode by adding contextual helper tips to the Scene Gallery.
-- Standardized AI Partner button styles: Transitioned all "outline" variants to ghost/borderless styles consistent with the Sanctuary design system.
-- Fixed layout alignment between AI Partner and Feedback panels.
-- Added first-pass retry/init hardening for cloud project creation and editor saves:
-  - cloud project creation now retries transient RPC failures before surfacing an error
-  - cloud scene autosave and scene-title saves now retry transient persistence failures
-  - scene history capture retries in the background and no longer blocks a successful save
-  - editor UI now shows `Save failed` if retries are exhausted
-- Atomic cloud project scaffolding now uses Supabase RPC:
-  - cloud project creation flows through `lib/persistence/cloud-projects.ts`
-  - the app calls `create_cloud_project` to create the project, owner membership, starter nodes, scenes, and entities in one database function
-  - keep follow-up verification in `TESTING.md` under `Atomic project scaffolding failure scenario`
-- Added local Ollama usage-event logging integrity path:
-  - client-side Ollama runs report `completed`, `failed`, and `cancelled` outcomes to `/api/ai/local-usage`
-  - server-side route records those events into `ai_usage_events` with provider/billing-mode metadata for admin and abuse visibility
-- Hardened AI trial cost finalization against real provider usage where available:
-  - app-managed AI helper and scene analyzer now prefer provider-reported token usage for final trial costing instead of relying only on character-based output estimates
-  - the existing reserve/floor model remains as a fallback safety net when provider usage metadata is unavailable
-  - finalized trial usage now records whether costing used provider-reported usage or estimate fallback in request metadata for later audit
-- Browser regression completed for recent image/AI-availability changes:
-  - user manually verified screenplay visual references behavior
-  - user manually verified AI-off analyzer feedback
-  - user manually verified book/prose image behavior regression remained clean
-- Clean up profile/account menu legal links: remove the separate Terms of Service, Privacy Policy, and AI Disclaimer links from the main profile dropdown, keep legal links in the showcase/library footer, and optionally replace them with a single lower-priority "Legal & Privacy" entry under Settings/About/Help if in-app access is still needed. Ensure Admin remains admin-only.
-- Replaced remaining browser system dialogs across the app:
-  - swapped Recovery `Clear Trash` from native `confirm()` to an in-app `AlertDialog`
-  - replaced export, recovery, and saved-response `alert()` error boxes with `sonner` toasts
-  - replaced Project Settings editor-mode `window.confirm()` with an in-app `AlertDialog`
-  - verified via repo-wide search that no `alert()` / `confirm()` / `prompt()` calls remain in `components`, `app`, or `lib`
-- Converted AI trial balance display from dollar values to percentages across Settings, AiFullCanvas status bar, and AiHelperPanel header nudge; added `formatTrialRemainingPct` helper in `lib/ai/trial.ts`; quiet nudge appears below 50% trial remaining.
-- Added 4 Help Center articles to `lib/help.ts` covering AI setup modes, BYOK (OpenAI / Gemini), Ollama local AI, and using Storyline without AI; closed the "Add AI explanation page" task.
-- feat: show toast warning when backup file exceeds 20 MB (wired pre-existing `estimateBackupSizeBytes` return value in `BackupBanner.tsx` and two callers in `ProjectShell.tsx`).
-- Audited AI Partner typography/readability and removed persistent footer clutter:
-  - deleted the stale generated `font-audit-report.md` artifact while keeping the reusable `font:audit` script
-  - removed the always-visible AI privacy warning below the prompt box
-  - moved the AI context preview toggle into the header utility icon row beside the tour/help controls
-  - added a one-time per-project AI privacy/context note inside the context preview the first time AI Partner is used
-  - tightened low-contrast preview and empty-state text in `AiHelperPanel.tsx`
+### 2. Destructive action guard improvements
 
-- Fixed `StructureTree.tsx` server render crash caused by render-time `window` access.
-- Made missing AI settings default to AI off across runtime, settings, preferences save, and admin reporting paths.
-- Hid AI-specific editor empty-state nudges when AI is disabled.
-- Added analyzer-specific AI access feedback when scene analysis is clicked while AI is unavailable.
-- Added screenplay-only Visual References UX using existing scene attachments.
-- Blocked inline screenplay image insertion while preserving prose inline illustrations.
-- Fixed structure tree drag-and-drop neighbor highlighting and grab handle visibility.
-- Fixed sidebar title word-wrapping issues on desktop.
-- Restored `StoryTab.tsx` after code corruption and added proper empty states for container nodes.
-- Made deletion confirmation prompts dynamic based on node type.
-- Fixed scene selection persistence after move/reorder.
-- Replaced the AI partner horizontal mode buttons with a selectable dropdown.
-- Merged quick writing ideas into the main AI mode selector and removed visible prompt injection for those modes.
-- Removed Archive Context from the AI Partner while keeping normal AI Memory saving/viewing.
-- Tightened redundant AI Partner header and footer spacing on desktop.
-- Removed the redundant static Mode pill from the AI Partner header.
-- Fixed screenplay AI insertion so non-chat screenplay modes attempt structured screenplay block insertion.
-- Fixed structure tree act checkbox collapse on desktop.
-- Fixed story-context selection so tree visuals, explicit AI selection, and AI-ready chip roll-up behave consistently.
-- Clarified prose scene gallery wording while preserving screenplay visual reference labels.
-- Removed the empty collaborator avatar pill from solo projects while preserving shared-project collaborator avatars.
-- Replaced per-instance AI throttling with a shared `ai_usage_events`-backed rate limiter for helper, scene analyzer, and AI import detect routes.
-- Reused the Help Center for cloud sync guidance and made it accessible from the library and app nav.
-- Added root-level continuity files.
-- Added session start prompt.
-- Added session end prompt.
-- Added initial decision log entries.
-- Summarized `docs/technical-debt-roadmap.md` into the root continuity files.
-- Refined mobile project card UX: Action buttons (Edit, Palette, Trash) are now always visible on touch viewports (including iPad Pro via a <1280px override) to prevent accidental project entry, with added entrance animations and increased metadata contrast.
-- Fixed library project-card delete confirmation layout: Dialog now clears the project type icon by hiding it when active, preventing visual overlap on narrow viewports/tablets.
-- Standardized library card content alignment: Titles and descriptions now use fixed-height containers to ensure uniform layout and perfectly aligned horizontal lines across the grid.
-- Refactored "Working on another device?" guidance from an inline library banner to a persistent system notification event with a full detail view.
-- Made the guided project creation `Story Tone` step dynamic based on AI availability, so AI-specific wording only appears when the account has AI enabled.
-- Implemented a shared staged loading UX for major app transitions:
-  - Added `RouteLoadingScreen` with quiet initial delay, skeleton placeholders, and longer-wait reassurance copy.
-  - Wired route-level loading states into Library, New Project, Settings, and `project/[id]/story`.
-  - Replaced the old plain-text local project open placeholder with the shared workspace loading treatment.
-  - Verified with `npx tsc --noEmit --pretty false`.
-  - Important scope note for future agents: the first cloud project-shell load is still limited by same-segment fetches inside `app/(app)/project/[id]/layout.tsx`; do not redo the new loading screens unless you are intentionally addressing that layout-level limitation.
-- Implemented manual Save / Save As / Open workflow for `.storyline` files (IMPLEMENTATION COMPLETE, PENDING MANUAL SMOKE TEST):
-  - Added native File System Access API support with automated download-based fallbacks.
-  - Rebranded "Import Backup" to "Open Project File" in the Library.
-  - Added "Save Project" and "Save As..." to the project menu for local projects.
-  - Implemented `Ctrl+S` / `Cmd+S` keyboard shortcuts for manual saving.
-  - Integrated disk-link status (filename, last save time) into the navigation dropdown.
-  - Rebranded manuscript export to "Export Manuscript..." to distinguish from native file saving.
-  - Fixed "Export Manuscript" regression where local projects triggered a raw download instead of the export modal.
-  - Added full IndexedDB support to the manuscript export payload generator.
-  - Fixed a `RangeError` during EPUB/HTML export caused by missing `comment` marks in the TipTap schema.
-  - Centralized export extensions in `lib/export/normalize.ts` and ensured `CommentMark` is included.
-  - Fixed a critical bug where `ProjectShell.tsx` was passing the project ID instead of content to the save utility.
-  - Ensured sanitization of browser-specific file handles in exported files.
-- Expanded desktop layout to full-width across Library, Project Shell, and AI Sanctuary, removing legacy `max-w-` constraints and adding ultra-wide grid support.
-- Centered the project shell navigation tabs (Story, AI Partner, etc.) to improve visual balance on expanded layouts.
-- #20 - AI abuse-controls hardening:
-  - Upgraded the centralized AI rate limiter in `lib/ai/rate-limit.ts` to detect and throttle IP and Device Fingerprint clusters across different user accounts.
-  - Expanded the disposable email domain blocklist in the `evaluate_and_grant_ai_trial` database function to include 40+ known providers.
-  - Implemented `lib/ai/abuse-report.ts` to provide admin visibility into suspicious request clusters and multi-accounting behavior.
-- Cleaned up Export Metadata helper copy and ensured it is covered in the future Help System Feature Audit roadmap.
-- Showcase page PM audit and feature expansion (2026-05-04):
-  - Added "Built different, by design" 2×2 differentiator section (offline/local-first, auto-save + snapshots, Books & Screenplays, AI on your terms)
-  - Added export formats section (PDF, DOCX, EPUB, HTML, Markdown, Plain Text)
-  - Rebranded all "Beta" copy to "Early Access" except the subtle nav badge
-  - ESLint clean; no unused imports
-- Refactored `app/(app)/project/[id]/layout.tsx` to enable route-level instant loading for cloud projects:
-  - Added `app/(app)/project/[id]/loading.tsx` for child route transitions.
-  - Wrapped project layout fetching logic in `<Suspense>` with `RouteLoadingScreen` fallback.
-  - Enabled the "Workspace" skeleton UI to appear immediately on first load or hard refresh.
+Add clearer child-count warnings for deleting structure containers and consider safer entity delete confirmations if accidental deletes become a problem.
+
+Reference:
+
+- `docs/technical-debt-roadmap.md` -> `Destructive Action Guards`
+
+### 3. Feedback Panel AI filter consistency
+
+Decide and implement whether the Feedback panel AI chip should include both `ai-analysis` and `ai-feedback` comment types.
+
+Reference:
+
+- `docs/technical-debt-roadmap.md` -> `Feedback Panel: AI Filter Consistency`
+
+### 4. Portable image export and asset bundling
+
+Improve exported image portability when this becomes a priority.
+
+Reference:
+
+- `docs/technical-debt-roadmap.md` -> `Portable Image Export and Asset Bundling`
+
+### 5. Backup and asset handling improvements
+
+Improve local backup versioning and high-resolution asset serialization after the core launch path is stable.
+
+Reference:
+
+- `docs/technical-debt-roadmap.md` -> `Backup and Asset Handling`
+
+---
+
+## Not Here Anymore
+
+The following types of items were intentionally moved out of this file:
+
+- Human decisions and launch chores -> `docs/human-launch-checklist.md`
+- Future product ideas -> `docs/future-roadmap.md`
+- Engineering debt details -> `docs/technical-debt-roadmap.md`
+- Durable locked decisions -> `DECISION_LOG.md`
+- Long completed-work history -> `SESSION_HANDOVER.md`, `TESTING.md`, commit history, and GitHub issues/PRs
+
+This keeps `TASK_BOARD.md` usable as a real working board instead of a warehouse with fluorescent lights and forgotten boxes.
