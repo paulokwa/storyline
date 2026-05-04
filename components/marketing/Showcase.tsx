@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
-import { PenLine, Sparkles, BookOpen, Layers, Zap, MessageSquare, ChevronRight, Layout, Database, BarChart3, Mail } from 'lucide-react'
+import { PenLine, Sparkles, BookOpen, Layers, Zap, ChevronRight, Layout, Database, Mail, CloudOff, History, Film, FileDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default function Showcase() {
@@ -17,6 +17,8 @@ export default function Showcase() {
         { id: 'objects', label: 'Objects', sub: 'Manage important relics', img: '/showcase/objects.png' },
         { id: 'ideas', label: 'Ideas', sub: 'Save sparks for later', img: '/showcase/structure.png' },
     ]
+
+    const exportFormats = ['PDF', 'DOCX', 'EPUB', 'HTML', 'Markdown', 'Plain Text']
 
     return (
         <div className="min-h-screen bg-[#fbf9f5] text-slate-800 font-sans selection:bg-[#546354]/10">
@@ -34,7 +36,7 @@ export default function Showcase() {
                 <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
                     <a href="#features" className="hover:text-[#546354] transition-colors">Features</a>
                     <a href="#workflow" className="hover:text-[#546354] transition-colors">How it works</a>
-                    <a href="#beta" className="hover:text-[#546354] transition-colors">The Beta</a>
+                    <a href="#access" className="hover:text-[#546354] transition-colors">Early Access</a>
                 </nav>
                 <div className="flex items-center gap-4">
                     <Link href="/login" className="text-sm font-medium text-slate-500 hover:text-[#546354] transition-colors px-2">Sign In</Link>
@@ -50,10 +52,10 @@ export default function Showcase() {
                 {/* Hero Section */}
                 <section className="relative pt-40 pb-20 px-6 overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-[120%] -z-10 opacity-40">
-                        <Image 
-                            src="/showcase/hero.png" 
-                            alt="Creative Sanctuary" 
-                            fill 
+                        <Image
+                            src="/showcase/hero.png"
+                            alt="Creative Sanctuary"
+                            fill
                             priority
                             className="object-cover opacity-60"
                             quality={100}
@@ -64,7 +66,7 @@ export default function Showcase() {
                     <div className="max-w-5xl mx-auto text-center">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#546354]/5 border border-[#546354]/10 text-[#546354] text-xs font-semibold mb-8 animate-fade-in-up">
                             <Sparkles className="w-3 h-3" />
-                            <span>Free during beta</span>
+                            <span>Free Early Access</span>
                         </div>
                         <h1 className="text-5xl md:text-7xl font-serif text-slate-800 mb-6 leading-[1.1] animate-fade-in-up animation-delay-100">
                             Your Creative Sanctuary <br /> for Storytelling
@@ -89,7 +91,7 @@ export default function Showcase() {
                     {/* App Teaser Mockup */}
                     <div className="max-w-6xl mx-auto mt-20 relative p-4 bg-white/50 backdrop-blur-sm rounded-[32px] border border-white/50 shadow-2xl animate-fade-in-up animation-delay-500">
                         <div className="rounded-[24px] overflow-hidden border border-slate-100 shadow-inner bg-slate-50 aspect-[16/10] relative">
-                            <Image 
+                            <Image
                                 src="/showcase/editor.png"
                                 alt="Storyline Editor Interface"
                                 fill
@@ -100,7 +102,7 @@ export default function Showcase() {
                     </div>
                 </section>
 
-                {/* Feature Pills / Trusted By style area */}
+                {/* Feature Pills */}
                 <section className="py-20 bg-white border-y border-slate-50">
                     <div className="max-w-6xl mx-auto px-6">
                         <p className="text-center text-[10px] uppercase tracking-[0.2em] font-bold text-slate-400 mb-12">Designed for modern authors</p>
@@ -128,6 +130,54 @@ export default function Showcase() {
                                     <Zap className="w-6 h-6 text-slate-400" />
                                 </div>
                                 <h3 className="font-serif italic text-lg text-slate-700">Fluid Workflow</h3>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Why Storyline — Four Differentiators */}
+                <section className="py-24 bg-[#fbf9f5]">
+                    <div className="max-w-6xl mx-auto px-6">
+                        <div className="text-center mb-16">
+                            <h2 className="text-4xl font-serif text-slate-800 mb-4">Built different, by design</h2>
+                            <p className="text-slate-500 max-w-xl mx-auto">Four things you won&apos;t find bundled together anywhere else.</p>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div className="bg-white rounded-3xl p-10 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                                <div className="w-12 h-12 rounded-2xl bg-[#546354]/10 flex items-center justify-center mb-6">
+                                    <CloudOff className="w-6 h-6 text-[#546354]" />
+                                </div>
+                                <h3 className="text-2xl font-serif text-slate-800 mb-3">Your work, your device</h3>
+                                <p className="text-slate-500 leading-relaxed">
+                                    Choose local-only mode and your manuscript never touches a server. Write offline, save directly to your file system, and restore any time — no account required.
+                                </p>
+                            </div>
+                            <div className="bg-white rounded-3xl p-10 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                                <div className="w-12 h-12 rounded-2xl bg-[#546354]/10 flex items-center justify-center mb-6">
+                                    <History className="w-6 h-6 text-[#546354]" />
+                                </div>
+                                <h3 className="text-2xl font-serif text-slate-800 mb-3">Never lose a word</h3>
+                                <p className="text-slate-500 leading-relaxed">
+                                    Every edit is auto-saved as you write. Scene snapshots let you step back in time, and full project backups give you a single file you can archive, share, or restore forever.
+                                </p>
+                            </div>
+                            <div className="bg-white rounded-3xl p-10 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                                <div className="w-12 h-12 rounded-2xl bg-[#546354]/10 flex items-center justify-center mb-6">
+                                    <Film className="w-6 h-6 text-[#546354]" />
+                                </div>
+                                <h3 className="text-2xl font-serif text-slate-800 mb-3">Books and Screenplays</h3>
+                                <p className="text-slate-500 leading-relaxed">
+                                    Two dedicated writing modes, one workspace. Switch between a Book or Screenplay project and get the right structure, formatting, and export for each — out of the box.
+                                </p>
+                            </div>
+                            <div className="bg-white rounded-3xl p-10 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                                <div className="w-12 h-12 rounded-2xl bg-[#546354]/10 flex items-center justify-center mb-6">
+                                    <Sparkles className="w-6 h-6 text-[#546354]" />
+                                </div>
+                                <h3 className="text-2xl font-serif text-slate-800 mb-3">AI on your terms</h3>
+                                <p className="text-slate-500 leading-relaxed">
+                                    Bring your own API key for Gemini or OpenAI, or run AI entirely free with local Ollama on your own machine. No locked-in subscription. No AI without your explicit permission.
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -174,7 +224,7 @@ export default function Showcase() {
                                 </div>
                                 <h2 className="text-4xl font-serif text-slate-800 leading-tight">Collaborate with an <br className="hidden md:block" /> AI partner in context</h2>
                                 <p className="text-lg text-slate-500 leading-relaxed">
-                                    Bring your own key and choose Gemini, OpenAI, or local Ollama. Storyline’s AI Partner doesn&apos;t just write for you, it writes with you, directly inside the editor and in the context of your characters, world, and voice.
+                                    Bring your own key and choose Gemini, OpenAI, or local Ollama. Storyline&apos;s AI Partner doesn&apos;t just write for you, it writes with you, directly inside the editor and in the context of your characters, world, and voice.
                                 </p>
                                 <ul className="space-y-4 pt-4">
                                     {['BYOK with Gemini, OpenAI, or Ollama', 'Context-aware brainstorming and feedback', 'Worldbuilding consistency checks'].map((item) => (
@@ -207,13 +257,13 @@ export default function Showcase() {
                                 </p>
                                 <div className="grid grid-cols-2 gap-4 pt-4">
                                     {universeTabs.map((tab) => (
-                                        <button 
+                                        <button
                                             key={tab.id}
                                             onClick={() => setActiveUniverseTab(tab.id)}
                                             className={cn(
                                                 "p-4 rounded-2xl border transition-all duration-300 text-left cursor-pointer",
-                                                activeUniverseTab === tab.id 
-                                                    ? "bg-white border-[#546354]/20 shadow-lg ring-1 ring-[#546354]/10" 
+                                                activeUniverseTab === tab.id
+                                                    ? "bg-white border-[#546354]/20 shadow-lg ring-1 ring-[#546354]/10"
                                                     : "bg-white/40 border-slate-100 shadow-sm hover:bg-white hover:shadow-md"
                                             )}
                                         >
@@ -228,7 +278,7 @@ export default function Showcase() {
                             </div>
                             <div className="flex-1 relative aspect-[4/3] lg:aspect-[16/10]">
                                 <AnimatePresence mode="wait">
-                                    <motion.div 
+                                    <motion.div
                                         key={activeUniverseTab}
                                         initial={{ opacity: 0, scale: 0.95, y: 10 }}
                                         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -236,12 +286,12 @@ export default function Showcase() {
                                         transition={{ duration: 0.4, ease: "easeOut" }}
                                         className="relative z-10 p-2 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden h-full"
                                     >
-                                        <Image 
-                                            src={universeTabs.find(t => t.id === activeUniverseTab)?.img || '/showcase/characters.png'} 
-                                            alt="Worldbuilding Database" 
-                                            fill 
+                                        <Image
+                                            src={universeTabs.find(t => t.id === activeUniverseTab)?.img || '/showcase/characters.png'}
+                                            alt="Worldbuilding Database"
+                                            fill
                                             sizes="(max-width: 1024px) 100vw, 50vw"
-                                            className="rounded-2xl object-cover p-2" 
+                                            className="rounded-2xl object-cover p-2"
                                             priority
                                         />
                                     </motion.div>
@@ -252,8 +302,34 @@ export default function Showcase() {
                     </div>
                 </section>
 
+                {/* Export Formats */}
+                <section className="py-24 bg-white border-y border-slate-50">
+                    <div className="max-w-6xl mx-auto px-6">
+                        <div className="flex flex-col lg:flex-row items-center gap-16">
+                            <div className="flex-1 space-y-6">
+                                <div className="w-12 h-12 rounded-2xl bg-[#546354]/10 flex items-center justify-center">
+                                    <FileDown className="w-6 h-6 text-[#546354]" />
+                                </div>
+                                <h2 className="text-4xl font-serif text-slate-800 leading-tight">Export your manuscript, <br className="hidden md:block" /> your way</h2>
+                                <p className="text-lg text-slate-500 leading-relaxed">
+                                    When you&apos;re ready to share, submit, or publish, Storyline exports your work in every format a modern writer needs — with proper screenplay formatting built in.
+                                </p>
+                            </div>
+                            <div className="flex-1">
+                                <div className="grid grid-cols-3 gap-4">
+                                    {exportFormats.map((fmt) => (
+                                        <div key={fmt} className="flex items-center justify-center p-5 rounded-2xl bg-[#fbf9f5] border border-slate-100 shadow-sm hover:shadow-md hover:border-[#546354]/20 transition-all">
+                                            <span className="font-serif italic text-lg text-slate-700">{fmt}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 {/* Workflow / How it works */}
-                <section id="workflow" className="py-20 bg-white overflow-hidden">
+                <section id="workflow" className="py-20 bg-[#fbf9f5] overflow-hidden">
                     <div className="max-w-6xl mx-auto px-6">
                         <div className="text-center mb-16">
                             <h2 className="text-4xl font-serif text-slate-800 mb-4">Craft your masterpiece in three steps</h2>
@@ -261,9 +337,8 @@ export default function Showcase() {
                         </div>
 
                         <div className="grid md:grid-cols-3 gap-12 relative">
-                            {/* Connector line for desktop */}
                             <div className="hidden md:block absolute top-[52px] left-0 w-full h-px bg-slate-100 -z-10" />
-                            
+
                             <div className="space-y-6">
                                 <div className="w-12 h-12 rounded-full bg-[#546354] text-white flex items-center justify-center text-xl font-serif italic shadow-lg mx-auto md:mx-0">1</div>
                                 <h3 className="text-2xl font-serif text-slate-800 text-center md:text-left">Plant the Seed</h3>
@@ -289,8 +364,8 @@ export default function Showcase() {
                     </div>
                 </section>
 
-                {/* Beta Note */}
-                <section id="beta" className="py-32 px-6 bg-[#fbf9f5]">
+                {/* Early Access */}
+                <section id="access" className="py-32 px-6 bg-[#fbf9f5]">
                     <div className="max-w-4xl mx-auto bg-white rounded-[40px] p-12 md:p-20 shadow-xl border border-slate-100 relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-8 opacity-5">
                             <Sparkles className="w-40 h-40 text-[#546354]" />
@@ -299,14 +374,14 @@ export default function Showcase() {
                             <div className="w-16 h-16 rounded-2xl bg-[#546354]/5 flex items-center justify-center mx-auto mb-6">
                                 <Zap className="w-8 h-8 text-[#546354]" />
                             </div>
-                            <h2 className="text-4xl md:text-5xl font-serif text-slate-800">Storyline is in Beta</h2>
+                            <h2 className="text-4xl md:text-5xl font-serif text-slate-800">Get in early</h2>
                             <p className="text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed">
-                                We're actively building the future of storytelling. During this phase, <strong>all features are free to use</strong>. We simply ask for your feedback to help us reach our final form.
+                                Storyline is growing fast. Early access is completely free — every feature, no limits. All we ask is that you write something great and tell us what you think.
                             </p>
                             <div className="pt-4">
                                 <Link href="/signup">
                                     <Button className="h-14 px-6 md:px-12 bg-[#546354] hover:bg-[#3d4a3d] text-white rounded-full font-serif italic text-lg md:text-xl shadow-lg transition-all w-full sm:w-auto">
-                                        Join the Beta — It's Free
+                                        Get Early Access — It&apos;s Free
                                     </Button>
                                 </Link>
                             </div>
@@ -337,7 +412,7 @@ export default function Showcase() {
                             <Mail className="w-4 h-4" />
                             <span>Questions or Feedback?</span>
                         </div>
-                        <p className="text-xl text-slate-600 mb-4">We're here to help you throughout your writing journey.</p>
+                        <p className="text-xl text-slate-600 mb-4">We&apos;re here to help you throughout your writing journey.</p>
                         <a href="mailto:mwake.dev@gmail.com" className="text-2xl font-serif italic text-[#546354] hover:underline transition-all underline-offset-8 decoration-1">
                             mwake.dev@gmail.com
                         </a>
@@ -365,7 +440,7 @@ export default function Showcase() {
                                 <ul className="space-y-3 text-sm font-medium text-slate-500">
                                     <li><a href="#features" className="hover:text-[#546354]">Features</a></li>
                                     <li><a href="#workflow" className="hover:text-[#546354]">Workflow</a></li>
-                                    <li><a href="#beta" className="hover:text-[#546354]">Beta Access</a></li>
+                                    <li><a href="#access" className="hover:text-[#546354]">Early Access</a></li>
                                 </ul>
                             </div>
                             <div className="space-y-4">
@@ -382,7 +457,7 @@ export default function Showcase() {
                     <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-10 border-t border-slate-50">
                         <p className="text-[11px] font-bold tracking-widest uppercase text-slate-300">© 2026 Storyline — Built for Authors</p>
                         <div className="text-[11px] font-bold tracking-widest uppercase text-[#546354] flex gap-4">
-                            <span>Storyline is Free During Beta</span>
+                            <span>Free Early Access</span>
                         </div>
                     </div>
                 </div>
