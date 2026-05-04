@@ -1492,6 +1492,13 @@ body {
   border-color: rgba(96, 115, 151, 0.24) !important;
 }
 
+/* Detail view pane — direct rule so bg-[#fbf9f5] is fully overridden */
+[data-theme='midnight'] .ai-memory-detail {
+  background:
+    radial-gradient(circle at top, rgba(56, 78, 129, 0.14), transparent 40%),
+    linear-gradient(180deg, rgba(13, 18, 34, 0.98) 0%, rgba(11, 17, 31, 0.99) 100%) !important;
+}
+
 [data-theme='midnight'] .ai-memory-tab [class*="bg-amber-50"],
 [data-theme='midnight'] .ai-memory-tab [class*="bg-blue-50"],
 [data-theme='midnight'] .ai-memory-tab [class*="bg-emerald-50"],

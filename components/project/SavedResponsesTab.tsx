@@ -332,7 +332,7 @@ export default function SavedResponsesTab({ projectId }: { projectId: string }) 
 
             {/* Detail View */}
             <div className={cn(
-                "flex-1 flex flex-col bg-[#fbf9f5] overflow-hidden relative",
+                "ai-memory-detail flex-1 flex flex-col bg-[#fbf9f5] overflow-hidden relative",
                 !selectedId && "hidden md:flex"
             )}>
                 {selectedResponse ? (
