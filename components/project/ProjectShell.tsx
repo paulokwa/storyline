@@ -281,8 +281,11 @@ export default function ProjectShell({
 
     async function handleBackupFromEducation() {
         try {
-            const { wordCount } = await exportLocalBackup(project.id)
+            const { wordCount, sizeBytes } = await exportLocalBackup(project.id)
             recordBackupComplete(project.id, wordCount)
+            if (sizeBytes > 20_000_000) {
+                toast.warning(`Backup is ${Math.round(sizeBytes / 1_000_000)} MB — your project contains embedded images which increase file size. This is normal.`)
+            }
         } catch (err) {
             console.error('[ProjectShell] Local backup export failed:', err)
         } finally {
@@ -372,8 +375,11 @@ export default function ProjectShell({
                                 }}
                                 onOpenExport={() => {
                                     setRestoreModalOpen(false)
-                                    exportLocalBackup(project.id).then(({ wordCount }) => {
+                                    exportLocalBackup(project.id).then(({ wordCount, sizeBytes }) => {
                                         recordBackupComplete(project.id, wordCount)
+                                        if (sizeBytes > 20_000_000) {
+                                            toast.warning(`Backup is ${Math.round(sizeBytes / 1_000_000)} MB — your project contains embedded images which increase file size. This is normal.`)
+                                        }
                                     })
                                 }}
                             />

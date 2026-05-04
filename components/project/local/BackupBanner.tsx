@@ -11,6 +11,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Download, X } from 'lucide-react'
+import { toast } from 'sonner'
 import {
     checkBackupReminder,
     snoozeBackupReminder,
@@ -58,8 +59,11 @@ export default function BackupBanner({ projectId }: { projectId: string }) {
     async function handleExport() {
         setIsExporting(true)
         try {
-            const { wordCount } = await exportLocalBackup(projectId)
+            const { wordCount, sizeBytes } = await exportLocalBackup(projectId)
             recordBackupComplete(projectId, wordCount)
+            if (sizeBytes > 20_000_000) {
+                toast.warning(`Backup is ${Math.round(sizeBytes / 1_000_000)} MB — your project contains embedded images which increase file size. This is normal.`)
+            }
             setJustExported(true)
             // Reset the "just exported" flash after 3s so banner disappears cleanly
             setTimeout(() => setReminder({ shouldRemind: false }), 3000)

@@ -74,7 +74,6 @@ Before writing any code, state:
 
 
 - Writing UX polish: focus, paper transitions, font sizing, and themes.
-- Backup and asset handling improvements for `.storyline` files, including file-size warnings for backups with base64-embedded assets.
 - Add clearer free trial indicators and onboarding copy for new users.
 - Add AI explanation page covering BYOK, Ollama/local AI, optional app-managed AI usage, and using the app without AI.
 - Add feature list / benefits page covering autosave, recovery, snapshots, backup, local/cloud options, AI workflow help, and privacy choices.

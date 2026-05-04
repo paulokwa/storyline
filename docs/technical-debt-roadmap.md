@@ -291,7 +291,7 @@ This document tracks identified architectural risks, technical debt, and reliabi
 *   **Open Items**:
     *   **Versioning**: Support multiple local backups with timestamps/names rather than a single manual file.
     *   **Better asset handling**: Optimize how binary files and high-res attachments are serialized in the `.storyline` format.
-    *   **Backup file size warning**: Warn users when a backup is likely to be very large (especially if assets like images are embedded).
+    *   **Backup file size warning**: ✅ **Done (2026-05-03)**. `estimateBackupSizeBytes()` was already implemented in `lib/backup/export-local-backup.ts` and returned from `exportLocalBackup()`, but the return value was discarded by all callers. Added a `toast.warning()` in `BackupBanner.tsx` and both backup callers in `ProjectShell.tsx` when `sizeBytes > 20 MB`. Message explains embedded images are the cause and that it is normal.
 *   **Priority**: Low
 
 ### 5. Portable image export and asset bundling
