@@ -168,6 +168,69 @@ export const HELP_TOPICS: HelpTopic[] = [
     sampleQuestions: ['How do I recover a scene?', 'Where is recovery?', 'Can I restore lost text?']
   },
   {
+    id: 'ai-setup',
+    title: 'How do I set up AI in Storyline?',
+    summary: 'Choose the AI option that fits your needs — free trial, your own key, local AI, or no AI at all.',
+    answer:
+      'Storyline gives you four AI options. You choose one during setup and can change it any time in Settings → AI Partner Settings.\n\nFree Trial AI\nThe easiest way to start. Storyline provides a small sponsored credit so you can try the AI Partner and scene analyzer straight away, with no account or key needed. When the trial runs out, you switch to one of the other options.\n\nYour Own API Key (BYOK)\nConnect your own OpenAI or Gemini account. You pay your provider directly, and Storyline never charges you for AI usage. Good if you use AI regularly and want full control over your costs.\n\nLocal AI with Ollama\nRun AI entirely on your own computer. Nothing is sent to any server. Best for privacy-conscious writers or those without reliable internet. Requires installing Ollama on your machine first.\n\nNo AI\nSkip AI completely. Every writing, planning, export, and collaboration feature still works. You can turn AI on later from Settings at any time.\n\nTo change your choice:\n1. Go to Settings (your avatar or the menu).\n2. Open AI Partner Settings.\n3. Select a mode and follow the prompts.',
+    keywords: ['ai setup', 'setup ai', 'configure ai', 'ai options', 'which ai', 'free trial', 'api key', 'ollama', 'byok', 'no ai', 'ai settings', 'choose ai'],
+    relatedRoutes: ['/settings', '/ai'],
+    sampleQuestions: [
+      'How do I set up AI?',
+      'Which AI option should I choose?',
+      'How do I change my AI settings?',
+      'What AI options does Storyline have?'
+    ]
+  },
+  {
+    id: 'ai-byok',
+    title: 'How do I use my own API key?',
+    summary: 'Connect your own OpenAI or Gemini account so you pay your provider directly.',
+    answer:
+      'BYOK (Bring Your Own Key) means you create a free API key with OpenAI or Google and paste it into Storyline. Storyline uses that key to make AI requests on your behalf. You pay your provider based on your usage — Storyline does not charge you for AI.\n\nHow to get an OpenAI key:\n1. Go to platform.openai.com and sign in or create an account.\n2. Open API keys and create a new secret key.\n3. Copy the key immediately — it will not be shown again.\n\nHow to get a Gemini key:\n1. Go to aistudio.google.com and sign in.\n2. Click Get API Key.\n3. Copy the key.\n\nHow to add your key to Storyline:\n1. Go to Settings → AI Partner Settings.\n2. Select Use Your Own API Key.\n3. Choose OpenAI or Gemini.\n4. Paste your key and click Test & Save.\n\nYour key is stored only on your account and is never shared or logged by Storyline.',
+    keywords: ['api key', 'byok', 'bring your own key', 'openai key', 'gemini key', 'own key', 'openai', 'gemini', 'connect ai', 'paste key'],
+    relatedRoutes: ['/settings'],
+    sampleQuestions: [
+      'How do I use my own API key?',
+      'How do I connect OpenAI to Storyline?',
+      'How do I add a Gemini key?',
+      'What is BYOK?',
+      'Where do I paste my API key?'
+    ]
+  },
+  {
+    id: 'ai-ollama',
+    title: 'How do I use Ollama for local AI?',
+    summary: 'Run AI entirely on your own computer — nothing leaves your device.',
+    answer:
+      'Ollama lets you run an AI model locally so your writing never leaves your machine. This is the most private option. It requires installing Ollama on your computer first.\n\nRequirements:\n- A reasonably modern Mac, Windows, or Linux machine.\n- Enough disk space for your chosen model (typically 4–8 GB per model).\n- Some comfort with following technical setup steps.\n\nSetup steps:\n1. Download and install Ollama from ollama.com.\n2. Open a terminal and run: ollama pull llama3.2 (or another model you prefer).\n3. Start Ollama and confirm it is running.\n4. In Storyline, go to Settings → AI Partner Settings.\n5. Select Local AI with Ollama.\n6. Enter your Ollama URL (usually http://127.0.0.1:11434) and your model name.\n7. Click Test Connection.\n\nIf the connection fails, try 127.0.0.1 instead of localhost. Some browsers block mixed-content requests to localhost by name.\n\nYou can also add a Gemini API key as a fallback in case your Ollama server is not running when you try to use AI.',
+    keywords: ['ollama', 'local ai', 'private ai', 'offline ai', 'run locally', 'local model', 'ollama setup', 'llama', 'on device', 'no cloud'],
+    relatedRoutes: ['/settings'],
+    sampleQuestions: [
+      'How do I use Ollama?',
+      'How do I run AI locally?',
+      'How do I set up local AI?',
+      'Can I use AI without sending data to a server?',
+      'How do I connect Ollama to Storyline?'
+    ]
+  },
+  {
+    id: 'ai-no-ai',
+    title: 'Can I use Storyline without AI?',
+    summary: 'Yes — all writing, planning, and export features work without any AI setup.',
+    answer:
+      'AI is completely optional. You can write full novels, screenplays, and stories without using any AI feature.\n\nWhat works without AI:\n- The full Story editor (prose and screenplay modes)\n- Structure, chapters, scenes, and acts\n- Characters, Ideas, Locations, and Objects\n- Visual references and scene gallery\n- Import and export (DOCX, PDF, Markdown, and more)\n- Backups and recovery\n- Collaboration and feedback tools\n- Local and cloud storage\n\nAI features that require a connected AI option:\n- AI Partner chat and brainstorming\n- Scene analysis\n- AI-assisted import detection\n\nTo turn AI off:\n1. Go to Settings → AI Partner Settings.\n2. Toggle off Enable AI Partner.\n\nYou can turn it back on and set up an AI option at any time without losing your work.',
+    keywords: ['no ai', 'without ai', 'ai off', 'disable ai', 'writing without ai', 'skip ai', 'ai optional', 'turn off ai'],
+    relatedRoutes: ['/settings'],
+    sampleQuestions: [
+      'Can I use Storyline without AI?',
+      'Do I need AI to use Storyline?',
+      'How do I turn off AI?',
+      'Does AI affect my writing?',
+      'What features work without AI?'
+    ]
+  },
+  {
     id: 'shortcuts',
     title: 'Where are keyboard shortcuts?',
     summary: 'Quickly access keyboard shortcuts and navigation help.',

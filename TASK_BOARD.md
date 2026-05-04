@@ -73,9 +73,6 @@ Before writing any code, state:
 ## Later
 
 
-- Writing UX polish: focus, paper transitions, font sizing, and themes.
-- Add clearer free trial indicators and onboarding copy for new users.
-- Add AI explanation page covering BYOK, Ollama/local AI, optional app-managed AI usage, and using the app without AI.
 - Add feature list / benefits page covering autosave, recovery, snapshots, backup, local/cloud options, AI workflow help, and privacy choices.
 - Explore non-annoying support prompts for free local users, such as donate, review, share, or upgrade nudges.
 - Create YouTube/tutorial content for Ollama, Gemini API, OpenAI API, and general onboarding.
@@ -223,6 +220,9 @@ Before writing any code, state:
   - replaced export, recovery, and saved-response `alert()` error boxes with `sonner` toasts
   - replaced Project Settings editor-mode `window.confirm()` with an in-app `AlertDialog`
   - verified via repo-wide search that no `alert()` / `confirm()` / `prompt()` calls remain in `components`, `app`, or `lib`
+- Converted AI trial balance display from dollar values to percentages across Settings, AiFullCanvas status bar, and AiHelperPanel header nudge; added `formatTrialRemainingPct` helper in `lib/ai/trial.ts`; quiet nudge appears below 50% trial remaining.
+- Added 4 Help Center articles to `lib/help.ts` covering AI setup modes, BYOK (OpenAI / Gemini), Ollama local AI, and using Storyline without AI; closed the "Add AI explanation page" task.
+- feat: show toast warning when backup file exceeds 20 MB (wired pre-existing `estimateBackupSizeBytes` return value in `BackupBanner.tsx` and two callers in `ProjectShell.tsx`).
 - Audited AI Partner typography/readability and removed persistent footer clutter:
   - deleted the stale generated `font-audit-report.md` artifact while keeping the reusable `font:audit` script
   - removed the always-visible AI privacy warning below the prompt box

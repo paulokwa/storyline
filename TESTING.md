@@ -184,6 +184,9 @@ Future agents: treat this workflow as established. Before asking the user about 
 | Test | Status | Tested by | Date tested | Notes |
 |---|---|---|---|---|
 | Local dev test account workflow | Passed | User | 2026-05-02 | User verified end-to-end local execution: `npm run create:test-account` created the account from `.local/test-account.env` on first run and then correctly reported the account already exists on second run. |
+| Trial percentage display — Settings page | Needs retest | AI agent | 2026-05-03 | `SettingsView.tsx` now shows trial balance as a percentage (e.g. "72%") and "X% used" instead of dollar values. Browser validation needed: open Settings with a sponsored-trial account, confirm no dollar amounts visible, percentage reflects remaining balance, and progress bar still renders. |
+| Trial percentage display — AI status bar | Needs retest | AI agent | 2026-05-03 | `AiFullCanvas.tsx` status bar now shows "Trial Left: X%" instead of a dollar amount. Browser validation needed: open the AI full-canvas view on a sponsored-trial account, confirm the percentage label appears in the bottom status bar. |
+| Trial nudge in AI Helper Panel | Needs retest | AI agent | 2026-05-03 | `AiHelperPanel.tsx` now shows a quiet "Trial: X% left" nudge in the panel header when below 50% trial remaining. Below 25% (`LOW_BALANCE_MICROS`) it uses amber text; above that it uses muted slate. Browser validation needed: sign in with a trial account below 50%, confirm nudge appears; test above 50%, confirm no nudge. |
 | New user sees free trial messaging | Not tested | - | - | Confirm trial message is visible and understandable. |
 | Existing user account state displays correctly | Not tested | - | - | Confirm no incorrect trial prompts. |
 | Account deletion with trial data | Not tested | - | - | Confirm cleanup/hardening works as expected. |
@@ -214,6 +217,7 @@ Future agents: treat this workflow as established. Before asking the user about 
 | Help page covers current features | Not tested | - | - | Confirm coverage against real app features. |
 | Project Help shortcuts access | Needs retest | AI agent | 2026-05-01 | Browser validation is still needed to confirm project `Open keyboard shortcuts` actions open the shortcuts modal and `Shift + /` opens the modal only while focus is outside text inputs/editors. |
 | Help Center Midnight and scanability polish | Needs retest | AI agent | 2026-05-01 | Browser validation is still needed for `/help` and `/project/[id]/help` in Sanctuary and Midnight, default/matched/no-results search states, tablet and narrow/mobile layout, and confirming the tour CTA behavior remains unchanged. |
+| AI Help Center articles searchability | Needs retest | AI agent | 2026-05-03 | 4 new `lib/help.ts` entries added: `ai-setup`, `ai-byok`, `ai-ollama`, `ai-no-ai`. Browser validation needed: open Help Center (sidebar or `/help`), search "api key" → confirm BYOK article surfaces; search "ollama" → confirm Ollama article surfaces; search "no ai" → confirm no-AI article surfaces; search "setup" → confirm ai-setup article surfaces. |
 | User-facing AI setup instructions | Not tested | - | - | Confirm non-technical users can follow them. |
 | Mobile tour performance | Not tested | - | - | Cover section may be too slow; check asset sizes. |
 

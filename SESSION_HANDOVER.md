@@ -5,6 +5,41 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-03 - Trial Percentage Display, Backup Size Warning, AI Help Center Articles
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- **Trial percentage conversion (front-end only):** Added `formatTrialRemainingPct(remainingMicros, grantedMicros): number` helper to `lib/ai/trial.ts`. Updated 3 display locations to show percentages instead of dollar values: `SettingsView.tsx` (Settings page progress bar and used/limit row), `AiFullCanvas.tsx` (bottom status bar "Trial Left"), and `AiHelperPanel.tsx` (quiet header nudge below 50%). Dollar values are no longer shown to users; backend billing math is unchanged.
+- **Quiet trial nudge in AiHelperPanel:** When `billing_mode === 'app_managed_trial'` and remaining percentage is < 50%, a small uppercase "Trial: X% left" label appears in the non-fullCanvas panel header. Uses amber text when below `LOW_BALANCE_MICROS` threshold (`isLowTrialBalance`), muted slate otherwise.
+- **Backup file-size warning:** Connected the pre-existing `estimateBackupSizeBytes` return value (was always discarded by all callers). 3 call sites updated: `BackupBanner.tsx` and two backup callers in `ProjectShell.tsx`. Shows a `toast.warning` when the backup exceeds 20 MB. Zero changes to backup logic or schema.
+- **4 AI Help Center articles added to `lib/help.ts`:** `ai-setup` (how to configure AI), `ai-byok` (OpenAI/Gemini BYOK), `ai-ollama` (local Ollama setup), `ai-no-ai` (using Storyline without AI). All follow existing `HelpTopic` schema with keywords and sample questions. No new routes or components required.
+- **Pre-Task Check protocol added to TASK_BOARD.md:** 4-step mandatory check for AI agents before starting any task, with decision table. Prevents re-doing already-completed work.
+- **Technical debt roadmap expanded:** Advanced offline sync (Tier 2 plan) and destructive action guards both audited and documented; backup size warning marked Done.
+- **TASK_BOARD.md cleanup:** Removed completed tasks from Later; added Done entries for all work above.
+- **TypeScript:** Clean compile (`npx tsc --noEmit` exit 0) after all changes.
+
+### Current status
+
+All code changes committed. Help Center articles, trial display, and backup warning are live. Session end protocol complete.
+
+### Next recommended step
+
+- Run a manual browser regression pass for the new features:
+  1. Open Settings with a sponsored-trial account — confirm percentage display, no dollar amounts
+  2. Open AI Helper Panel below 50% trial — confirm quiet nudge appears
+  3. Trigger a backup on an image-heavy local project — confirm size warning toast appears
+  4. Search "api key", "ollama", "no ai", "setup" in Help Center — confirm 4 new articles surface
+
+### Risks or warnings
+
+- The `LOW_BALANCE_MICROS` threshold for amber nudge color is 250,000 micros. This is ~12.5% of the default 2,000,000 micro budget — could seem low if the budget changes. Adjust `isLowTrialBalance` if needed.
+- Dollar values removed from all user-facing surfaces. Internal admin/logging paths are unchanged and still use micros.
+
+---
 ## 2026-05-03 - Feedback Panel: Comment Highlight Polish
 
 ### Current branch
