@@ -1,6 +1,6 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
+# Dependencies
 /node_modules
 /.pnp
 .pnp.*
@@ -10,27 +10,31 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
+# Testing
 /coverage
 
-# next.js
+# Next.js
 /.next/
 /out/
 
-# production
+# Production
 /build
 
-# misc
-.DS_Store
-*.pem
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
 
-# debug
+# Debug logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (NEVER commit these to Git)
+# Misc
+.DS_Store
+*.pem
+
+# Environment files — NEVER commit these to Git
 .env
 .env.local
 .env.development.local
@@ -39,18 +43,15 @@ yarn-error.log*
 .env*.local
 .local/
 
-# vercel
+# Hosting / platform local folders
 .vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# Local Netlify folder
 .netlify
 
-#impeccable
+# Local AI / agent / MCP configuration
+.mcp.json
+.vscode/mcp.json
+.claude/settings.local.json
 .agents/skills/impeccable/
 
-#MCP
-.vscode/mcp.json
+# Local VS Code workspace settings
+.vscode/settings.json
