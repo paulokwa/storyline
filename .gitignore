@@ -51,6 +51,7 @@ yarn-error.log*
 .mcp.json
 .vscode/mcp.json
 .claude.json
+.claude/settings.json
 .claude/settings.local.json
 .agents/skills/impeccable/
 
