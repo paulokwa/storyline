@@ -276,7 +276,8 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
                                 <div
                                     key={key}
                                     className={cn(
-                                        'rounded-2xl p-4 border',
+                                        'analysis-section rounded-2xl p-4 border',
+                                        `analysis-section-${key}`,
                                         bg, border
                                     )}
                                 >
@@ -336,7 +337,7 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
 
                             {/* Suggestions */}
                             {result.suggestions.length > 0 && (
-                                <div className="rounded-2xl p-4 border bg-green-50/50 border-green-100">
+                                <div className="analysis-section analysis-section-suggestions rounded-2xl p-4 border bg-green-50/50 border-green-100">
                                     <div className="flex items-center gap-2 mb-3">
                                         <Lightbulb className="w-3.5 h-3.5 shrink-0 text-green-500" />
                                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
