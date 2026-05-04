@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
 import type { Database as SupabaseDatabase } from '@/lib/supabase/types'
 import { AI_TOUR_COMPLETE_KEY, AI_TOUR_PENDING_KEY, AI_TOUR_START_EVENT, AI_TOUR_STARTED_KEY } from '@/lib/ai/tour'
+import { formatTrialRemainingPct, isLowTrialBalance } from '@/lib/ai/trial'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { useComments } from '@/components/project/CommentsContext'
 import { analyzeContextSize, ContextSizingResult, SAFEGUARD_THRESHOLDS } from '@/lib/ai/config'
@@ -610,6 +611,11 @@ export default function AiHelperPanel({
     const resolvedProjectTitle = projectTitle?.trim() || 'Untitled Project'
     const isOllamaMode = aiSettings.billing_mode === 'ollama' || aiSettings.ai_provider === 'ollama'
     const modeLabel = getBillingModeLabel((aiSettings.billing_mode as any) || 'app_managed_trial')
+    const isTrial = aiSettings.billing_mode === 'app_managed_trial'
+    const trialRemainingPct = isTrial && aiSettings.trial?.granted_micros
+        ? formatTrialRemainingPct(aiSettings.trial.remaining_micros, aiSettings.trial.granted_micros)
+        : null
+    const showTrialNudge = trialRemainingPct !== null && trialRemainingPct < 50
 
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'
@@ -2045,6 +2051,14 @@ export default function AiHelperPanel({
                                 {aiSettings.ai_enabled && (
                                     <p className="truncate text-[9px] font-bold uppercase tracking-[0.22em] text-[#8fa0c0]">
                                         {modeLabel} · {isOllamaMode ? 'Ollama' : getAiProviderLabel(aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider)}
+                                    </p>
+                                )}
+                                {showTrialNudge && (
+                                    <p className={cn(
+                                        "text-[9px] font-bold uppercase tracking-[0.22em]",
+                                        isLowTrialBalance(aiSettings.trial?.remaining_micros) ? "text-amber-500" : "text-slate-400"
+                                    )}>
+                                        Trial: {trialRemainingPct}% left
                                     </p>
                                 )}
                                 <div className="flex items-center gap-1">

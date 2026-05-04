@@ -10,7 +10,7 @@ import { getSceneTextForAi } from '@/lib/story/scene-text'
 import { readStoredSceneNodeId, resolveSceneNodeId, writeStoredSceneNodeId } from '@/lib/project/active-scene'
 import { getAiProviderLabel } from '@/lib/ai/providers'
 import { getBillingModeLabel } from '@/lib/ai/modes'
-import { formatMicrosAsUsd } from '@/lib/ai/trial'
+import { formatTrialRemainingPct } from '@/lib/ai/trial'
 import { AI_TOUR_COMPLETE_KEY, queueAiTourStart } from '@/lib/ai/tour'
 
 interface AiFullCanvasProps {
@@ -171,7 +171,7 @@ export default function AiFullCanvas({
                     </span>
                     {isAiEnabled && <span>AI Model: {getAiProviderLabel(aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider)}</span>}
                     {aiSettings?.billing_mode === 'app_managed_trial' && (
-                        <span>Trial Left: ${formatMicrosAsUsd(aiSettings?.trial?.remaining_micros)}</span>
+                        <span>Trial Left: {formatTrialRemainingPct(aiSettings?.trial?.remaining_micros, aiSettings?.trial?.granted_micros)}%</span>
                     )}
                 </div>
                 <div className="hidden shrink-0 whitespace-nowrap text-right text-[9px] leading-none tracking-[0.06em] text-slate-500 xl:block">

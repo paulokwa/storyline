@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils'
 import AiSetupGuide from '@/components/app/AiSetupGuide'
 import { getAiProviderLabel } from '@/lib/ai/providers'
 import { getBillingModeLabel, type BillingMode } from '@/lib/ai/modes'
-import { formatMicrosAsUsd, getTrialStatusMessage, isLowTrialBalance } from '@/lib/ai/trial'
+import { formatTrialRemainingPct, getTrialStatusMessage, isLowTrialBalance } from '@/lib/ai/trial'
 import { uploadUserAvatar } from '@/lib/supabase/user-avatars'
 
 type StatusMessage = {
@@ -104,6 +104,7 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
     const trialProgress = trial?.granted_micros
         ? Math.min(100, Math.round((trialUsedMicros / trial.granted_micros) * 100))
         : 0
+    const trialRemainingPct = formatTrialRemainingPct(trial?.remaining_micros, trial?.granted_micros)
     const lowTrialBalance = isLowTrialBalance(trial?.remaining_micros)
 
     useEffect(() => {
@@ -945,9 +946,9 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                                     <p className="text-sm leading-6 text-slate-500">{trialStatusMessage}</p>
                                                 </div>
                                                 <div className="text-left sm:text-right">
-                                                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Trial credit remaining</p>
+                                                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Trial remaining</p>
                                                     <p className={`text-lg font-semibold ${lowTrialBalance ? 'text-amber-600' : 'text-slate-900'}`}>
-                                                        ${formatMicrosAsUsd(trial?.remaining_micros)}
+                                                        {trialRemainingPct}%
                                                     </p>
                                                 </div>
                                             </div>
@@ -958,9 +959,8 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                                         style={{ width: `${trialProgress}%` }}
                                                     />
                                                 </div>
-                                                <div className="flex flex-col gap-1 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-                                                    <span>Used ${formatMicrosAsUsd(trialUsedMicros)}</span>
-                                                    <span>Limit ${formatMicrosAsUsd(trial?.granted_micros)}</span>
+                                                <div className="text-sm text-slate-500">
+                                                    <span>{trialProgress}% used</span>
                                                 </div>
                                             </div>
                                             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-6 text-slate-600">

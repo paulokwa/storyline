@@ -76,6 +76,12 @@ export function isLowTrialBalance(remainingMicros: number | null | undefined) {
     return (remainingMicros ?? 0) > 0 && (remainingMicros ?? 0) <= LOW_BALANCE_MICROS
 }
 
+export function formatTrialRemainingPct(remainingMicros: number | null | undefined, grantedMicros: number | null | undefined): number {
+    const remaining = Math.max(remainingMicros ?? 0, 0)
+    const granted = Math.max(grantedMicros ?? 1, 1)
+    return Math.min(100, Math.max(0, Math.round((remaining / granted) * 100)))
+}
+
 export function estimateTrialReserveMicros(params: {
     endpoint: TrialEndpoint
     inputChars: number
