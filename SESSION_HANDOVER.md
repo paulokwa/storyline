@@ -5,6 +5,48 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-04 - Midnight Theme Readability Fixes + Scene Analysis "Add to Assistant" Bug Fix
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- **Feedback panel midnight readability (CommentsPanel):** Added scoped `[data-theme='midnight'] .comments-panel` CSS rules to `app/globals.css`. Targets: referenced-text block (`bg-slate-100/50`), inline/AI/scene type badges (amber/violet/blue), active filter button states (indigo/emerald/amber), resolved thread border, and the hardcoded `border-[#d8ddcf]` thread separator. Text and badge contrast now readable in midnight mode without restructuring the component.
+
+- **AI Memory tab midnight fix (SavedResponsesTab):** The detail-view div had its own `bg-[#fbf9f5]` class that overrode the parent dark gradient. The existing `[class*="bg-\\[\\#fbf9f5\\]"]` descendant rule in globals.css was silently broken — CSS string `\\[` resolves to a literal backslash, which never matches the HTML class `bg-[#fbf9f5]`. Fixed by: (1) adding `ai-memory-detail` class to the detail-view div in `components/project/SavedResponsesTab.tsx`, (2) adding a direct `[data-theme='midnight'] .ai-memory-detail` rule in `globals.css`. Detail view now shows the dark gradient in midnight mode when items are present.
+
+- **Scene Analysis panel midnight fix (SceneAnalysisPanel):** Panel was not inheriting midnight at all. Fixed by: (1) adding `scene-analysis-panel` class to the panel wrapper, (2) adding `analysis-section` and `analysis-section-{key}` (tension/pacing/dialogue/summary/suggestions) semantic classes to each card. Added direct CSS rules in `globals.css` for each named class instead of using `[class*="bg-amber-50"]` substring matching — which is unreliable for Tailwind opacity-modified classes (e.g. `bg-amber-50/60`). User confirmed fixed.
+
+- **"Add to Assistant" error in SceneAnalysisPanel fixed:** `handleAddToAssistant` (and `handleSave`) were calling Supabase directly via `(supabase as any).from('ai_responses').insert(...)`. For local projects this sends a `local_xxx` project ID to the cloud DB, causing an FK/RLS violation. The `PostgrestError` has non-enumerable properties that serialize as `{}` when logged. Fixed by: replacing both direct Supabase calls with `saveAiResponse()` from `lib/persistence/ai-feedback.ts`, which routes local project IDs to IndexedDB and cloud IDs to Supabase. Also changed `type: 'analysis_feedback'` to `type: 'analysis'` (valid enum value). Removed the now-unused `createClient` import and `const supabase` line.
+
+- **CSS escaping root cause documented:** Discovered that `[class*="bg-\\[\\#...\\]"]` patterns in globals.css are broken by CSS string escape semantics. The safe pattern going forward is to add a semantic class name to the element and target it directly — no substring matching on arbitrary-value Tailwind classes.
+
+- **TypeScript:** Clean compile (`npx tsc --noEmit --pretty false` exit 0) after all changes.
+
+### Files changed
+
+- `app/globals.css` — Added midnight CSS blocks for `.comments-panel`, `.ai-memory-detail`, `.scene-analysis-panel`, and `.analysis-section-{key}` classes.
+- `components/project/SavedResponsesTab.tsx` — Added `ai-memory-detail` class to detail-view div.
+- `components/project/story/SceneAnalysisPanel.tsx` — Added semantic classes to panel and section cards; replaced direct Supabase inserts in `handleSave` and `handleAddToAssistant` with `saveAiResponse()`; removed `createClient` import.
+
+### Current status
+
+All changes complete. TypeScript clean. Awaiting manual browser validation for the midnight theme fixes and the "Add to Assistant" flow on both local and cloud projects.
+
+### Next recommended step
+
+1. Open a local project in midnight mode → run Scene Analysis → click "Add to Assistant" on a section. Confirm it succeeds (toast: "Added to Assistant") and the item appears in AI Memory.
+2. Open a cloud project in midnight mode → repeat the same. Confirm it also succeeds.
+3. Visually confirm the Feedback panel, AI Memory detail view, and Scene Analysis panel all look correct in midnight mode.
+
+### Risks or warnings
+
+- `type: 'analysis'` is now used for both "Save to Archive" and "Add to Assistant" entries from SceneAnalysisPanel. They are distinguishable by the `action` field (`analyze_scene` vs `analysis_feedback`). If a check constraint is ever added for `action` values, `analysis_feedback` may need to be reviewed.
+- The CSS escaping pattern `[class*="bg-\\[\\#...\\]"]` appears in other places in `globals.css` for other components. Those rules may also be silently broken. Future agents should audit and migrate to semantic class names on a case-by-case basis.
+
+---
 ## 2026-05-04 - Showcase Page PM Audit and Feature Expansion
 
 ### Current branch

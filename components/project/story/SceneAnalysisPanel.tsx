@@ -8,7 +8,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { cn } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/client'
+import { saveAiResponse } from '@/lib/persistence/ai-feedback'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
@@ -50,8 +50,7 @@ export default function SceneAnalysisPanel({ result, onClose, projectType, proje
     const [savingFeedbackId, setSavingFeedbackId] = useState<string | number | null>(null)
     const [savedToFeedbackIds, setSavedToFeedbackIds] = useState<Set<string | number>>(new Set())
     const { addComment } = useComments()
-    const supabase = createClient()
-    
+
     // Close on Escape key
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
@@ -83,26 +82,20 @@ SUGGESTIONS:
 ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
             `.trim()
 
-            const { error } = await (supabase
-                .from('ai_responses' as any) as any)
-                .insert({
-                    project_id: projectId,
-                    title: `${label} Analysis: ${new Date().toLocaleDateString()}`,
-                    prompt: 'Scene Analysis Action',
-                    response: formattedResponse,
-                    type: 'analysis',
-                    source_label: `Analysis: ${label}`,
-                    model: `${getAiProviderLabel(result.provider)} (Analysis)`,
-                    action: 'analyze_scene'
-                })
+            const { error } = await saveAiResponse({
+                project_id: projectId,
+                title: `${label} Analysis: ${new Date().toLocaleDateString()}`,
+                prompt: 'Scene Analysis Action',
+                response: formattedResponse,
+                type: 'analysis',
+                source_label: `Analysis: ${label}`,
+                model: `${getAiProviderLabel(result.provider)} (Analysis)`,
+                action: 'analyze_scene',
+            })
 
             if (error) {
-                console.error('Supabase Save Error Details:', {
-                    message: error.message,
-                    code: error.code,
-                    details: error.details,
-                    hint: error.hint,
-                })
+                const e = error as any
+                console.error('Failed to save analysis:', { message: e?.message, code: e?.code, details: e?.details, hint: e?.hint })
                 throw error
             }
             setSaveSuccess(true)
@@ -123,22 +116,24 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
         try {
             const titleInitial = content.length > 30 ? content.slice(0, 27) + '...' : content
             const feedbackTitle = typeLabel ? `${typeLabel}: ${titleInitial}` : `Suggestion: ${titleInitial}`
-            const { error } = await (supabase as any)
-                .from('ai_responses')
-                .insert({
-                    project_id: projectId,
-                    title: feedbackTitle,
-                    prompt: `${label} Analysis`,
-                    response: content,
-                    type: 'analysis_feedback',
-                    source_label: typeLabel ? `${label} Analysis · ${typeLabel}` : `${label} Analysis · Suggestion`,
-                    source_scene_id: sceneId ?? null,
-                    source_node_id: nodeId ?? null,
-                    model: result?.provider ? `${getAiProviderLabel(result.provider)} (Analysis)` : null,
-                    action: 'analysis_feedback'
-                })
+            const { error } = await saveAiResponse({
+                project_id: projectId,
+                title: feedbackTitle,
+                prompt: `${label} Analysis`,
+                response: content,
+                type: 'analysis',
+                source_label: typeLabel ? `${label} Analysis · ${typeLabel}` : `${label} Analysis · Suggestion`,
+                source_scene_id: sceneId ?? null,
+                source_node_id: nodeId ?? null,
+                model: result?.provider ? `${getAiProviderLabel(result.provider)} (Analysis)` : null,
+                action: 'analysis_feedback',
+            })
 
-            if (error) throw error
+            if (error) {
+                const e = error as any
+                console.error('Failed to save analyzer feedback:', { message: e?.message, code: e?.code, details: e?.details, hint: e?.hint })
+                throw error
+            }
 
             setSavedToAssistantIds(prev => new Set(prev).add(id))
             toast.success('Added to Assistant', {
@@ -146,7 +141,6 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
             })
             router.refresh()
         } catch (err: any) {
-            console.error('Failed to save analyzer feedback:', err)
             toast.error('Failed to add to assistant')
         } finally {
             setSavingAssistantId(null)

@@ -72,6 +72,10 @@ Before writing code, state:
 
 ## Now
 
+
+Terminal volicity the Ai refernces are diferent in the link bar and the 2 AI screens - needs to get sorted.
+
+
 ### 1. Add lightweight in-app launch survey and feedback capture
 
 Build the in-app launch survey described in `docs/future-roadmap.md` and GitHub issue #5.
