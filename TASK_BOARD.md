@@ -73,7 +73,6 @@ Before writing any code, state:
 ## Later
 
 
-- Add feature list / benefits page covering autosave, recovery, snapshots, backup, local/cloud options, AI workflow help, and privacy choices.
 - Explore non-annoying support prompts for free local users, such as donate, review, share, or upgrade nudges.
 - Create YouTube/tutorial content for Ollama, Gemini API, OpenAI API, and general onboarding.
 - Consider offline sync options such as Google Drive.
@@ -82,7 +81,7 @@ Before writing any code, state:
 
 - Review whether scene analysis outputs should save directly to AI Memory when the user chooses Add to AI.
 - Audit app-wide AI terminology and decide whether to use AI, Assistant, Muse, or another label consistently.
-- Update feature/showcase page after a root-and-branch feature audit.
+- Update feature/showcase page after a root-and-branch feature audit. (Partial: showcase expanded 2026-05-04 based on known shipped features; full formal audit per technical-debt-roadmap.md still deferred.)
 - Rework help menu/page near launch after major feature changes settle; follow the detailed two-phase audit and rewrite process in `docs/technical-debt-roadmap.md` under "Help System Feature Audit & Rewrite" instead of asking AI to simply improve the page.
 - Decide launch trial/cloud pricing model before public launch, including trial length, cloud access limits, and showcase/onboarding copy.
 - Capture final showcase screenshots after app name, branding, and key UI polish are settled.
@@ -289,6 +288,11 @@ Before writing any code, state:
   - Expanded the disposable email domain blocklist in the `evaluate_and_grant_ai_trial` database function to include 40+ known providers.
   - Implemented `lib/ai/abuse-report.ts` to provide admin visibility into suspicious request clusters and multi-accounting behavior.
 - Cleaned up Export Metadata helper copy and ensured it is covered in the future Help System Feature Audit roadmap.
+- Showcase page PM audit and feature expansion (2026-05-04):
+  - Added "Built different, by design" 2×2 differentiator section (offline/local-first, auto-save + snapshots, Books & Screenplays, AI on your terms)
+  - Added export formats section (PDF, DOCX, EPUB, HTML, Markdown, Plain Text)
+  - Rebranded all "Beta" copy to "Early Access" except the subtle nav badge
+  - ESLint clean; no unused imports
 - Refactored `app/(app)/project/[id]/layout.tsx` to enable route-level instant loading for cloud projects:
   - Added `app/(app)/project/[id]/loading.tsx` for child route transitions.
   - Wrapped project layout fetching logic in `<Suspense>` with `RouteLoadingScreen` fallback.

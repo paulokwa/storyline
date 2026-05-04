@@ -5,6 +5,40 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-04 - Showcase Page PM Audit and Feature Expansion
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- **Showcase PM audit:** Full review of `components/marketing/Showcase.tsx` against the actual shipped feature set. Identified that ~70% of real features (offline/local-first, auto-save, snapshots, export range, dual writing modes) had no presence on the page.
+- **"Built different, by design" section added:** New 2×2 tile grid positioned between the feature pills and the main feature showcases. Four tiles: *Your work, your device* (CloudOff — local-only mode, offline writing, no server required), *Never lose a word* (History — auto-save, scene snapshots, full `.storyline` backup/restore), *Books and Screenplays* (Film — dual mode, correct structure and export for each), *AI on your terms* (Sparkles — BYOK Gemini/OpenAI or free local Ollama, no forced subscription).
+- **Export formats section added:** New section after the Worldbuilding showcase. Left column: heading + description. Right column: 3×2 pill grid for PDF, DOCX, EPUB, HTML, Markdown, Plain Text.
+- **"Beta" reduced to one mention:** Nav badge kept (small, subtle). All other occurrences rebranded: hero pill `"Free during beta"` → `"Free Early Access"`, nav link `"The Beta"` → `"Early Access"` (anchor `#access`), section `"Storyline is in Beta"` → `"Get in early"`, body copy rewritten to confident tone, CTA `"Join the Beta — It's Free"` → `"Get Early Access — It's Free"`, footer `"Storyline is Free During Beta"` → `"Free Early Access"`.
+- **Removed unused imports** (`MessageSquare`, `BarChart3`). Added new icons (`CloudOff`, `History`, `Film`, `FileDown`).
+- **ESLint:** Clean — 0 errors, 0 warnings.
+
+### Current status
+
+All changes committed. Showcase page is substantially more representative of the product's feature set. The "Beta" overexposure has been resolved without removing the nav badge signal.
+
+### Next recommended step
+
+- Manual visual check of the showcase at `/dev/showcase`:
+  1. Confirm "Built different, by design" 2×2 grid renders correctly on desktop and mobile
+  2. Confirm export format pills render in 3×2 grid
+  3. Confirm the Early Access section reads correctly (no "Beta" wording visible except nav badge)
+  4. Confirm no broken layout between the new sections and the existing feature showcases
+- Capture updated showcase screenshots once satisfied with the layout (`/showcase/` folder in `public/`)
+
+### Risks or warnings
+
+- Screenshots in `public/showcase/` do not yet show the offline/local-mode UI. The new differentiator tiles reference features without matching screenshots. Low risk for now — the tiles are copy-only, not screenshot-backed.
+- The "Add feature list / benefits page" task from TASK_BOARD.md Later has been addressed by this update. The full root-and-branch feature audit (per `docs/technical-debt-roadmap.md`) is still deferred — this showcase update was based on known shipped features, not a formal audit.
+
+---
 ## 2026-05-03 - Trial Percentage Display, Backup Size Warning, AI Help Center Articles
 
 ### Current branch
