@@ -207,7 +207,7 @@ ${result.suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}
                 aria-modal="true"
                 aria-label={`${label} Analysis`}
                 className={cn(
-                    'fixed right-0 top-0 h-full z-50 w-[420px] max-w-[92vw]',
+                    'scene-analysis-panel fixed right-0 top-0 h-full z-50 w-[420px] max-w-[92vw]',
                     'bg-[#fcfbf9] border-l border-slate-200/60 shadow-[-20px_0_60px_rgba(0,0,0,0.06)]',
                     'flex flex-col min-h-0 transition-transform duration-300 ease-in-out',
                     isOpen ? 'translate-x-0' : 'translate-x-full'
