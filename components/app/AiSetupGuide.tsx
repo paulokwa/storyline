@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
     Dialog,
     DialogContent,
@@ -128,7 +128,7 @@ function CompareView({
                     <div>
                         <DialogTitle className="text-xl text-slate-900">Set Up Your AI Writing Partner</DialogTitle>
                         <DialogDescription className="mt-2 max-w-3xl text-base leading-7 text-slate-600">
-                            Choose the AI option that works best for you. Storyline supports a sponsored free trial, BYOK cloud providers, and fully local Ollama.
+                            Start with our free trial, connect your own cloud AI account, or run AI locally on your computer with Ollama.
                         </DialogDescription>
                     </div>
                 </div>
@@ -142,7 +142,7 @@ function CompareView({
                 >
                     <div className="absolute top-0 right-0 p-1">
                         <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-2.5 py-1 rounded-bl-xl rounded-tr-lg uppercase tracking-wider">
-                            Sponsored
+                            Free to start
                         </span>
                     </div>
                     <div className="flex items-center gap-3 mb-3">
@@ -152,7 +152,7 @@ function CompareView({
                         <span className="font-bold text-slate-900 text-base">Free Trial AI</span>
                     </div>
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">
-                        Start immediately with Storyline-sponsored OpenAI usage and a built-in budget cap.
+                        Get started right away — no payment details needed. Storyline covers your AI costs during the trial.
                     </p>
                     <div className="flex items-center gap-1.5 text-xs font-bold text-violet-600 group-hover:gap-3 transition-all">
                         Choose free trial
@@ -177,10 +177,10 @@ function CompareView({
                         <span className="font-bold text-slate-900 text-base">Gemini Cloud</span>
                     </div>
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">
-                        Google's BYOK option. Fast, approachable, and the quickest cloud setup.
+                        Connect your own Gemini account with a free API key from Google. The quickest cloud option to set up.
                     </p>
                     <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 group-hover:gap-3 transition-all">
-                        Learn more & set up
+                        Set up Gemini
                         <ArrowRight className="w-4 h-4" />
                     </div>
                 </button>
@@ -191,7 +191,7 @@ function CompareView({
                 >
                     <div className="absolute top-0 right-0 p-1">
                         <span className="text-[10px] font-bold text-sky-600 bg-sky-50 px-2.5 py-1 rounded-bl-xl rounded-tr-lg uppercase tracking-wider">
-                            BYOK
+                            Your API key
                         </span>
                     </div>
                     <div className="flex items-center gap-3 mb-3">
@@ -201,10 +201,10 @@ function CompareView({
                         <span className="font-bold text-slate-900 text-base">OpenAI Cloud</span>
                     </div>
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">
-                        Bring your own OpenAI key and use Storyline with OpenAI in the cloud.
+                        Connect your own OpenAI account using a personal API key from openai.com.
                     </p>
                     <div className="flex items-center gap-1.5 text-xs font-bold text-sky-600 group-hover:gap-3 transition-all">
-                        Learn more & set up
+                        Set up OpenAI
                         <ArrowRight className="w-4 h-4" />
                     </div>
                 </button>
@@ -226,10 +226,10 @@ function CompareView({
                         <span className="font-bold text-slate-900 text-base">Local Ollama</span>
                     </div>
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">
-                        Runs AI entirely on your own computer. Maximum privacy, no ongoing fees.
+                        Runs AI entirely on your own computer. No AI data sent to the cloud, no ongoing fees.
                     </p>
                     <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 group-hover:gap-3 transition-all">
-                        Learn more & set up
+                        Set up Ollama
                         <ArrowRight className="w-4 h-4" />
                     </div>
                 </button>
@@ -269,8 +269,8 @@ function CompareView({
                             <CompareRow
                                 label="Cost"
                                 icon={<DollarSign className="w-3.5 h-3.5 text-green-500" />}
-                                trial="Sponsored Limit"
-                                gemini="Free Utility (Usage Restricted)"
+                                trial="Covered by Storyline"
+                                gemini="Free tier available"
                                 openai="Usage-Based"
                                 ollama="Completely Free"
                             />
@@ -280,7 +280,7 @@ function CompareView({
                                 trial="Works Everywhere"
                                 gemini="Works Everywhere"
                                 openai="Works Everywhere"
-                                ollama="Best for Local Dev"
+                                ollama="Runs on your device"
                             />
                             <CompareRow
                                 label="Performance"
@@ -288,7 +288,7 @@ function CompareView({
                                 trial="High Speed"
                                 gemini="High Speed"
                                 openai="High Speed"
-                                ollama="Depends on your PC"
+                                ollama="Depends on your hardware"
                             />
                         </tbody>
                     </table>
@@ -300,7 +300,7 @@ function CompareView({
                     <Info className="w-4 h-4 text-amber-600" />
                 </div>
                 <p className="text-xs text-amber-800 leading-relaxed font-medium">
-                    <span className="font-bold">Not sure which to pick?</span> Free Trial AI is the fastest start. Gemini and OpenAI are the easiest BYOK options if you want your own billing. Ollama is best when you want everything to stay local.
+                    <span className="font-bold">Not sure which to pick?</span> Start with Free Trial AI — no setup needed. When you're ready to use your own AI account, Gemini and OpenAI are the simplest options. Choose Ollama to keep AI running entirely on your own computer.
                 </p>
             </div>
         </div>
@@ -359,18 +359,20 @@ function CompareRow({
 }
 
 function GeminiGuide({ onBack, onSelect }: { onBack: () => void, onSelect: () => void }) {
+    const backRef = useRef<HTMLButtonElement>(null)
+    useEffect(() => { backRef.current?.focus() }, [])
     return (
         <div className="space-y-6">
             <DialogHeader>
-                <button onClick={onBack} className="flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors mb-1"><ChevronLeft className="w-3.5 h-3.5" />Back</button>
+                <button ref={backRef} onClick={onBack} className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-800 transition-colors mb-1 min-h-[44px] px-1 -mx-1"><ChevronLeft className="w-3.5 h-3.5" />Back</button>
                 <div className="flex items-center gap-2.5">
                     <Cloud className="w-5 h-5 text-indigo-600" />
                     <DialogTitle className="text-lg">Setting Up Gemini Cloud</DialogTitle>
                 </div>
-                <DialogDescription className="text-slate-500">Google's powerful AI assistants without the local setup.</DialogDescription>
+                <DialogDescription className="text-slate-500">Connect your Google AI API key to use Gemini in Storyline.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-                <StepItem number={1} title="Get API Key" active><p className="text-xs text-slate-600">Visit Google AI Studio to create your free API key.</p><a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-xs font-bold text-indigo-600 flex items-center gap-1 mt-1 underline">Open AI Studio <ExternalLink className="w-3 h-3" /></a></StepItem>
+                <StepItem number={1} title="Get your API key from Google" active><p className="text-xs text-slate-600">Visit Google AI Studio to create a free API key — this is a private code that lets Storyline connect to your Gemini account.</p><a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-indigo-600 flex items-center gap-1 mt-1 underline">Open AI Studio <ExternalLink className="w-3 h-3" /><span className="sr-only">(opens in new tab)</span></a></StepItem>
                 <StepItem number={2} title="Paste Key"><p className="text-xs text-slate-600">Paste the key in the settings panel under "Gemini Cloud".</p></StepItem>
                 <StepItem number={3} title="Test & Save" done><p className="text-xs text-slate-600">Click test connection and save your settings.</p></StepItem>
             </div>
@@ -380,18 +382,20 @@ function GeminiGuide({ onBack, onSelect }: { onBack: () => void, onSelect: () =>
 }
 
 function OpenAiGuide({ onBack, onSelect }: { onBack: () => void, onSelect: () => void }) {
+    const backRef = useRef<HTMLButtonElement>(null)
+    useEffect(() => { backRef.current?.focus() }, [])
     return (
         <div className="space-y-6">
             <DialogHeader>
-                <button onClick={onBack} className="flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors mb-1"><ChevronLeft className="w-3.5 h-3.5" />Back</button>
+                <button ref={backRef} onClick={onBack} className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-800 transition-colors mb-1 min-h-[44px] px-1 -mx-1"><ChevronLeft className="w-3.5 h-3.5" />Back</button>
                 <div className="flex items-center gap-2.5">
                     <Key className="w-5 h-5 text-sky-600" />
                     <DialogTitle className="text-lg">Setting Up OpenAI Cloud</DialogTitle>
                 </div>
-                <DialogDescription className="text-slate-500">Use your own OpenAI API key and keep Storyline in a BYOK setup.</DialogDescription>
+                <DialogDescription className="text-slate-500">Connect your own OpenAI account using a personal API key.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-                <StepItem number={1} title="Create API Key" active><p className="text-xs text-slate-600">Open your OpenAI dashboard and create a new secret API key for your account or project.</p><a href="https://platform.openai.com/api-keys" target="_blank" className="text-xs font-bold text-sky-600 flex items-center gap-1 mt-1 underline">Open API Keys <ExternalLink className="w-3 h-3" /></a></StepItem>
+                <StepItem number={1} title="Get your API key from OpenAI" active><p className="text-xs text-slate-600">Open your OpenAI dashboard and create a new secret API key for your account or project.</p><a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-sky-600 flex items-center gap-1 mt-1 underline">Open API Keys <ExternalLink className="w-3 h-3" /><span className="sr-only">(opens in new tab)</span></a></StepItem>
                 <StepItem number={2} title="Paste Key"><p className="text-xs text-slate-600">Paste it into the settings panel under "OpenAI Cloud".</p></StepItem>
                 <StepItem number={3} title="Test & Save" done><p className="text-xs text-slate-600">Run the connection test, then save your settings to start using OpenAI in Storyline.</p></StepItem>
             </div>
@@ -411,12 +415,15 @@ function OllamaGuide({
     showAdvanced: boolean
     onToggleAdvanced: () => void
 }) {
+    const backRef = useRef<HTMLButtonElement>(null)
+    useEffect(() => { backRef.current?.focus() }, [])
     return (
         <div className="space-y-6">
             <DialogHeader>
                 <button
+                    ref={backRef}
                     onClick={onBack}
-                    className="flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors mb-1 -ml-0.5"
+                    className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-800 transition-colors mb-1 -ml-0.5 min-h-[44px] px-1"
                 >
                     <ChevronLeft className="w-3.5 h-3.5" />
                     Back to comparison
@@ -461,6 +468,7 @@ function OllamaGuide({
                     >
                         Download Ollama
                         <ExternalLink className="w-3 h-3" />
+                        <span className="sr-only">(opens in new tab)</span>
                     </a>
                 </StepItem>
 
@@ -607,6 +615,7 @@ function OllamaGuide({
             <div className="rounded-xl border border-slate-100 overflow-hidden">
                 <button
                     onClick={onToggleAdvanced}
+                    aria-expanded={showAdvanced}
                     className="w-full flex items-center justify-between px-4 py-3 bg-slate-50/80 hover:bg-slate-50 transition-colors text-left"
                 >
                     <span className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
