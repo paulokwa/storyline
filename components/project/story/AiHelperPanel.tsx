@@ -1133,11 +1133,15 @@ export default function AiHelperPanel({
                                             className={cn(
                                                 "flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left transition-all",
                                                 isSelected
-                                                    ? "border-slate-200 bg-white text-slate-800 shadow-sm"
-                                                    : "border-transparent bg-white/50 text-slate-500 hover:border-slate-200 hover:bg-white"
+                                                    ? cn(
+                                                        isMidnight ? "border-slate-600/40 bg-slate-700/60 text-slate-100 shadow-sm" : "border-slate-200 bg-white text-slate-800 shadow-sm"
+                                                    )
+                                                    : cn(
+                                                        isMidnight ? "border-transparent bg-white/6 text-slate-400 hover:border-slate-600/40 hover:bg-slate-700/40" : "border-transparent bg-white/50 text-slate-500 hover:border-slate-200 hover:bg-white"
+                                                    )
                                             )}
                                         >
-                                            <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-50", group.iconClassName)}>
+                                            <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-xl", isMidnight ? "bg-slate-700/60" : "bg-slate-50", group.iconClassName)}>
                                                 <Icon className="h-4 w-4" />
                                             </div>
                                             <span className="min-w-0 flex-1 truncate text-sm font-medium">
@@ -1148,7 +1152,9 @@ export default function AiHelperPanel({
                                                     "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-all",
                                                     isSelected
                                                         ? "border-indigo-500 bg-indigo-500 text-white"
-                                                        : "border-slate-200 bg-white text-transparent"
+                                                        : cn(
+                                                            isMidnight ? "border-slate-600/40 bg-slate-700/60 text-transparent" : "border-slate-200 bg-white text-transparent"
+                                                        )
                                                 )}
                                             >
                                                 <Check className="h-3.5 w-3.5" />
@@ -2110,10 +2116,15 @@ export default function AiHelperPanel({
                                 onValueChange={setPromptMode}
                                 options={modeSelectOptions}
                                 placeholder="Select Mode"
-                                triggerClassName="h-9 min-h-9 rounded-full bg-white/40 border-transparent px-3 text-[11px] font-bold uppercase tracking-[0.16em] text-indigo-700 hover:bg-white/80 focus-visible:ring-indigo-100"
+                                triggerClassName={cn(
+                                    "h-9 min-h-9 rounded-full border-transparent px-3 text-[11px] font-bold uppercase tracking-[0.16em]",
+                                    isMidnight
+                                        ? "bg-slate-800/40 text-indigo-300 hover:bg-slate-700/60 focus-visible:ring-slate-500/30"
+                                        : "bg-white/40 text-indigo-700 hover:bg-white/80 focus-visible:ring-indigo-100"
+                                )}
                                 contentClassName="w-[max(var(--anchor-width),17rem)]"
                                 itemClassName="text-[12px]"
-                                iconClassName="text-indigo-400"
+                                iconClassName={isMidnight ? "text-indigo-400" : "text-indigo-400"}
                             />
                         </div>
                         {isFullCanvas && (
@@ -2126,7 +2137,10 @@ export default function AiHelperPanel({
             </div>
 
             {/* Context Indicator */}
-                <div className="ai-helper-context hidden border-b border-[#e2ddd3] bg-[rgba(250,248,243,0.92)] md:block">
+                <div className={cn(
+                    "ai-helper-context hidden border-b md:block",
+                    isMidnight ? "border-slate-700/60 bg-slate-900/70" : "border-[#e2ddd3] bg-[rgba(250,248,243,0.92)]"
+                )}>
                 <div
                     data-tour="ai-context-strip"
                     className="flex items-center gap-3 overflow-hidden px-6 py-2"
@@ -2138,8 +2152,12 @@ export default function AiHelperPanel({
                             className={cn(
                                 "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] transition-all",
                                 contextManagerOpen
-                                    ? "border-indigo-100 bg-indigo-50/90 text-indigo-600"
-                                    : "border-transparent bg-white/40 text-slate-500 hover:bg-white/80 hover:text-slate-700",
+                                    ? cn(
+                                        isMidnight ? "border-indigo-400/30 bg-indigo-500/20 text-indigo-300" : "border-indigo-100 bg-indigo-50/90 text-indigo-600"
+                                    )
+                                    : cn(
+                                        isMidnight ? "border-transparent bg-white/8 text-slate-400 hover:bg-white/15 hover:text-slate-200" : "border-transparent bg-white/40 text-slate-500 hover:bg-white/80 hover:text-slate-700"
+                                    ),
                                 (isReadOnly || !activeSceneId || isApplyingContext) && "cursor-not-allowed opacity-60"
                             )}
                         >
@@ -2148,7 +2166,7 @@ export default function AiHelperPanel({
                             {contextManagerOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                         </button>
 
-                    <div className="h-4 w-px shrink-0 bg-slate-200" />
+                    <div className={cn("h-4 w-px shrink-0", isMidnight ? "bg-slate-700" : "bg-slate-200")} />
 
                     <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto no-scrollbar">
                         {contextSummaryItems.map((item) => {
@@ -2156,30 +2174,43 @@ export default function AiHelperPanel({
                             return (
                                 <div
                                     key={item.key}
-                                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200/70 bg-white/85 px-2.5 py-1 text-[10px] font-medium text-slate-600 shadow-sm"
+                                    className={cn(
+                                        "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium shadow-sm",
+                                        isMidnight
+                                            ? "border-slate-600/40 bg-white/10 text-slate-300"
+                                            : "border-slate-200/70 bg-white/85 text-slate-600"
+                                    )}
                                 >
                                     <Icon className={cn("h-3 w-3", item.iconClassName)} />
                                     <span>{item.title}</span>
-                                    <span className="text-slate-400">{item.count}</span>
+                                    <span className={isMidnight ? "text-slate-500" : "text-slate-400"}>{item.count}</span>
                                 </div>
                             )
                         })}
 
                         {selectedNodes.length > 0 && (
-                            <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-indigo-200/70 bg-indigo-50/90 px-2.5 py-1 text-[10px] font-medium text-indigo-700 shadow-sm">
+                            <div className={cn(
+                                "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium shadow-sm",
+                                isMidnight
+                                    ? "border-indigo-400/30 bg-indigo-500/20 text-indigo-300"
+                                    : "border-indigo-200/70 bg-indigo-50/90 text-indigo-700"
+                            )}>
                                 <div className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
                                 <span className="truncate max-w-[220px]">{storySelectionLabel}</span>
                             </div>
                         )}
 
                         {contextSummaryItems.length === 0 && selectedNodes.length === 0 && (
-                            <div className="text-[10px] italic text-slate-300">No specific items linked</div>
+                            <div className={cn("text-[10px] italic", isMidnight ? "text-slate-600" : "text-slate-300")}>No specific items linked</div>
                         )}
                     </div>
                 </div>
 
                 {contextManagerOpen && (
-                    <div className="border-t border-white/70 bg-[rgba(245,244,239,0.88)] px-6 py-3">
+                    <div className={cn(
+                        "border-t px-6 py-3",
+                        isMidnight ? "border-slate-700/60 bg-slate-800/60" : "border-white/70 bg-[rgba(245,244,239,0.88)]"
+                    )}>
                         {contextManagerList}
                     </div>
                 )}
@@ -2187,7 +2218,10 @@ export default function AiHelperPanel({
 
             <div 
                 data-tour="ai-context-strip"
-                className="ai-helper-context shrink-0 overflow-hidden border-b border-[#e2ddd3] bg-[rgba(250,248,243,0.92)] md:hidden"
+                className={cn(
+                    "ai-helper-context shrink-0 overflow-hidden border-b md:hidden",
+                    isMidnight ? "border-slate-700/60 bg-slate-900/70" : "border-[#e2ddd3] bg-[rgba(250,248,243,0.92)]"
+                )}
             >
                 <div className="px-4 py-1.5">
                     <div className="flex items-center gap-3">
@@ -2198,8 +2232,12 @@ export default function AiHelperPanel({
                             className={cn(
                                 "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] transition-all",
                                 contextManagerOpen
-                                    ? "border-indigo-100 bg-indigo-50/90 text-indigo-600"
-                                    : "border-transparent bg-white/40 text-slate-500",
+                                    ? cn(
+                                        isMidnight ? "border-indigo-400/30 bg-indigo-500/20 text-indigo-300" : "border-indigo-100 bg-indigo-50/90 text-indigo-600"
+                                    )
+                                    : cn(
+                                        isMidnight ? "border-transparent bg-white/8 text-slate-400" : "border-transparent bg-white/40 text-slate-500"
+                                    ),
                                 (isReadOnly || !activeSceneId || isApplyingContext) && "cursor-not-allowed opacity-60"
                             )}
                         >
@@ -2211,7 +2249,12 @@ export default function AiHelperPanel({
                         <div className="min-w-0 flex-1 overflow-x-auto no-scrollbar">
                             <div className="flex min-w-max items-center gap-2 pr-1">
                                 {selectedNodes.length > 0 && (
-                                    <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-indigo-200/70 bg-indigo-50/90 px-2.5 py-1 text-[10px] font-medium text-indigo-700 shadow-sm">
+                                    <div className={cn(
+                                        "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium shadow-sm",
+                                        isMidnight
+                                            ? "border-indigo-400/30 bg-indigo-500/20 text-indigo-300"
+                                            : "border-indigo-200/70 bg-indigo-50/90 text-indigo-700"
+                                    )}>
                                         <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
                                         <span className="truncate">{storySelectionLabel}</span>
                                     </div>
@@ -2222,24 +2265,32 @@ export default function AiHelperPanel({
                                     return (
                                         <div
                                             key={item.key}
-                                            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200/70 bg-white/85 px-2.5 py-1 text-[10px] font-medium text-slate-600 shadow-sm"
+                                            className={cn(
+                                                "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium shadow-sm",
+                                                isMidnight
+                                                    ? "border-slate-600/40 bg-white/10 text-slate-300"
+                                                    : "border-slate-200/70 bg-white/85 text-slate-600"
+                                            )}
                                         >
                                             <Icon className={cn("h-3 w-3", item.iconClassName)} />
                                             <span>{item.title}</span>
-                                            <span className="text-slate-400">{item.count}</span>
+                                            <span className={isMidnight ? "text-slate-500" : "text-slate-400"}>{item.count}</span>
                                         </div>
                                     )
                                 })}
 
                                 {contextSummaryItems.length === 0 && selectedNodes.length === 0 && (
-                                    <div className="text-[10px] italic text-slate-300 shrink-0">No specific items linked</div>
+                                    <div className={cn("text-[10px] italic shrink-0", isMidnight ? "text-slate-600" : "text-slate-300")}>No specific items linked</div>
                                 )}
                             </div>
                         </div>
                     </div>
                 </div>
                 {contextManagerOpen && (
-                    <div className="border-t border-white/70 bg-[rgba(245,244,239,0.88)] px-4 py-3">
+                    <div className={cn(
+                        "border-t px-4 py-3",
+                        isMidnight ? "border-slate-700/60 bg-slate-800/60" : "border-white/70 bg-[rgba(245,244,239,0.88)]"
+                    )}>
                         {contextManagerList}
                     </div>
                 )}

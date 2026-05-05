@@ -7,9 +7,77 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft, Send, CheckCircle } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { ArrowLeft, Send, CheckCircle, ChevronDown } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { toast } from '@/lib/toast-shim'
+import { useTheme } from '@/components/providers/ThemeProvider'
 import emailjs from '@emailjs/browser'
+
+type SelectOption = { value: string; label: string }
+
+function FeedbackSelect({
+  id,
+  value,
+  placeholder,
+  options,
+  onChange,
+}: {
+  id: string
+  value: string
+  placeholder: string
+  options: SelectOption[]
+  onChange: (value: string) => void
+}) {
+  const { theme } = useTheme()
+  const isMidnight = theme === 'midnight'
+  const [open, setOpen] = useState(false)
+  const selected = options.find(o => o.value === value)
+  return (
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger
+        id={id}
+        type="button"
+        className="flex h-10 w-full items-center justify-between rounded-md border border-foreground/20 bg-background px-3 py-2 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+      >
+        <span className={cn('truncate', selected ? 'text-foreground' : 'text-muted-foreground')}>
+          {selected?.label ?? placeholder}
+        </span>
+        <ChevronDown className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200', open && 'rotate-180')} />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        className={cn(
+          'w-[var(--radix-dropdown-menu-trigger-width)] rounded-[1.25rem] border p-2 shadow-2xl backdrop-blur-sm',
+          isMidnight
+            ? 'border-slate-600/30 bg-[#1e293b]/95 shadow-[0_20px_45px_rgba(0,0,0,0.45)]'
+            : 'border-slate-200 bg-white/95 shadow-[0_20px_45px_rgba(15,23,42,0.16)]'
+        )}
+      >
+        {options.map(option => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => { onChange(option.value); setOpen(false) }}
+            className={cn(
+              'flex w-full items-center rounded-lg px-3 py-2 text-sm transition-colors',
+              option.value === value
+                ? cn(
+                    'font-medium',
+                    isMidnight ? 'bg-slate-700/60 text-slate-100' : 'bg-slate-100 text-slate-900'
+                  )
+                : cn(
+                    isMidnight ? 'text-slate-300 hover:bg-slate-700/40 hover:text-slate-100' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  )
+            )}
+          >
+            {option.label}
+          </button>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
 
 const EMAILJS_SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || ''
 const EMAILJS_TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || ''
@@ -18,7 +86,7 @@ const EMAILJS_PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || ''
 function FeedbackPageFallback() {
   return (
     <div
-      className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4 py-4"
+      className="flex min-h-screen items-center justify-center bg-background px-4 py-4"
       style={{
         paddingTop: 'calc(0.75rem + env(safe-area-inset-top))',
         paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))',
@@ -26,7 +94,7 @@ function FeedbackPageFallback() {
     >
       <Card className="w-full max-w-md">
         <CardContent className="pt-6">
-          <p className="text-center text-sm text-slate-600">Loading feedback form...</p>
+          <p className="text-center text-sm text-muted-foreground">Loading feedback form...</p>
         </CardContent>
       </Card>
     </div>
@@ -149,7 +217,7 @@ ${formData.feedback}
   if (isSubmitted) {
     return (
       <div
-        className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4 py-4"
+        className="flex min-h-screen items-center justify-center bg-background px-4 py-4"
         style={{
           paddingTop: 'calc(0.75rem + env(safe-area-inset-top))',
           paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))',
@@ -158,14 +226,14 @@ ${formData.feedback}
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
-              <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
+              <CheckCircle className="w-16 h-16 text-[#546354] mx-auto" />
               <div>
-                <h2 className="text-2xl font-serif italic text-slate-800 mb-2">Thank You!</h2>
-                <p className="text-slate-600">
+                <h2 className="text-2xl font-serif italic text-card-foreground mb-2">Thank You!</h2>
+                <p className="text-muted-foreground">
                   Your feedback has been processed.
                 </p>
                 {feedbackStatus ? (
-                  <p className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                  <p className="mt-3 rounded-2xl border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">
                     {feedbackStatus}
                   </p>
                 ) : null}
@@ -192,7 +260,7 @@ ${formData.feedback}
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 px-4 pb-4 pt-3 sm:py-4"
+      className="min-h-screen bg-background px-4 pb-4 pt-3 sm:py-4"
       style={{
         paddingTop: 'calc(0.5rem + env(safe-area-inset-top))',
         paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))',
@@ -202,7 +270,7 @@ ${formData.feedback}
         <Button
           variant="ghost"
           onClick={() => router.back()}
-          className="mb-3 text-slate-600 hover:text-slate-800 sm:mb-6"
+          className="mb-3 text-foreground/70 hover:text-foreground sm:mb-6"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
@@ -210,7 +278,7 @@ ${formData.feedback}
 
         <Card className="rounded-[2rem] py-5 sm:py-4">
           <CardHeader className="px-5 sm:px-4">
-            <CardTitle className="text-2xl font-serif italic text-slate-800">
+            <CardTitle className="text-2xl font-serif italic">
               Share Your Feedback
             </CardTitle>
             <CardDescription>
@@ -220,62 +288,62 @@ ${formData.feedback}
           <CardContent className="px-5 pb-2 sm:px-4">
             <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
               {feedbackStatus ? (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                <div className="rounded-2xl border border-border bg-muted p-4 text-sm text-muted-foreground">
                   {feedbackStatus}
                 </div>
               ) : null}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="device">Device Type</Label>
-                  <select
+                  <FeedbackSelect
                     id="device"
                     value={formData.device}
-                    onChange={(e) => handleInputChange('device', e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none ring-offset-white focus-visible:ring-2 focus-visible:ring-slate-400"
-                  >
-                    <option value="">Select device</option>
-                    <option value="desktop">Desktop</option>
-                    <option value="laptop">Laptop</option>
-                    <option value="tablet">Tablet</option>
-                    <option value="mobile">Mobile Phone</option>
-                    <option value="other">Other</option>
-                  </select>
+                    placeholder="Select device"
+                    onChange={(v) => handleInputChange('device', v)}
+                    options={[
+                      { value: 'desktop', label: 'Desktop' },
+                      { value: 'laptop', label: 'Laptop' },
+                      { value: 'tablet', label: 'Tablet' },
+                      { value: 'mobile', label: 'Mobile Phone' },
+                      { value: 'other', label: 'Other' },
+                    ]}
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="platform">Platform</Label>
-                  <select
+                  <FeedbackSelect
                     id="platform"
                     value={formData.platform}
-                    onChange={(e) => handleInputChange('platform', e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none ring-offset-white focus-visible:ring-2 focus-visible:ring-slate-400"
-                  >
-                    <option value="">Select platform</option>
-                    <option value="windows">Windows</option>
-                    <option value="macos">macOS</option>
-                    <option value="linux">Linux</option>
-                    <option value="ios">iOS</option>
-                    <option value="android">Android</option>
-                    <option value="other">Other</option>
-                  </select>
+                    placeholder="Select platform"
+                    onChange={(v) => handleInputChange('platform', v)}
+                    options={[
+                      { value: 'windows', label: 'Windows' },
+                      { value: 'macos', label: 'macOS' },
+                      { value: 'linux', label: 'Linux' },
+                      { value: 'ios', label: 'iOS' },
+                      { value: 'android', label: 'Android' },
+                      { value: 'other', label: 'Other' },
+                    ]}
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="browser">Browser</Label>
-                  <select
+                  <FeedbackSelect
                     id="browser"
                     value={formData.browser}
-                    onChange={(e) => handleInputChange('browser', e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none ring-offset-white focus-visible:ring-2 focus-visible:ring-slate-400"
-                  >
-                    <option value="">Select browser</option>
-                    <option value="chrome">Chrome</option>
-                    <option value="firefox">Firefox</option>
-                    <option value="safari">Safari</option>
-                    <option value="edge">Edge</option>
-                    <option value="opera">Opera</option>
-                    <option value="other">Other</option>
-                  </select>
+                    placeholder="Select browser"
+                    onChange={(v) => handleInputChange('browser', v)}
+                    options={[
+                      { value: 'chrome', label: 'Chrome' },
+                      { value: 'firefox', label: 'Firefox' },
+                      { value: 'safari', label: 'Safari' },
+                      { value: 'edge', label: 'Edge' },
+                      { value: 'opera', label: 'Opera' },
+                      { value: 'other', label: 'Other' },
+                    ]}
+                  />
                 </div>
               </div>
 
@@ -288,8 +356,9 @@ ${formData.feedback}
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   required
+                  className="border-foreground/20"
                 />
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground">
                   We require an email address so Storyline support can follow up with you.
                 </p>
               </div>
@@ -302,7 +371,7 @@ ${formData.feedback}
                   value={formData.feedback}
                   onChange={(e) => handleInputChange('feedback', e.target.value)}
                   rows={6}
-                  className="resize-none"
+                  className="resize-none border-foreground/20"
                   required
                 />
               </div>

@@ -15,6 +15,8 @@ import { Label } from '@/components/ui/label'
 import { SanctuarySelect } from '@/components/ui/sanctuary-select'
 import { Bookmark, Loader2, CheckCircle2 } from 'lucide-react'
 import { saveAiResponse } from '@/lib/persistence/ai-feedback'
+import { useTheme } from '@/components/providers/ThemeProvider'
+import { cn } from '@/lib/utils'
 
 interface SaveAiResponseModalProps {
     open: boolean
@@ -55,6 +57,8 @@ export default function SaveAiResponseModal({
     contextSnapshot,
     onSuccess,
 }: SaveAiResponseModalProps) {
+    const { theme } = useTheme()
+    const isMidnight = theme === 'midnight'
     const [title, setTitle] = useState('')
     const [autoTitle, setAutoTitle] = useState('')
     const [type, setType] = useState('custom')
@@ -142,15 +146,18 @@ export default function SaveAiResponseModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px] rounded-[2rem] p-8 border-none shadow-2xl bg-white overflow-hidden">
+            <DialogContent className={cn(
+                "sm:max-w-[500px] rounded-[2rem] p-8 border-none shadow-2xl overflow-hidden",
+                isMidnight ? "bg-slate-800" : "bg-white"
+            )}>
                 <DialogHeader>
                             <div className="flex items-center gap-3 mb-2">
-                                <div className="p-2 bg-indigo-50 rounded-xl">
-                                    <Bookmark className="w-5 h-5 text-indigo-500" />
+                                <div className={cn("p-2 rounded-xl", isMidnight ? "bg-indigo-500/20" : "bg-indigo-50")}>
+                                    <Bookmark className={cn("w-5 h-5", isMidnight ? "text-indigo-400" : "text-indigo-500")} />
                                 </div>
                                 <div className="space-y-0.5">
-                                    <DialogTitle className="text-2xl font-serif text-slate-800 text-left">Save Response</DialogTitle>
-                                    <DialogDescription className="text-slate-500 font-medium text-left">
+                                    <DialogTitle className={cn("text-2xl font-serif text-left", isMidnight ? "text-slate-100" : "text-slate-800")}>Save Response</DialogTitle>
+                                    <DialogDescription className={cn("font-medium text-left", isMidnight ? "text-slate-400" : "text-slate-500")}>
                                         Archive this AI output for later reference.
                                     </DialogDescription>
                                 </div>
@@ -159,7 +166,7 @@ export default function SaveAiResponseModal({
 
                         <div className="space-y-6 py-6">
                             <div className="space-y-2">
-                                <Label htmlFor="title" className="text-sm font-semibold text-slate-700 ml-1 flex justify-between">
+                                <Label htmlFor="title" className={cn("text-sm font-semibold ml-1 flex justify-between", isMidnight ? "text-slate-300" : "text-slate-700")}>
                                     <span>Response Title</span>
                                     {autoTitle && title !== autoTitle && (
                                         <button 
@@ -175,35 +182,48 @@ export default function SaveAiResponseModal({
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
                                     placeholder={autoTitle || "Enter a title..."}
-                                    className="rounded-2xl border-slate-100 bg-slate-50 focus:bg-white transition-all h-12 text-slate-800 font-medium"
+                                    className={cn(
+                                        "rounded-2xl transition-all h-12 font-medium",
+                                        isMidnight
+                                            ? "border-slate-600/40 bg-slate-700/60 focus:bg-slate-700 text-slate-200 placeholder:text-slate-500"
+                                            : "border-slate-100 bg-slate-50 focus:bg-white text-slate-800"
+                                    )}
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="type" className="text-sm font-semibold text-slate-700 ml-1">Archive Category</Label>
+                                <Label htmlFor="type" className={cn("text-sm font-semibold ml-1", isMidnight ? "text-slate-300" : "text-slate-700")}>Archive Category</Label>
                                 <SanctuarySelect
                                     id="type"
                                     value={type}
                                     onValueChange={setType}
                                     options={RESPONSE_TYPES}
-                                    triggerClassName="border-slate-100 bg-slate-50 focus:bg-white focus-visible:ring-indigo-100 text-sm font-medium text-slate-700"
+                                    triggerClassName={cn(
+                                        "text-sm font-medium",
+                                        isMidnight
+                                            ? "border-slate-600/40 bg-slate-700/60 text-slate-200 focus-visible:ring-slate-500/30"
+                                            : "border-slate-100 bg-slate-50 text-slate-700 focus-visible:ring-indigo-100"
+                                    )}
                                 />
                             </div>
 
                             {(sourceLabel || model) && (
-                                <div className="p-4 bg-slate-50 rounded-2xl space-y-2 border border-slate-100/50">
-                                    <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">Provenance Metadata</p>
+                                <div className={cn(
+                                    "p-4 rounded-2xl space-y-2 border",
+                                    isMidnight ? "bg-slate-700/40 border-slate-600/30" : "bg-slate-50 border-slate-100/50"
+                                )}>
+                                    <p className={cn("text-[10px] font-bold uppercase tracking-[0.1em]", isMidnight ? "text-slate-500" : "text-slate-400")}>Provenance Metadata</p>
                                     <div className="grid grid-cols-2 gap-4">
                                         {sourceLabel && (
                                             <div>
-                                                <p className="text-[10px] text-slate-400 italic">Source</p>
-                                                <p className="text-xs text-slate-600 font-medium truncate">{sourceLabel}</p>
+                                                <p className={cn("text-[10px] italic", isMidnight ? "text-slate-500" : "text-slate-400")}>Source</p>
+                                                <p className={cn("text-xs font-medium truncate", isMidnight ? "text-slate-300" : "text-slate-600")}>{sourceLabel}</p>
                                             </div>
                                         )}
                                         {model && (
                                             <div>
-                                                <p className="text-[10px] text-slate-400 italic">Model</p>
-                                                <p className="text-xs text-slate-600 font-medium truncate">{model}</p>
+                                                <p className={cn("text-[10px] italic", isMidnight ? "text-slate-500" : "text-slate-400")}>Model</p>
+                                                <p className={cn("text-xs font-medium truncate", isMidnight ? "text-slate-300" : "text-slate-600")}>{model}</p>
                                             </div>
                                         )}
                                     </div>
@@ -222,14 +242,22 @@ export default function SaveAiResponseModal({
                                 variant="outline"
                                 onClick={() => onOpenChange(false)}
                                 disabled={isSaving}
-                                className="flex-1 rounded-full h-11 border-slate-200 text-slate-500 hover:bg-slate-50 font-medium"
+                                className={cn(
+                                    "flex-1 rounded-full h-11 font-medium",
+                                    isMidnight
+                                        ? "border-slate-600 text-slate-400 hover:bg-slate-700/60"
+                                        : "border-slate-200 text-slate-500 hover:bg-slate-50"
+                                )}
                             >
                                 Cancel
                             </Button>
                             <Button
                                 onClick={handleSave}
                                 disabled={isSaving || (!title.trim() && !autoTitle)}
-                                className="flex-[1.5] rounded-full h-11 transition-all active:scale-95 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-lg shadow-indigo-100"
+                                className={cn(
+                                    "flex-[1.5] rounded-full h-11 transition-all active:scale-95 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold",
+                                    isMidnight ? "shadow-lg shadow-indigo-900/30" : "shadow-lg shadow-indigo-100"
+                                )}
                             >
                                 {isSaving ? (
                                     <>
