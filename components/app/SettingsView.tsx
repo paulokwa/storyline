@@ -790,7 +790,7 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                     )}
                                 >
                                     <div
-                                        className="mb-4 flex aspect-[2/1] w-full items-center justify-center rounded-xl shadow-inner"
+                                        className="relative mb-4 flex aspect-[2/1] w-full items-center justify-center rounded-xl shadow-inner"
                                         style={{
                                             background: isMidnight
                                                 ? 'linear-gradient(135deg, #0b1120 0%, #172033 100%)'
@@ -818,7 +818,13 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                             </span>
                                         </div>
                                         {isActive && (
-                                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white shadow-md">
+                                            <div
+                                                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full shadow-md"
+                                                style={{
+                                                    backgroundColor: isMidnight ? 'hsl(147 18% 72%)' : '#546354',
+                                                    color: isMidnight ? 'hsl(222 30% 10%)' : '#ffffff',
+                                                }}
+                                            >
                                                 <Check className="h-3.5 w-3.5" />
                                             </div>
                                         )}
@@ -888,31 +894,31 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                     <Label>How you want to use AI</Label>
                                     <div className="grid gap-3 sm:grid-cols-3">
                                         <label className={`cursor-pointer rounded-xl border p-4 transition-all ${billingMode === 'app_managed_trial' ? 'border-primary bg-slate-50 ring-1 ring-primary/30' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'}`}>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-start gap-2">
                                                 <input type="radio" name="billingMode" checked={billingMode === 'app_managed_trial'} onChange={() => {
                                                     setBillingMode('app_managed_trial')
                                                     setAiProvider('openai')
-                                                }} />
+                                                }} className="mt-0.5 shrink-0" />
                                                 <span className="font-medium text-slate-900">Free Trial AI</span>
                                             </div>
                                             <p className="ml-5 mt-2 text-sm leading-6 text-slate-500">A small app-managed OpenAI trial for getting started.</p>
                                         </label>
                                         <label className={`cursor-pointer rounded-xl border p-4 transition-all ${billingMode === 'byok' ? 'border-primary bg-slate-50 ring-1 ring-primary/30' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'}`}>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-start gap-2">
                                                 <input type="radio" name="billingMode" checked={billingMode === 'byok'} onChange={() => {
                                                     setBillingMode('byok')
                                                     if (aiProvider === 'ollama') setAiProvider('openai')
-                                                }} />
+                                                }} className="mt-0.5 shrink-0" />
                                                 <span className="font-medium text-slate-900">Use Your Own API Key</span>
                                             </div>
                                             <p className="ml-5 mt-2 text-sm leading-6 text-slate-500">Connect your own OpenAI or Gemini account for ongoing use.</p>
                                         </label>
                                         <label className={`cursor-pointer rounded-xl border p-4 transition-all ${billingMode === 'ollama' ? 'border-primary bg-slate-50 ring-1 ring-primary/30' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'}`}>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-start gap-2">
                                                 <input type="radio" name="billingMode" checked={billingMode === 'ollama'} onChange={() => {
                                                     setBillingMode('ollama')
                                                     setAiProvider('ollama')
-                                                }} />
+                                                }} className="mt-0.5 shrink-0" />
                                                 <span className="font-medium text-slate-900">Ollama / Local AI</span>
                                             </div>
                                             <p className="ml-5 mt-2 text-sm leading-6 text-slate-500">Keep requests on your own machine and outside the trial.</p>
@@ -989,14 +995,14 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                                             <input type="radio" name="provider" value="gemini" checked={aiProvider === 'gemini'} onChange={() => setAiProvider('gemini')} />
                                                             <span className="font-medium text-slate-900">Gemini Cloud</span>
                                                         </div>
-                                                        <p className="ml-5 mt-2 text-sm leading-6 text-slate-500">Use your own Gemini API key for Google-hosted requests.</p>
+                                                        <p className="ml-5 mt-2 text-sm leading-6 text-slate-500">Connect your Google account using an API key from Google AI Studio.</p>
                                                     </label>
                                                     <label className={`cursor-pointer rounded-xl border p-4 transition-all ${aiProvider === 'openai' ? 'border-primary bg-slate-50 ring-1 ring-primary/30' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'}`}>
                                                         <div className="flex items-center gap-2">
                                                             <input type="radio" name="provider" value="openai" checked={aiProvider === 'openai'} onChange={() => setAiProvider('openai')} />
                                                             <span className="font-medium text-slate-900">OpenAI Cloud</span>
                                                         </div>
-                                                        <p className="ml-5 mt-2 text-sm leading-6 text-slate-500">Use your own OpenAI API key inside Storyline.</p>
+                                                        <p className="ml-5 mt-2 text-sm leading-6 text-slate-500">Connect your OpenAI account using an API key from platform.openai.com.</p>
                                                     </label>
                                                 </div>
                                             </div>

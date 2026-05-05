@@ -70,7 +70,7 @@ export default function AiSetupGuide({ open, onOpenChange, onNavigateToProvider,
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent
-                className="max-h-[90vh] overflow-y-auto bg-white sm:max-w-5xl"
+                className="max-h-[90vh] overflow-y-auto bg-[#fbf9f5] sm:max-w-5xl"
                 showCloseButton
             >
                 {view === 'compare' && (
@@ -122,8 +122,8 @@ function CompareView({
         <div className="space-y-6">
             <DialogHeader>
                 <div className="flex items-center gap-2.5">
-                    <div className="p-2 bg-gradient-to-br from-indigo-50 to-violet-50 rounded-xl">
-                        <Sparkles className="w-4.5 h-4.5 text-indigo-500" />
+                    <div className="p-2 bg-[#eef4ed] rounded-xl">
+                        <Sparkles className="w-4.5 h-4.5 text-[#546354]" />
                     </div>
                     <div>
                         <DialogTitle className="text-xl text-slate-900">Set Up Your AI Writing Partner</DialogTitle>
@@ -138,15 +138,15 @@ function CompareView({
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <button
                     onClick={onSelectTrial}
-                    className="group text-left p-5 rounded-2xl border-2 border-slate-100 hover:border-violet-300 bg-gradient-to-br from-white to-violet-50/40 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98] relative overflow-hidden"
+                    className="group text-left p-5 rounded-2xl border-2 border-slate-100 hover:border-[#546354] bg-[#eef4ed]/60 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98] relative overflow-hidden flex flex-col"
                 >
                     <div className="absolute top-0 right-0 p-1">
-                        <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-2.5 py-1 rounded-bl-xl rounded-tr-lg uppercase tracking-wider">
+                        <span className="text-[10px] font-bold text-[#485748] bg-[#eef4ed] px-2.5 py-1 rounded-bl-xl rounded-tr-lg uppercase tracking-wider">
                             Free to start
                         </span>
                     </div>
                     <div className="flex items-center gap-3 mb-3">
-                        <div className="p-2 bg-violet-100 rounded-xl group-hover:bg-violet-600 group-hover:text-white transition-colors duration-300">
+                        <div className="p-2 bg-[#eef4ed] rounded-xl group-hover:bg-[#546354] group-hover:text-white transition-colors duration-300">
                             <Sparkles className="w-5 h-5" />
                         </div>
                         <span className="font-bold text-slate-900 text-base">Free Trial AI</span>
@@ -154,7 +154,7 @@ function CompareView({
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">
                         Get started right away — no payment details needed. Storyline covers your AI costs during the trial.
                     </p>
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-violet-600 group-hover:gap-3 transition-all">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#546354] group-hover:gap-3 transition-all mt-auto">
                         Choose free trial
                         <ArrowRight className="w-4 h-4" />
                     </div>
@@ -163,15 +163,15 @@ function CompareView({
                 {/* Gemini Card */}
                 <button
                     onClick={() => onSetView('gemini')}
-                    className="group text-left p-5 rounded-2xl border-2 border-slate-100 hover:border-indigo-300 bg-gradient-to-br from-white to-indigo-50/40 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98] relative overflow-hidden"
+                    className="group text-left p-5 rounded-2xl border-2 border-slate-100 hover:border-sky-200 bg-gradient-to-br from-white to-sky-50/40 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98] relative overflow-hidden flex flex-col"
                 >
                     <div className="absolute top-0 right-0 p-1">
-                        <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2.5 py-1 rounded-bl-xl rounded-tr-lg uppercase tracking-wider">
+                        <span className="text-[10px] font-bold text-sky-700 bg-sky-50 px-2.5 py-1 rounded-bl-xl rounded-tr-lg uppercase tracking-wider">
                             Recommended
                         </span>
                     </div>
                     <div className="flex items-center gap-3 mb-3">
-                        <div className="p-2 bg-indigo-100 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
+                        <div className="p-2 bg-sky-100 rounded-xl group-hover:bg-sky-600 group-hover:text-white transition-colors duration-300">
                             <Cloud className="w-5 h-5" />
                         </div>
                         <span className="font-bold text-slate-900 text-base">Gemini Cloud</span>
@@ -179,7 +179,7 @@ function CompareView({
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">
                         Connect your own Gemini account with a free API key from Google. The quickest cloud option to set up.
                     </p>
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 group-hover:gap-3 transition-all">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#546354] group-hover:gap-3 transition-all mt-auto">
                         Set up Gemini
                         <ArrowRight className="w-4 h-4" />
                     </div>
@@ -187,15 +187,15 @@ function CompareView({
 
                 <button
                     onClick={() => onSetView('openai')}
-                    className="group text-left p-5 rounded-2xl border-2 border-slate-100 hover:border-sky-300 bg-gradient-to-br from-white to-sky-50/40 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98] relative overflow-hidden"
+                    className="group text-left p-5 rounded-2xl border-2 border-slate-100 hover:border-slate-200 bg-gradient-to-br from-white to-slate-50/50 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98] relative overflow-hidden flex flex-col"
                 >
                     <div className="absolute top-0 right-0 p-1">
-                        <span className="text-[10px] font-bold text-sky-600 bg-sky-50 px-2.5 py-1 rounded-bl-xl rounded-tr-lg uppercase tracking-wider">
+                        <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-bl-xl rounded-tr-lg uppercase tracking-wider">
                             Your API key
                         </span>
                     </div>
                     <div className="flex items-center gap-3 mb-3">
-                        <div className="p-2 bg-sky-100 rounded-xl group-hover:bg-sky-600 group-hover:text-white transition-colors duration-300">
+                        <div className="p-2 bg-slate-100 rounded-xl group-hover:bg-slate-700 group-hover:text-white transition-colors duration-300">
                             <Key className="w-5 h-5" />
                         </div>
                         <span className="font-bold text-slate-900 text-base">OpenAI Cloud</span>
@@ -203,7 +203,7 @@ function CompareView({
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">
                         Connect your own OpenAI account using a personal API key from openai.com.
                     </p>
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-sky-600 group-hover:gap-3 transition-all">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#546354] group-hover:gap-3 transition-all mt-auto">
                         Set up OpenAI
                         <ArrowRight className="w-4 h-4" />
                     </div>
@@ -212,15 +212,15 @@ function CompareView({
                 {/* Ollama Card */}
                 <button
                     onClick={() => onSetView('ollama')}
-                    className="group text-left p-5 rounded-2xl border-2 border-slate-100 hover:border-emerald-300 bg-gradient-to-br from-white to-emerald-50/40 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98] relative overflow-hidden"
+                    className="group text-left p-5 rounded-2xl border-2 border-slate-100 hover:border-emerald-200 bg-gradient-to-br from-white to-emerald-50/25 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98] relative overflow-hidden flex flex-col"
                 >
                     <div className="absolute top-0 right-0 p-1">
-                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-bl-xl rounded-tr-lg uppercase tracking-wider">
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-bl-xl rounded-tr-lg uppercase tracking-wider">
                             Private
                         </span>
                     </div>
                     <div className="flex items-center gap-3 mb-3">
-                        <div className="p-2 bg-emerald-100 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">
+                        <div className="p-2 bg-emerald-100 rounded-xl group-hover:bg-emerald-700 group-hover:text-white transition-colors duration-300">
                             <Monitor className="w-5 h-5" />
                         </div>
                         <span className="font-bold text-slate-900 text-base">Local Ollama</span>
@@ -228,7 +228,7 @@ function CompareView({
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">
                         Runs AI entirely on your own computer. No AI data sent to the cloud, no ongoing fees.
                     </p>
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 group-hover:gap-3 transition-all">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#546354] group-hover:gap-3 transition-all mt-auto">
                         Set up Ollama
                         <ArrowRight className="w-4 h-4" />
                     </div>
@@ -243,16 +243,16 @@ function CompareView({
                         <thead>
                             <tr className="bg-slate-50/80 border-b border-slate-100">
                                 <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-[30%]">Feature</th>
-                                <th className="px-4 py-3 text-[11px] font-bold text-violet-600 uppercase tracking-wider">Free Trial</th>
-                                <th className="px-4 py-3 text-[11px] font-bold text-indigo-600 uppercase tracking-wider">Gemini Cloud</th>
-                                <th className="px-4 py-3 text-[11px] font-bold text-sky-600 uppercase tracking-wider">OpenAI Cloud</th>
+                                <th className="px-4 py-3 text-[11px] font-bold text-[#546354] uppercase tracking-wider">Free Trial</th>
+                                <th className="px-4 py-3 text-[11px] font-bold text-sky-700 uppercase tracking-wider">Gemini Cloud</th>
+                                <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">OpenAI Cloud</th>
                                 <th className="px-4 py-3 text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Local Ollama</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                             <CompareRow
                                 label="Setup"
-                                icon={<Zap className="w-3.5 h-3.5 text-amber-500" />}
+                                icon={<Zap className="w-3.5 h-3.5 text-[#6f716c]" />}
                                 trial="Instant"
                                 gemini="Easy (API Key)"
                                 openai="Easy (API Key)"
@@ -260,7 +260,7 @@ function CompareView({
                             />
                             <CompareRow
                                 label="Privacy"
-                                icon={<Shield className="w-3.5 h-3.5 text-blue-500" />}
+                                icon={<Shield className="w-3.5 h-3.5 text-[#6f716c]" />}
                                 trial="Cloud Hosted"
                                 gemini="Cloud Hosted"
                                 openai="Cloud Hosted"
@@ -268,7 +268,7 @@ function CompareView({
                             />
                             <CompareRow
                                 label="Cost"
-                                icon={<DollarSign className="w-3.5 h-3.5 text-green-500" />}
+                                icon={<DollarSign className="w-3.5 h-3.5 text-[#6f716c]" />}
                                 trial="Covered by Storyline"
                                 gemini="Free tier available"
                                 openai="Usage-Based"
@@ -276,7 +276,7 @@ function CompareView({
                             />
                             <CompareRow
                                 label="Location"
-                                icon={<Globe className="w-3.5 h-3.5 text-sky-500" />}
+                                icon={<Globe className="w-3.5 h-3.5 text-[#6f716c]" />}
                                 trial="Works Everywhere"
                                 gemini="Works Everywhere"
                                 openai="Works Everywhere"
@@ -284,7 +284,7 @@ function CompareView({
                             />
                             <CompareRow
                                 label="Performance"
-                                icon={<Sparkles className="w-3.5 h-3.5 text-indigo-500" />}
+                                icon={<Sparkles className="w-3.5 h-3.5 text-[#6f716c]" />}
                                 trial="High Speed"
                                 gemini="High Speed"
                                 openai="High Speed"
@@ -295,11 +295,11 @@ function CompareView({
                 </div>
             </div>
 
-            <div className="flex items-start gap-3 p-4 bg-amber-50/60 rounded-2xl border border-amber-100/60">
-                <div className="p-1.5 bg-amber-100 rounded-lg shrink-0">
-                    <Info className="w-4 h-4 text-amber-600" />
+            <div className="flex items-start gap-3 p-4 bg-[#eef4ed] rounded-2xl border border-[#e8e3da]">
+                <div className="p-1.5 bg-[#eef4ed] rounded-lg shrink-0">
+                    <Info className="w-4 h-4 text-[#546354]" />
                 </div>
-                <p className="text-xs text-amber-800 leading-relaxed font-medium">
+                <p className="text-xs text-[#31332f] leading-relaxed font-medium">
                     <span className="font-bold">Not sure which to pick?</span> Start with Free Trial AI — no setup needed. When you're ready to use your own AI account, Gemini and OpenAI are the simplest options. Choose Ollama to keep AI running entirely on your own computer.
                 </p>
             </div>
@@ -332,25 +332,25 @@ function CompareRow({
             </td>
             <td className="px-4 py-3.5">
                 <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-violet-400 shrink-0" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#546354]/60 shrink-0" />
                     <span className="text-xs text-slate-600 leading-snug font-medium">{trial}</span>
                 </div>
             </td>
             <td className="px-4 py-3.5">
                 <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-sky-300 shrink-0" />
                     <span className="text-xs text-slate-600 leading-snug font-medium">{gemini}</span>
                 </div>
             </td>
             <td className="px-4 py-3.5">
                 <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-sky-400 shrink-0" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
                     <span className="text-xs text-slate-600 leading-snug font-medium">{openai}</span>
                 </div>
             </td>
             <td className="px-4 py-3.5">
                 <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-300 shrink-0" />
                     <span className="text-xs text-slate-600 leading-snug font-medium">{ollama}</span>
                 </div>
             </td>
@@ -366,17 +366,17 @@ function GeminiGuide({ onBack, onSelect }: { onBack: () => void, onSelect: () =>
             <DialogHeader>
                 <button ref={backRef} onClick={onBack} className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-800 transition-colors mb-1 min-h-[44px] px-1 -mx-1"><ChevronLeft className="w-3.5 h-3.5" />Back</button>
                 <div className="flex items-center gap-2.5">
-                    <Cloud className="w-5 h-5 text-indigo-600" />
+                    <Cloud className="w-5 h-5 text-sky-600" />
                     <DialogTitle className="text-lg">Setting Up Gemini Cloud</DialogTitle>
                 </div>
                 <DialogDescription className="text-slate-500">Connect your Google AI API key to use Gemini in Storyline.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-                <StepItem number={1} title="Get your API key from Google" active><p className="text-xs text-slate-600">Visit Google AI Studio to create a free API key — this is a private code that lets Storyline connect to your Gemini account.</p><a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-indigo-600 flex items-center gap-1 mt-1 underline">Open AI Studio <ExternalLink className="w-3 h-3" /><span className="sr-only">(opens in new tab)</span></a></StepItem>
+                <StepItem number={1} title="Get your API key from Google" active><p className="text-xs text-slate-600">Visit Google AI Studio to create a free API key — this is a private code that lets Storyline connect to your Gemini account.</p><a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-sky-600 flex items-center gap-1 mt-1 underline">Open AI Studio <ExternalLink className="w-3 h-3" /><span className="sr-only">(opens in new tab)</span></a></StepItem>
                 <StepItem number={2} title="Paste Key"><p className="text-xs text-slate-600">Paste the key in the settings panel under "Gemini Cloud".</p></StepItem>
                 <StepItem number={3} title="Test & Save" done><p className="text-xs text-slate-600">Click test connection and save your settings.</p></StepItem>
             </div>
-            <DialogFooter><Button variant="outline" onClick={onBack}>Back</Button><Button onClick={onSelect} className="bg-indigo-600 text-white">Use Gemini Cloud</Button></DialogFooter>
+            <DialogFooter><Button variant="outline" onClick={onBack}>Back</Button><Button onClick={onSelect} className="bg-[#546354] hover:bg-[#485748] text-white">Use Gemini Cloud</Button></DialogFooter>
         </div>
     )
 }
@@ -389,17 +389,17 @@ function OpenAiGuide({ onBack, onSelect }: { onBack: () => void, onSelect: () =>
             <DialogHeader>
                 <button ref={backRef} onClick={onBack} className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-800 transition-colors mb-1 min-h-[44px] px-1 -mx-1"><ChevronLeft className="w-3.5 h-3.5" />Back</button>
                 <div className="flex items-center gap-2.5">
-                    <Key className="w-5 h-5 text-sky-600" />
+                    <Key className="w-5 h-5 text-slate-600" />
                     <DialogTitle className="text-lg">Setting Up OpenAI Cloud</DialogTitle>
                 </div>
                 <DialogDescription className="text-slate-500">Connect your own OpenAI account using a personal API key.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-                <StepItem number={1} title="Get your API key from OpenAI" active><p className="text-xs text-slate-600">Open your OpenAI dashboard and create a new secret API key for your account or project.</p><a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-sky-600 flex items-center gap-1 mt-1 underline">Open API Keys <ExternalLink className="w-3 h-3" /><span className="sr-only">(opens in new tab)</span></a></StepItem>
+                <StepItem number={1} title="Get your API key from OpenAI" active><p className="text-xs text-slate-600">Open your OpenAI dashboard and create a new secret API key for your account or project.</p><a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-[#546354] flex items-center gap-1 mt-1 underline">Open API Keys <ExternalLink className="w-3 h-3" /><span className="sr-only">(opens in new tab)</span></a></StepItem>
                 <StepItem number={2} title="Paste Key"><p className="text-xs text-slate-600">Paste it into the settings panel under "OpenAI Cloud".</p></StepItem>
                 <StepItem number={3} title="Test & Save" done><p className="text-xs text-slate-600">Run the connection test, then save your settings to start using OpenAI in Storyline.</p></StepItem>
             </div>
-            <DialogFooter><Button variant="outline" onClick={onBack}>Back</Button><Button onClick={onSelect} className="bg-sky-600 text-white hover:bg-sky-700">Use OpenAI Cloud</Button></DialogFooter>
+            <DialogFooter><Button variant="outline" onClick={onBack}>Back</Button><Button onClick={onSelect} className="bg-[#546354] hover:bg-[#485748] text-white">Use OpenAI Cloud</Button></DialogFooter>
         </div>
     )
 }
@@ -430,7 +430,7 @@ function OllamaGuide({
                 </button>
                 <div className="flex items-center gap-2.5">
                     <div className="p-2 bg-emerald-100 rounded-xl">
-                        <Monitor className="w-4.5 h-4.5 text-emerald-600" />
+                        <Monitor className="w-4.5 h-4.5 text-emerald-700" />
                     </div>
                     <div>
                         <DialogTitle className="text-lg">Setting Up Local Ollama</DialogTitle>
@@ -441,12 +441,12 @@ function OllamaGuide({
                 </div>
             </DialogHeader>
 
-            <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-100/60 space-y-2">
-                <h4 className="text-sm font-bold text-emerald-900 flex items-center gap-2">
+            <div className="p-4 bg-emerald-50/40 rounded-xl border border-emerald-100/40 space-y-2">
+                <h4 className="text-sm font-bold text-[#31332f] flex items-center gap-2">
                     <Globe className="w-3.5 h-3.5" />
                     Connecting the Website to your Computer
                 </h4>
-                <p className="text-sm text-emerald-800/80 leading-relaxed">
+                <p className="text-sm text-[#6f716c] leading-relaxed">
                     Because you are using the live site, you need to give Ollama permission to talk to <strong>storyline-paulokwa-v2.netlify.app</strong>. This is a one-time setup step for security.
                 </p>
             </div>
@@ -464,7 +464,7 @@ function OllamaGuide({
                         href="https://ollama.com"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-700 mt-1.5 hover:underline"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#546354] hover:text-[#485748] mt-1.5 hover:underline"
                     >
                         Download Ollama
                         <ExternalLink className="w-3 h-3" />
@@ -563,7 +563,7 @@ function OllamaGuide({
                                     </div>
                                 </div>
 
-                                <p className="text-[11px] text-emerald-700/70 italic font-medium">
+                                <p className="text-[11px] text-[#6f716c] italic font-medium">
                                     The setting is now permanent. Just start Ollama normally (open the App or run <code className="font-bold">ollama serve</code>) after your restart.
                                 </p>
                             </div>
@@ -599,14 +599,14 @@ function OllamaGuide({
                         <tr>
                             <td className="px-4 py-2.5 text-xs font-bold text-slate-700">Temporary</td>
                             <td className="px-4 py-2.5 text-xs text-slate-600 text-center">Easy</td>
-                            <td className="px-4 py-2.5 text-xs text-amber-600 text-center font-bold">Yes</td>
+                            <td className="px-4 py-2.5 text-xs text-[#31332f] text-center font-bold">Yes</td>
                             <td className="px-4 py-2.5 text-xs text-slate-500">Quick testing</td>
                         </tr>
-                        <tr className="bg-emerald-50/10">
-                            <td className="px-4 py-2.5 text-xs font-bold text-emerald-700">Permanent</td>
-                            <td className="px-4 py-2.5 text-xs text-emerald-600 text-center">Medium</td>
-                            <td className="px-4 py-2.5 text-xs text-emerald-600 text-center font-bold">No</td>
-                            <td className="px-4 py-2.5 text-xs text-emerald-700 font-medium">Daily use</td>
+                        <tr className="bg-[#eef4ed]/20">
+                            <td className="px-4 py-2.5 text-xs font-bold text-[#546354]">Permanent</td>
+                            <td className="px-4 py-2.5 text-xs text-[#546354] text-center">Medium</td>
+                            <td className="px-4 py-2.5 text-xs text-[#546354] text-center font-bold">No</td>
+                            <td className="px-4 py-2.5 text-xs text-[#546354] font-medium">Daily use</td>
                         </tr>
                     </tbody>
                 </table>
@@ -661,8 +661,8 @@ function OllamaGuide({
                                     </p>
                                 </div>
                                 
-                                <div className="p-2 bg-amber-50 rounded-lg border border-amber-100">
-                                    <p className="text-[10px] text-amber-800 leading-tight">
+                                <div className="p-2 bg-[#f5f4ef] rounded-lg border border-[#e8e3da]">
+                                    <p className="text-[10px] text-[#31332f] leading-tight">
                                         <strong>Pro Tip:</strong> Most connection issues are solved by correctly setting the <code>OLLAMA_ORIGINS</code> variable (Step 3) and restarting Ollama.
                                     </p>
                                 </div>
@@ -677,7 +677,7 @@ function OllamaGuide({
                     <ChevronLeft className="w-3.5 h-3.5" />
                     Back
                 </Button>
-                <Button onClick={onSelect} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white">
+                <Button onClick={onSelect} className="gap-1.5 bg-[#546354] hover:bg-[#485748] text-white">
                     <Check className="w-3.5 h-3.5" />
                     Use Local Ollama
                 </Button>
@@ -690,7 +690,7 @@ function StepItem({ number, title, active, done, children }: { number: number, t
     return (
         <div className="flex gap-3">
             <div className="flex flex-col items-center">
-                <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold font-mono transition-colors", done ? "bg-green-100 text-green-600" : active ? "bg-indigo-100 text-indigo-600" : "bg-slate-100 text-slate-400")}>{done ? <Check className="w-3 h-3" /> : number}</div>
+                <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold font-mono transition-colors", done ? "bg-[#eef4ed] text-[#546354]" : active ? "bg-[#eef4ed] text-[#546354]" : "bg-slate-100 text-slate-400")}>{done ? <Check className="w-3 h-3" /> : number}</div>
                 <div className="w-px flex-1 bg-slate-100 min-h-[1.5rem]" />
             </div>
             <div><h5 className="text-xs font-bold text-slate-800">{title}</h5>{children}</div>
