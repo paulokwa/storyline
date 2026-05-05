@@ -1,5 +1,3 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # Dependencies
 /node_modules
 /.pnp
@@ -10,31 +8,23 @@
 !.yarn/releases
 !.yarn/versions
 
-# Testing
-/coverage
-
-# Next.js
+# Build / framework output
 /.next/
 /out/
-
-# Production
 /build
 
-# TypeScript
+# Hosting / platform local folders
+/.vercel
+/.netlify
+
+# TypeScript / generated
 *.tsbuildinfo
 next-env.d.ts
 
-# Debug logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
+# Tests / coverage
+/coverage
 
-# Misc
-.DS_Store
-*.pem
-
-# Environment files — NEVER commit these to Git
+# Environment files — NEVER commit these
 .env
 .env.local
 .env.development.local
@@ -43,17 +33,44 @@ yarn-error.log*
 .env*.local
 .local/
 
-# Hosting / platform local folders
-.vercel
-.netlify
+# Logs / debug output
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+errors.txt
+char_errors.txt
+tsc_output.txt
+
+# OS / misc
+.DS_Store
+Thumbs.db
+*.pem
+
+# Local editor settings
+# Do not ignore the whole .vscode folder; only ignore private/local settings.
+.vscode/settings.json
+.vscode/mcp.json
 
 # Local AI / agent / MCP configuration
 .mcp.json
-.vscode/mcp.json
+.codex.backup
 .claude.json
 .claude/settings.json
 .claude/settings.local.json
-.agents/skills/impeccable/
+.claude/
 
-# Local VS Code workspace settings
-.vscode/settings.json
+# Local AI skills / cloned tools
+.agents/skills/impeccable/
+impeccable/
+
+# Local dev-only notes
+DEV_TEST_ROUTES.txt
+
+# Keep tracked on purpose:
+# AGENTS.md
+# MASTER_BRIEF.md
+# SESSION_HANDOVER.md
+# TASK_BOARD.md
+# TESTING.md
+# TROUBLESHOOTING.md
