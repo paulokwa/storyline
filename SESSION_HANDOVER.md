@@ -5,6 +5,53 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-06 - Signup verification callback privacy fix
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Investigated a privacy-sensitive auth report: opening a signup verification email while another user was already signed in could fall back into the existing browser session, making it look like the verification link opened someone else's account.
+- Confirmed there was no matching entry in `TROUBLESHOOTING.md`, then traced the issue to the generic callback flow in `app/api/auth/callback/route.ts`, which only attempted `exchangeCodeForSession(code)` and otherwise sent the user into a generic invalid-token path.
+- Updated `app/api/auth/signup/route.ts` so signup emails now redirect to `api/auth/callback?intent=signup&next=/library`, allowing the callback route to distinguish signup verification from other auth flows.
+- Updated `app/api/auth/callback/route.ts` to:
+  - sanitize the `next` destination
+  - detect signup callbacks via `intent=signup`
+  - clear a stale invalid-refresh-token local session if present
+  - clear an already-active local session when a signup callback fails, so the browser does not simply fall back into another user's existing account
+  - redirect signup verification failures to the login page with explicit verification status instead of a generic invalid-token response
+- Updated `app/(auth)/login/page.tsx` to read `verification` query params and show a clear banner for reused/expired signup verification links.
+- Added a reusable troubleshooting entry and test-tracker rows for this auth callback issue.
+
+### Files changed
+
+- `app/api/auth/signup/route.ts`
+- `app/api/auth/callback/route.ts`
+- `app/(auth)/login/page.tsx`
+- `TROUBLESHOOTING.md`
+- `TESTING.md`
+
+### Current status
+
+Implementation is complete and type-safe. Static verification passed with `npx tsc --noEmit --pretty false`.
+
+### Next recommended step
+
+Manual browser verification for the exact auth edge cases:
+
+1. Sign in as User B.
+2. Open User A's fresh signup verification email in the same browser and confirm the app does not remain in User B's account.
+3. Click the same User A verification link a second time and confirm the login page shows the reused-link guidance.
+4. Confirm a normal fresh signup verification still lands in the correct signed-in account and opens the library.
+
+### Risks or warnings
+
+- This fix is intentionally scoped to signup verification callbacks. Password-reset behavior is unchanged and still uses the existing `/reset-password` flow.
+- The reused-link message is based on the callback failure path for signup verification links. Supabase's auth-code failure response does not distinguish every expired-vs-already-used case perfectly, so the UI copy intentionally says "already used or has expired" while still telling the user to sign in if they already verified.
+
+---
 ## 2026-05-06 - Welcome Onboarding Redesign (2-Step Flow)
 
 ### Current branch

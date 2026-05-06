@@ -623,3 +623,30 @@ Add a short entry using this format:
 
 - `signOut({ scope: 'local' })` clears the auth cookie from the response headers without making a server round-trip, so it is safe to call in a server component.
 
+## Issue: Signup verification link can fall back into another user's active session
+
+### Symptoms
+
+- User A clicks a signup verification email while User B is already signed in on the same browser.
+- If the verification code is no longer usable, the app can appear to open User B's account instead of showing a neutral auth result.
+- Reusing a signup verification link only shows a generic invalid/expired token path.
+
+### Cause
+
+- The signup callback used a generic `exchangeCodeForSession(code)` redirect with no signup-specific status handling.
+- When the code exchange failed, any existing signed-in browser session could remain active, so the browser still looked authenticated as the previously signed-in user.
+
+### Fix
+
+- Mark signup email callbacks with `intent=signup`.
+- In `app/api/auth/callback/route.ts`, if a signup callback fails and there was already an active session, clear the local session before redirecting.
+- Redirect reused/expired signup links to the login page with explicit verification messaging instead of a generic invalid-token response.
+
+### Verification
+
+- `npx tsc --noEmit --pretty false`
+
+### Notes
+
+- Manual browser validation is still required for three flows: fresh signup verification, clicking a signup verification link while another user is signed in, and reusing the same signup verification link after it has already been consumed.
+

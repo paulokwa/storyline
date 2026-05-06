@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getErrorMessage, startGuardedAuthRedirect } from '@/lib/auth/client-navigation'
@@ -12,10 +12,18 @@ import { PenLine, AlertCircle } from 'lucide-react'
 
 export default function LoginPage() {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
+    const verificationStatus = searchParams.get('verification')
+
+    const verificationMessage = verificationStatus === 'already-used'
+        ? "That verification link was already used or has expired. If you've already verified your email, sign in below."
+        : verificationStatus === 'failed'
+            ? 'We could not finish verifying that email link. Please sign in or request a new verification email.'
+            : ''
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
@@ -64,6 +72,13 @@ export default function LoginPage() {
                     <p className="text-slate-400 font-medium mb-8">Sign in to your creative sanctuary</p>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
+                        {verificationMessage && (
+                            <div className="flex items-start gap-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                                <span className="font-medium">{verificationMessage}</span>
+                            </div>
+                        )}
+
                         <div className="space-y-2">
                             <Label htmlFor="email" className="text-[11px] font-sans tracking-widest uppercase text-slate-400 ml-1">Email</Label>
                             <Input

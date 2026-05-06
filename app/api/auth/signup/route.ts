@@ -81,7 +81,7 @@ export async function POST(request: Request) {
         password,
         options: {
             data: { display_name: displayName },
-            emailRedirectTo: `${getURL()}api/auth/callback`,
+            emailRedirectTo: `${getURL()}api/auth/callback?intent=signup&next=/library`,
         },
     })
 

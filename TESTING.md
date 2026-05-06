@@ -212,6 +212,8 @@ Future agents: treat this workflow as established. Before asking the user about 
 
 | Test | Status | Tested by | Date tested | Notes |
 |---|---|---|---|---|
+| Signup verification link while another user is signed in | Needs retest | AI agent | 2026-05-06 | `app/api/auth/callback/route.ts` now treats signup callbacks as `intent=signup`, clears an existing local session if the signup callback fails, and redirects to login with explicit verification messaging. Browser validation needed: stay signed in as User B, open User A's signup verification link in the same browser, and confirm the app does not land in User B's account. |
+| Reused signup verification link shows explicit guidance | Needs retest | AI agent | 2026-05-06 | Reused/expired signup verification links now redirect to `/login?verification=already-used` with the message "That verification link was already used or has expired. If you've already verified your email, sign in below." Browser validation needed: click the same signup verification link twice and confirm the second visit shows the guidance instead of silently opening another session. |
 | Stale refresh token silenced on showcase load | Needs retest | AI agent | 2026-05-04 | `lib/supabase/auth.ts` now detects `AuthApiError` with `'Invalid Refresh Token'` / `'Refresh Token Not Found'`, calls `signOut({ scope: 'local' })` silently, and returns null. Browser validation needed: load the showcase page with a logged-out or stale-session browser, confirm no `AuthApiError` console error appears. |
 
 ## Scene Analysis / AI Partner
