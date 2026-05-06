@@ -96,8 +96,8 @@ export function getNextImportedProjectTitle(
     return `${normalizedBaseTitle} (Imported ${importNumber})`
 }
 
-export async function getLibraryImportOptions(backup: StorylineBackup): Promise<LibraryImportOptions | null> {
-    const projects = await listLocalProjects()
+export async function getLibraryImportOptions(backup: StorylineBackup, currentUserId: string): Promise<LibraryImportOptions | null> {
+    const projects = await listLocalProjects(currentUserId)
     const activeProjects = projects.filter((project) => project.deleted_at == null)
     const sameTypeProjects = activeProjects.filter((project) => project.type === backup.project.type)
     const backupBaseTitle = getBackupBaseTitle(backup.project.title)

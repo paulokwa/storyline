@@ -148,7 +148,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
 
     const refreshLocalProjects = useCallback(async () => {
         try {
-            const nextLocalProjects = await listLocalProjects()
+            const nextLocalProjects = await listLocalProjects(currentUserId)
             setLocalProjects(nextLocalProjects.map((project) => ({
                 ...project,
                 role: 'owner',
@@ -298,9 +298,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                             }}
                         />
                     )}
-                    <div className="w-full">
-                        <OpenProjectButton currentUserId={currentUserId} className="w-full md:w-auto" />
-                    </div>
+                    <OpenProjectButton currentUserId={currentUserId} className="w-full md:w-auto" center />
                 </div>
             </div>
         )

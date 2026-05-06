@@ -394,6 +394,40 @@ Only fix if this becomes noticeable in manual testing. A possible fix is to reap
 
 ---
 
+### 8. Orphaned Local Project Recovery
+
+**Why it matters:**
+The 2026-05-06 IndexedDB privacy fix scoped `listLocalProjects()` to the authenticated user by filtering on `project.user_id === currentUserId`. Projects whose stored `user_id` does not match the current user are silently excluded from the library list, and direct URL access to those projects is blocked at `LocalProjectShell` with a "Project not found" screen.
+
+This is the correct privacy behaviour, but it creates an edge case: a user whose local Supabase account was deleted and then re-created with the same email address receives a new Supabase UUID. Their previously stored local projects still carry the old UUID in IndexedDB. After re-registration, those projects become invisible because the stored `user_id` no longer matches. The user's writing is not lost — it is still in IndexedDB on that device — but there is no UI path to find or recover it.
+
+**How this situation arises in practice:**
+- User creates local projects, then deletes their account (e.g. during testing).
+- User re-registers with the same email — Supabase assigns a new UUID.
+- On login, `listLocalProjects(newUserId)` finds zero matches because all stored projects carry the old UUID.
+- The projects are silently inaccessible. The user sees an empty library.
+
+This was directly observed during testing in this project (see `SESSION_HANDOVER.md`, entry 2026-05-06).
+
+**What is in IndexedDB:**
+The `projects` object store in the `storyline-local-projects` database (v4+) has a `user_id` index. Records with a non-matching `user_id` are untouched — they are not deleted. A recovery flow can safely query them.
+
+**Recommended implementation when prioritised:**
+
+1. After `listLocalProjects(currentUserId)` returns, run a secondary query for projects whose `user_id` is null or does not match `currentUserId` (use `getAllLocalRecords` and filter). Call this the "orphaned" set.
+2. If orphaned projects exist, show a dismissible banner in the library: *"We found [N] project(s) saved on this device under a different account. Would you like to review them?"*
+3. Open a modal listing orphaned projects (title, type, last accessed). Let the user claim individual projects (which rewrites `user_id` to the current user) or dismiss/delete them.
+4. Claiming must be explicit — never auto-claim silently. Auto-claiming could expose one user's work to another on a legitimately shared device.
+5. Implement claiming as a single `updateLocalProject(id, { user_id: currentUserId })` call — no migration complexity.
+
+**Do not implement yet unless users actually report invisible local projects.** The silent exclusion is the correct default. Only build the recovery flow if there is real demand — it adds UI complexity and the shared-device case means auto-claiming is genuinely unsafe.
+
+**Cross-reference:** `SESSION_HANDOVER.md` — entry 2026-05-06. `lib/persistence/local-db.ts` — `DB_VERSION = 4`, `user_id` index on `projects` store. `lib/persistence/local-projects.ts` — `listLocalProjects(currentUserId)`. `components/project/local/LocalProjectShell.tsx` — `'forbidden'` status state.
+
+**Priority:** Low — trigger only if users report invisible local projects after the v4 DB upgrade.
+
+---
+
 ## Notes on moved items
 
 The previous `Future Plans — Editor, Fonts, and Proofing` section was moved to `docs/future-roadmap.md` because those items are user-facing feature ideas, not technical debt.

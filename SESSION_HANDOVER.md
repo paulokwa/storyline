@@ -5,6 +5,64 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-06 - IndexedDB Local Project Privacy Fix (User Scoping)
+
+### Current branch
+
+`main`
+
+### What was completed
+
+**Privacy investigation:** A user reported seeing different library states while logged into the same email on both localhost:3000 and the production site. Investigation via Supabase MCP confirmed two separate accounts existed (different emails, same Supabase project), and that all visible projects carried the `LOCAL ONLY` badge. Root cause was a browser Same-Origin Policy boundary: `localhost:3000` and the production domain maintain completely separate IndexedDB stores. Projects created on one origin are invisible on the other regardless of which account is logged in.
+
+**Privacy bug confirmed and fixed:** During investigation a second problem was found. `listLocalProjects()` in `lib/persistence/local-projects.ts` called `getAllLocalRecords()` with no `user_id` filter. Local projects in IndexedDB are scoped to the browser origin — not to any user account. This meant that on a shared device or shared browser profile, any signed-in user could see and open every local project created by any other user on the same origin. The `user_id` field was written into each project record at creation time but was never read back as a filter.
+
+**Changes made:**
+
+- **`lib/persistence/local-db.ts`** — Bumped `DB_VERSION` from 3 to 4. Refactored `onupgradeneeded` to be version-aware using `event.oldVersion` guards. Version 4 upgrade adds a `user_id` index to the `projects` object store, covering both fresh installs and existing v3 databases migrating to v4 (index added via the versionchange transaction). Added `getLocalRecordsByUserId()` for future use against the new index.
+
+- **`lib/persistence/local-projects.ts`** — `listLocalProjects(currentUserId: string)` now requires a user ID and post-filters results to `p.user_id === currentUserId`. Projects with a non-matching or null `user_id` are excluded silently (not exposed to any account).
+
+- **`components/library/ProjectGrid.tsx`** — Passes `currentUserId` (already a prop) into `listLocalProjects()`.
+
+- **`lib/backup/import-local-backup.ts`** — `getLibraryImportOptions(backup, currentUserId)` now requires and threads through the user ID.
+
+- **`components/library/OpenProjectButton.tsx`** — Passes `currentUserId` (already a prop) into `getLibraryImportOptions()`.
+
+- **`components/project/local/LocalProjectShell.tsx`** — Added a `'forbidden'` status state. After fetching a local project by ID, if `localProject.user_id !== currentUserId` the shell sets `status = 'forbidden'` and renders a neutral "Project not found" screen — blocking direct URL access to another user's local project. `currentUserId` added to the `useEffect` dependency array.
+
+**TypeScript:** `npx tsc --noEmit` passes with zero errors (stale `.next` artifacts cleared first).
+
+### Files changed
+
+- `lib/persistence/local-db.ts`
+- `lib/persistence/local-projects.ts`
+- `components/library/ProjectGrid.tsx`
+- `lib/backup/import-local-backup.ts`
+- `components/library/OpenProjectButton.tsx`
+- `components/project/local/LocalProjectShell.tsx`
+
+### Current status
+
+Fix is complete and type-safe. Local projects are now scoped to the authenticated user both at list level and at direct URL access level.
+
+**Legacy / orphaned projects:** Any project whose stored `user_id` does not match the current user is silently excluded from the list. This affects projects that pre-date this fix where the stored `user_id` is null or belongs to a different (possibly deleted and recreated) account. These records remain in IndexedDB untouched. A future recovery flow has been documented in `docs/technical-debt-roadmap.md` — see "Orphaned Local Project Recovery."
+
+### Next recommended step
+
+Manual validation on localhost:
+1. User A creates a local project, logs out.
+2. User B logs in on the same browser — library must show zero of User A's projects.
+3. User B navigates directly to User A's project URL — must see "Project not found."
+4. User A logs back in — must see their project as before.
+5. Cloud projects must remain unaffected throughout.
+
+### Risks or warnings
+
+- The `user_id` index in the DB requires a version upgrade. The first time the app opens after this deploy, IndexedDB will run `onupgradeneeded` (v3→v4). For users with existing local projects this is transparent — the index is added to the existing data, no records are rewritten.
+- The orphaned-project exclusion is silent. If any real user has a project that was created under a previous account (e.g. test account deleted and re-registered with same email, resulting in a new Supabase UUID), they will see an empty library for those projects. The recovery path is tracked in technical debt. No user-facing guidance is shown yet.
+
+---
 ## 2026-05-05 - Midnight Theme Readability Pass: Feedback, AI Partner, Manuscript View, Scene Gallery, Notifications
 
 ### Current branch

@@ -263,14 +263,16 @@ export async function requireLocalProject(projectId: string) {
     return project
 }
 
-export async function listLocalProjects() {
+export async function listLocalProjects(currentUserId: string) {
     await normalizeLegacyLocalProjects()
     const projects = await getAllLocalRecords<LocalProjectRow>(LOCAL_STORE_NAMES.projects)
-    return projects.sort((a, b) => {
-        const aIndex = a.order_index ?? 0
-        const bIndex = b.order_index ?? 0
-        return aIndex - bIndex
-    })
+    return projects
+        .filter((p) => p.user_id === currentUserId)
+        .sort((a, b) => {
+            const aIndex = a.order_index ?? 0
+            const bIndex = b.order_index ?? 0
+            return aIndex - bIndex
+        })
 }
 
 export async function updateLocalProject(

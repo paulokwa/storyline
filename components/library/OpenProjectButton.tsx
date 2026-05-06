@@ -32,9 +32,11 @@ type PendingLibraryImport = {
 export default function OpenProjectButton({
     currentUserId,
     className,
+    center = false,
 }: {
     currentUserId: string
     className?: string
+    center?: boolean
 }) {
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -122,7 +124,7 @@ export default function OpenProjectButton({
             return
         }
 
-        const importOptions = await getLibraryImportOptions(parsed.data)
+        const importOptions = await getLibraryImportOptions(parsed.data, currentUserId)
         if (importOptions) {
             setPendingImport({ backup: parsed.data, options: importOptions })
             setSelectedUpdateProjectId(importOptions.suggestedProject?.id ?? importOptions.sameTypeProjects[0]?.id ?? '')
@@ -213,7 +215,7 @@ export default function OpenProjectButton({
         : 'Project'
 
     return (
-        <div className="flex w-full flex-col items-stretch gap-3 md:items-end">
+        <div className={cn("flex w-full flex-col items-stretch gap-3", center ? "md:items-center" : "md:items-end")}>
             <button
                 onClick={handleClick}
                 disabled={isLoading}

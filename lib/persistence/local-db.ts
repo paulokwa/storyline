@@ -1,5 +1,5 @@
 const DB_NAME = 'storyline-local-projects'
-const DB_VERSION = 3
+const DB_VERSION = 4
 
 export const LOCAL_STORE_NAMES = {
     projects: 'projects',
@@ -83,23 +83,47 @@ export async function openLocalPersistenceDb() {
     const indexedDb = ensureIndexedDb()
     const request = indexedDb.open(DB_NAME, DB_VERSION)
 
-    request.onupgradeneeded = () => {
+    request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
         const db = request.result
-        createStore(db, LOCAL_STORE_NAMES.projects)
-        createStore(db, LOCAL_STORE_NAMES.structureNodes, { projectIndex: true })
-        createStore(db, LOCAL_STORE_NAMES.scenes, { projectIndex: true, nodeIndex: true })
-        createStore(db, LOCAL_STORE_NAMES.characters, { projectIndex: true })
-        createStore(db, LOCAL_STORE_NAMES.ideas, { projectIndex: true })
-        createStore(db, LOCAL_STORE_NAMES.locations, { projectIndex: true })
-        createStore(db, LOCAL_STORE_NAMES.objects, { projectIndex: true })
-        createStore(db, LOCAL_STORE_NAMES.comments, { projectIndex: true, nodeIndex: true })
-        createStore(db, LOCAL_STORE_NAMES.projectAssets, { projectIndex: true })
-        createStore(db, LOCAL_STORE_NAMES.sceneAssets, { projectIndex: true, sceneIndex: true, assetIndex: true })
-        createStore(db, LOCAL_STORE_NAMES.entityAssets, { projectIndex: true, entityIndex: true, assetIndex: true })
-        createStore(db, LOCAL_STORE_NAMES.aiResponses, { projectIndex: true })
+        const oldVersion = event.oldVersion
+
+        if (oldVersion < 3) {
+            createStore(db, LOCAL_STORE_NAMES.projects)
+            createStore(db, LOCAL_STORE_NAMES.structureNodes, { projectIndex: true })
+            createStore(db, LOCAL_STORE_NAMES.scenes, { projectIndex: true, nodeIndex: true })
+            createStore(db, LOCAL_STORE_NAMES.characters, { projectIndex: true })
+            createStore(db, LOCAL_STORE_NAMES.ideas, { projectIndex: true })
+            createStore(db, LOCAL_STORE_NAMES.locations, { projectIndex: true })
+            createStore(db, LOCAL_STORE_NAMES.objects, { projectIndex: true })
+            createStore(db, LOCAL_STORE_NAMES.comments, { projectIndex: true, nodeIndex: true })
+            createStore(db, LOCAL_STORE_NAMES.projectAssets, { projectIndex: true })
+            createStore(db, LOCAL_STORE_NAMES.sceneAssets, { projectIndex: true, sceneIndex: true, assetIndex: true })
+            createStore(db, LOCAL_STORE_NAMES.entityAssets, { projectIndex: true, entityIndex: true, assetIndex: true })
+            createStore(db, LOCAL_STORE_NAMES.aiResponses, { projectIndex: true })
+        }
+
+        if (oldVersion < 4) {
+            // Add user_id index to projects store for per-user scoping.
+            // Works for both fresh installs (store just created above) and v3→v4 upgrades
+            // (existing store accessed via the versionchange transaction).
+            const store = request.transaction!.objectStore(LOCAL_STORE_NAMES.projects)
+            if (!store.indexNames.contains('user_id')) {
+                store.createIndex('user_id', 'user_id', { unique: false })
+            }
+        }
     }
 
     return requestToPromise(request)
+}
+
+export async function getLocalRecordsByUserId<T>(userId: string) {
+    const db = await openLocalPersistenceDb()
+    const transaction = db.transaction(LOCAL_STORE_NAMES.projects, 'readonly')
+    const store = transaction.objectStore(LOCAL_STORE_NAMES.projects)
+    const index = store.index('user_id')
+    const values = await requestToPromise(index.getAll(userId))
+    await transactionToPromise(transaction)
+    return (values as T[]) ?? []
 }
 
 export async function getLocalRecord<T>(storeName: LocalStoreName, id: string) {

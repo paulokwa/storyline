@@ -21,7 +21,7 @@ export default function LocalProjectShell({
     children: React.ReactNode
 }) {
     const [project, setProject] = useState<LocalProjectRow | null>(null)
-    const [status, setStatus] = useState<'loading' | 'ready' | 'missing'>('loading')
+    const [status, setStatus] = useState<'loading' | 'ready' | 'missing' | 'forbidden'>('loading')
 
     useEffect(() => {
         let cancelled = false
@@ -31,6 +31,11 @@ export default function LocalProjectShell({
                 const localProject = await getLocalProject(projectId)
                 if (!localProject) {
                     if (!cancelled) setStatus('missing')
+                    return
+                }
+
+                if (localProject.user_id !== currentUserId) {
+                    if (!cancelled) setStatus('forbidden')
                     return
                 }
 
@@ -49,7 +54,7 @@ export default function LocalProjectShell({
         return () => {
             cancelled = true
         }
-    }, [projectId])
+    }, [projectId, currentUserId])
 
     if (status === 'loading') {
         return (
@@ -59,6 +64,19 @@ export default function LocalProjectShell({
                 description="Loading the draft from this device and rebuilding your writing workspace."
                 reassurance="Your work stays on this device unless you choose cloud sync."
             />
+        )
+    }
+
+    if (status === 'forbidden') {
+        return (
+            <div className="flex min-h-0 flex-1 items-center justify-center bg-[#fbf9f5] px-6 py-12">
+                <div className="max-w-md text-center">
+                    <h2 className="font-serif text-2xl text-slate-800">Project not found</h2>
+                    <p className="mt-3 text-sm text-slate-500">
+                        This local project does not belong to your account.
+                    </p>
+                </div>
+            </div>
         )
     }
 
