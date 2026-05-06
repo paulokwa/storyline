@@ -2275,13 +2275,23 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                             }
                             : undefined}
                     >
-                        <div className="scene-editor-view-drawer-shell flex h-full w-[320px] flex-col overflow-hidden border-l border-[#d8ddcf] bg-[linear-gradient(180deg,#f5f4ef_0%,#fbf9f5_52%,#f8f6f1_100%)] shadow-[inset_1px_0_0_rgba(255,255,255,0.45),-18px_0_40px_rgba(84,99,84,0.04)] lg:w-[380px]">
-                            <div className="shrink-0 border-b border-[#ddd8ce] bg-[linear-gradient(180deg,rgba(251,249,245,0.96)_0%,rgba(245,244,239,0.92)_100%)] px-5 py-4 backdrop-blur-sm md:px-6">
+                        <div className={cn(
+                            "scene-editor-view-drawer-shell flex h-full w-[320px] flex-col overflow-hidden border-l shadow-[inset_1px_0_0_rgba(255,255,255,0.45)] lg:w-[380px]",
+                            isMidnight
+                                ? "border-slate-700/60 bg-[linear-gradient(180deg,#0f1729_0%,#111c2e_52%,#0e1625_100%)] shadow-[-18px_0_40px_rgba(0,0,0,0.35)]"
+                                : "border-[#d8ddcf] bg-[linear-gradient(180deg,#f5f4ef_0%,#fbf9f5_52%,#f8f6f1_100%)] shadow-[-18px_0_40px_rgba(84,99,84,0.04)]"
+                        )}>
+                            <div className={cn(
+                                "shrink-0 border-b px-5 py-4 backdrop-blur-sm md:px-6",
+                                isMidnight
+                                    ? "border-slate-700/60 bg-[linear-gradient(180deg,rgba(15,23,41,0.96)_0%,rgba(17,28,46,0.92)_100%)]"
+                                    : "border-[#ddd8ce] bg-[linear-gradient(180deg,rgba(251,249,245,0.96)_0%,rgba(245,244,239,0.92)_100%)]"
+                            )}>
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="min-w-0">
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#8fa0c0]">Manuscript View</p>
-                                        <h3 className="mt-1 text-sm font-serif font-bold italic tracking-tight text-slate-800">Reading comfort</h3>
-                                        <p className="mt-2 max-w-[26ch] text-xs leading-5 text-slate-600">
+                                        <p className={cn("text-[10px] font-bold uppercase tracking-[0.22em]", isMidnight ? "text-slate-500" : "text-[#8fa0c0]")}>Manuscript View</p>
+                                        <h3 className={cn("mt-1 text-sm font-serif font-bold italic tracking-tight", isMidnight ? "text-slate-100" : "text-slate-800")}>Reading comfort</h3>
+                                        <p className={cn("mt-2 max-w-[26ch] text-xs leading-5", isMidnight ? "text-slate-400" : "text-slate-600")}>
                                             Adjust this prose view for this device only. Your manuscript content and exports stay unchanged.
                                         </p>
                                     </div>
@@ -2289,7 +2299,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                         type="button"
                                         onClick={() => setShowViewSettings(false)}
                                         aria-label="Close manuscript view panel"
-                                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-slate-300 transition-all hover:bg-white/70 hover:text-slate-600"
+                                        className={cn(
+                                            "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-all",
+                                            isMidnight ? "text-slate-500 hover:bg-white/8 hover:text-slate-300" : "text-slate-300 hover:bg-white/70 hover:text-slate-600"
+                                        )}
                                     >
                                         <X className="h-4 w-4" />
                                     </button>
@@ -2298,8 +2311,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
                             <div className="custom-scrollbar flex-1 overflow-y-auto px-5 py-5 md:px-6">
                                 <div className="space-y-5">
-                                    <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Typeface</p>
+
+                                    {/* Typeface */}
+                                    <section className={cn("rounded-[1.75rem] border p-4", isMidnight ? "border-slate-700/50 bg-slate-800/60 shadow-none" : "border-white/60 bg-white/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]")}>
+                                        <p className={cn("text-[10px] font-bold uppercase tracking-[0.2em]", isMidnight ? "text-slate-500" : "text-slate-400")}>Typeface</p>
                                         <div className="mt-3 grid grid-cols-2 gap-2">
                                             {PROSE_EDITOR_FONTS.map((font) => (
                                                 <button
@@ -2309,8 +2324,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                                     className={cn(
                                                         "rounded-2xl border px-3 py-3 text-center text-[13px] transition-all",
                                                         viewSettings.fontFamily === font.id
-                                                            ? "border-[#cfd7c8] bg-white text-slate-900 shadow-[0_8px_20px_rgba(84,99,84,0.08)]"
-                                                            : "border-transparent bg-[#f4f5f1] text-slate-500 hover:border-[#dbe2d2] hover:bg-white/90 hover:text-slate-800"
+                                                            ? cn(isMidnight ? "border-slate-600 bg-slate-700 text-slate-100 shadow-none" : "border-[#cfd7c8] bg-white text-slate-900 shadow-[0_8px_20px_rgba(84,99,84,0.08)]")
+                                                            : cn(isMidnight ? "border-transparent bg-transparent text-slate-400 hover:border-slate-600/50 hover:bg-slate-700/40 hover:text-slate-200" : "border-transparent bg-[#f4f5f1] text-slate-500 hover:border-[#dbe2d2] hover:bg-white/90 hover:text-slate-800")
                                                     )}
                                                     style={{ fontFamily: PROSE_EDITOR_FONT_STACKS[font.id] ?? font.id }}
                                                 >
@@ -2320,9 +2335,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                         </div>
                                     </section>
 
-                                    <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Font Size</p>
-                                        <div className="mt-3 flex gap-2 rounded-[1.4rem] bg-[#f1f4ec] p-1">
+                                    {/* Font Size */}
+                                    <section className={cn("rounded-[1.75rem] border p-4", isMidnight ? "border-slate-700/50 bg-slate-800/60 shadow-none" : "border-white/60 bg-white/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]")}>
+                                        <p className={cn("text-[10px] font-bold uppercase tracking-[0.2em]", isMidnight ? "text-slate-500" : "text-slate-400")}>Font Size</p>
+                                        <div className={cn("mt-3 flex gap-2 rounded-[1.4rem] p-1", isMidnight ? "bg-slate-800/80" : "bg-[#f1f4ec]")}>
                                             {(['16px', '18px', '22px'] as ProseEditorViewSettings['fontSize'][]).map((size) => (
                                                 <button
                                                     key={size}
@@ -2331,8 +2347,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                                     className={cn(
                                                         "flex-1 rounded-[1.1rem] px-3 py-2 text-sm transition-all",
                                                         viewSettings.fontSize === size
-                                                            ? "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
-                                                            : "text-slate-500 hover:text-slate-800"
+                                                            ? cn(isMidnight ? "bg-slate-700 text-slate-100 shadow-none" : "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]")
+                                                            : cn(isMidnight ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-800")
                                                     )}
                                                 >
                                                     {size === '16px' ? 'Small' : size === '18px' ? 'Medium' : 'Large'}
@@ -2341,9 +2357,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                         </div>
                                     </section>
 
-                                    <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Line Height</p>
-                                        <div className="mt-3 flex gap-2 rounded-[1.4rem] bg-[#f1f4ec] p-1">
+                                    {/* Line Height */}
+                                    <section className={cn("rounded-[1.75rem] border p-4", isMidnight ? "border-slate-700/50 bg-slate-800/60 shadow-none" : "border-white/60 bg-white/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]")}>
+                                        <p className={cn("text-[10px] font-bold uppercase tracking-[0.2em]", isMidnight ? "text-slate-500" : "text-slate-400")}>Line Height</p>
+                                        <div className={cn("mt-3 flex gap-2 rounded-[1.4rem] p-1", isMidnight ? "bg-slate-800/80" : "bg-[#f1f4ec]")}>
                                             {(['1.5', '1.8', '2.2'] as ProseEditorViewSettings['lineHeight'][]).map((lh) => (
                                                 <button
                                                     key={lh}
@@ -2352,8 +2369,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                                     className={cn(
                                                         "flex-1 rounded-[1.1rem] px-3 py-2 text-sm transition-all",
                                                         viewSettings.lineHeight === lh
-                                                            ? "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
-                                                            : "text-slate-500 hover:text-slate-800"
+                                                            ? cn(isMidnight ? "bg-slate-700 text-slate-100 shadow-none" : "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]")
+                                                            : cn(isMidnight ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-800")
                                                     )}
                                                 >
                                                     {lh === '1.5' ? 'Tight' : lh === '1.8' ? 'Normal' : 'Relaxed'}
@@ -2362,14 +2379,15 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                         </div>
                                     </section>
 
-                                    <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
+                                    {/* Paragraph Spacing */}
+                                    <section className={cn("rounded-[1.75rem] border p-4", isMidnight ? "border-slate-700/50 bg-slate-800/60 shadow-none" : "border-white/60 bg-white/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]")}>
                                         <div className="flex items-start justify-between gap-3">
                                             <div>
-                                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Paragraph Spacing</p>
-                                                <p className="mt-1 text-xs leading-5 text-slate-500">Controls the space between prose blocks, lists, and quotes.</p>
+                                                <p className={cn("text-[10px] font-bold uppercase tracking-[0.2em]", isMidnight ? "text-slate-500" : "text-slate-400")}>Paragraph Spacing</p>
+                                                <p className={cn("mt-1 text-xs leading-5", isMidnight ? "text-slate-500" : "text-slate-500")}>Controls the space between prose blocks, lists, and quotes.</p>
                                             </div>
                                         </div>
-                                        <div className="mt-3 flex gap-2 rounded-[1.4rem] bg-[#f1f4ec] p-1">
+                                        <div className={cn("mt-3 flex gap-2 rounded-[1.4rem] p-1", isMidnight ? "bg-slate-800/80" : "bg-[#f1f4ec]")}>
                                             {[
                                                 { value: '0.9em', label: 'Compact' },
                                                 { value: '1.25em', label: 'Classic' },
@@ -2382,8 +2400,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                                     className={cn(
                                                         "flex-1 rounded-[1.1rem] px-3 py-2 text-sm transition-all",
                                                         viewSettings.paragraphSpacing === spacing.value
-                                                            ? "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
-                                                            : "text-slate-500 hover:text-slate-800"
+                                                            ? cn(isMidnight ? "bg-slate-700 text-slate-100 shadow-none" : "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]")
+                                                            : cn(isMidnight ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-800")
                                                     )}
                                                 >
                                                     {spacing.label}
@@ -2392,9 +2410,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                         </div>
                                     </section>
 
-                                    <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Page Width</p>
-                                        <div className="mt-3 flex gap-2 rounded-[1.4rem] bg-[#f1f4ec] p-1">
+                                    {/* Page Width */}
+                                    <section className={cn("rounded-[1.75rem] border p-4", isMidnight ? "border-slate-700/50 bg-slate-800/60 shadow-none" : "border-white/60 bg-white/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]")}>
+                                        <p className={cn("text-[10px] font-bold uppercase tracking-[0.2em]", isMidnight ? "text-slate-500" : "text-slate-400")}>Page Width</p>
+                                        <div className={cn("mt-3 flex gap-2 rounded-[1.4rem] p-1", isMidnight ? "bg-slate-800/80" : "bg-[#f1f4ec]")}>
                                             {(['896px', '1152px', '100%'] as ProseEditorViewSettings['maxWidth'][]).map((width) => (
                                                 <button
                                                     key={width}
@@ -2403,8 +2422,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                                     className={cn(
                                                         "flex-1 rounded-[1.1rem] px-3 py-2 text-sm transition-all",
                                                         viewSettings.maxWidth === width
-                                                            ? "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
-                                                            : "text-slate-500 hover:text-slate-800"
+                                                            ? cn(isMidnight ? "bg-slate-700 text-slate-100 shadow-none" : "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]")
+                                                            : cn(isMidnight ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-800")
                                                     )}
                                                 >
                                                     {width === '896px' ? 'Narrow' : width === '1152px' ? 'Default' : 'Full'}
@@ -2413,9 +2432,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                         </div>
                                     </section>
 
-                                    <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Alignment</p>
-                                        <div className="mt-3 flex gap-2 rounded-[1.4rem] bg-[#f1f4ec] p-1">
+                                    {/* Alignment */}
+                                    <section className={cn("rounded-[1.75rem] border p-4", isMidnight ? "border-slate-700/50 bg-slate-800/60 shadow-none" : "border-white/60 bg-white/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]")}>
+                                        <p className={cn("text-[10px] font-bold uppercase tracking-[0.2em]", isMidnight ? "text-slate-500" : "text-slate-400")}>Alignment</p>
+                                        <div className={cn("mt-3 flex gap-2 rounded-[1.4rem] p-1", isMidnight ? "bg-slate-800/80" : "bg-[#f1f4ec]")}>
                                             {([
                                                 { id: 'left', icon: AlignLeft, label: 'Left' },
                                                 { id: 'justify', icon: AlignJustify, label: 'Justified' }
@@ -2427,8 +2447,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                                     className={cn(
                                                         "flex flex-1 items-center justify-center gap-2 rounded-[1.1rem] px-3 py-2 text-sm transition-all",
                                                         viewSettings.textAlign === item.id
-                                                            ? "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
-                                                            : "text-slate-500 hover:text-slate-800"
+                                                            ? cn(isMidnight ? "bg-slate-700 text-slate-100 shadow-none" : "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]")
+                                                            : cn(isMidnight ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-800")
                                                     )}
                                                 >
                                                     <item.icon className="h-3.5 w-3.5" />
@@ -2438,8 +2458,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                         </div>
                                     </section>
 
-                                    <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Writing Comfort</p>
+                                    {/* Writing Comfort */}
+                                    <section className={cn("rounded-[1.75rem] border p-4", isMidnight ? "border-slate-700/50 bg-slate-800/60 shadow-none" : "border-white/60 bg-white/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]")}>
+                                        <p className={cn("text-[10px] font-bold uppercase tracking-[0.2em]", isMidnight ? "text-slate-500" : "text-slate-400")}>Writing Comfort</p>
                                         <div className="mt-3 space-y-2">
                                             <button
                                                 type="button"
@@ -2447,8 +2468,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                                 className={cn(
                                                     "flex w-full items-center justify-between rounded-[1.1rem] border px-3 py-2.5 text-left text-sm transition-all",
                                                     viewSettings.focusMode
-                                                        ? "border-[#cfd7c8] bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
-                                                        : "border-transparent bg-[#f4f5f1] text-slate-600 hover:border-[#dbe2d2] hover:bg-white/90 hover:text-slate-900"
+                                                        ? cn(isMidnight ? "border-slate-600 bg-slate-700 text-slate-100 shadow-none" : "border-[#cfd7c8] bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]")
+                                                        : cn(isMidnight ? "border-transparent bg-transparent text-slate-400 hover:border-slate-600/50 hover:bg-slate-700/40 hover:text-slate-200" : "border-transparent bg-[#f4f5f1] text-slate-600 hover:border-[#dbe2d2] hover:bg-white/90 hover:text-slate-900")
                                                 )}
                                             >
                                                 <span className="flex items-center gap-2">
@@ -2463,8 +2484,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                                 className={cn(
                                                     "flex w-full items-center justify-between rounded-[1.1rem] border px-3 py-2.5 text-left text-sm transition-all",
                                                     viewSettings.typewriterMode
-                                                        ? "border-[#cfd7c8] bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
-                                                        : "border-transparent bg-[#f4f5f1] text-slate-600 hover:border-[#dbe2d2] hover:bg-white/90 hover:text-slate-900"
+                                                        ? cn(isMidnight ? "border-slate-600 bg-slate-700 text-slate-100 shadow-none" : "border-[#cfd7c8] bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]")
+                                                        : cn(isMidnight ? "border-transparent bg-transparent text-slate-400 hover:border-slate-600/50 hover:bg-slate-700/40 hover:text-slate-200" : "border-transparent bg-[#f4f5f1] text-slate-600 hover:border-[#dbe2d2] hover:bg-white/90 hover:text-slate-900")
                                                 )}
                                             >
                                                 <span className="flex items-center gap-2">
@@ -2476,7 +2497,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                         </div>
                                     </section>
 
-                                    <div className="rounded-[1.5rem] border border-[#d8e2d3] bg-[#eef4ed] px-4 py-3 text-[11px] leading-5 text-[#485748]">
+                                    <div className={cn(
+                                        "rounded-[1.5rem] border px-4 py-3 text-[11px] leading-5",
+                                        isMidnight ? "border-slate-700/60 bg-slate-800 text-slate-400" : "border-[#d8e2d3] bg-[#eef4ed] text-[#485748]"
+                                    )}>
                                         Comfortable writing only: type, spacing, focus, and typewriter settings do not change your saved manuscript structure or export formatting.
                                     </div>
                                 </div>
@@ -2486,13 +2510,23 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
                     {showViewSettings && (
                         <aside className="scene-editor-view-drawer fixed inset-y-0 right-0 z-[90] flex w-full max-w-[24rem] animate-in slide-in-from-right-full duration-300 sm:max-w-[25rem] md:hidden">
-                            <div className="scene-editor-view-drawer-shell flex h-full w-full flex-col overflow-hidden border-l border-[#d8ddcf] bg-[linear-gradient(180deg,#f5f4ef_0%,#fbf9f5_52%,#f8f6f1_100%)] shadow-[inset_1px_0_0_rgba(255,255,255,0.45),-18px_0_40px_rgba(84,99,84,0.04)]">
-                                <div className="shrink-0 border-b border-[#ddd8ce] bg-[linear-gradient(180deg,rgba(251,249,245,0.96)_0%,rgba(245,244,239,0.92)_100%)] px-5 py-4 backdrop-blur-sm md:px-6">
+                            <div className={cn(
+                                "scene-editor-view-drawer-shell flex h-full w-full flex-col overflow-hidden border-l",
+                                isMidnight
+                                    ? "border-slate-700/60 bg-[linear-gradient(180deg,#0f1729_0%,#111c2e_52%,#0e1625_100%)] shadow-[-18px_0_40px_rgba(0,0,0,0.35)]"
+                                    : "border-[#d8ddcf] bg-[linear-gradient(180deg,#f5f4ef_0%,#fbf9f5_52%,#f8f6f1_100%)] shadow-[inset_1px_0_0_rgba(255,255,255,0.45),-18px_0_40px_rgba(84,99,84,0.04)]"
+                            )}>
+                                <div className={cn(
+                                    "shrink-0 border-b px-5 py-4 backdrop-blur-sm md:px-6",
+                                    isMidnight
+                                        ? "border-slate-700/60 bg-[linear-gradient(180deg,rgba(15,23,41,0.96)_0%,rgba(17,28,46,0.92)_100%)]"
+                                        : "border-[#ddd8ce] bg-[linear-gradient(180deg,rgba(251,249,245,0.96)_0%,rgba(245,244,239,0.92)_100%)]"
+                                )}>
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="min-w-0">
-                                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#8fa0c0]">Manuscript View</p>
-                                    <h3 className="mt-1 text-sm font-serif font-bold italic tracking-tight text-slate-800">Reading comfort</h3>
-                                    <p className="mt-2 max-w-[26ch] text-xs leading-5 text-slate-600">
+                                    <p className={cn("text-[10px] font-bold uppercase tracking-[0.22em]", isMidnight ? "text-slate-500" : "text-[#8fa0c0]")}>Manuscript View</p>
+                                    <h3 className={cn("mt-1 text-sm font-serif font-bold italic tracking-tight", isMidnight ? "text-slate-100" : "text-slate-800")}>Reading comfort</h3>
+                                    <p className={cn("mt-2 max-w-[26ch] text-xs leading-5", isMidnight ? "text-slate-400" : "text-slate-600")}>
                                         Adjust this prose view for this device only. Your manuscript content and exports stay unchanged.
                                     </p>
                                 </div>
@@ -2500,7 +2534,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     type="button"
                                     onClick={() => setShowViewSettings(false)}
                                     aria-label="Close manuscript view panel"
-                                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-slate-300 transition-all hover:bg-white/70 hover:text-slate-600"
+                                    className={cn(
+                                        "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-all",
+                                        isMidnight ? "text-slate-500 hover:bg-white/8 hover:text-slate-300" : "text-slate-300 hover:bg-white/70 hover:text-slate-600"
+                                    )}
                                 >
                                     <X className="h-4 w-4" />
                                 </button>
@@ -2509,8 +2546,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
                         <div className="custom-scrollbar flex-1 overflow-y-auto px-5 py-5 md:px-6">
                             <div className="space-y-5">
-                                <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
-                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Typeface</p>
+
+                                {/* Typeface */}
+                                <section className={cn("rounded-[1.75rem] border p-4", isMidnight ? "border-slate-700/50 bg-slate-800/60 shadow-none" : "border-white/60 bg-white/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]")}>
+                                    <p className={cn("text-[10px] font-bold uppercase tracking-[0.2em]", isMidnight ? "text-slate-500" : "text-slate-400")}>Typeface</p>
                                     <div className="mt-3 grid grid-cols-2 gap-2">
                                         {PROSE_EDITOR_FONTS.map((font) => (
                                             <button
@@ -2520,8 +2559,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                                 className={cn(
                                                     "rounded-2xl border px-3 py-3 text-center text-[13px] transition-all",
                                                     viewSettings.fontFamily === font.id
-                                                        ? "border-[#cfd7c8] bg-white text-slate-900 shadow-[0_8px_20px_rgba(84,99,84,0.08)]"
-                                                        : "border-transparent bg-[#f4f5f1] text-slate-500 hover:border-[#dbe2d2] hover:bg-white/90 hover:text-slate-800"
+                                                        ? cn(isMidnight ? "border-slate-600 bg-slate-700 text-slate-100 shadow-none" : "border-[#cfd7c8] bg-white text-slate-900 shadow-[0_8px_20px_rgba(84,99,84,0.08)]")
+                                                        : cn(isMidnight ? "border-transparent bg-transparent text-slate-400 hover:border-slate-600/50 hover:bg-slate-700/40 hover:text-slate-200" : "border-transparent bg-[#f4f5f1] text-slate-500 hover:border-[#dbe2d2] hover:bg-white/90 hover:text-slate-800")
                                                 )}
                                                 style={{ fontFamily: PROSE_EDITOR_FONT_STACKS[font.id] ?? font.id }}
                                             >
@@ -2531,9 +2570,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     </div>
                                 </section>
 
-                                <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
-                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Font Size</p>
-                                    <div className="mt-3 flex gap-2 rounded-[1.4rem] bg-[#f1f4ec] p-1">
+                                {/* Font Size */}
+                                <section className={cn("rounded-[1.75rem] border p-4", isMidnight ? "border-slate-700/50 bg-slate-800/60 shadow-none" : "border-white/60 bg-white/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]")}>
+                                    <p className={cn("text-[10px] font-bold uppercase tracking-[0.2em]", isMidnight ? "text-slate-500" : "text-slate-400")}>Font Size</p>
+                                    <div className={cn("mt-3 flex gap-2 rounded-[1.4rem] p-1", isMidnight ? "bg-slate-800/80" : "bg-[#f1f4ec]")}>
                                         {(['16px', '18px', '22px'] as ProseEditorViewSettings['fontSize'][]).map((size) => (
                                             <button
                                                 key={size}
@@ -2542,8 +2582,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                                 className={cn(
                                                     "flex-1 rounded-[1.1rem] px-3 py-2 text-sm transition-all",
                                                     viewSettings.fontSize === size
-                                                        ? "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
-                                                        : "text-slate-500 hover:text-slate-800"
+                                                        ? cn(isMidnight ? "bg-slate-700 text-slate-100 shadow-none" : "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]")
+                                                        : cn(isMidnight ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-800")
                                                 )}
                                             >
                                                 {size === '16px' ? 'Small' : size === '18px' ? 'Medium' : 'Large'}
@@ -2552,9 +2592,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     </div>
                                 </section>
 
-                                <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
-                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Line Height</p>
-                                    <div className="mt-3 flex gap-2 rounded-[1.4rem] bg-[#f1f4ec] p-1">
+                                {/* Line Height */}
+                                <section className={cn("rounded-[1.75rem] border p-4", isMidnight ? "border-slate-700/50 bg-slate-800/60 shadow-none" : "border-white/60 bg-white/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]")}>
+                                    <p className={cn("text-[10px] font-bold uppercase tracking-[0.2em]", isMidnight ? "text-slate-500" : "text-slate-400")}>Line Height</p>
+                                    <div className={cn("mt-3 flex gap-2 rounded-[1.4rem] p-1", isMidnight ? "bg-slate-800/80" : "bg-[#f1f4ec]")}>
                                         {(['1.5', '1.8', '2.2'] as ProseEditorViewSettings['lineHeight'][]).map((lh) => (
                                             <button
                                                 key={lh}
@@ -2563,8 +2604,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                                 className={cn(
                                                     "flex-1 rounded-[1.1rem] px-3 py-2 text-sm transition-all",
                                                     viewSettings.lineHeight === lh
-                                                        ? "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
-                                                        : "text-slate-500 hover:text-slate-800"
+                                                        ? cn(isMidnight ? "bg-slate-700 text-slate-100 shadow-none" : "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]")
+                                                        : cn(isMidnight ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-800")
                                                 )}
                                             >
                                                 {lh === '1.5' ? 'Tight' : lh === '1.8' ? 'Normal' : 'Relaxed'}
@@ -2573,14 +2614,15 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     </div>
                                 </section>
 
-                                <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
+                                {/* Paragraph Spacing */}
+                                <section className={cn("rounded-[1.75rem] border p-4", isMidnight ? "border-slate-700/50 bg-slate-800/60 shadow-none" : "border-white/60 bg-white/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]")}>
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Paragraph Spacing</p>
-                                            <p className="mt-1 text-xs leading-5 text-slate-500">Controls the space between prose blocks, lists, and quotes.</p>
+                                            <p className={cn("text-[10px] font-bold uppercase tracking-[0.2em]", isMidnight ? "text-slate-500" : "text-slate-400")}>Paragraph Spacing</p>
+                                            <p className={cn("mt-1 text-xs leading-5", isMidnight ? "text-slate-500" : "text-slate-500")}>Controls the space between prose blocks, lists, and quotes.</p>
                                         </div>
                                     </div>
-                                    <div className="mt-3 flex gap-2 rounded-[1.4rem] bg-[#f1f4ec] p-1">
+                                    <div className={cn("mt-3 flex gap-2 rounded-[1.4rem] p-1", isMidnight ? "bg-slate-800/80" : "bg-[#f1f4ec]")}>
                                         {[
                                             { value: '0.9em', label: 'Compact' },
                                             { value: '1.25em', label: 'Classic' },
@@ -2593,8 +2635,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                                 className={cn(
                                                     "flex-1 rounded-[1.1rem] px-3 py-2 text-sm transition-all",
                                                     viewSettings.paragraphSpacing === spacing.value
-                                                        ? "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
-                                                        : "text-slate-500 hover:text-slate-800"
+                                                        ? cn(isMidnight ? "bg-slate-700 text-slate-100 shadow-none" : "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]")
+                                                        : cn(isMidnight ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-800")
                                                 )}
                                             >
                                                 {spacing.label}
@@ -2603,9 +2645,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     </div>
                                 </section>
 
-                                <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
-                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Page Width</p>
-                                    <div className="mt-3 flex gap-2 rounded-[1.4rem] bg-[#f1f4ec] p-1">
+                                {/* Page Width */}
+                                <section className={cn("rounded-[1.75rem] border p-4", isMidnight ? "border-slate-700/50 bg-slate-800/60 shadow-none" : "border-white/60 bg-white/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]")}>
+                                    <p className={cn("text-[10px] font-bold uppercase tracking-[0.2em]", isMidnight ? "text-slate-500" : "text-slate-400")}>Page Width</p>
+                                    <div className={cn("mt-3 flex gap-2 rounded-[1.4rem] p-1", isMidnight ? "bg-slate-800/80" : "bg-[#f1f4ec]")}>
                                         {(['896px', '1152px', '100%'] as ProseEditorViewSettings['maxWidth'][]).map((width) => (
                                             <button
                                                 key={width}
@@ -2614,8 +2657,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                                 className={cn(
                                                     "flex-1 rounded-[1.1rem] px-3 py-2 text-sm transition-all",
                                                     viewSettings.maxWidth === width
-                                                        ? "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
-                                                        : "text-slate-500 hover:text-slate-800"
+                                                        ? cn(isMidnight ? "bg-slate-700 text-slate-100 shadow-none" : "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]")
+                                                        : cn(isMidnight ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-800")
                                                 )}
                                             >
                                                 {width === '896px' ? 'Narrow' : width === '1152px' ? 'Default' : 'Full'}
@@ -2624,9 +2667,10 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     </div>
                                 </section>
 
-                                <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
-                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Alignment</p>
-                                    <div className="mt-3 flex gap-2 rounded-[1.4rem] bg-[#f1f4ec] p-1">
+                                {/* Alignment */}
+                                <section className={cn("rounded-[1.75rem] border p-4", isMidnight ? "border-slate-700/50 bg-slate-800/60 shadow-none" : "border-white/60 bg-white/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]")}>
+                                    <p className={cn("text-[10px] font-bold uppercase tracking-[0.2em]", isMidnight ? "text-slate-500" : "text-slate-400")}>Alignment</p>
+                                    <div className={cn("mt-3 flex gap-2 rounded-[1.4rem] p-1", isMidnight ? "bg-slate-800/80" : "bg-[#f1f4ec]")}>
                                         {([
                                             { id: 'left', icon: AlignLeft, label: 'Left' },
                                             { id: 'justify', icon: AlignJustify, label: 'Justified' }
@@ -2638,8 +2682,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                                 className={cn(
                                                     "flex flex-1 items-center justify-center gap-2 rounded-[1.1rem] px-3 py-2 text-sm transition-all",
                                                     viewSettings.textAlign === item.id
-                                                        ? "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
-                                                        : "text-slate-500 hover:text-slate-800"
+                                                        ? cn(isMidnight ? "bg-slate-700 text-slate-100 shadow-none" : "bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]")
+                                                        : cn(isMidnight ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-800")
                                                 )}
                                             >
                                                 <item.icon className="h-3.5 w-3.5" />
@@ -2649,8 +2693,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                     </div>
                                 </section>
 
-                                <section className="rounded-[1.75rem] border border-white/60 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]">
-                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Writing Comfort</p>
+                                {/* Writing Comfort */}
+                                <section className={cn("rounded-[1.75rem] border p-4", isMidnight ? "border-slate-700/50 bg-slate-800/60 shadow-none" : "border-white/60 bg-white/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_30px_rgba(84,99,84,0.05)]")}>
+                                    <p className={cn("text-[10px] font-bold uppercase tracking-[0.2em]", isMidnight ? "text-slate-500" : "text-slate-400")}>Writing Comfort</p>
                                     <div className="mt-3 space-y-2">
                                         <button
                                             type="button"
@@ -2658,8 +2703,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                             className={cn(
                                                 "flex w-full items-center justify-between rounded-[1.1rem] border px-3 py-2.5 text-left text-sm transition-all",
                                                 viewSettings.focusMode
-                                                    ? "border-[#cfd7c8] bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
-                                                    : "border-transparent bg-[#f4f5f1] text-slate-600 hover:border-[#dbe2d2] hover:bg-white/90 hover:text-slate-900"
+                                                    ? cn(isMidnight ? "border-slate-600 bg-slate-700 text-slate-100 shadow-none" : "border-[#cfd7c8] bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]")
+                                                    : cn(isMidnight ? "border-transparent bg-transparent text-slate-400 hover:border-slate-600/50 hover:bg-slate-700/40 hover:text-slate-200" : "border-transparent bg-[#f4f5f1] text-slate-600 hover:border-[#dbe2d2] hover:bg-white/90 hover:text-slate-900")
                                             )}
                                         >
                                             <span className="flex items-center gap-2">
@@ -2674,8 +2719,8 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                             className={cn(
                                                 "flex w-full items-center justify-between rounded-[1.1rem] border px-3 py-2.5 text-left text-sm transition-all",
                                                 viewSettings.typewriterMode
-                                                    ? "border-[#cfd7c8] bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]"
-                                                    : "border-transparent bg-[#f4f5f1] text-slate-600 hover:border-[#dbe2d2] hover:bg-white/90 hover:text-slate-900"
+                                                    ? cn(isMidnight ? "border-slate-600 bg-slate-700 text-slate-100 shadow-none" : "border-[#cfd7c8] bg-white text-slate-900 shadow-[0_6px_16px_rgba(84,99,84,0.08)]")
+                                                    : cn(isMidnight ? "border-transparent bg-transparent text-slate-400 hover:border-slate-600/50 hover:bg-slate-700/40 hover:text-slate-200" : "border-transparent bg-[#f4f5f1] text-slate-600 hover:border-[#dbe2d2] hover:bg-white/90 hover:text-slate-900")
                                             )}
                                         >
                                             <span className="flex items-center gap-2">
@@ -2684,13 +2729,16 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
                                             </span>
                                             <span className="text-[11px] font-semibold uppercase tracking-wide">{viewSettings.typewriterMode ? 'On' : 'Off'}</span>
                                         </button>
-                                        <p className="px-1 text-[11px] leading-5 text-slate-500">
+                                        <p className={cn("px-1 text-[11px] leading-5", isMidnight ? "text-slate-500" : "text-slate-500")}>
                                             Keeps the active typing area comfortably positioned during longer scenes.
                                         </p>
                                     </div>
                                 </section>
 
-                                <div className="rounded-[1.5rem] border border-[#d8e2d3] bg-[#eef4ed] px-4 py-3 text-[11px] leading-5 text-[#485748]">
+                                <div className={cn(
+                                    "rounded-[1.5rem] border px-4 py-3 text-[11px] leading-5",
+                                    isMidnight ? "border-slate-700/60 bg-slate-800 text-slate-400" : "border-[#d8e2d3] bg-[#eef4ed] text-[#485748]"
+                                )}>
                                     Comfortable writing only: type, spacing, focus, and typewriter settings do not change your saved manuscript structure or export formatting.
                                 </div>
                             </div>

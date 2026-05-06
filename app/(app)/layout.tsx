@@ -5,7 +5,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     const user = await requireVerifiedUser()
 
     return (
-        <div className="app-shell-viewport bg-slate-50 flex min-h-0 flex-col overflow-hidden">
+        <div className="app-shell-viewport bg-background flex min-h-0 flex-col overflow-hidden">
             <AppNav user={user} />
             <main className="app-shell-main flex min-h-0 flex-col overflow-hidden">
                 {children}

@@ -5,6 +5,66 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-05 - Midnight Theme Readability Pass: Feedback, AI Partner, Manuscript View, Scene Gallery, Notifications
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- **Feedback page dropdown midnight fix (`app/feedback/page.tsx`):** FeedbackSelect now uses `useTheme` and explicit high-contrast colors (`bg-[#1e293b]/95` midnight / `bg-white/95` light) with `backdrop-blur-sm`, matching the ShareModal pattern. Dropdown is no longer transparent/themed-invisible in midnight mode.
+
+- **AI Partner SanctuarySelect midnight fix (`components/ui/sanctuary-select.tsx`):** Added `useTheme`/`isMidnight` to the shared SanctuarySelect component. Trigger uses `bg-slate-800/90`, content uses `bg-slate-800`, items use `bg-slate-700` selected / `text-slate-300` default. Fixes all AI partner dropdowns (mode selector, save-category picker) at once.
+
+- **AiHelperPanel midnight fixes (`components/project/story/AiHelperPanel.tsx`):** Mode selector `triggerClassName`, context buttons (desktop + mobile), context section backgrounds, summary chips, selected node chips, and context manager open/closed sections all updated with `isMidnight` conditional dark colors.
+
+- **SaveAiResponseModal midnight fix (`components/project/ai/SaveAiResponseModal.tsx`):** Added `useTheme`/`isMidnight`. Dialog content, labels, inputs, prose metadata section, cancel button, and SanctuarySelect triggerClassName all updated with dark colors.
+
+- **Manuscript View panel midnight fix (`components/project/story/SceneEditor.tsx`):** Both desktop and mobile manuscript view panels updated — panel shell, header, section cards, toggle groups, option buttons (selected/unselected), close button, and info banner all use `isMidnight` dark colors.
+
+- **Scene Assets Panel midnight fix (`components/project/story/SceneAssetsPanel.tsx`):** Added `useTheme`/`isMidnight`. Panel shell, header, empty state, asset thumbnails, add button, tip boxes, and the full selector overlay all use dark colors.
+
+- **Full screen notification page midnight fix:**
+  - `components/project/local/LocalTransferGuidance.tsx` — Added `useTheme`/`isMidnight`. Section bg, dismiss button, icon, heading, description, and action buttons all use dark colors.
+  - `components/notifications/NotificationDetailClient.tsx` — Improved card bg (`bg-[#1a2234]`), icon bg (`bg-slate-800/60`), body bg (`bg-slate-800/50`) for better midnight readability.
+  - `app/(app)/layout.tsx` — Changed `bg-slate-50` to `bg-background` to eliminate the white/gray page area around notification detail and all other app pages in midnight mode.
+
+- **Created `docs/developers.md`** with developer test routes table (`/welcome?preview=1`, `/dev/showcase`).
+
+### Files changed
+
+- `app/feedback/page.tsx`
+- `components/ui/sanctuary-select.tsx`
+- `components/project/story/AiHelperPanel.tsx`
+- `components/project/ai/SaveAiResponseModal.tsx`
+- `components/project/story/SceneEditor.tsx`
+- `components/project/story/SceneAssetsPanel.tsx`
+- `components/project/local/LocalTransferGuidance.tsx`
+- `components/notifications/NotificationDetailClient.tsx`
+- `app/(app)/layout.tsx`
+- `docs/developers.md` — NEW
+
+### Current status
+
+All changes complete. Build compiled successfully (pre-existing `astro:content` error only in `./impeccable/site/content.config.ts` — unrelated).
+
+### Next recommended step
+
+Manual browser validation for each fixed area in both Sanctuary and Midnight themes:
+1. Feedback page select dropdowns in midnight — confirm readable text on dark background
+2. AI Partner mode selector dropdown in midnight — confirm dark dropdown, not white
+3. Manuscript View panel (desktop + mobile) in midnight — confirm dark theme throughout
+4. Scene Gallery/Assets panel in midnight — confirm no white elements
+5. Notification detail page — confirm no white/gray page background around the card
+6. Save AI Response modal — confirm dark inputs and labels
+
+### Risks or warnings
+
+- All midnight fixes use conditional `cn()` with `isMidnight` — light theme is untouched.
+- The `(app)/layout.tsx` change from `bg-slate-50` to `bg-background` affects ALL app pages, not just the notification page. Verify no unexpected visual regression in sanctuary mode for library, settings, stats, and other pages.
+
+---
 ## 2026-05-04 - In-App Launch Survey
 
 ### Current branch

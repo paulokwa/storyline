@@ -74,7 +74,9 @@ Before writing code, state:
 
 ### 1. Continue typography and contrast audit beyond AI Partner
 
-Continue auditing older low-contrast helper text, metadata, empty states, and secondary labels in less-used screens.
+Done this session: Feedback page dropdowns, AI Partner SanctuarySelect + AiHelperPanel, Manuscript View panel (desktop + mobile), Scene Assets Panel, SaveAiResponseModal, Notification detail page + layout.
+
+Continue auditing remaining pages with hardcoded light backgrounds (library, admin, settings, stats, new-project).
 
 Focus on readability and theme consistency, especially Sanctuary and Midnight.
 

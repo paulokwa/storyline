@@ -71,14 +71,14 @@ export default function NotificationDetailClient({
             <div className={cn(
                 'rounded-[2rem] border p-6 shadow-sm sm:p-8',
                 isMidnight
-                    ? 'border-slate-700/60 bg-[#10192b] text-slate-100'
+                    ? 'border-slate-700/60 bg-[#1a2234] text-slate-100'
                     : 'border-slate-200 bg-white text-slate-900'
             )}>
                 <div className="flex items-start gap-4">
                     <div className={cn(
                         'flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border',
                         isMidnight
-                            ? 'border-slate-600/50 bg-slate-900/70 text-slate-200'
+                            ? 'border-slate-600/50 bg-slate-800/60 text-slate-200'
                             : 'border-slate-200 bg-slate-50 text-slate-700'
                     )}>
                         <Icon className="h-6 w-6" />
@@ -113,7 +113,7 @@ export default function NotificationDetailClient({
                                     <div className={cn(
                                         'rounded-[1.5rem] border px-5 py-4 text-sm leading-7 whitespace-pre-line',
                                         isMidnight
-                                            ? 'border-slate-700/60 bg-slate-950/40 text-slate-200'
+                                            ? 'border-slate-700/60 bg-slate-800/50 text-slate-200'
                                             : 'border-slate-200 bg-slate-50 text-slate-700'
                                     )}>
                                         {notification.body}

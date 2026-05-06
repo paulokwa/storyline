@@ -307,10 +307,23 @@ Future agents: treat this workflow as established. Before asking the user about 
 
 ---
 
+| 2026-05-05 | FeedbacSelect dropdowns | Midnight theme | Not tested | Feedback select (Device/Platform/Browser) in midnight mode — dropdown should have dark bg (`#1e293b`), items readable on hover |
+| 2026-05-05 | AI Partner SanctuarySelect | Midnight theme | Not tested | Mode selector dropdown, archive category dropdown in midnight — triggers and dropdowns should be dark, not white |
+| 2026-05-05 | AiHelperPanel context UI | Midnight theme | Not tested | Context button, summary chips, context manager sections in midnight — no white backgrounds |
+| 2026-05-05 | Manuscript View panel | Midnight theme | Not tested | Desktop + mobile manuscript view panel in midnight — all sections dark, text readable |
+| 2026-05-05 | Scene Assets Panel | Midnight theme | Not tested | Gallery panel, selector overlay in midnight — no white/cream backgrounds |
+| 2026-05-05 | Notification detail page | Midnight theme | Not tested | Card `bg-[#1a2234]`, body `bg-slate-800/50`, page bg `bg-background` — no white/gray area |
+| 2026-05-05 | SaveAiResponseModal | Midnight theme | Not tested | Dialog, inputs, labels, metadata section in midnight — dark theme throughout |
+| 2026-05-05 | App layout bg-slate-50 → bg-background | Sanctuary regression | Not tested | Library, settings, admin, stats pages — no unexpected visual change in sanctuary mode |
+| 2026-05-05 | Build compile | All | Passed - pre-existing astro:content error only | `npx next build` compiled successfully |
+
+---
+
 # Recent Successful Test Confirmations
 
 Newest confirmations go at the top.
 
+| 2026-05-05 | AI agent | Midnight theme readability pass — feedback, AI partner, manuscript view, scene gallery, notifications | Passed | `npx next build` compiled successfully (pre-existing `astro:content` error only) across all 10 modified files. |
 | 2026-05-04 | AI agent | TypeScript compile after midnight theme fixes + Add to Assistant bug fix | Passed | `npx tsc --noEmit --pretty false` exit 0 after: adding midnight CSS for `.comments-panel`, `.ai-memory-detail`, `.scene-analysis-panel`, `.analysis-section-{key}` in `globals.css`; adding `ai-memory-detail` class in `SavedResponsesTab.tsx`; replacing direct Supabase inserts in `SceneAnalysisPanel.tsx` with `saveAiResponse()` and removing unused `createClient`. |
 | 2026-05-03 | AI agent | TypeScript compile after Feedback Panel comment highlight polish | Passed | `npx tsc --noEmit` passed after wiring `.comment-highlight.active` DOM-query application, adding `showHighlights`/`setShowHighlights` to `CommentsContext`, adding the Highlighter toggle button to `CommentsPanel`, toggling `data-highlights-hidden` on `editorShellRef` in `SceneEditor.tsx`, and adding suppression CSS in `globals.css`. |
 | 2026-05-02 | AI agent | TypeScript compile after project header local/cloud status badge | Passed | `npx tsc --noEmit --pretty false` passed after adding a visible `Cloud` / `Local` / `Local backup` badge beside the project title in `components/project/ProjectShell.tsx`. |
