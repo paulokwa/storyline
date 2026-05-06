@@ -5,6 +5,48 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-06 - Signup verification library auth-error normalization follow-up
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Closed the remaining signup verification gap where Supabase could land on `/library` with raw auth error params after an invalid, expired, or reused signup link.
+- Added `lib/auth/auth-link-errors.ts` to centralize detection of invalid auth-link query and hash params such as `error=Invalid_Or_Expired_Token`, `error=access_denied`, `error_code=otp_expired`, and expired email-link descriptions.
+- Added `components/auth/AuthLinkErrorRedirector.tsx` on the Library page so client-side hash-based auth failures clear the local Supabase session and replace to `/login?verification=already-used`.
+- Updated `app/(app)/library/page.tsx` with a server-side fast path for query-param auth-link failures so `/library?error=...` redirects to the same login guidance instead of rendering the signed-in library.
+- Updated `TROUBLESHOOTING.md` and `TESTING.md` to record the production failure shape and the expanded auth retest matrix, including the production password-reset redirect URL check.
+
+### Files changed
+
+- `app/(app)/library/page.tsx`
+- `components/auth/AuthLinkErrorRedirector.tsx`
+- `lib/auth/auth-link-errors.ts`
+- `TROUBLESHOOTING.md`
+- `TESTING.md`
+- `SESSION_HANDOVER.md`
+
+### Current status
+
+The auth-link normalization patch is implemented. Focused eslint passed for the touched code files.
+
+The requested `npx tsc --noEmit --pretty false` run is still blocked by pre-existing unrelated `impeccable/*` fixture and missing optional dependency errors, so browser verification remains the next real confirmation step.
+
+### Next recommended step
+
+1. Browser-test fresh signup verification and confirm the first use still lands in the correct account.
+2. Click the same signup verification link a second time and confirm the app ends on `/login?verification=already-used`, not `/library?error=...`.
+3. Stay signed in as Account A, open an invalid or reused signup verification link for Account B, and confirm the local session is cleared before redirecting to the login guidance page.
+4. Request a production password reset and confirm the email uses the clean production callback URL, not `localhost` and not any Netlify `main--` branch URL.
+
+### Risks or warnings
+
+- Query-param failures now have both server-side and client-side coverage, but hash-only Supabase failures can still render one server response before the client redirector replaces the URL after hydration.
+- Repo-wide TypeScript remains noisy because of the unrelated `impeccable/*` workspace fixtures; this patch did not change those files.
+
+---
 ## 2026-05-06 - Future roadmap note for feedback review status
 
 ### Current branch

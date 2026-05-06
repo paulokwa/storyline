@@ -1,10 +1,12 @@
-﻿import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { redirect } from 'next/navigation'
-import { requireVerifiedUser } from '@/lib/supabase/auth'
+import AuthLinkErrorRedirector from '@/components/auth/AuthLinkErrorRedirector'
 import ProjectGrid from '@/components/library/ProjectGrid'
 import FeedbackNudge from '@/components/survey/FeedbackNudge'
+import { hasInvalidAuthLinkError } from '@/lib/auth/auth-link-errors'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { requireVerifiedUser } from '@/lib/supabase/auth'
+import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@/lib/supabase/types'
+import { redirect } from 'next/navigation'
 
 export const metadata = { title: 'My Projects — Storyline' }
 
@@ -20,8 +22,19 @@ type ProjectWithMembers = ProjectRow & {
     project_members: ProjectMemberRow[] | null
 }
 
-export default async function LibraryPage() {
+type LibraryPageProps = {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+export default async function LibraryPage({ searchParams }: LibraryPageProps) {
+    const resolvedSearchParams = await searchParams
     const supabase = await createClient()
+
+    if (hasInvalidAuthLinkError(resolvedSearchParams)) {
+        await supabase.auth.signOut({ scope: 'local' })
+        redirect('/login?verification=already-used')
+    }
+
     const adminClient = createAdminClient()
     const user = await requireVerifiedUser()
 
@@ -183,6 +196,7 @@ export default async function LibraryPage() {
 
     return (
         <div className="library-page-shell flex h-full min-h-0 flex-1 flex-col overflow-auto bg-slate-50/50 custom-scrollbar">
+            <AuthLinkErrorRedirector />
             <ProjectGrid projects={projects} deletedProjects={deletedProjects} currentUserId={user.id} />
             <FeedbackNudge projectCount={projectCount} />
         </div>

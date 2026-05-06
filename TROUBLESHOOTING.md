@@ -640,7 +640,8 @@ Add a short entry using this format:
 
 - Mark signup email callbacks with `intent=signup`.
 - In `app/api/auth/callback/route.ts`, if a signup callback fails and there was already an active session, clear the local session before redirecting.
-- Redirect reused/expired signup links to the login page with explicit verification messaging instead of a generic invalid-token response.
+- In `app/(app)/library/page.tsx`, treat Supabase auth-link error query params as a fast-path redirect to `/login?verification=already-used` and clear the local session before redirecting.
+- In `components/auth/AuthLinkErrorRedirector.tsx`, inspect both `window.location.search` and `window.location.hash` so hash-based Supabase auth-link failures also clear the local session and replace the URL with `/login?verification=already-used`.
 
 ### Verification
 
@@ -648,5 +649,5 @@ Add a short entry using this format:
 
 ### Notes
 
-- Manual browser validation is still required for three flows: fresh signup verification, clicking a signup verification link while another user is signed in, and reusing the same signup verification link after it has already been consumed.
+- Manual browser validation is still required for four flows: fresh signup verification, reusing a consumed signup verification link, opening an invalid/reused signup link while another user is signed in, and confirming password-reset emails still use the clean production callback URL.
 
