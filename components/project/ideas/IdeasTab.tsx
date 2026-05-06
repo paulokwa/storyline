@@ -210,7 +210,7 @@ export default function IdeasTab({
                 <div className="p-6 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Lightbulb className="w-4 h-4 text-amber-500/60" />
-                        <h2 className="text-[11px] font-sans tracking-[0.2em] uppercase text-[#546354]/60 font-medium">Idea Archive</h2>
+                        <h2 className="text-[11px] font-sans tracking-[0.2em] uppercase text-[#546354]/60 font-medium">Ideas</h2>
                     </div>
                     {/* Add button */}
                     {!isReadOnly && (
@@ -298,7 +298,7 @@ export default function IdeasTab({
                                                             )}>
                                                                 {idea.title?.replace(/^feedback:\s*/i, '')}
                                                             </p>
-                                                            <p className="text-[10px] text-slate-300 uppercase tracking-widest mt-0.5 font-medium opacity-60">Thought Spark</p>
+                                                            <p className="text-[10px] text-slate-300 uppercase tracking-widest mt-0.5 font-medium opacity-60">Idea</p>
                                                         </>
                                                     )}
                                                 </div>
@@ -451,7 +451,7 @@ export default function IdeasTab({
                                             "text-[9px] uppercase tracking-[0.2em] font-bold transition-all duration-500",
                                             isSaving ? "text-amber-500" : justSaved ? "text-green-600" : "text-slate-300"
                                         )}>
-                                            {isSaving ? 'Archiving…' : justSaved ? 'Captured' : 'Safe in Archive'}
+                                            {isSaving ? 'Saving…' : justSaved ? 'Saved' : 'All changes saved'}
                                         </span>
                                     </div>
                                     <div className="w-32 h-px bg-gradient-to-r from-stone-100 to-transparent" />

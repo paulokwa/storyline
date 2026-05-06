@@ -234,7 +234,7 @@ export default function CharactersTab({
                     <div className="flex items-center gap-3">
                         <Users className="w-4 h-4 text-[#546354]/60" />
                         <h2 className="text-[11px] font-sans tracking-[0.2em] uppercase text-[#546354]/60 font-medium">
-                            {projectType === 'tv_script' ? 'Dramatis Personae' : 'Book Characters'}
+                            {projectType === 'tv_script' ? 'Cast List' : 'Characters'}
                         </h2>
                     </div>
                     {/* Add button */}
@@ -320,7 +320,7 @@ export default function CharactersTab({
                                                                 {char.name}
                                                             </p>
                                                             <p className="text-[10px] text-slate-300 uppercase tracking-widest mt-0.5 font-medium opacity-60">
-                                                                {projectType === 'tv_script' ? 'Cast Member' : 'Character'}
+                                                                Character
                                                             </p>
                                                         </>
                                                     )}
@@ -524,7 +524,7 @@ export default function CharactersTab({
                                             "text-[9px] uppercase tracking-[0.2em] font-bold transition-all duration-500",
                                             isSaving ? "text-[#546354]" : justSaved ? "text-green-600" : "text-slate-300"
                                         )}>
-                                            {isSaving ? 'Registering…' : justSaved ? 'Archived' : 'Safe in Archive'}
+                                            {isSaving ? 'Saving…' : justSaved ? 'Saved' : 'All changes saved'}
                                         </span>
                                     </div>
                                     <div className="w-32 h-px bg-gradient-to-r from-stone-100 to-transparent" />

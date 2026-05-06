@@ -48,6 +48,10 @@ Current working name: Storyline.
 
 Once the name is final, AI can perform a full naming consistency pass across the app, help center, emails, metadata, and marketing pages.
 
+### Mask the Email Name
+
+mwakedev@gmail shouldnt show to the users in the showcase and other areas - .
+
 ### AI terminology
 
 Decide whether the app should consistently say `AI`, `Assistant`, `Muse`, `AI Partner`, or another label.

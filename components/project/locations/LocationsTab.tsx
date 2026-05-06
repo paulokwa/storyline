@@ -202,7 +202,7 @@ export default function LocationsTab({
                 <div className="p-6 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <MapPin className="w-4 h-4 text-[#546354]/60" />
-                        <h2 className="text-[11px] font-sans tracking-[0.2em] uppercase text-[#546354]/60 font-medium">World Locations</h2>
+                        <h2 className="text-[11px] font-sans tracking-[0.2em] uppercase text-[#546354]/60 font-medium">Locations</h2>
                     </div>
                     {!isReadOnly && <Tooltip>
                         <TooltipTrigger>
@@ -261,7 +261,7 @@ export default function LocationsTab({
                                                     ) : (
                                                         <>
                                                             <p className={cn("text-sm font-medium truncate", selectedId === loc.id ? "text-slate-800" : "text-slate-500")}>{loc.name}</p>
-                                                            <p className="text-[10px] text-slate-300 uppercase tracking-widest mt-0.5 font-medium opacity-60">Setting</p>
+                                                            <p className="text-[10px] text-slate-300 uppercase tracking-widest mt-0.5 font-medium opacity-60">Location</p>
                                                         </>
                                                     )}
                                                 </div>
@@ -403,11 +403,11 @@ export default function LocationsTab({
                                 <div className="flex items-center gap-6">
                                     <div className="flex flex-col gap-1 text-slate-300 font-bold uppercase text-[9px] tracking-widest"><span>Discovery</span><span className="text-[10px] font-serif italic text-slate-400 normal-case font-normal">{formatStableDate(selectedLocation.created_at)}</span></div>
                                     <div className="w-px h-8 bg-stone-100" />
-                                    <div className="flex flex-col gap-1 text-slate-300 font-bold uppercase text-[9px] tracking-widest"><span>Ref Reference</span><span className="text-[10px] font-mono text-slate-400 opacity-60 uppercase">{selectedLocation.id.slice(0, 8)}</span></div>
+                                    <div className="flex flex-col gap-1 text-slate-300 font-bold uppercase text-[9px] tracking-widest"><span>Ref</span><span className="text-[10px] font-mono text-slate-400 opacity-60 uppercase">{selectedLocation.id.slice(0, 8)}</span></div>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <div className={cn("w-1.5 h-1.5 rounded-full", isSaving ? "bg-[#546354] animate-pulse" : "bg-green-400")} />
-                                    <span className="text-[9px] uppercase tracking-widest font-bold text-slate-300">{isSaving ? 'Registering...' : 'Atlas Updated'}</span>
+                                    <span className="text-[9px] uppercase tracking-widest font-bold text-slate-300">{isSaving ? 'Saving…' : 'All changes saved'}</span>
                                 </div>
                             </div>
                         </div>
@@ -434,7 +434,7 @@ function EmptyState({ onCreate, isCreating, isReadOnly = false }: { onCreate: ()
             <div className="max-w-2xl w-full py-12 sm:py-20 px-6 sm:px-10 rounded-[3rem] bg-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.04)] ring-1 ring-slate-100 flex flex-col items-center">
                 <div className="w-24 h-24 bg-stone-50 rounded-[30%] flex items-center justify-center mb-8 rotate-3 shadow-inner"><MapPin className="w-12 h-12 text-stone-200" /></div>
                 <h2 className="text-4xl font-serif italic text-slate-800 mb-4 tracking-tight">An Unmapped World</h2>
-                <p className="text-[11px] font-sans tracking-[0.4em] uppercase text-stone-300 mb-10 font-bold">World Locations Atlas Empty</p>
+                <p className="text-[11px] font-sans tracking-[0.4em] uppercase text-stone-300 mb-10 font-bold">Locations</p>
                 <p className="text-slate-500 font-medium leading-relaxed italic text-lg mb-12 max-w-md">
                     {isReadOnly ? 'Viewers can explore locations once they are added by an owner or editor.' : 'Add a location to start building your world.'}
                 </p>
