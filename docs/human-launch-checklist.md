@@ -88,6 +88,20 @@ Checks to complete:
 - Confirm verification links, password reset links, magic links, and invite links redirect to the correct production app URLs.
 - Send test emails to a real account and check desktop/mobile rendering before public launch.
 
+### Supabase auth redirect allowlist decision
+
+After production signup is confirmed working, decide whether to remove `http://localhost:3000/**` from the Supabase Auth redirect allowlist.
+
+Context: a live verification email previously opened `localhost` because the production `NEXT_PUBLIC_SITE_URL` value was missing, so generated auth links fell back to the local dev URL. Keeping localhost in the Supabase allowlist is useful during active local development, but production code must never generate localhost auth links.
+
+Pre-launch checks:
+
+- Confirm Netlify production has `NEXT_PUBLIC_SITE_URL` set to the live app domain.
+- Confirm Supabase Site URL is the live app domain.
+- Confirm new production verification and password reset emails open the live app, not localhost.
+- Keep localhost allowed only if it is still needed for local auth testing.
+- If removing localhost, remember that local signup/reset auth testing may stop working until it is temporarily re-added.
+
 ### Full naming consistency pass
 
 Perform a full app naming consistency pass after the final app name is chosen.
@@ -192,6 +206,7 @@ Before public launch, review:
 - Branding direction stable
 - Icons/favicons created
 - Verification, invite, password reset, magic link, and welcome email branding updated
+- Supabase auth redirect allowlist decision made after production email links are confirmed
 - Trial/cloud pricing model decided
 - AI terminology chosen
 - Help Center audit/rewrite completed or intentionally deferred
