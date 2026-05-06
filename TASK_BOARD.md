@@ -6,7 +6,7 @@ If a task mainly requires Kwame to make a decision, record a video, choose brand
 
 If a task is a future product idea and not ready to build yet, it belongs in `docs/future-roadmap.md`.
 
-If a task is engineering hardening, reliability, performance, architecture, or data-integrity work, it belongs in `docs/technical-debt-roadmap.md` until it becomes active.
+If a task is engineering hardening, reliability, security, performance, architecture, or data-integrity work, it belongs in `docs/technical-debt-roadmap.md` until it becomes active.
 
 Completed work should be summarized in `SESSION_HANDOVER.md`, `TESTING.md`, commit history, and PR/issue history. Do not let this board become a giant archive of everything that ever happened.
 
@@ -82,29 +82,7 @@ Focus on readability and theme consistency, especially Sanctuary and Midnight.
 
 Do not redesign whole screens unless a focused contrast/readability fix requires it.
 
-### 2. Manual auth verification regression pass after signup callback hardening
-
-Human/browser test only. Do not re-implement unless a test fails and Kwame asks for a code fix.
-
-Context: auth hardening was implemented in commit `bb9c1ca`. The fix marked signup callbacks as signup-specific, hardened `app/api/auth/callback/route.ts`, sanitized `next`, cleared the local session on signup callback failure, and routed reused/expired signup links to login with clearer guidance. A related production config issue also existed: production auth emails previously fell back to localhost when `NEXT_PUBLIC_SITE_URL` was missing.
-
-Manual checks to complete on the clean production URL, not a Netlify branch URL:
-
-- Start from `https://storyline-paulokwa-v2.netlify.app`, not `https://main--storyline-paulokwa-v2.netlify.app`.
-- Create a brand-new account and confirm the verification email link opens the clean production domain, not localhost and not the `main--` branch deploy URL.
-- Confirm normal first-time signup verification lands in the correct new account/library.
-- With one account already signed in in the same browser, open another account's signup verification link and confirm the app gives safe/clear account handling rather than confusing session behaviour.
-- Click the same signup verification link twice and confirm the reused/expired-link guidance appears on the login page.
-- Run a production password reset check and confirm the reset email opens the clean production domain.
-
-References for the agent/user doing the check:
-
-- `TESTING.md` around the auth callback/manual verification entry added with `bb9c1ca`.
-- `TROUBLESHOOTING.md` around the signup verification/session fallback entry added with `bb9c1ca`.
-- `SESSION_HANDOVER.md` recent auth hardening summary.
-- Supabase Auth URL Configuration should have the live Site URL and production redirect allowlist set; localhost may remain only if intentionally needed for local dev auth testing.
-
-### 3. Check and fix export issues, starting with PDF
+### 2. Check and fix export issues, starting with PDF
 
 Audit and fix export problems, starting with PDF output and then verifying other export formats.
 
