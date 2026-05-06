@@ -102,6 +102,19 @@ Pre-launch checks:
 - Keep localhost allowed only if it is still needed for local auth testing.
 - If removing localhost, remember that local signup/reset auth testing may stop working until it is temporarily re-added.
 
+### Auth verification edge-case launch check
+
+Before launch, confirm the remaining signup verification edge case is fixed and retested.
+
+Context: manual testing confirmed new signup emails now use the clean production redirect and normal first-time verification works. However, reused/expired signup verification links still landed on `/library?error=Invalid_Or_Expired_Token` instead of the intended friendly login guidance. Follow the detailed record in `docs/auth-verification-test-results.md` before deciding this is launch-ready.
+
+Minimum launch checks:
+
+- Reused/expired signup verification links show clear login guidance, not a confusing library URL with raw auth error text.
+- Opening another account's fresh signup verification link while already signed in does not silently land in the wrong account.
+- Password reset emails use the clean production URL.
+- Supabase email rate limits are avoided during final testing by using only the minimum required email-link checks.
+
 ### Full naming consistency pass
 
 Perform a full app naming consistency pass after the final app name is chosen.
@@ -207,6 +220,7 @@ Before public launch, review:
 - Icons/favicons created
 - Verification, invite, password reset, magic link, and welcome email branding updated
 - Supabase auth redirect allowlist decision made after production email links are confirmed
+- Auth verification edge-case launch check completed using `docs/auth-verification-test-results.md`
 - Trial/cloud pricing model decided
 - AI terminology chosen
 - Help Center audit/rewrite completed or intentionally deferred
