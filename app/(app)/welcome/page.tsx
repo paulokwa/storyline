@@ -28,7 +28,7 @@ export default async function WelcomePage({ searchParams }: WelcomePageProps) {
     }
 
     return (
-        <div className="flex min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,#eef4ed_0%,#f5f4ef_35%,#fbf9f5_100%)]">
+        <div className="flex min-h-0 flex-1 overflow-y-auto bg-background">
             <StorageFirstOnboarding displayName={profile?.display_name ?? ''} />
         </div>
     )
