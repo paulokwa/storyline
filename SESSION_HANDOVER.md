@@ -5,6 +5,49 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-06 - Login auth-error normalization follow-up
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Closed the remaining reused-link normalization gap on `/login`.
+- Updated `app/(auth)/login/page.tsx` to reuse the shared auth-link detector, clear the local session, and redirect query-param auth-link failures to `/login?verification=already-used` before rendering the login form.
+- Mounted the existing `AuthLinkErrorRedirector` on the login page so hash-only Supabase auth failures also normalize to the same friendly verification URL and banner.
+- Updated the existing Auth / Sessions retest rows in `TESTING.md` to explicitly cover repeated login-page retries that previously left raw `/login?error=Invalid_Or_Expired_Token#...` URLs visible.
+
+### Files changed
+
+- `app/(auth)/login/page.tsx`
+- `TESTING.md`
+- `SESSION_HANDOVER.md`
+
+### Current status
+
+The login page now matches the library-page normalization behavior for invalid/reused verification-link query params and hash params.
+
+Focused eslint passed for:
+- `app/(auth)/login/page.tsx`
+- `lib/auth/auth-link-errors.ts`
+- `components/auth/AuthLinkErrorRedirector.tsx`
+
+The requested `npx tsc --noEmit --pretty false` run still reports the same unrelated pre-existing `impeccable/*` fixture and missing optional dependency errors.
+
+### Next recommended step
+
+Manual browser retest:
+1. Paste an old reused verification link while signed out and confirm it normalizes to `/login?verification=already-used`.
+2. Paste the same link while signed in and confirm the local session is cleared before landing on the same friendly login URL.
+3. Paste the link again from the login page and confirm raw `/login?error=...#error=...` params do not remain visible.
+4. Confirm normal email/password login still works.
+
+### Risks or warnings
+
+- Hash-only Supabase auth failures still require client hydration before the login-page redirector can replace the URL, so one initial server render can occur before normalization.
+
+---
 ## 2026-05-06 - Login build fix for Next 16 searchParams handling
 
 ### Current branch
