@@ -120,6 +120,39 @@ feedback_responses
 
 Support email notifications can still be sent for high-priority feedback, but the database should be the source of truth for survey/product feedback.
 
+### Review status workflow later
+
+The current `feedback_responses` table in Storyline does not yet include a `status` column, so the admin dashboard can show responses but cannot mark them as:
+
+- `new`
+- `reviewed`
+- `planned`
+- `dismissed`
+
+This is acceptable for the current launch phase because the immediate need is simple visibility into incoming survey responses, not a full triage system.
+
+Do not treat missing status tracking as a launch blocker. It becomes worth implementing only when feedback volume is high enough that Kwame needs to answer questions like:
+
+- Which responses have I already looked at?
+- Which ideas are worth building?
+- Which responses can I safely ignore?
+
+When that threshold is reached, the follow-up implementation should be small and deliberate:
+
+1. Add a `status` column to `feedback_responses` with conservative allowed values.
+2. Keep status editing admin-only.
+3. Add simple filters in the existing admin dashboard.
+4. Avoid turning this into a full support desk, CRM, public roadmap, or email workflow.
+
+Recommended future values:
+
+- `new`
+- `reviewed`
+- `planned`
+- `dismissed`
+
+Recommended product rule: the survey database remains the source of truth, while status is only a lightweight internal review aid for the product owner.
+
 ### Feedback modal idea
 
 Add a small in-app `Send Feedback` entry from Help or the app footer/navigation.

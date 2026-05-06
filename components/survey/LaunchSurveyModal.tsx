@@ -27,9 +27,10 @@ type Props = {
     open: boolean
     onClose: () => void
     projectCount?: number
+    previewMode?: boolean
 }
 
-export default function LaunchSurveyModal({ open, onClose, projectCount }: Props) {
+export default function LaunchSurveyModal({ open, onClose, projectCount, previewMode = false }: Props) {
     const [step, setStep] = useState(1)
     const [useCase, setUseCase] = useState<UseCase | null>(null)
     const [satisfaction, setSatisfaction] = useState<Satisfaction | null>(null)
@@ -39,7 +40,7 @@ export default function LaunchSurveyModal({ open, onClose, projectCount }: Props
     if (!open) return null
 
     const handleClose = () => {
-        if (typeof window !== 'undefined') {
+        if (!previewMode && typeof window !== 'undefined') {
             localStorage.setItem(SURVEY_STORAGE_KEY, 'dismissed')
         }
         onClose()
@@ -63,7 +64,7 @@ export default function LaunchSurveyModal({ open, onClose, projectCount }: Props
             if (!response.ok) {
                 throw new Error('Survey save failed')
             }
-            if (typeof window !== 'undefined') {
+            if (!previewMode && typeof window !== 'undefined') {
                 localStorage.setItem(SURVEY_STORAGE_KEY, 'completed')
             }
             toast.success('Thanks for the feedback!', {

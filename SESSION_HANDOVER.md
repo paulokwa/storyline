@@ -5,6 +5,132 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-06 - Future roadmap note for feedback review status
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Added a clear future-roadmap note to `docs/future-roadmap.md` explaining why the admin dashboard currently says review status is not available yet.
+- Documented that the current `feedback_responses` schema does not include a `status` column, so the dashboard can read responses but cannot yet mark them as `new`, `reviewed`, `planned`, or `dismissed`.
+- Recorded the recommendation to keep this as future work unless survey volume grows enough to justify a lightweight admin triage workflow.
+- Listed the preferred minimal follow-up scope for a later implementation:
+  - add a `status` column
+  - keep status editing admin-only
+  - add simple dashboard filters
+  - avoid expanding it into a full support desk or public roadmap system
+
+### Files changed
+
+- `docs/future-roadmap.md`
+- `SESSION_HANDOVER.md`
+
+### Current status
+
+The future roadmap now clearly explains that response review status is deferred product workflow, not a launch blocker.
+
+### Next recommended step
+
+Keep using the current admin feedback reader as-is. Revisit status tracking only if response volume makes manual triage difficult.
+
+### Risks or warnings
+
+- This is documentation only. No schema or admin-dashboard behavior changed in this step.
+
+---
+## 2026-05-06 - Admin dashboard quick links and clearer feedback-status copy
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Clarified the feedback-reader copy in the admin dashboard.
+- Replaced the vague badge text `Status tracking not in schema yet` with `Review status not available yet`.
+- Expanded the explanatory helper copy so it states plainly that the current `feedback_responses` table has no `status` column, which is why the dashboard cannot yet mark responses as `new`, `reviewed`, `planned`, or `dismissed`.
+- Added a new `Developer Test Routes` card to the existing admin dashboard with direct links for:
+  - `/admin/survey-preview`
+  - `/welcome?preview=1`
+  - `/dev/showcase`
+- Kept the implementation inside the existing admin dashboard instead of creating another tools page, so the owner can jump to common preview routes without copying and pasting URLs.
+
+### Files changed
+
+- `app/(app)/admin/page.tsx`
+- `TESTING.md`
+- `SESSION_HANDOVER.md`
+
+### Current status
+
+The admin dashboard now explains the missing feedback-status capability in plain language and includes direct launch buttons for the most useful test/preview routes.
+
+### Next recommended step
+
+1. Open `/admin`.
+2. Confirm the `Developer Test Routes` card is visible near the top.
+3. Click each route button and confirm it opens the expected page.
+4. Confirm the feedback section wording now clearly explains that review status is unavailable because the current table has no `status` column.
+
+### Risks or warnings
+
+- `/welcome?preview=1` only bypasses the normal onboarding redirect in development, matching the existing preview behavior.
+- Repo-wide `npx tsc --noEmit --pretty false` is still expected to hit the same unrelated `impeccable/*` Astro/Vite fixture errors.
+
+---
+## 2026-05-06 - Admin-only survey preview route
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Added an admin-only survey preview route at `app/(app)/admin/survey-preview/page.tsx`.
+- Reused the existing admin email gate instead of exposing any public or general-user survey test path.
+- Added `previewMode` support to `components/survey/LaunchSurveyModal.tsx`.
+- In preview mode, the modal reuses the real survey flow but does **not** write `storyline_survey_v1` to local storage on dismiss or success, so testing does not consume the normal one-time survey behavior in the library.
+- Added `components/survey/SurveyPreviewPage.tsx` as a small client wrapper that:
+  - opens the real survey modal on load
+  - lets the owner close and reopen it repeatedly
+  - includes a one-click helper to clear the local survey flag manually while testing
+- Documented the route in `docs/developers.md`.
+- Added a manual browser test row for the new preview route in `TESTING.md`.
+
+### Files changed
+
+- `components/survey/LaunchSurveyModal.tsx`
+- `components/survey/SurveyPreviewPage.tsx`
+- `app/(app)/admin/survey-preview/page.tsx`
+- `docs/developers.md`
+- `TESTING.md`
+- `SESSION_HANDOVER.md`
+
+### Current status
+
+Admins now have a repeatable survey test path at `/admin/survey-preview` that should not interfere with the normal survey popup lifecycle for regular users.
+
+Preview-mode behavior is intentionally scoped:
+- the normal library nudge logic is unchanged
+- the normal help-triggered survey flow is unchanged
+- successful preview submissions still post real rows to `feedback_responses`
+- preview close/success does not set the normal local storage completion/dismissal flag
+
+### Next recommended step
+
+1. Open `/admin/survey-preview` as an approved admin.
+2. Close and reopen the modal to confirm preview mode is repeatable.
+3. Confirm `localStorage.storyline_survey_v1` is not changed by preview-mode dismiss or success.
+4. Submit a preview response after the Supabase migration is applied and confirm it appears in `feedback_responses`.
+
+### Risks or warnings
+
+- Preview mode avoids the normal local storage writes, but successful test submissions still create real survey rows in the database by design.
+- Repo-wide `npx tsc --noEmit --pretty false` is still expected to hit the same pre-existing unrelated `impeccable/*` Astro/Vite fixture errors.
+
+---
 ## 2026-05-06 - Admin dashboard feedback reader
 
 ### Current branch

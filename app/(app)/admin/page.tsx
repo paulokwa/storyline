@@ -96,6 +96,24 @@ function formatSurveySatisfaction(value: string | null | undefined) {
   }
 }
 
+const ADMIN_TEST_ROUTES = [
+  {
+    href: '/admin/survey-preview',
+    label: 'Survey Preview',
+    description: 'Open the real launch survey in repeatable preview mode.',
+  },
+  {
+    href: '/welcome?preview=1',
+    label: 'Onboarding Preview',
+    description: 'Preview the welcome/onboarding flow without the normal redirect behavior in development.',
+  },
+  {
+    href: '/dev/showcase',
+    label: 'Marketing Showcase',
+    description: 'Open the dev showcase page for the public-facing marketing experience.',
+  },
+] as const
+
 function StatCard({ title, value, caption }: { title: string; value: string | number; caption?: string }) {
   return (
     <Card className="border-slate-200/80 bg-white/90 shadow-sm">
@@ -273,6 +291,37 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         </section>
 
         <Card className="border-slate-200/80 bg-white/95 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-slate-900">Developer Test Routes</CardTitle>
+            <CardDescription>
+              Quick links for the test and preview pages you use repeatedly while checking product flows.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 lg:grid-cols-3">
+              {ADMIN_TEST_ROUTES.map((route) => (
+                <a
+                  key={route.href}
+                  href={route.href}
+                  className="group rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-5 shadow-sm transition hover:border-slate-300 hover:bg-white hover:shadow-md"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-base font-semibold text-slate-900">{route.label}</h3>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">{route.description}</p>
+                    </div>
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500 transition group-hover:border-slate-300">
+                      Open
+                    </span>
+                  </div>
+                  <p className="mt-4 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">{route.href}</p>
+                </a>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200/80 bg-white/95 shadow-sm">
           <CardHeader className="gap-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div className="space-y-2">
@@ -287,14 +336,14 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                 </Badge>
                 {!dashboard.feedback.hasStatus ? (
                   <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
-                    Status tracking not in schema yet
+                    Review status not available yet
                   </Badge>
                 ) : null}
               </div>
             </div>
             {!dashboard.feedback.hasStatus ? (
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                The current `feedback_responses` schema does not include `status`, `project_type`, `writing_mode`, or `ai_state`, so this view shows the fields that actually exist today. If you want review tracking later, add it in a deliberate follow-up migration.
+                This means the current `feedback_responses` table has no `status` column yet, so the dashboard can show survey answers but cannot mark them as `new`, `reviewed`, `planned`, or `dismissed`. The schema also does not currently include `project_type`, `writing_mode`, or `ai_state`, so this view shows the fields that actually exist today.
               </div>
             ) : null}
           </CardHeader>
