@@ -438,7 +438,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                                             >
                                                 <div className="group sanctuary-card border-2 border-dashed border-primary/20 bg-primary/5 rounded-[2rem] p-8 h-full transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl relative overflow-hidden active:scale-[0.98]">
                                                     <Link href="/new" className="absolute inset-0 z-10" />
-                                                    <div className="relative z-20 flex flex-col h-full gap-6">
+                                                    <div className="relative z-20 flex flex-col h-full gap-6 pointer-events-none">
                                                         <div className="flex items-start justify-between">
                                                             <div className="w-14 h-14 rounded-2xl bg-primary shadow-lg shadow-primary/20 text-white flex items-center justify-center">
                                                                 <Sparkles className="w-7 h-7" />

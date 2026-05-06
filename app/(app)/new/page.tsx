@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/tooltip"
 import { DEFAULT_WRITING_MODE_BY_TYPE, getProjectTypeLabel } from '@/lib/constants'
 import { toast } from 'sonner'
+import { useTheme } from '@/components/providers/ThemeProvider'
 
 type StartMode = 'quick' | 'guided' | 'import'
 type Step = 'title' | 'type' | 'start_mode' | 'identity' | 'guided' | 'import'
@@ -217,7 +218,7 @@ export default function NewProjectPage() {
         <TooltipProvider>
             <div className="new-project-page flex-1 w-full overflow-y-auto bg-background flex flex-col items-center py-16 md:py-24 fade-in">
                 <div className="w-full max-w-2xl px-6 flex items-center justify-between mb-20 animate-in fade-in slide-in-from-top-4 duration-700">
-                    <Link href="/library" className="group flex items-center gap-2 text-slate-400 hover:text-slate-800 transition-all font-medium">
+                    <Link href="/library" className="group flex items-center gap-2 text-slate-400 hover:text-primary transition-all font-medium">
                         <div className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center group-hover:bg-white group-hover:shadow-sm">
                             <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
                         </div>
@@ -333,13 +334,15 @@ function StepTitle({ value, onChange, onContinue }: {
     onChange: (v: string) => void
     onContinue: () => void
 }) {
+    const { theme } = useTheme()
+    const isMidnight = theme === 'midnight'
     return (
         <div className="fade-in space-y-10">
             <div className="space-y-4">
-                <h1 className="text-4xl md:text-5xl font-serif text-slate-800 leading-tight">
-                    Create a<br /><span className="text-slate-400 italic">new project</span>
+                <h1 className={cn('text-4xl md:text-5xl font-serif leading-tight', isMidnight ? 'text-slate-100' : 'text-slate-800')}>
+                    Create a<br /><span className={cn('italic', isMidnight ? 'text-slate-400' : 'text-slate-400')}>new project</span>
                 </h1>
-                <p className="text-slate-500 font-medium text-lg leading-relaxed max-w-xl italic opacity-80">Choose the type of project you want to write.</p>
+                <p className={cn('font-medium text-lg leading-relaxed max-w-xl italic opacity-80', isMidnight ? 'text-slate-300' : 'text-slate-500')}>Choose the type of project you want to write.</p>
             </div>
 
             <div className="space-y-6">
@@ -368,13 +371,15 @@ function StepTypeSelect({ value, onSelect, onBack }: {
     onSelect: (t: ProjectType) => void
     onBack: () => void
 }) {
+    const { theme } = useTheme()
+    const isMidnight = theme === 'midnight'
     return (
         <div className="fade-in space-y-10">
             <div className="space-y-4">
-                <h1 className="text-4xl md:text-5xl font-serif text-slate-800 leading-tight">
-                    What are we<br /><span className="text-slate-400 italic">writing today?</span>
+                <h1 className={cn('text-4xl md:text-5xl font-serif leading-tight', isMidnight ? 'text-slate-100' : 'text-slate-800')}>
+                    What are we<br /><span className={cn('italic', isMidnight ? 'text-slate-400' : 'text-slate-400')}>writing today?</span>
                 </h1>
-                <p className="text-slate-500 font-medium italic opacity-60">You can change editor settings later in Project Settings.</p>
+                <p className={cn('font-medium italic opacity-60', isMidnight ? 'text-slate-300' : 'text-slate-500')}>You can change editor settings later in Project Settings.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -411,13 +416,15 @@ function StepStartMode({ value, projectType, storageMode, preferredStorageMode, 
     onBack: () => void
     creating: boolean
 }) {
+    const { theme } = useTheme()
+    const isMidnight = theme === 'midnight'
     return (
         <div className="fade-in space-y-10">
             <div className="space-y-4">
-                <h1 className="text-4xl md:text-5xl font-serif text-slate-800 leading-tight">
-                    How shall we<br /><span className="text-slate-400 italic">begin?</span>
+                <h1 className={cn('text-4xl md:text-5xl font-serif leading-tight', isMidnight ? 'text-slate-100' : 'text-slate-800')}>
+                    How shall we<br /><span className={cn('italic', isMidnight ? 'text-slate-400' : 'text-slate-400')}>begin?</span>
                 </h1>
-                <p className="text-slate-500 font-medium">Choose how you want to start.</p>
+                <p className={cn('font-medium', isMidnight ? 'text-slate-300' : 'text-slate-500')}>Choose how you want to start.</p>
             </div>
 
             <StorageModeSelector
@@ -597,13 +604,15 @@ function StepIdentity({ value, onChange, onFileChange, onComplete, onBack, creat
     creating: boolean
     creatingLabel: string
 }) {
+    const { theme } = useTheme()
+    const isMidnight = theme === 'midnight'
     return (
         <div className="fade-in space-y-10">
             <div className="space-y-4">
-                <h1 className="text-4xl md:text-5xl font-serif text-slate-800 leading-tight">
-                    Add a<br /><span className="text-slate-400 italic">visual soul</span>
+                <h1 className={cn('text-4xl md:text-5xl font-serif leading-tight', isMidnight ? 'text-slate-100' : 'text-slate-800')}>
+                    Add a<br /><span className={cn('italic', isMidnight ? 'text-slate-400' : 'text-slate-400')}>visual soul</span>
                 </h1>
-                <p className="text-slate-500 font-medium text-lg leading-relaxed max-w-xl italic opacity-80">Choose a cover for your library card or skip to keep it minimal.</p>
+                <p className={cn('font-medium text-lg leading-relaxed max-w-xl italic opacity-80', isMidnight ? 'text-slate-300' : 'text-slate-500')}>Choose a cover for your library card or skip to keep it minimal.</p>
             </div>
 
             <CoverPicker value={value} onChange={onChange} deferUpload onPendingFileChange={onFileChange} />

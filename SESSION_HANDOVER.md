@@ -5,6 +5,58 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-06 - Welcome Onboarding Redesign (2-Step Flow)
+
+### Current branch
+
+`main`
+
+### What was completed
+
+Redesigned the Welcome onboarding page (`/welcome`) from a single dense screen into a calm 2-step click-through flow.
+
+**File changed:** `components/app/StorageFirstOnboarding.tsx` only.
+
+**Step 1 — Welcome:** Spacious screen with a warm heading ("Welcome to Storyline, [name]."), two short body paragraphs orienting the user, and a single Continue button. No storage cards visible at this step.
+
+**Step 2 — Choose storage:** Existing storage choice UI retained and polished. Title changed to "Choose how new projects should start." Body copy updated to plain language (no backend terms). Cards updated: "Start Private" copy simplified to "Keep new projects on this device by default." "Start with Cloud & Collaboration" copy updated to "Create new projects online from the start, ready for cloud access and collaboration." Sticky bar helper updated to "You can change this later from Project Settings."
+
+**Back navigation:** Step 2 has a Back button that returns to Step 1 via local `step` state — no page navigation or routing change.
+
+**Accessibility:** Added `aria-pressed` to storage option card buttons. Added a `Check` icon (filled circle) as a non-colour-only selected indicator; `aria-hidden="true"` on the icon since `aria-pressed` conveys the selected state. Added `focus-visible:ring` on storage cards with theme-appropriate ring colour.
+
+**Removed:** `ShieldCheck` import and helper panel (its content is absorbed into card helpers and the sticky bar). All user-facing "Supabase" references removed (none remained in prior version either).
+
+**Unchanged:** `handleContinue`, `/api/onboarding/complete`, API payload (`preferredStorageMode`), the two storage options, routing, auth, database logic.
+
+**TypeScript:** `npx tsc --noEmit` — zero errors.
+
+### Files changed
+
+- `components/app/StorageFirstOnboarding.tsx`
+
+### Current status
+
+Complete and type-safe. The planning report was approved by the user before implementation began.
+
+### Next recommended step
+
+Browser smoke test at `/welcome?preview=1`:
+
+1. Confirm Step 1 shows welcome heading + two paragraphs + Continue button only (no cards).
+2. Click Continue — Step 2 fades in with storage cards.
+3. Confirm "Start Private" is pre-selected with a filled checkmark badge.
+4. Switch to "Start with Cloud & Collaboration" — checkmark and sticky bar label update.
+5. Tab through cards, confirm focus ring visible.
+6. Click Back — returns to Step 1.
+7. Click Continue to Library — POST fires to `/api/onboarding/complete` and redirects to `/library`.
+8. Repeat in Midnight mode.
+
+### Risks or warnings
+
+None. No business logic, routing, API, or database changes were made.
+
+---
 ## 2026-05-06 - IndexedDB Local Project Privacy Fix (User Scoping)
 
 ### Current branch
