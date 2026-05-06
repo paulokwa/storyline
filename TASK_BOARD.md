@@ -72,17 +72,8 @@ Before writing code, state:
 
 ## Now
 
-### 1. Continue typography and contrast audit beyond AI Partner
 
-Done this session: Feedback page dropdowns, AI Partner SanctuarySelect + AiHelperPanel, Manuscript View panel (desktop + mobile), Scene Assets Panel, SaveAiResponseModal, Notification detail page + layout.
-
-Continue auditing remaining pages with hardcoded light backgrounds (library, admin, settings, stats, new-project).
-
-Focus on readability and theme consistency, especially Sanctuary and Midnight.
-
-Do not redesign whole screens unless a focused contrast/readability fix requires it.
-
-### 2. Check and fix export issues, starting with PDF
+### 1. Check and fix export issues, starting with PDF
 
 Audit and fix export problems, starting with PDF output and then verifying other export formats.
 

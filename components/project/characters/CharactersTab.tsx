@@ -440,11 +440,11 @@ export default function CharactersTab({
                             <div className="space-y-8">
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-1">
-                                        <div className="flex items-center gap-3 text-[10px] font-sans tracking-[0.3em] uppercase text-stone-300 font-bold">
-                                            <Search className="w-4 h-4 text-stone-200" />
+                                        <div className="flex items-center gap-3 text-[10px] font-sans tracking-[0.3em] uppercase text-stone-500 font-bold">
+                                            <Search className="w-4 h-4 text-stone-400" />
                                             <span>Character Overview</span>
                                         </div>
-                                        <p className="text-[10px] text-stone-400/60 font-medium ml-7 tracking-normal">Who they are, background, role in the story</p>
+                                        <p className="text-[10px] text-stone-400 font-medium ml-7 tracking-normal">Who they are, background, role in the story</p>
                                     </div>
                                     <div className="w-10 h-px bg-stone-100" />
                                 </div>
@@ -467,11 +467,11 @@ export default function CharactersTab({
                             <div className="space-y-8">
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-1">
-                                        <div className="flex items-center gap-3 text-[10px] font-sans tracking-[0.3em] uppercase text-stone-300 font-bold">
-                                            <PenTool className="w-4 h-4 text-stone-200" />
+                                        <div className="flex items-center gap-3 text-[10px] font-sans tracking-[0.3em] uppercase text-stone-500 font-bold">
+                                            <PenTool className="w-4 h-4 text-stone-400" />
                                             <span>Inner World</span>
                                         </div>
-                                        <p className="text-[10px] text-stone-400/60 font-medium ml-7 tracking-normal">fears, motivations, desires, emotional struggles</p>
+                                        <p className="text-[10px] text-stone-400 font-medium ml-7 tracking-normal">fears, motivations, desires, emotional struggles</p>
                                     </div>
                                     <div className="w-10 h-px bg-stone-100" />
                                 </div>

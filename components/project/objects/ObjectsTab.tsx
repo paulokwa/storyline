@@ -207,7 +207,7 @@ export default function ObjectsTab({
                                 disabled={isCreating}
                                 className="w-8 h-8 rounded-full bg-white/40 ring-1 ring-white/60 flex items-center justify-center hover:bg-white transition-all active:scale-95 disabled:opacity-50"
                             >
-                                {isCreating ? <Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin" /> : <Plus className="w-4 h-4 text-blue-400/60" />}
+                                {isCreating ? <Loader2 className="w-3.5 h-3.5 text-[#546354]/60 animate-spin" /> : <Plus className="w-4 h-4 text-[#546354]/60" />}
                             </button>
                         </TooltipTrigger>
                         <TooltipContent side="top">Add object</TooltipContent>
@@ -290,7 +290,7 @@ export default function ObjectsTab({
                                                                     label="Rename"
                                                                     icon={Pencil}
                                                                     onClick={e => startRename(obj, e)}
-                                                                    className="hover:border-blue-200 hover:bg-blue-50 hover:text-blue-500"
+                                                                    className="hover:border-[#546354]/20 hover:bg-[#546354]/5 hover:text-[#546354]"
                                                                 />
                                                                 <ItemRowActionButton
                                                                     label="Delete"
@@ -355,12 +355,12 @@ export default function ObjectsTab({
 
                             <div className="space-y-8">
                                 <div className="flex items-center justify-between">
-                                    <div className="space-y-1 text-[10px] uppercase text-stone-300 font-bold tracking-[0.3em]">
-                                        <div className="flex items-center gap-3"><Search className="w-4 h-4 text-stone-200" /><span>Narrative Significance</span></div>
+                                    <div className="space-y-1 text-[10px] uppercase text-stone-500 font-bold tracking-[0.3em]">
+                                        <div className="flex items-center gap-3"><Search className="w-4 h-4 text-stone-400" /><span>Narrative Significance</span></div>
                                     </div>
                                     <div className="w-10 h-px bg-stone-100" />
                                 </div>
-                                <div className="objects-tab-significance-card rounded-[3rem] p-10 ring-1 ring-[#546354]/5 border border-dashed border-[#546354]/10">
+                                <div className="objects-tab-significance-card rounded-[3rem] p-10 ring-1 ring-[#546354]/5 border border-dashed border-[#546354]/10 bg-[#fcfbf9]/60">
                                     <PremiumEditor 
                                         value={selectedObject.significance || ''} 
                                         onValueChange={(val) => handleTextEditorChange(selectedObject.id, 'significance', val)} 
@@ -375,8 +375,8 @@ export default function ObjectsTab({
 
                             <div className="space-y-8">
                                 <div className="flex items-center justify-between">
-                                    <div className="space-y-1 text-[10px] uppercase text-stone-300 font-bold tracking-[0.3em]">
-                                        <div className="flex items-center gap-3"><PenTool className="w-4 h-4 text-stone-200" /><span>Description & Details</span></div>
+                                    <div className="space-y-1 text-[10px] uppercase text-stone-500 font-bold tracking-[0.3em]">
+                                        <div className="flex items-center gap-3"><PenTool className="w-4 h-4 text-stone-400" /><span>Description & Details</span></div>
                                     </div>
                                     <div className="w-10 h-px bg-stone-100" />
                                 </div>

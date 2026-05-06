@@ -5,6 +5,68 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-06 - Entity Tab Polish: A11y, Dark Mode, Copy, Visual Pass
+
+### Current branch
+
+`main`
+
+### What was completed
+
+A four-part polish pass across the Characters, Locations, Objects, and Ideas planning tabs.
+
+**Part 1 — Accessibility fixes**
+- Added `role="button"`, `tabIndex={0}`, `onKeyDown` (Enter/Space to select, Escape on rename input) to Draggable list items in Locations, Objects, and Ideas (Characters already had these).
+- Added `aria-label="Cancel deletion"` and `aria-label="Confirm delete [entity]"` to the inline delete-confirm Yes/No buttons across all four tabs.
+- Wrapped Locations, Objects, and Ideas (plus Characters) non-empty returns in `TooltipProvider`. IdeasTab and CharactersTab were previously missing the wrapper import and JSX element.
+
+**Part 2 — Midnight/dark mode**
+- Added ~130 lines of `[data-theme='midnight']` CSS rules to `app/globals.css` targeting CSS class names on the tab shell, sidebar, mobile bar, primary panel, and secondary panel elements.
+- New class names added to JSX to enable targeting: `characters-tab-primary-panel`, `locations-tab-primary-panel`, `ideas-tab-primary-panel` (the white content cards that had no prior class names).
+- Existing class names already present: `characters-tab-shell`, `characters-tab-detail`, `characters-tab-sidebar`, `characters-tab-mobilebar`, `characters-tab-secondary-panel`; equivalent names on other tabs; `objects-tab-description-card`, `objects-tab-significance-card`.
+
+**Part 3 — Copy cleanup**
+- Sidebar section headers: "Book Characters" → "Characters", "Dramatis Personae" → "Cast List", "World Locations" → "Locations", "Items & Artefacts" → "Objects", "Idea Archive" → "Ideas".
+- Row sub-labels: standardized to "Character" / "Location" / "Object" / "Idea" across all tabs.
+- Save state text: standardized to "Saving…" / "Saved" / "All changes saved" across all tabs.
+- Fixed "Ref Reference" → "Ref" in LocationsTab reference field label.
+- Fixed "The Armoury is Silent" → "No Objects Yet" as the Objects empty-state headline.
+
+**Part 4 — Visual polish**
+- Section header contrast: `text-stone-300` → `text-stone-500` and icon `text-stone-200` → `text-stone-400` across all section headers in all four tabs; also removed `/60` opacity from Characters helper text paragraphs (`text-stone-400/60` → `text-stone-400`).
+- Removed `text-justify` from Ideas editor (`editorClassName="italic text-justify"` → `editorClassName="italic"`).
+- Add button icon colors unified to `text-[#546354]/60` across all tabs (was `text-emerald-400/60` in Locations, `text-blue-400/60` in Objects, `text-amber-500/40` in Ideas).
+- Rename action button hover unified to Sanctuary Green (`hover:border-[#546354]/20 hover:bg-[#546354]/5 hover:text-[#546354]`) across Locations, Objects, and Ideas (Characters was already correct).
+- Objects significance panel: added `bg-[#fcfbf9]/60` to `objects-tab-significance-card` to match the secondary panel style used in all other tabs.
+
+### Files changed
+
+- `components/project/characters/CharactersTab.tsx`
+- `components/project/locations/LocationsTab.tsx`
+- `components/project/objects/ObjectsTab.tsx`
+- `components/project/ideas/IdeasTab.tsx`
+- `app/globals.css`
+
+### Current status
+
+All changes complete. No TypeScript type changes were made (class names and aria attributes only). No business logic, database, routing, or save logic was touched.
+
+### Next recommended step
+
+Browser smoke test across both Sanctuary and Midnight themes:
+
+1. Keyboard: Tab to a list item in each tab, confirm focus ring visible; press Enter to select; press Space to select. Press Escape in a rename input to cancel.
+2. Accessibility: Trigger a delete flow and confirm the Yes/No buttons are reachable by keyboard and have sensible aria-labels (check with screen reader or DevTools accessibility tree).
+3. Dark mode (Midnight): Switch theme and verify all four tabs show dark backgrounds, correct sidebar, no white/cream card flashes.
+4. Copy: Confirm sidebar headers, row labels, save state text, and empty state copy match the updated strings.
+5. Visual: Confirm section headers are legible, add button icons are green/neutral across tabs, rename hover is green in all tabs, Objects significance panel has the faint warm background.
+
+### Risks or warnings
+
+- Midnight CSS rules use `!important` to override hard-coded hex values in JSX; these are scoped to `[data-theme='midnight']` so they will not affect Sanctuary or any other theme.
+- If new entity tabs are added in future, they will need equivalent midnight CSS rules added to `globals.css`.
+
+---
 ## 2026-05-06 - Signup verification callback privacy fix
 
 ### Current branch
