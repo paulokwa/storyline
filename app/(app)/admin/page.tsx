@@ -68,6 +68,34 @@ function getStatusBadge(status: string) {
   }
 }
 
+function formatSurveyUseCase(value: string | null | undefined) {
+  switch (value) {
+    case 'book':
+      return 'Book'
+    case 'screenplay':
+      return 'Screenplay'
+    case 'both':
+      return 'Both'
+    case 'exploring':
+      return 'Exploring'
+    default:
+      return value ?? '-'
+  }
+}
+
+function formatSurveySatisfaction(value: string | null | undefined) {
+  switch (value) {
+    case 'great':
+      return 'Great'
+    case 'ok':
+      return 'Okay'
+    case 'not_great':
+      return 'Needs work'
+    default:
+      return value ?? '-'
+  }
+}
+
 function StatCard({ title, value, caption }: { title: string; value: string | number; caption?: string }) {
   return (
     <Card className="border-slate-200/80 bg-white/90 shadow-sm">
@@ -134,6 +162,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const selectedSuspicious = readQueryValue(query.suspicious) ?? 'all'
   const selectedWindow = readQueryValue(query.window) ?? 'all'
   const emailSearch = (readQueryValue(query.email) ?? '').trim().toLowerCase()
+  const selectedFeedbackUseCase = readQueryValue(query.feedback_use_case) ?? 'all'
+  const selectedFeedbackSatisfaction = readQueryValue(query.feedback_satisfaction) ?? 'all'
+  const feedbackSearch = (readQueryValue(query.feedback_search) ?? '').trim().toLowerCase()
 
   if (dashboard.status === 'misconfigured') {
     const envMessage =
@@ -184,6 +215,28 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     return true
   })
 
+  const filteredFeedbackResponses = dashboard.feedback.responses.filter((entry) => {
+    if (selectedFeedbackUseCase !== 'all' && (entry.useCase ?? '') !== selectedFeedbackUseCase) return false
+    if (selectedFeedbackSatisfaction !== 'all' && (entry.satisfaction ?? '') !== selectedFeedbackSatisfaction) return false
+
+    if (feedbackSearch) {
+      const searchableText = [
+        entry.userEmail,
+        entry.userId,
+        entry.feedbackText,
+        entry.pagePath,
+        entry.appVersion,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+
+      if (!searchableText.includes(feedbackSearch)) return false
+    }
+
+    return true
+  })
+
   return (
     <div className="admin-page-shell flex h-full min-h-0 flex-1 flex-col overflow-auto bg-slate-50/50 px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
@@ -218,6 +271,145 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <StatCard title="Reserved Trial Budget" value={formatMicrosUsd(dashboard.trial.overview.totalReservedMicros)} />
           <StatCard title="Suspicious Users" value={dashboard.trial.overview.suspiciousUsers} />
         </section>
+
+        <Card className="border-slate-200/80 bg-white/95 shadow-sm">
+          <CardHeader className="gap-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div className="space-y-2">
+                <CardTitle className="text-slate-900">Feedback &amp; Survey Responses</CardTitle>
+                <CardDescription>
+                  Read the in-app launch survey responses here without leaving the admin dashboard.
+                </CardDescription>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-700">
+                  Total responses: {dashboard.feedback.totalResponses}
+                </Badge>
+                {!dashboard.feedback.hasStatus ? (
+                  <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
+                    Status tracking not in schema yet
+                  </Badge>
+                ) : null}
+              </div>
+            </div>
+            {!dashboard.feedback.hasStatus ? (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                The current `feedback_responses` schema does not include `status`, `project_type`, `writing_mode`, or `ai_state`, so this view shows the fields that actually exist today. If you want review tracking later, add it in a deliberate follow-up migration.
+              </div>
+            ) : null}
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {!dashboard.feedback.tableAvailable ? (
+              <div className="rounded-2xl border border-amber-200/80 bg-amber-50/80 px-5 py-4 text-sm text-amber-900">
+                Feedback responses table is not available yet. Apply `supabase/migrations/20260504_feedback_responses.sql` in Supabase.
+              </div>
+            ) : (
+              <>
+                <form className="grid gap-3 md:grid-cols-4">
+                  <div className="space-y-2 md:col-span-2">
+                    <label htmlFor="feedback_search" className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      Search
+                    </label>
+                    <input
+                      id="feedback_search"
+                      name="feedback_search"
+                      type="text"
+                      defaultValue={feedbackSearch}
+                      placeholder="Email, user ID, page, or message"
+                      className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="feedback_use_case" className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      Use Case
+                    </label>
+                    <select
+                      id="feedback_use_case"
+                      name="feedback_use_case"
+                      defaultValue={selectedFeedbackUseCase}
+                      className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm"
+                    >
+                      <option value="all">All</option>
+                      <option value="book">Book</option>
+                      <option value="screenplay">Screenplay</option>
+                      <option value="both">Both</option>
+                      <option value="exploring">Exploring</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="feedback_satisfaction" className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      Satisfaction
+                    </label>
+                    <select
+                      id="feedback_satisfaction"
+                      name="feedback_satisfaction"
+                      defaultValue={selectedFeedbackSatisfaction}
+                      className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm"
+                    >
+                      <option value="all">All</option>
+                      <option value="great">Great</option>
+                      <option value="ok">Okay</option>
+                      <option value="not_great">Needs work</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-4 flex flex-wrap gap-3">
+                    <Button type="submit">Apply Feedback Filters</Button>
+                    <a
+                      href="/admin"
+                      className="inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 text-sm font-medium whitespace-nowrap text-slate-900 transition-all outline-none hover:bg-slate-100 disabled:pointer-events-none disabled:opacity-50"
+                    >
+                      Clear
+                    </a>
+                    <span className="self-center text-sm text-slate-500">
+                      Showing {filteredFeedbackResponses.length} of the newest {dashboard.feedback.responses.length} loaded responses.
+                    </span>
+                  </div>
+                </form>
+
+                <SectionTable
+                  headers={['Submitted', 'User', 'Answers', 'Message', 'Context']}
+                  rows={filteredFeedbackResponses.length > 0
+                    ? filteredFeedbackResponses.map((entry) => [
+                        <div key="submitted" className="flex flex-col gap-1">
+                          <span className="font-medium text-slate-900">{formatDateTime(entry.createdAt)}</span>
+                          <span className="text-xs text-slate-400">{entry.id}</span>
+                        </div>,
+                        <div key="user" className="flex min-w-[14rem] flex-col gap-1">
+                          <span className="font-medium text-slate-900">{entry.userEmail ?? entry.userId ?? 'Anonymous / unavailable'}</span>
+                          {entry.userEmail && entry.userId ? <span className="text-xs text-slate-400">{entry.userId}</span> : null}
+                        </div>,
+                        <div key="answers" className="flex min-w-[10rem] flex-col gap-1">
+                          <span className="text-xs uppercase tracking-[0.16em] text-slate-400">Use case</span>
+                          <span className="font-medium text-slate-900">{formatSurveyUseCase(entry.useCase)}</span>
+                          <span className="pt-2 text-xs uppercase tracking-[0.16em] text-slate-400">Satisfaction</span>
+                          <span className="text-slate-700">{formatSurveySatisfaction(entry.satisfaction)}</span>
+                        </div>,
+                        <div key="message" className="min-w-[20rem] whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">
+                          {entry.feedbackText?.trim() || 'No free-text message.'}
+                        </div>,
+                        <div key="context" className="min-w-[16rem] space-y-1 text-xs leading-5 text-slate-500">
+                          <div><span className="font-medium text-slate-700">Page:</span> {entry.pagePath ?? '-'}</div>
+                          <div><span className="font-medium text-slate-700">Project count:</span> {entry.projectCount ?? '-'}</div>
+                          <div><span className="font-medium text-slate-700">App version:</span> {entry.appVersion ?? '-'}</div>
+                          <div className="break-words"><span className="font-medium text-slate-700">User agent:</span> {entry.userAgent ?? '-'}</div>
+                        </div>,
+                      ])
+                    : [[
+                        <span key="empty-submitted" className="text-slate-400">
+                          {dashboard.feedback.totalResponses === 0
+                            ? 'No survey responses yet. Once users submit the launch survey, they will appear here.'
+                            : 'No survey responses match the current filters.'}
+                        </span>,
+                        '-',
+                        '-',
+                        '-',
+                        '-',
+                      ]]}
+                />
+              </>
+            )}
+          </CardContent>
+        </Card>
 
         <Card className="border-[#2b332b]/10 bg-[#e7eee7]/40 shadow-sm">
           <CardHeader>

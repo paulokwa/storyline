@@ -99,6 +99,26 @@ type UserAiSettingsRow = Pick<
   Database['public']['Tables']['user_api_keys']['Row'],
   'user_id' | 'billing_mode' | 'ai_provider' | 'ai_enabled'
 >
+type FeedbackResponseSummary = {
+  id: string
+  userId: string | null
+  userEmail: string | null
+  createdAt: string
+  useCase: string | null
+  satisfaction: string | null
+  feedbackText: string | null
+  pagePath: string | null
+  projectCount: number | null
+  appVersion: string | null
+  userAgent: string | null
+}
+type FeedbackSection = {
+  tableAvailable: boolean
+  totalResponses: number
+  hasStatus: boolean
+  responses: FeedbackResponseSummary[]
+  unavailableReason: string | null
+}
 
 type TableEstimateConfig = {
   table: keyof Database['public']['Tables']
@@ -252,6 +272,13 @@ export type AdminDashboardData =
         normalizedEmailClusters: ClusterSummary[]
         recentManualActions: ManualActionSummary[]
       }
+      feedback: {
+        tableAvailable: boolean
+        totalResponses: number
+        hasStatus: boolean
+        responses: FeedbackResponseSummary[]
+        unavailableReason: string | null
+      }
     }
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -315,6 +342,12 @@ function getMetadataString(value: Json | null | undefined, key: string) {
   const record = asRecord(value)
   const entry = record?.[key]
   return typeof entry === 'string' ? entry : null
+}
+
+function isMissingFeedbackResponsesTable(error: { code?: string; message?: string } | null | undefined) {
+  if (!error) return false
+  if (error.code === '42P01') return true
+  return (error.message ?? '').toLowerCase().includes('feedback_responses')
 }
 
 async function fetchAllAuthUsers() {
@@ -747,6 +780,73 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       status: getMetadataString(entry.metadata, 'status'),
     }))
 
+  const [feedbackCountResult, feedbackResponsesResult] = await Promise.all([
+    // `feedback_responses` is newer than the generated Supabase types in this repo.
+    // Keep the same safe temporary `any` pattern used by the survey route until types are regenerated.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any).from('feedback_responses').select('id', { count: 'exact', head: true }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from('feedback_responses')
+      .select('id,user_id,created_at,use_case,satisfaction,feedback_text,page_path,project_count,app_version,user_agent')
+      .order('created_at', { ascending: false })
+      .limit(50),
+  ])
+
+  let feedback: FeedbackSection
+  const feedbackCountError = feedbackCountResult?.error as { code?: string; message?: string } | null | undefined
+  const feedbackRowsError = feedbackResponsesResult?.error as { code?: string; message?: string } | null | undefined
+
+  if (feedbackCountError || feedbackRowsError) {
+    const missingTable = isMissingFeedbackResponsesTable(feedbackCountError) || isMissingFeedbackResponsesTable(feedbackRowsError)
+
+    if (!missingTable) {
+      if (feedbackCountError) throw feedbackCountError
+      if (feedbackRowsError) throw feedbackRowsError
+    }
+
+    feedback = {
+      tableAvailable: false,
+      totalResponses: 0,
+      hasStatus: false,
+      responses: [],
+      unavailableReason: 'missing_table',
+    }
+  } else {
+    const feedbackRows = (feedbackResponsesResult.data ?? []) as Array<{
+      id: string
+      user_id: string | null
+      created_at: string
+      use_case: string | null
+      satisfaction: string | null
+      feedback_text: string | null
+      page_path: string | null
+      project_count: number | null
+      app_version: string | null
+      user_agent: string | null
+    }>
+
+    feedback = {
+      tableAvailable: true,
+      totalResponses: feedbackCountResult.count ?? feedbackRows.length,
+      hasStatus: false,
+      responses: feedbackRows.map((row) => ({
+        id: row.id,
+        userId: row.user_id,
+        userEmail: row.user_id ? usersById.get(row.user_id)?.email ?? null : null,
+        createdAt: row.created_at,
+        useCase: row.use_case,
+        satisfaction: row.satisfaction,
+        feedbackText: row.feedback_text,
+        pagePath: row.page_path,
+        projectCount: row.project_count,
+        appVersion: row.app_version,
+        userAgent: row.user_agent,
+      })),
+      unavailableReason: null,
+    }
+  }
+
   return {
     status: 'ready',
     generatedAt: new Date().toISOString(),
@@ -796,5 +896,6 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       normalizedEmailClusters,
       recentManualActions,
     },
+    feedback,
   }
 }

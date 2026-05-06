@@ -5,6 +5,110 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-06 - Admin dashboard feedback reader
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Extended the existing admin dashboard at `app/(app)/admin/page.tsx` instead of creating a separate admin area.
+- Re-inspected the current admin access pattern, survey route, launch survey modal, and the `feedback_responses` migration before implementation.
+- Added a new `feedback` payload to `getAdminDashboardData()` in `lib/admin-dashboard.ts`.
+- The admin dashboard now fetches survey responses from `feedback_responses`, orders them newest-first, counts total responses, and maps `user_id` values back to auth emails when available.
+- Added a new `Feedback & Survey Responses` section to the existing admin page showing:
+  - total response count
+  - recent responses table
+  - use-case and satisfaction answers
+  - free-text message
+  - page path, project count, app version, and user agent
+  - simple query-param filters for search, use-case, and satisfaction
+- Added safe missing-table handling. If `feedback_responses` is not available yet, the admin page keeps rendering and shows an admin-only warning instructing the owner to apply `supabase/migrations/20260504_feedback_responses.sql`.
+- Did not touch the full feedback page EmailJS flow.
+- Did not wire survey popup responses to email.
+- Did not add public routes or expose survey data outside the existing admin gate.
+
+### Files changed
+
+- `app/(app)/admin/page.tsx`
+- `lib/admin-dashboard.ts`
+- `TESTING.md`
+- `SESSION_HANDOVER.md`
+
+### Current status
+
+The existing admin dashboard now includes a simple feedback reader for launch survey responses.
+
+Important schema note:
+- Generated Supabase types still do **not** include `feedback_responses`.
+- This implementation uses the same temporary `any`-cast pattern already used in `app/api/survey/route.ts`.
+- After the migration is applied in Supabase, regenerate Supabase types so the temporary cast can be removed.
+
+Important schema limitation:
+- The current migration does **not** include `status`, `project_type`, `writing_mode`, or `ai_state`.
+- Because those fields do not exist in the actual schema inspected here, the admin dashboard does not invent them and does not implement status editing.
+
+I still could not confirm from this session whether `supabase/migrations/20260504_feedback_responses.sql` has been applied in the linked Supabase project, because this environment still has no live DB access (no Supabase CLI, no Supabase MCP connector, no loaded server credentials).
+
+### Next recommended step
+
+1. Confirm the linked Supabase project has the `feedback_responses` table. If not, open the Supabase dashboard SQL editor and run `supabase/migrations/20260504_feedback_responses.sql`.
+2. Sign in as an approved admin and open `/admin` to verify the new feedback section renders.
+3. Validate both admin outcomes:
+   - with the table present and sample rows
+   - with the table missing / migration unapplied
+4. If product-owner workflow needs reviewed/planned/dismissed tracking later, add that in a separate migration plus admin-only update path rather than inferring a fake status now.
+
+### Risks or warnings
+
+- Repo-wide `npx tsc --noEmit --pretty false` is still blocked by pre-existing unrelated `impeccable/*` fixture and missing Astro/Vite dependency errors; no new errors from `app/(app)/admin/page.tsx` or `lib/admin-dashboard.ts` appeared in the TypeScript output.
+- The admin feedback table currently loads the newest 50 responses plus a separate total count, which is intentional for a lightweight owner inbox.
+
+---
+## 2026-05-06 - Launch Survey failure handling fix
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Investigated the launch survey popup flow after confirming it is intended to save to Supabase `feedback_responses`, not send email.
+- Re-inspected `app/api/survey/route.ts` and `components/survey/LaunchSurveyModal.tsx`.
+- Fixed `LaunchSurveyModal.tsx` so the modal now checks `response.ok` before treating the submission as successful.
+- The survey now:
+  - sets `storyline_survey_v1` to `'completed'` only after a successful `/api/survey` response
+  - shows the existing success toast only after a successful `/api/survey` response
+  - shows `Survey could not be saved. Please try again.` if the API returns an error or the request fails
+  - stays open on failure so the user is not silently dismissed out of an unsaved survey
+- Left the separate full feedback page EmailJS/mailto flow untouched.
+- Updated `TESTING.md` manual validation notes for both the success path and the failure/missing-table path.
+
+### Files changed
+
+- `components/survey/LaunchSurveyModal.tsx`
+- `TESTING.md`
+- `SESSION_HANDOVER.md`
+
+### Current status
+
+The misleading success behavior is fixed in the popup survey UI. Static code inspection confirms the modal no longer marks the survey completed on non-OK responses.
+
+I could not confirm whether `supabase/migrations/20260504_feedback_responses.sql` has been applied in the linked Supabase project from this session because there is no live DB access here (no Supabase CLI, no MCP Supabase connector, and no loaded server credentials in the shell).
+
+### Next recommended step
+
+1. Confirm the migration is applied in the linked Supabase project. Manual step if not: open the Supabase dashboard SQL editor for the linked project and run the SQL from `supabase/migrations/20260504_feedback_responses.sql`.
+2. Browser-test the success path: submit the survey with `feedback_responses` present, confirm the success toast appears, confirm `storyline_survey_v1` becomes `'completed'`, and confirm the row appears in Supabase.
+3. Browser-test the failure path: simulate a missing table or other `/api/survey` failure, confirm the error toast appears, confirm `storyline_survey_v1` is not set to `'completed'`, and confirm the modal does not pretend the survey was saved.
+
+### Risks or warnings
+
+- The route still uses the intentional `any` cast against `feedback_responses` until Supabase types are regenerated after the migration is applied.
+- Live migration status for the linked Supabase project remains unverified from this environment.
+
+---
 ## 2026-05-06 - Entity Tab Polish: A11y, Dark Mode, Copy, Visual Pass
 
 ### Current branch

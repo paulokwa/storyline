@@ -48,7 +48,7 @@ export default function LaunchSurveyModal({ open, onClose, projectCount }: Props
     const handleSubmit = async (skipFeedback = false) => {
         setSubmitting(true)
         try {
-            await fetch('/api/survey', {
+            const response = await fetch('/api/survey', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -60,17 +60,20 @@ export default function LaunchSurveyModal({ open, onClose, projectCount }: Props
                     app_version: '0.1.0',
                 }),
             })
+            if (!response.ok) {
+                throw new Error('Survey save failed')
+            }
             if (typeof window !== 'undefined') {
                 localStorage.setItem(SURVEY_STORAGE_KEY, 'completed')
             }
             toast.success('Thanks for the feedback!', {
                 description: "It really helps shape where Storyline goes next.",
             })
+            onClose()
         } catch {
-            // Silently fail — don't block the user for a survey
+            toast.error('Survey could not be saved. Please try again.')
         } finally {
             setSubmitting(false)
-            onClose()
         }
     }
 
