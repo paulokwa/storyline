@@ -2,6 +2,7 @@ import { useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { useProjectActions } from '@/components/project/ProjectContext'
+import { useTheme } from '@/components/providers/ThemeProvider'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Users, Lightbulb, MapPin, Package, X, FileText, Folder, MessageSquare, Plus, Shield, ChevronDown } from 'lucide-react'
 import { useDragScroll } from '@/hooks/useDragScroll'
@@ -123,6 +124,8 @@ export default function LinkedContext({
     const [isPending, startTransition] = useTransition()
     const [openMenu, setOpenMenu] = useState<string | null>(null)
     const { role } = useProjectActions()
+    const { theme } = useTheme()
+    const isMidnight = theme === 'midnight'
     const isReadOnly = role === 'viewer'
     const { 
         scrollRef, isDragging, onMouseDown, onMouseLeave, onMouseUp, onMouseMove 
@@ -275,10 +278,16 @@ export default function LinkedContext({
             )}
 
             <div className="flex min-w-0 items-start gap-3 pl-1">
-                <div className="flex shrink-0 items-center gap-2 pt-1 text-[9px] uppercase tracking-widest text-slate-400 font-bold">
-                    <span>AI Ready</span>
+                <div className={cn(
+                    "flex shrink-0 items-center gap-2 pt-1 text-[9px] uppercase tracking-widest font-bold",
+                    isMidnight ? "text-slate-500" : "text-slate-400"
+                )}>
+                    <span>Scene Context</span>
                     {isReadOnly && (
-                        <span className="rounded-full border border-slate-200 bg-white/80 px-2 py-0.5 text-[8px] tracking-[0.16em] text-slate-400">
+                        <span className={cn(
+                            "rounded-full border px-2 py-0.5 text-[8px] tracking-[0.16em]",
+                            isMidnight ? "border-slate-700/50 bg-slate-800/60 text-slate-500" : "border-slate-200 bg-white/80 text-slate-400"
+                        )}>
                             View Only
                         </span>
                     )}
@@ -302,11 +311,17 @@ export default function LinkedContext({
                 {linkedChars.map(char => {
                     const isActive = activeCharacters?.[char.id] !== false
                     return (
-                        <div 
-                            key={char.id} 
+                        <div
+                            key={char.id}
                             className={cn(
-                                "flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all select-none", 
-                                isActive ? "bg-[#546354]/10 text-[#546354] border-transparent" : "bg-white text-slate-300 border-slate-100 grayscale opacity-60"
+                                "flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all select-none",
+                                isActive
+                                    ? isMidnight
+                                        ? "bg-slate-800/70 text-slate-300 border-slate-600/40"
+                                        : "bg-[#546354]/10 text-[#546354] border-transparent"
+                                    : isMidnight
+                                        ? "bg-slate-800/30 text-slate-600 border-slate-700/30 grayscale opacity-50"
+                                        : "bg-white text-slate-300 border-slate-100 grayscale opacity-60"
                             )}
                         >
                             <input
@@ -316,10 +331,10 @@ export default function LinkedContext({
                                 disabled={isReadOnly}
                                 className="w-3.5 h-3.5 rounded-md cursor-pointer accent-[#546354]"
                             />
-                            <Users className="w-3 h-3 opacity-60" />
+                            <Users className={cn("w-3 h-3", isActive ? "text-[#546354] opacity-70" : "opacity-40")} />
                             {char.name}
                             {!isReadOnly && (
-                                <button onClick={() => removeCharacter(char.id)} className="ml-1 opacity-40 hover:opacity-100 transition-opacity" disabled={isPending}>
+                                <button onClick={() => removeCharacter(char.id)} className={cn("ml-1 transition-opacity", isMidnight ? "opacity-30 hover:opacity-80" : "opacity-40 hover:opacity-100")} disabled={isPending}>
                                     <X className="w-3 h-3" />
                                 </button>
                             )}
@@ -333,11 +348,17 @@ export default function LinkedContext({
                     const isFeedback = idea.title?.toLowerCase().startsWith('feedback:')
                     const IdeaIcon = isFeedback ? MessageSquare : Lightbulb
                     return (
-                        <div 
-                            key={idea.id} 
+                        <div
+                            key={idea.id}
                             className={cn(
-                                "flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all select-none", 
-                                isActive ? "bg-indigo-50 text-indigo-700 border-indigo-100" : "bg-white text-slate-300 border-slate-100 grayscale opacity-60"
+                                "flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all select-none",
+                                isActive
+                                    ? isMidnight
+                                        ? "bg-slate-800/70 text-slate-300 border-slate-600/40"
+                                        : "bg-indigo-50 text-indigo-700 border-indigo-100"
+                                    : isMidnight
+                                        ? "bg-slate-800/30 text-slate-600 border-slate-700/30 grayscale opacity-50"
+                                        : "bg-white text-slate-300 border-slate-100 grayscale opacity-60"
                             )}
                         >
                             <input
@@ -347,10 +368,10 @@ export default function LinkedContext({
                                 disabled={isReadOnly}
                                 className="w-3.5 h-3.5 rounded-md cursor-pointer accent-indigo-600"
                             />
-                            <IdeaIcon className="w-3 h-3 opacity-60" />
+                            <IdeaIcon className={cn("w-3 h-3", isActive ? "text-indigo-500 opacity-80" : "opacity-40")} />
                             {isFeedback ? idea.title.replace(/^feedback:\s*/i, '') : idea.title}
                             {!isReadOnly && (
-                                <button onClick={() => removeIdea(idea.id)} className="ml-1 opacity-40 hover:opacity-100 transition-opacity" disabled={isPending}>
+                                <button onClick={() => removeIdea(idea.id)} className={cn("ml-1 transition-opacity", isMidnight ? "opacity-30 hover:opacity-80" : "opacity-40 hover:opacity-100")} disabled={isPending}>
                                     <X className="w-3 h-3" />
                                 </button>
                             )}
@@ -362,11 +383,17 @@ export default function LinkedContext({
                 {linkedLocs.map(loc => {
                     const isActive = activeLocations?.[loc.id] !== false
                     return (
-                        <div 
-                            key={loc.id} 
+                        <div
+                            key={loc.id}
                             className={cn(
-                                "flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all select-none", 
-                                isActive ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-white text-slate-300 border-slate-100 grayscale opacity-60"
+                                "flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all select-none",
+                                isActive
+                                    ? isMidnight
+                                        ? "bg-slate-800/70 text-slate-300 border-slate-600/40"
+                                        : "bg-emerald-50 text-emerald-700 border-emerald-100"
+                                    : isMidnight
+                                        ? "bg-slate-800/30 text-slate-600 border-slate-700/30 grayscale opacity-50"
+                                        : "bg-white text-slate-300 border-slate-100 grayscale opacity-60"
                             )}
                         >
                             <input
@@ -376,10 +403,10 @@ export default function LinkedContext({
                                 disabled={isReadOnly}
                                 className="w-3.5 h-3.5 rounded-md cursor-pointer accent-emerald-600"
                             />
-                            <MapPin className="w-3 h-3 opacity-60" />
+                            <MapPin className={cn("w-3 h-3", isActive ? "text-emerald-500 opacity-80" : "opacity-40")} />
                             {loc.name}
                             {!isReadOnly && (
-                                <button onClick={() => removeLocation(loc.id)} className="ml-1 opacity-40 hover:opacity-100 transition-opacity" disabled={isPending}>
+                                <button onClick={() => removeLocation(loc.id)} className={cn("ml-1 transition-opacity", isMidnight ? "opacity-30 hover:opacity-80" : "opacity-40 hover:opacity-100")} disabled={isPending}>
                                     <X className="w-3 h-3" />
                                 </button>
                             )}
@@ -391,11 +418,17 @@ export default function LinkedContext({
                 {linkedObjs.map(obj => {
                     const isActive = activeObjects?.[obj.id] !== false
                     return (
-                        <div 
-                            key={obj.id} 
+                        <div
+                            key={obj.id}
                             className={cn(
-                                "flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all select-none", 
-                                isActive ? "bg-blue-50 text-blue-700 border-blue-100" : "bg-white text-slate-300 border-slate-100 grayscale opacity-60"
+                                "flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all select-none",
+                                isActive
+                                    ? isMidnight
+                                        ? "bg-slate-800/70 text-slate-300 border-slate-600/40"
+                                        : "bg-blue-50 text-blue-700 border-blue-100"
+                                    : isMidnight
+                                        ? "bg-slate-800/30 text-slate-600 border-slate-700/30 grayscale opacity-50"
+                                        : "bg-white text-slate-300 border-slate-100 grayscale opacity-60"
                             )}
                         >
                             <input
@@ -405,10 +438,10 @@ export default function LinkedContext({
                                 disabled={isReadOnly}
                                 className="w-3.5 h-3.5 rounded-md cursor-pointer accent-blue-600"
                             />
-                            <Package className="w-3 h-3 opacity-60" />
+                            <Package className={cn("w-3 h-3", isActive ? "text-sky-500 opacity-80" : "opacity-40")} />
                             {obj.name}
                             {!isReadOnly && (
-                                <button onClick={() => removeObject(obj.id)} className="ml-1 opacity-40 hover:opacity-100 transition-opacity" disabled={isPending}>
+                                <button onClick={() => removeObject(obj.id)} className={cn("ml-1 transition-opacity", isMidnight ? "opacity-30 hover:opacity-80" : "opacity-40 hover:opacity-100")} disabled={isPending}>
                                     <X className="w-3 h-3" />
                                 </button>
                             )}
@@ -420,13 +453,16 @@ export default function LinkedContext({
                 {selectedNodeIds.map(nodeId => {
                     if (nodeId === 'virtual-root') {
                         return (
-                            <div key="virtual-root" className="flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border bg-indigo-50 text-indigo-700 border-indigo-200 select-none animate-in fade-in slide-in-from-left-2">
-                                <Shield className="w-3 h-3 opacity-60" />
+                            <div key="virtual-root" className={cn(
+                                "flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border select-none animate-in fade-in slide-in-from-left-2",
+                                isMidnight ? "bg-slate-800/70 text-slate-300 border-slate-600/40" : "bg-indigo-50 text-indigo-700 border-indigo-200"
+                            )}>
+                                <Shield className={cn("w-3 h-3", isMidnight ? "text-indigo-400 opacity-80" : "opacity-60")} />
                                 Entire Project
                                 {!isReadOnly && (
-                                    <button 
-                                        onClick={() => onToggleNodeSelection?.('virtual-root')} 
-                                        className="ml-1 opacity-40 hover:opacity-100 transition-opacity"
+                                    <button
+                                        onClick={() => onToggleNodeSelection?.('virtual-root')}
+                                        className={cn("ml-1 transition-opacity", isMidnight ? "opacity-30 hover:opacity-80" : "opacity-40 hover:opacity-100")}
                                     >
                                         <X className="w-3 h-3" />
                                     </button>
@@ -437,15 +473,18 @@ export default function LinkedContext({
                     const node = allNodes.find(n => n.id === nodeId)
                     if (!node) return null
                     const Icon = node.type === 'scene' ? FileText : Folder
-                    
+
                     return (
-                        <div key={nodeId} className="flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border bg-amber-50 text-amber-700 border-amber-200 select-none">
-                            <Icon className="w-3 h-3 opacity-60" />
+                        <div key={nodeId} className={cn(
+                            "flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border select-none",
+                            isMidnight ? "bg-slate-800/70 text-slate-300 border-slate-600/40" : "bg-amber-50 text-amber-700 border-amber-200"
+                        )}>
+                            <Icon className={cn("w-3 h-3", isMidnight ? "text-amber-400 opacity-80" : "opacity-60")} />
                             {node.title}
                             {!isReadOnly && (
-                                <button 
-                                    onClick={() => onToggleNodeSelection?.(nodeId)} 
-                                    className="ml-1 opacity-40 hover:opacity-100 transition-opacity"
+                                <button
+                                    onClick={() => onToggleNodeSelection?.(nodeId)}
+                                    className={cn("ml-1 transition-opacity", isMidnight ? "opacity-30 hover:opacity-80" : "opacity-40 hover:opacity-100")}
                                 >
                                     <X className="w-3 h-3" />
                                 </button>
@@ -456,10 +495,13 @@ export default function LinkedContext({
 
                         {!hasLinkedContext && (
                             <div className="flex min-w-0 items-center">
-                                <div className="relative -top-[0.40625rem] inline-block text-[11px] text-slate-300 italic leading-none">
+                                <div className={cn(
+                                    "relative -top-[0.40625rem] inline-block text-[11px] italic leading-none",
+                                    isMidnight ? "text-slate-600" : "text-slate-300"
+                                )}>
                                     {isReadOnly
                                         ? 'Linked items can be managed by the owner or an editor'
-                                        : 'No linked items ready for AI analysis'}
+                                        : 'No items linked to this scene'}
                                 </div>
                             </div>
                         )}

@@ -2162,7 +2162,7 @@ export default function AiHelperPanel({
                             )}
                         >
                             <Database className="h-3 w-3" />
-                            <span>{isApplyingContext ? 'Saving...' : 'Context'}</span>
+                            <span>{isApplyingContext ? 'Saving...' : 'Scene Context'}</span>
                             {contextManagerOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                         </button>
 
@@ -2242,7 +2242,7 @@ export default function AiHelperPanel({
                             )}
                         >
                             <Database className="h-3 w-3" />
-                            <span>{isApplyingContext ? 'Saving...' : 'Context'}</span>
+                            <span>{isApplyingContext ? 'Saving...' : 'Scene Context'}</span>
                             {contextManagerOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                         </button>
 

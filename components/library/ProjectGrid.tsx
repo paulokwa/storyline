@@ -570,14 +570,16 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
     )
 }
 
-function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, onLocalProjectChange }: { 
-    project: Project, 
-    mode?: 'active' | 'trash', 
+function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, onLocalProjectChange }: {
+    project: Project,
+    mode?: 'active' | 'trash',
     dragHandleProps?: any,
     isDragging?: boolean,
     onLocalProjectChange?: () => Promise<void>
 }) {
     const router = useRouter()
+    const { theme } = useTheme()
+    const isMidnight = theme === 'midnight'
     const resolvedProjectType = project.project_type || project.type
     const isTV = resolvedProjectType === 'tv_script'
     const isLocalProject = project.storage_mode === 'local-only' || isLocalProjectId(project.id)
@@ -604,6 +606,8 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
     }, [])
 
     const hasCover = !!project.cover_url
+    // Use dark chrome whenever there's a cover image OR the app is in midnight mode
+    const useDark = hasCover || isMidnight
     const members = (project.members || []).map((member) =>
         member.user_id === project.user_id
             ? {
@@ -664,7 +668,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
             className={cn(
                 "group block sanctuary-card rounded-[2rem] transition-all duration-700 relative overflow-hidden min-h-[420px] h-full flex flex-col",
                 mode === 'active' ? "hover:-translate-y-2 hover:shadow-2xl active:scale-[0.98]" : "opacity-80 hover:opacity-100 bg-slate-50/50 grayscale hover:grayscale-0",
-                !hasCover && "p-8 border border-slate-100 bg-white shadow-sm",
+                !hasCover && (isMidnight ? "p-8 border border-slate-700/50 bg-[rgba(11,17,32,0.88)] shadow-lg" : "p-8 border border-slate-100 bg-white shadow-sm"),
                 isDragging && "shadow-2xl ring-2 ring-primary ring-offset-4 scale-105 rotate-2"
             )}
         >
@@ -706,11 +710,11 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                     )}>
                         {hasDragHandle && (
                             <div className="flex h-9 w-9 shrink-0 items-center justify-center sm:h-11 sm:w-11">
-                                <div 
+                                <div
                                     {...dragHandleProps}
                                     className={cn(
                                         "pointer-events-auto rounded-xl p-2 transition-all cursor-grab active:cursor-grabbing sm:p-2.5",
-                                        hasCover ? "bg-white/10 text-white/40 hover:text-white" : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                                        useDark ? "bg-white/10 text-white/40 hover:text-white" : "text-slate-400 hover:text-slate-600"
                                     )}
                                     aria-label="Reorder project"
                                 >
@@ -721,7 +725,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                         <div className={cn(
                             "shrink-0 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm",
                             hasDragHandle ? "h-12 w-12 sm:h-14 sm:w-14" : "h-14 w-14",
-                            hasCover 
+                            useDark
                                 ? "bg-white/10 backdrop-blur-md text-white border border-white/20 group-hover:bg-white/20"
                                 : (isTV ? "bg-stone-50 text-stone-600 group-hover:bg-primary/10 group-hover:text-primary" : "bg-stone-50 text-stone-500 group-hover:bg-primary/10 group-hover:text-primary")
                         )}>
@@ -734,17 +738,17 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                             {confirmDelete ? (
                                 <div className={cn(
                                     "absolute right-0 top-0 flex items-center gap-2 p-1.5 rounded-xl animate-in fade-in zoom-in duration-200 shadow-2xl border min-w-[140px] sm:min-w-[160px] justify-between",
-                                    hasCover 
-                                        ? "bg-black/95 backdrop-blur-xl border-white/20" 
-                                        : "bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-slate-200 dark:border-slate-800"
+                                    useDark
+                                        ? "bg-black/95 backdrop-blur-xl border-white/20"
+                                        : "bg-white/95 backdrop-blur-md border-slate-200"
                                 )}>
-                                    <button 
+                                    <button
                                         onClick={e => { e.preventDefault(); e.stopPropagation(); setConfirmDelete(false) }}
                                         className={cn(
                                             "px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors rounded-lg",
-                                            hasCover 
-                                                ? "text-white/60 hover:text-white" 
-                                                : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                                            useDark
+                                                ? "text-white/60 hover:text-white"
+                                                : "text-slate-500 hover:text-slate-800"
                                         )}
                                     >Cancel</button>
                                     <button
@@ -754,7 +758,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                                     >{isActionInProgress ? '...' : (mode === 'active' ? 'Delete' : 'Destroy')}</button>
                                 </div>
                             ) : (
-                                <motion.div 
+                                <motion.div
                                     className="flex shrink-0 items-center gap-1.5 sm:gap-2"
                                     initial={!isMounted || isTouch ? false : { opacity: 0, x: 10 }}
                                     animate={isMounted && isTouch ? { opacity: 1, x: 0 } : undefined}
@@ -768,8 +772,8 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                                             disabled={isActionInProgress}
                                             className={cn(
                                                 "p-2 rounded-lg transition-all",
-                                                hasCover 
-                                                    ? "text-white/60 hover:text-white hover:bg-white/10" 
+                                                useDark
+                                                    ? "text-white/60 hover:text-white hover:bg-white/10"
                                                     : "text-slate-400 hover:text-primary hover:bg-primary/5"
                                             )}
                                         >
@@ -782,8 +786,8 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                                                 onClick={e => { e.preventDefault(); e.stopPropagation(); setIsSettingsOpen(true) }}
                                                 className={cn(
                                                     "transition-all duration-200 p-2 rounded-lg",
-                                                    hasCover 
-                                                        ? "text-white/60 hover:text-white hover:bg-white/10" 
+                                                    useDark
+                                                        ? "text-white/60 hover:text-white hover:bg-white/10"
                                                         : "text-slate-400 hover:text-primary hover:bg-primary/5"
                                                 )}
                                                 title="Edit project details"
@@ -794,8 +798,8 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                                                 onClick={e => { e.preventDefault(); e.stopPropagation(); setIsEditingCover(true) }}
                                                 className={cn(
                                                     "transition-all duration-200 p-2 rounded-lg",
-                                                    hasCover 
-                                                        ? "text-white/60 hover:text-white hover:bg-white/10" 
+                                                    useDark
+                                                        ? "text-white/60 hover:text-white hover:bg-white/10"
                                                         : "text-slate-400 hover:text-primary hover:bg-primary/5"
                                                 )}
                                                 title="Change Cover"
@@ -808,8 +812,8 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                                         onClick={e => { e.preventDefault(); e.stopPropagation(); setConfirmDelete(true) }}
                                         className={cn(
                                             "transition-all duration-200 p-2 rounded-lg",
-                                            hasCover 
-                                                ? "text-white/60 hover:text-red-400 hover:bg-red-500/10" 
+                                            useDark
+                                                ? "text-white/60 hover:text-red-400 hover:bg-red-500/10"
                                                 : "text-slate-400 hover:text-red-500 hover:bg-red-50"
                                         )}
                                     >
@@ -822,14 +826,14 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                 </div>
 
                 <div className={cn(
-                    "flex flex-col flex-1", 
+                    "flex flex-col flex-1",
                     hasCover && "mt-auto pt-24"
                 )}>
                     {/* Title Container - Fixed height to align metadata below */}
                     <div className="h-[68px] flex items-start mb-2 overflow-hidden">
                         <h3 className={cn(
                             "text-2xl font-serif leading-snug transition-colors duration-500 line-clamp-2",
-                            hasCover ? "text-white" : "text-slate-800 group-hover:text-primary"
+                            useDark ? "text-white" : "text-slate-800 group-hover:text-primary"
                         )}>
                             {project.title}
                         </h3>
@@ -838,32 +842,32 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-4">
                         <span className={cn(
                             "text-[10px] font-bold uppercase tracking-[0.2em] px-2.5 py-1 rounded-md transition-colors border shrink-0",
-                            hasCover 
-                                ? "bg-white/5 backdrop-blur-md text-white/70 border-white/10 group-hover:bg-white/10" 
+                            useDark
+                                ? "bg-white/5 backdrop-blur-md text-white/70 border-white/10 group-hover:bg-white/10"
                                 : "bg-slate-50 text-slate-400 border-transparent group-hover:bg-primary/5 group-hover:text-primary/60"
                         )}>
                             {getProjectTypeLabel(resolvedProjectType as any)}
                         </span>
-                        
+
                         {project.role === 'owner' && (
-                             <Badge variant="outline" className={cn(
-                                 "text-[9px] uppercase tracking-wider py-0 px-2 font-bold shrink-0",
-                                 hasCover ? "border-white/20 text-white/60 bg-white/5 backdrop-blur-md" : "border-amber-100 text-amber-600 bg-amber-50/30"
-                             )}>
+                            <Badge variant="outline" className={cn(
+                                "text-[9px] uppercase tracking-wider py-0 px-2 font-bold shrink-0",
+                                useDark ? "border-white/20 text-white/60 bg-white/5 backdrop-blur-md" : "border-amber-100 text-amber-600 bg-amber-50/30"
+                            )}>
                                 Owner
                             </Badge>
                         )}
                         {isLocalProject ? (
-                             <Badge variant="outline" className={cn(
-                                 "text-[9px] uppercase tracking-wider py-0 px-2 font-bold shrink-0",
-                                 hasCover ? "border-white/20 text-white/60 bg-white/5 backdrop-blur-md" : "border-emerald-100 text-emerald-600 bg-emerald-50/30"
-                             )}>
+                            <Badge variant="outline" className={cn(
+                                "text-[9px] uppercase tracking-wider py-0 px-2 font-bold shrink-0",
+                                useDark ? "border-white/20 text-white/60 bg-white/5 backdrop-blur-md" : "border-emerald-100 text-emerald-600 bg-emerald-50/30"
+                            )}>
                                 Local Only
                             </Badge>
                         ) : (
                             <Badge variant="outline" className={cn(
                                 "text-[9px] uppercase tracking-wider py-0 px-2 font-bold shrink-0",
-                                hasCover ? "border-white/20 text-white/60 bg-white/5 backdrop-blur-md" : "border-sky-100 text-sky-600 bg-sky-50/30"
+                                useDark ? "border-white/20 text-white/60 bg-white/5 backdrop-blur-md" : "border-sky-100 text-sky-600 bg-sky-50/30"
                             )}>
                                 Cloud Sync
                             </Badge>
@@ -871,11 +875,11 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
 
                         <span className={cn(
                             "text-xs font-medium flex items-center gap-1.5 whitespace-nowrap",
-                            hasCover ? "text-white/80" : "text-slate-500"
+                            useDark ? "text-white/80" : "text-slate-500"
                         )}>
-                            <Clock className={cn("w-3.5 h-3.5", hasCover ? "text-white/70" : "text-slate-500")} />
-                            <span className={cn("font-medium", hasCover ? "text-white/70" : "text-slate-500")}>Last accessed:</span>
-                            {isMounted ? <span className={cn(hasCover ? "text-white/80" : "text-slate-600")}>{formatDistanceToNow(project.last_accessed_at || new Date().toISOString()) + ' ago'}</span> : '...'}
+                            <Clock className={cn("w-3.5 h-3.5", useDark ? "text-white/70" : "text-slate-500")} />
+                            <span className={cn("font-medium", useDark ? "text-white/70" : "text-slate-500")}>Last accessed:</span>
+                            {isMounted ? <span className={cn(useDark ? "text-white/80" : "text-slate-600")}>{formatDistanceToNow(project.last_accessed_at || new Date().toISOString()) + ' ago'}</span> : '...'}
                         </span>
                     </div>
 
@@ -884,7 +888,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                         {cardDescription && (
                             <p className={cn(
                                 "text-sm leading-relaxed line-clamp-2 italic font-serif transition-colors duration-500",
-                                hasCover ? "text-white/60 group-hover:text-white/80" : "text-slate-500"
+                                useDark ? "text-white/60 group-hover:text-white/80" : "text-slate-500"
                             )}>
                                 &ldquo;{cardDescription}&rdquo;
                             </p>
@@ -894,7 +898,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
 
                 <div className={cn(
                     "mt-auto pt-6 flex items-center justify-between",
-                    hasCover ? "border-t border-white/10" : "border-t border-slate-100"
+                    useDark ? "border-t border-white/10" : "border-t border-slate-100"
                 )}>
                     <div className="flex items-center gap-4">
                         {isShared && mode === 'active' ? (
@@ -903,14 +907,14 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                                     <Tooltip key={member.user_id}>
                                         <TooltipTrigger>
                                             <Avatar className={cn(
-                                                "w-7 h-7 border-2 ring-2 ring-white",
-                                                hasCover ? "border-black/50 ring-white/10" : "border-white ring-slate-100",
+                                                "w-7 h-7 border-2",
+                                                useDark ? "border-black/50 ring-2 ring-white/10" : "border-white ring-2 ring-slate-100",
                                                 "transition-transform hover:scale-110 hover:z-30 cursor-default"
                                             )}>
                                                 <AvatarImage src={member.avatar_url || undefined} />
                                                 <AvatarFallback className={cn(
                                                     "text-[8px] font-bold uppercase",
-                                                    hasCover ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+                                                    useDark ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
                                                 )}>
                                                     {member.user_id === project.user_id
                                                         ? getAvatarInitials(member.display_name, ownerInitialFallback)
@@ -927,21 +931,21 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                                 {visibleMembers.length > 4 && (
                                     <div className={cn(
                                         "w-7 h-7 rounded-full flex items-center justify-center border-2 text-[8px] font-bold z-0",
-                                        hasCover ? "bg-white/10 border-black/50 text-white" : "bg-slate-100 border-white text-slate-500"
+                                        useDark ? "bg-white/10 border-black/50 text-white" : "bg-slate-100 border-white text-slate-500"
                                     )}>
                                         +{visibleMembers.length - 4}
                                     </div>
                                 )}
                             </div>
                         ) : (
-                            <span className={cn("text-[10px] font-bold uppercase tracking-widest flex items-center gap-2", hasCover ? "text-white/30" : "text-slate-400")}>
+                            <span className={cn("text-[10px] font-bold uppercase tracking-widest flex items-center gap-2", useDark ? "text-white/30" : "text-slate-400")}>
                                 {mode === 'trash' && project.deleted_at ? (
                                     <span className="text-red-400 flex items-center gap-1.5">
                                         <Clock className="w-3 h-3" />
                                         Deleted {isMounted ? formatDistanceToNow(project.deleted_at) + ' ago' : '...'}
                                     </span>
                                 ) : (
-                                    <span className={cn(hasCover ? "text-white/70" : "text-slate-500")}>Private Draft</span>
+                                    <span className={cn(useDark ? "text-white/70" : "text-slate-500")}>Private Draft</span>
                                 )}
                             </span>
                         )}
@@ -949,8 +953,8 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                     {mode === 'active' && (
                         <div className={cn(
                             "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-700 transform group-hover:rotate-[-45deg] shadow-lg",
-                            hasCover 
-                                ? "bg-white/10 backdrop-blur-md text-white/50 group-hover:bg-white group-hover:text-primary" 
+                            useDark
+                                ? "bg-white/10 backdrop-blur-md text-white/50 group-hover:bg-white group-hover:text-primary"
                                 : "bg-slate-100 text-slate-400 group-hover:bg-primary group-hover:text-white"
                         )}>
                             <ChevronRight className="w-5 h-5" />
@@ -959,7 +963,7 @@ function ProjectCard({ project, mode = 'active', dragHandleProps, isDragging, on
                 </div>
             </div>
 
-            {!hasCover && (
+            {!hasCover && !isMidnight && (
                 <div className="absolute top-0 right-0 w-32 h-32 rounded-full -mr-16 -mt-16 transition-all duration-700 bg-stone-50/50 group-hover:bg-primary/5" />
             )}
 
