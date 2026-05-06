@@ -232,9 +232,17 @@ export default function LocationsTab({
                                             <div
                                                 ref={provided.innerRef}
                                                 {...provided.draggableProps}
+                                                role="button"
+                                                tabIndex={0}
                                                 onClick={() => setSelectedId(loc.id)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                        e.preventDefault()
+                                                        setSelectedId(loc.id)
+                                                    }
+                                                }}
                                                 className={cn(
-                                                    "w-full flex items-center gap-3 px-4 py-4 rounded-2xl transition-all duration-300 text-left cursor-pointer group",
+                                                    "w-full flex items-center gap-3 px-4 py-4 rounded-2xl transition-all duration-300 text-left cursor-pointer group outline-none focus-visible:ring-2 focus-visible:ring-[#546354]/20",
                                                     selectedId === loc.id ? "bg-white shadow-sm ring-1 ring-slate-100" : "hover:bg-white/40 text-slate-500 hover:text-slate-800",
                                                     snapshot.isDragging && "shadow-2xl ring-2 ring-[#546354]/20 z-50 bg-white"
                                                 )}
@@ -249,7 +257,7 @@ export default function LocationsTab({
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     {renamingId === loc.id ? (
-                                                        <input ref={renameInputRef} type="text" value={renameValue} onChange={e => setRenameValue(e.target.value)} onBlur={() => commitRename(loc.id)} onKeyDown={e => e.key === 'Enter' && commitRename(loc.id)} onClick={e => e.stopPropagation()} className="w-full bg-[#fbf9f5] border border-[#546354]/20 rounded-lg px-2 py-0.5 text-sm font-medium text-slate-800 outline-none ring-1 ring-[#546354]/10" />
+                                                        <input ref={renameInputRef} type="text" value={renameValue} onChange={e => setRenameValue(e.target.value)} onBlur={() => commitRename(loc.id)} onKeyDown={e => { if (e.key === 'Enter') commitRename(loc.id); if (e.key === 'Escape') setRenamingId(null) }} onClick={e => e.stopPropagation()} className="w-full bg-[#fbf9f5] border border-[#546354]/20 rounded-lg px-2 py-0.5 text-sm font-medium text-slate-800 outline-none ring-1 ring-[#546354]/10" />
                                                     ) : (
                                                         <>
                                                             <p className={cn("text-sm font-medium truncate", selectedId === loc.id ? "text-slate-800" : "text-slate-500")}>{loc.name}</p>
@@ -260,15 +268,17 @@ export default function LocationsTab({
                                                  <div className="flex items-center gap-1">
                                                     {confirmDeleteId === loc.id ? (
                                                         <div className="flex items-center gap-1 animate-in fade-in slide-in-from-right-2 duration-200" onClick={e => e.stopPropagation()}>
-                                                            <button 
-                                                                onClick={() => setConfirmDeleteId(null)} 
+                                                            <button
+                                                                onClick={() => setConfirmDeleteId(null)}
+                                                                aria-label="Cancel deletion"
                                                                 className="p-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider"
                                                             >
                                                                 No
                                                             </button>
-                                                            <button 
-                                                                onClick={() => handleDeleteLocation(loc.id)} 
+                                                            <button
+                                                                onClick={() => handleDeleteLocation(loc.id)}
                                                                 disabled={isSaving}
+                                                                aria-label="Confirm delete location"
                                                                 className="px-2 py-0.5 text-[10px] font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-lg uppercase tracking-wider transition-colors disabled:opacity-50"
                                                             >
                                                                 {isSaving ? '...' : 'Yes'}
@@ -377,7 +387,7 @@ export default function LocationsTab({
                                     </div>
                                     <div className="w-10 h-px bg-stone-100" />
                                 </div>
-                                <div className="bg-white rounded-[3rem] p-8 sm:p-12 shadow-sm ring-1 ring-slate-100/50">
+                                <div className="locations-tab-primary-panel bg-white rounded-[3rem] p-8 sm:p-12 shadow-sm ring-1 ring-slate-100/50">
                                     <PremiumEditor 
                                         value={selectedLocation.description || ''} 
                                         onValueChange={(val) => handleTextEditorChange(selectedLocation.id, 'description', val)} 

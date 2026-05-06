@@ -11,7 +11,7 @@ import { StableInput } from '@/components/ui/stable-input'
 import { PremiumEditor } from '@/components/ui/premium-editor'
 import type { Database } from '@/lib/supabase/types'
 import RelationshipManager from './RelationshipManager'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import AssetPicker from '@/components/project/assets/AssetPicker'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { ItemRowActionButton } from '@/components/project/ItemRowActionButton'
@@ -223,6 +223,7 @@ export default function CharactersTab({
     }
 
     return (
+        <TooltipProvider>
         <div className="characters-tab characters-tab-shell flex-1 flex overflow-hidden bg-[#fbf9f5] relative">
             {/* Left Sidebar - Character List */}
             <div className={cn(
@@ -327,15 +328,17 @@ export default function CharactersTab({
                                                  <div className="flex items-center gap-1">
                                                     {confirmDeleteId === char.id ? (
                                                         <div className="flex items-center gap-1 animate-in fade-in slide-in-from-right-2 duration-200" onClick={e => e.stopPropagation()}>
-                                                            <button 
-                                                                onClick={() => setConfirmDeleteId(null)} 
+                                                            <button
+                                                                onClick={() => setConfirmDeleteId(null)}
+                                                                aria-label="Cancel deletion"
                                                                 className="p-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider"
                                                             >
                                                                 No
                                                             </button>
-                                                            <button 
-                                                                onClick={() => handleDeleteCharacter(char.id)} 
+                                                            <button
+                                                                onClick={() => handleDeleteCharacter(char.id)}
                                                                 disabled={isSaving}
+                                                                aria-label="Confirm delete character"
                                                                 className="px-2 py-0.5 text-[10px] font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-lg uppercase tracking-wider transition-colors disabled:opacity-50"
                                                             >
                                                                 {isSaving ? '...' : 'Yes'}
@@ -445,7 +448,7 @@ export default function CharactersTab({
                                     </div>
                                     <div className="w-10 h-px bg-stone-100" />
                                 </div>
-                                <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-12 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.02)] ring-1 ring-slate-100/50">
+                                <div className="characters-tab-primary-panel bg-white rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-12 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.02)] ring-1 ring-slate-100/50">
                                         <PremiumEditor
                                             value={selectedCharacter.description || ''}
                                             onValueChange={(val) => handleTextEditorChange(selectedCharacter.id, 'description', val)}
@@ -541,6 +544,7 @@ export default function CharactersTab({
                 </div>
             </div>
         </div>
+        </TooltipProvider>
     )
 }
 

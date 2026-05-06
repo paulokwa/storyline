@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { StableInput } from '@/components/ui/stable-input'
 import { PremiumEditor } from '@/components/ui/premium-editor'
 import type { Database } from '@/lib/supabase/types'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { ItemRowActionButton } from '@/components/project/ItemRowActionButton'
 import {
@@ -200,6 +200,7 @@ export default function IdeasTab({
     }
 
     return (
+        <TooltipProvider>
         <div className="ideas-tab flex-1 flex overflow-hidden bg-[#fbf9f5] relative">
             {/* Left Sidebar - Ideas List */}
             <div className={cn(
@@ -242,7 +243,15 @@ export default function IdeasTab({
                                             <div
                                                 ref={provided.innerRef}
                                                 {...provided.draggableProps}
+                                                role="button"
+                                                tabIndex={0}
                                                 onClick={() => setSelectedId(idea.id)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                        e.preventDefault()
+                                                        setSelectedId(idea.id)
+                                                    }
+                                                }}
                                                 className={cn(
                                                     "w-full flex items-center gap-3 px-4 py-4 rounded-2xl transition-all duration-300 text-left group cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#546354]/20",
                                                     selectedId === idea.id
@@ -296,15 +305,17 @@ export default function IdeasTab({
                                                 <div className="flex items-center gap-1">
                                                     {confirmDeleteId === idea.id ? (
                                                         <div className="flex items-center gap-1 animate-in fade-in slide-in-from-right-2 duration-200" onClick={e => e.stopPropagation()}>
-                                                            <button 
-                                                                onClick={() => setConfirmDeleteId(null)} 
+                                                            <button
+                                                                onClick={() => setConfirmDeleteId(null)}
+                                                                aria-label="Cancel deletion"
                                                                 className="p-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider"
                                                             >
                                                                 No
                                                             </button>
-                                                            <button 
-                                                                onClick={() => handleDeleteIdea(idea.id)} 
+                                                            <button
+                                                                onClick={() => handleDeleteIdea(idea.id)}
                                                                 disabled={isSaving}
+                                                                aria-label="Confirm delete idea"
                                                                 className="px-2 py-0.5 text-[10px] font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-lg uppercase tracking-wider transition-colors disabled:opacity-50"
                                                             >
                                                                 {isSaving ? '...' : 'Yes'}
@@ -403,7 +414,7 @@ export default function IdeasTab({
                                     </div>
                                     <div className="w-10 h-px bg-stone-100" />
                                 </div>
-                                <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-12 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.02)] ring-1 ring-slate-100/50">
+                                <div className="ideas-tab-primary-panel bg-white rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-12 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.02)] ring-1 ring-slate-100/50">
                                     <PremiumEditor
                                         value={selectedIdea.content ?? ''}
                                         onValueChange={(val) => handleTextEditorChange(selectedIdea.id, 'content', val)}
@@ -460,6 +471,7 @@ export default function IdeasTab({
                 </div>
             </div>
         </div>
+        </TooltipProvider>
     )
 }
 

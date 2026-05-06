@@ -228,9 +228,17 @@ export default function ObjectsTab({
                                             <div
                                                 ref={provided.innerRef}
                                                 {...provided.draggableProps}
+                                                role="button"
+                                                tabIndex={0}
                                                 onClick={() => setSelectedId(obj.id)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                        e.preventDefault()
+                                                        setSelectedId(obj.id)
+                                                    }
+                                                }}
                                                 className={cn(
-                                                    "w-full flex items-center gap-3 px-4 py-4 rounded-2xl transition-all text-left cursor-pointer group",
+                                                    "w-full flex items-center gap-3 px-4 py-4 rounded-2xl transition-all text-left cursor-pointer group outline-none focus-visible:ring-2 focus-visible:ring-[#546354]/20",
                                                     selectedId === obj.id ? "bg-white shadow-sm ring-1 ring-slate-100" : "hover:bg-white/40 text-slate-500",
                                                     snapshot.isDragging && "shadow-2xl ring-2 ring-[#546354]/20 z-50 bg-white"
                                                 )}
@@ -245,7 +253,7 @@ export default function ObjectsTab({
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     {renamingId === obj.id ? (
-                                                        <input ref={renameInputRef} type="text" value={renameValue} onChange={e => setRenameValue(e.target.value)} onBlur={() => commitRename(obj.id)} onKeyDown={e => e.key === 'Enter' && commitRename(obj.id)} onClick={e => e.stopPropagation()} className="w-full bg-[#fbf9f5] border border-[#546354]/20 rounded-lg px-2 py-0.5 text-sm font-medium text-slate-800 outline-none ring-1 ring-[#546354]/10" />
+                                                        <input ref={renameInputRef} type="text" value={renameValue} onChange={e => setRenameValue(e.target.value)} onBlur={() => commitRename(obj.id)} onKeyDown={e => { if (e.key === 'Enter') commitRename(obj.id); if (e.key === 'Escape') setRenamingId(null) }} onClick={e => e.stopPropagation()} className="w-full bg-[#fbf9f5] border border-[#546354]/20 rounded-lg px-2 py-0.5 text-sm font-medium text-slate-800 outline-none ring-1 ring-[#546354]/10" />
                                                     ) : (
                                                         <>
                                                             <p className="text-sm font-medium truncate">{obj.name}</p>
@@ -256,15 +264,17 @@ export default function ObjectsTab({
                                                   <div className="flex items-center gap-1">
                                                     {confirmDeleteId === obj.id ? (
                                                         <div className="flex items-center gap-1 animate-in fade-in slide-in-from-right-2 duration-200" onClick={e => e.stopPropagation()}>
-                                                            <button 
-                                                                onClick={() => setConfirmDeleteId(null)} 
+                                                            <button
+                                                                onClick={() => setConfirmDeleteId(null)}
+                                                                aria-label="Cancel deletion"
                                                                 className="p-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider"
                                                             >
                                                                 No
                                                             </button>
-                                                            <button 
-                                                                onClick={() => handleDeleteObject(obj.id)} 
+                                                            <button
+                                                                onClick={() => handleDeleteObject(obj.id)}
                                                                 disabled={isSaving}
+                                                                aria-label="Confirm delete object"
                                                                 className="px-2 py-0.5 text-[10px] font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-lg uppercase tracking-wider transition-colors disabled:opacity-50"
                                                             >
                                                                 {isSaving ? '...' : 'Yes'}

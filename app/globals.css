@@ -891,6 +891,132 @@ body {
   box-shadow: 0 18px 48px rgba(2, 6, 23, 0.3) !important;
 }
 
+/* ─── Entity tabs: Characters / Locations / Objects / Ideas ─── */
+
+/* Tab shells, detail panels, and empty states — hard-coded hex not caught by .project-shell-root wildcards */
+[data-theme='midnight'] .characters-tab-shell,
+[data-theme='midnight'] .characters-tab-detail,
+[data-theme='midnight'] .locations-tab-shell,
+[data-theme='midnight'] .locations-tab-detail,
+[data-theme='midnight'] .objects-tab,
+[data-theme='midnight'] .objects-tab-detail,
+[data-theme='midnight'] .objects-tab-empty,
+[data-theme='midnight'] .ideas-tab,
+[data-theme='midnight'] .ideas-tab-detail,
+[data-theme='midnight'] .ideas-tab-empty {
+  background-color: #111827 !important;
+}
+
+/* Sidebars */
+[data-theme='midnight'] .characters-tab-sidebar,
+[data-theme='midnight'] .locations-tab-sidebar,
+[data-theme='midnight'] .objects-tab-sidebar,
+[data-theme='midnight'] .ideas-tab-sidebar {
+  background-color: #121826 !important;
+  border-right-color: rgba(148, 163, 184, 0.14) !important;
+}
+
+/* Mobile back bars */
+[data-theme='midnight'] .characters-tab-mobilebar,
+[data-theme='midnight'] .locations-tab-mobilebar,
+[data-theme='midnight'] .objects-tab-mobilebar,
+[data-theme='midnight'] .ideas-tab-mobilebar {
+  background-color: rgba(17, 24, 39, 0.92) !important;
+  border-bottom-color: rgba(148, 163, 184, 0.12) !important;
+}
+
+/* Named content cards in detail views */
+[data-theme='midnight'] .characters-tab-primary-panel,
+[data-theme='midnight'] .locations-tab-primary-panel,
+[data-theme='midnight'] .objects-tab-description-card,
+[data-theme='midnight'] .ideas-tab-primary-panel {
+  background-color: #1a2235 !important;
+  box-shadow: none !important;
+}
+
+/* Secondary atmosphere / notes panels */
+[data-theme='midnight'] .characters-tab-secondary-panel,
+[data-theme='midnight'] .locations-tab-secondary-panel,
+[data-theme='midnight'] .objects-tab-significance-card {
+  background-color: rgba(18, 24, 38, 0.6) !important;
+  border-color: rgba(170, 192, 173, 0.12) !important;
+}
+
+/* Selected list-item icon bg (#fbf9f5) — not caught by bg-white wildcard */
+[data-theme='midnight'] .characters-tab-sidebar [class*="bg-[#fbf9f5]"],
+[data-theme='midnight'] .locations-tab-sidebar [class*="bg-[#fbf9f5]"],
+[data-theme='midnight'] .objects-tab-sidebar [class*="bg-[#fbf9f5]"],
+[data-theme='midnight'] .ideas-tab-sidebar [class*="bg-[#fbf9f5]"] {
+  background-color: #1e2a3a !important;
+}
+
+/* Sanctuary green #546354 → midnight primary #aac0ad */
+[data-theme='midnight'] .characters-tab [class*="text-[#546354]"],
+[data-theme='midnight'] .locations-tab [class*="text-[#546354]"],
+[data-theme='midnight'] .objects-tab [class*="text-[#546354]"],
+[data-theme='midnight'] .ideas-tab [class*="text-[#546354]"] {
+  color: #aac0ad !important;
+}
+[data-theme='midnight'] .characters-tab [class*="bg-[#546354]"],
+[data-theme='midnight'] .locations-tab [class*="bg-[#546354]"],
+[data-theme='midnight'] .objects-tab [class*="bg-[#546354]"],
+[data-theme='midnight'] .ideas-tab [class*="bg-[#546354]"] {
+  background-color: #aac0ad !important;
+}
+
+/* Stone text colors — not covered by slate-* wildcards */
+[data-theme='midnight'] .characters-tab-shell [class*="text-stone-"],
+[data-theme='midnight'] .locations-tab-shell [class*="text-stone-"],
+[data-theme='midnight'] .objects-tab [class*="text-stone-"],
+[data-theme='midnight'] .objects-tab-empty [class*="text-stone-"],
+[data-theme='midnight'] .ideas-tab [class*="text-stone-"],
+[data-theme='midnight'] .ideas-tab-empty [class*="text-stone-"] {
+  color: #506070 !important;
+}
+
+/* Stone bg colors (empty-state icon containers) */
+[data-theme='midnight'] .characters-tab-shell [class*="bg-stone-"],
+[data-theme='midnight'] .locations-tab-shell [class*="bg-stone-"],
+[data-theme='midnight'] .objects-tab [class*="bg-stone-"],
+[data-theme='midnight'] .objects-tab-empty [class*="bg-stone-"],
+[data-theme='midnight'] .ideas-tab [class*="bg-stone-"],
+[data-theme='midnight'] .ideas-tab-empty [class*="bg-stone-"] {
+  background-color: rgba(22, 32, 54, 0.5) !important;
+}
+
+/* Ideas amber tints */
+[data-theme='midnight'] .ideas-tab [class*="bg-amber-"],
+[data-theme='midnight'] .ideas-tab-empty [class*="bg-amber-"] {
+  background-color: rgba(55, 40, 8, 0.5) !important;
+}
+[data-theme='midnight'] .ideas-tab-empty [class*="hover:bg-amber-"]:hover {
+  background-color: rgba(75, 55, 10, 0.6) !important;
+}
+[data-theme='midnight'] .ideas-tab [class*="border-amber-"],
+[data-theme='midnight'] .ideas-tab-empty [class*="border-amber-"] {
+  border-color: rgba(180, 120, 30, 0.3) !important;
+}
+[data-theme='midnight'] .ideas-tab [class*="text-amber-"],
+[data-theme='midnight'] .ideas-tab-empty [class*="text-amber-"] {
+  color: rgba(251, 191, 36, 0.75) !important;
+}
+
+/* Ring colors for selected list items */
+[data-theme='midnight'] .characters-tab-sidebar [class*="ring-slate-100"],
+[data-theme='midnight'] .locations-tab-sidebar [class*="ring-slate-100"],
+[data-theme='midnight'] .objects-tab-sidebar [class*="ring-slate-100"],
+[data-theme='midnight'] .ideas-tab-sidebar [class*="ring-slate-100"] {
+  --tw-ring-color: rgba(148, 163, 184, 0.12) !important;
+}
+
+/* Scrollbar tinting */
+[data-theme='midnight'] .characters-tab .custom-scrollbar,
+[data-theme='midnight'] .locations-tab .custom-scrollbar,
+[data-theme='midnight'] .objects-tab .custom-scrollbar,
+[data-theme='midnight'] .ideas-tab .custom-scrollbar {
+  scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+}
+
 .screenplay-mode .ProseMirror {
   cursor: text !important;
 }
