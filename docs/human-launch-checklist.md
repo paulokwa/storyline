@@ -75,9 +75,18 @@ AI can generate drafts or implement favicon files later, but Kwame should approv
 
 ### Verification and welcome email branding
 
-Update verification/welcome email branding after the final app name is chosen.
+Personalize the verification, invite, password reset, magic link, and welcome emails that users receive.
 
-Do not update this too early, or it will probably need to be redone after the name/branding settles.
+The current emails may still look generic or Supabase-branded unless the Supabase Auth email templates, sender name, subject lines, reply-to address, and redirect URLs are reviewed and updated.
+
+Do this after the final app name is chosen so the wording, sender identity, support address, and visual branding do not need to be redone.
+
+Checks to complete:
+
+- Replace any Supabase-branded or generic template wording with final app branding.
+- Confirm the sender name, reply-to/support email, subjects, and call-to-action buttons feel trustworthy.
+- Confirm verification links, password reset links, magic links, and invite links redirect to the correct production app URLs.
+- Send test emails to a real account and check desktop/mobile rendering before public launch.
 
 ### Full naming consistency pass
 
@@ -182,7 +191,7 @@ Before public launch, review:
 - Final app name chosen
 - Branding direction stable
 - Icons/favicons created
-- Welcome/verification email branding updated
+- Verification, invite, password reset, magic link, and welcome email branding updated
 - Trial/cloud pricing model decided
 - AI terminology chosen
 - Help Center audit/rewrite completed or intentionally deferred
