@@ -436,7 +436,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                                                 animate={{ opacity: 1, x: 0 }}
                                                 exit={{ opacity: 0, scale: 0.8 }}
                                             >
-                                                <div className="group sanctuary-card border-2 border-dashed border-primary/20 bg-primary/5 rounded-[2rem] p-8 h-full transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl relative overflow-hidden active:scale-[0.98]">
+                                                <div className="group sanctuary-card border-2 border-dashed border-primary/20 bg-white shadow-sm rounded-[2rem] p-8 h-full transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl relative overflow-hidden active:scale-[0.98]">
                                                     <Link href="/new" className="absolute inset-0 z-10" />
                                                     <div className="relative z-20 flex flex-col h-full gap-6 pointer-events-none">
                                                         <div className="flex items-start justify-between">
