@@ -4,6 +4,7 @@ type SearchParamSource =
     | URLSearchParams
     | Record<string, string | string[] | undefined>
 
+const LOGIN_ALREADY_USED_PATH = '/login?verification=already-used'
 const INVALID_AUTH_LINK_ERRORS = new Set([
     'access_denied',
     'invalid_or_expired_token',
@@ -36,6 +37,60 @@ function getFirstParamValue(value: SearchParamValue): string {
 
 export function getHashSearchParams(hash: string) {
     return new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash)
+}
+
+function getConfiguredSiteUrl() {
+    const configuredUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim()
+
+    if (!configuredUrl) {
+        return null
+    }
+
+    try {
+        return new URL(configuredUrl.includes('http') ? configuredUrl : `https://${configuredUrl}`)
+    } catch {
+        return null
+    }
+}
+
+function isLocalhost(hostname: string) {
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]'
+}
+
+function isNetlifyHost(hostname: string) {
+    return hostname.endsWith('.netlify.app')
+}
+
+export function getAlreadyUsedVerificationHref(currentOrigin?: string) {
+    const configuredSiteUrl = getConfiguredSiteUrl()
+    const currentUrl = currentOrigin ? new URL(currentOrigin) : null
+
+    if (currentUrl && isLocalhost(currentUrl.hostname)) {
+        return new URL(LOGIN_ALREADY_USED_PATH, currentUrl.origin).toString()
+    }
+
+    if (
+        configuredSiteUrl &&
+        currentUrl &&
+        isNetlifyHost(currentUrl.hostname) &&
+        currentUrl.hostname !== configuredSiteUrl.hostname
+    ) {
+        return new URL(LOGIN_ALREADY_USED_PATH, configuredSiteUrl.origin).toString()
+    }
+
+    if (configuredSiteUrl && !currentUrl) {
+        return new URL(LOGIN_ALREADY_USED_PATH, configuredSiteUrl.origin).toString()
+    }
+
+    if (currentUrl) {
+        return new URL(LOGIN_ALREADY_USED_PATH, currentUrl.origin).toString()
+    }
+
+    if (configuredSiteUrl) {
+        return new URL(LOGIN_ALREADY_USED_PATH, configuredSiteUrl.origin).toString()
+    }
+
+    return LOGIN_ALREADY_USED_PATH
 }
 
 export function hasInvalidAuthLinkError(source: SearchParamSource) {

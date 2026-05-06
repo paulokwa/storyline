@@ -1,11 +1,12 @@
 import AuthLinkErrorRedirector from '@/components/auth/AuthLinkErrorRedirector'
 import ProjectGrid from '@/components/library/ProjectGrid'
 import FeedbackNudge from '@/components/survey/FeedbackNudge'
-import { hasInvalidAuthLinkError } from '@/lib/auth/auth-link-errors'
+import { getAlreadyUsedVerificationHref, hasInvalidAuthLinkError } from '@/lib/auth/auth-link-errors'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireVerifiedUser } from '@/lib/supabase/auth'
 import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@/lib/supabase/types'
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 export const metadata = { title: 'My Projects — Storyline' }
@@ -31,8 +32,11 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
     const supabase = await createClient()
 
     if (hasInvalidAuthLinkError(resolvedSearchParams)) {
+        const requestHeaders = await headers()
+        const host = requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host')
+        const protocol = requestHeaders.get('x-forwarded-proto') ?? (host?.startsWith('localhost') ? 'http' : 'https')
         await supabase.auth.signOut({ scope: 'local' })
-        redirect('/login?verification=already-used')
+        redirect(getAlreadyUsedVerificationHref(host ? `${protocol}://${host}` : undefined))
     }
 
     const adminClient = createAdminClient()

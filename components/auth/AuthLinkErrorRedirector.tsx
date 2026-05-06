@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { getHashSearchParams, hasInvalidAuthLinkError } from '@/lib/auth/auth-link-errors'
+import {
+    getAlreadyUsedVerificationHref,
+    getHashSearchParams,
+    hasInvalidAuthLinkError,
+} from '@/lib/auth/auth-link-errors'
 
-const LOGIN_ALREADY_USED_HREF = '/login?verification=already-used'
 const INVALID_REFRESH_TOKEN_MESSAGES = ['Invalid Refresh Token', 'Refresh Token Not Found']
 
 function shouldIgnoreSignOutError(error: Error) {
@@ -16,7 +18,6 @@ function shouldIgnoreSignOutError(error: Error) {
 }
 
 export default function AuthLinkErrorRedirector() {
-    const router = useRouter()
     const handledRef = useRef(false)
 
     useEffect(() => {
@@ -38,9 +39,9 @@ export default function AuthLinkErrorRedirector() {
                 console.error('Failed to clear local session after invalid auth link:', error)
             }
 
-            router.replace(LOGIN_ALREADY_USED_HREF)
+            window.location.replace(getAlreadyUsedVerificationHref(window.location.origin))
         })()
-    }, [router])
+    }, [])
 
     return null
 }

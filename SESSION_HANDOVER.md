@@ -5,6 +5,49 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-06 - Canonical auth normalization follow-up
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Fixed the remaining auth normalization gap where reused/expired verification links could still finish on a Netlify deploy permalink host even after the friendly banner logic worked.
+- Added canonical URL generation in `lib/auth/auth-link-errors.ts` for the `already-used` login guidance path.
+- Updated `components/auth/AuthLinkErrorRedirector.tsx` to use `window.location.replace(...)` with the canonical target URL so cross-host normalization strips Supabase hash params instead of preserving the current deploy host.
+- Updated both `app/(auth)/login/page.tsx` and `app/(app)/library/page.tsx` server-side fast paths to build absolute canonical redirects from request headers instead of using relative `/login?...` redirects.
+- Updated the existing Auth / Sessions rows in `TESTING.md` with the partial-pass finding and the new canonical-domain/no-hash retest requirement.
+
+### Files changed
+
+- `lib/auth/auth-link-errors.ts`
+- `components/auth/AuthLinkErrorRedirector.tsx`
+- `app/(auth)/login/page.tsx`
+- `app/(app)/library/page.tsx`
+- `TESTING.md`
+- `SESSION_HANDOVER.md`
+
+### Current status
+
+Normalization should now converge on the canonical production login URL instead of leaving the user on `main--...netlify.app` or deploy-permalink hosts.
+
+Focused eslint passed for the changed auth files.
+
+The requested `npx tsc --noEmit --pretty false` run still reports the same unrelated pre-existing `impeccable/*` fixture and missing optional dependency errors.
+
+### Next recommended step
+
+Manual browser retest:
+1. Paste a reused/expired verification link while signed out and confirm the final URL is `https://storyline-paulokwa-v2.netlify.app/login?verification=already-used` with no hash.
+2. Repeat while signed in and confirm the local session is neutralized before landing on that same canonical URL.
+3. Paste the link again from the login page and confirm the canonical host remains stable and no raw Supabase error fragment reappears.
+
+### Risks or warnings
+
+- Localhost is intentionally preserved in local development when the current request host is local, even if `NEXT_PUBLIC_SITE_URL` points at production.
+
+---
 ## 2026-05-06 - Login auth-error normalization follow-up
 
 ### Current branch

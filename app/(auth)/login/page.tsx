@@ -1,7 +1,8 @@
 import AuthLinkErrorRedirector from '@/components/auth/AuthLinkErrorRedirector'
 import LoginForm from '@/components/auth/LoginForm'
-import { hasInvalidAuthLinkError } from '@/lib/auth/auth-link-errors'
+import { getAlreadyUsedVerificationHref, hasInvalidAuthLinkError } from '@/lib/auth/auth-link-errors'
 import { createClient } from '@/lib/supabase/server'
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 type LoginPageProps = {
@@ -20,9 +21,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     const resolvedSearchParams = await searchParams
 
     if (hasInvalidAuthLinkError(resolvedSearchParams)) {
+        const requestHeaders = await headers()
+        const host = requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host')
+        const protocol = requestHeaders.get('x-forwarded-proto') ?? (host?.startsWith('localhost') ? 'http' : 'https')
         const supabase = await createClient()
         await supabase.auth.signOut({ scope: 'local' })
-        redirect('/login?verification=already-used')
+        redirect(getAlreadyUsedVerificationHref(host ? `${protocol}://${host}` : undefined))
     }
 
     const verificationStatus = getFirstParamValue(resolvedSearchParams.verification)
