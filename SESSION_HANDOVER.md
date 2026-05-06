@@ -5,6 +5,41 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-06 - Login build fix for Next 16 searchParams handling
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Fixed the Netlify production build failure complaining that `useSearchParams()` on `/login` was missing a Suspense boundary.
+- Reworked `app/(auth)/login/page.tsx` into a server page that reads `searchParams` directly and passes `verification` down as a plain prop.
+- Moved the interactive login form into `components/auth/LoginForm.tsx`, preserving the existing sign-in behavior and reused/failed verification messaging without calling `useSearchParams()` inside the page component.
+
+### Files changed
+
+- `app/(auth)/login/page.tsx`
+- `components/auth/LoginForm.tsx`
+- `SESSION_HANDOVER.md`
+
+### Current status
+
+Focused eslint passed for the touched login files.
+
+Local verification notes:
+- `npm run build` from the main workspace hit a Windows `.next` file-lock (`EPERM unlink`) before the actual app build could complete.
+- A clean temp-copy build progressed past the original `/login` `useSearchParams()` prerender error and then stopped on local Google Fonts fetch failures caused by restricted network access in this environment.
+
+### Next recommended step
+
+Re-run the Netlify production build. The specific `/login` Suspense/searchParams error should be gone. If the deploy still fails, the next failure is likely unrelated and should be handled on its own evidence.
+
+### Risks or warnings
+
+- I could not fully reproduce a successful end-to-end `next build` in this environment because of the local `.next` lock in the working tree and outbound font fetch failures in the clean temp build.
+
+---
 ## 2026-05-06 - Signup verification library auth-error normalization follow-up
 
 ### Current branch
