@@ -16,7 +16,7 @@ Use this file when something needs human taste, business judgment, launch judgme
 ## What does not belong here
 
 - Active implementation tasks for AI agents: put those in `TASK_BOARD.md`
-- Engineering debt, reliability, performance, security, and architecture hardening: put those in `docs/technical-debt-roadmap.md`
+- Engineering debt, reliability, performance, security, performance, architecture, or data-integrity work: put those in `docs/technical-debt-roadmap.md`
 - Future product ideas that are not launch chores yet: put those in `docs/future-roadmap.md`
 - Locked decisions that future agents must not reverse: put those in `DECISION_LOG.md`
 
@@ -106,7 +106,7 @@ Pre-launch checks:
 
 Before launch, confirm the remaining signup verification edge case is fixed and retested.
 
-Context: manual testing confirmed new signup emails now use the clean production redirect and normal first-time verification works. However, reused/expired signup verification links still landed on `/library?error=Invalid_Or_Expired_Token` instead of the intended friendly login guidance. Follow the detailed record in `docs/auth-verification-test-results.md` before deciding this is launch-ready.
+Context: manual testing confirmed new signup emails now use the clean production redirect and normal first-time verification works. However, reused/expired signup verification links still landed on `/library?error=Invalid_Or_Expired_Token` instead of the intended friendly login guidance. Keep the detailed record in `TESTING.md` under `Auth / Sessions` before deciding this is launch-ready.
 
 Minimum launch checks:
 
@@ -220,7 +220,7 @@ Before public launch, review:
 - Icons/favicons created
 - Verification, invite, password reset, magic link, and welcome email branding updated
 - Supabase auth redirect allowlist decision made after production email links are confirmed
-- Auth verification edge-case launch check completed using `docs/auth-verification-test-results.md`
+- Auth verification edge-case launch check completed using `TESTING.md` Auth / Sessions entries
 - Trial/cloud pricing model decided
 - AI terminology chosen
 - Help Center audit/rewrite completed or intentionally deferred
