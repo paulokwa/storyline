@@ -110,12 +110,13 @@ Current product direction:
 - Avoid noisy notifications for routine autosave, normal scene edits, ordinary AI completions, generic reminders, or motivational nudges unless they become explicit opt-in features later.
 - Prioritize notifications that protect the user's work, clarify collaboration, or guide important setup/recovery moments.
 
-Current status after the 2026-05-07 foundation pass:
+Current status after the 2026-05-07 Phase 3 pass:
 
 - Migration history was repaired for `local_transfer_guidance`.
 - `project_shared` dedupe groundwork was added in SQL.
 - Linked Supabase validation is now complete for `local_transfer_guidance` migration history, live `project_shared` dedupe behavior, and the typed `create_notification` client RPC path.
 - Phase 2 collaborator reply notifications are now implemented for thread authors and prior participants, with per-recipient reply event keys and linked-Supabase validation complete.
+- Phase 3 Local → Cloud migration notifications are now implemented: `cloud_migration_completed` and `cloud_migration_failed` added to the enum (SQL migration `20260507190000`), applied to linked Supabase, TypeScript types updated, `lib/notifications.ts` updated with icons/routing/labels, and `ProjectSettingsModal.tsx` updated to fire bell notifications on success and non-trivial failure.
 - Broader trigger expansion is still deferred pending manual browser validation and later scoped passes.
 
 Candidate areas to scope later:

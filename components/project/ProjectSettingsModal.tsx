@@ -193,23 +193,77 @@ export default function ProjectSettingsModal({
         if (!isLocalOnly || !canManageProject || isAlreadyMigrated) return
         setLoading(true)
         setMigrationProgress('Initializing migration...')
-        
+
+        const supabase = createClient()
+
         try {
             const newProjectId = await migrateLocalProjectToCloud(project.id, (progress) => {
                 setMigrationProgress(progress)
             })
-            
+
+            // Fire-and-forget bell notification — non-blocking, does not delay redirect
+            void (async () => {
+                try {
+                    const { user } = await getUserSafely(supabase)
+                    if (!user) return
+                    await supabase.rpc('create_notification', {
+                        p_user_id: user.id,
+                        p_type: 'cloud_migration_completed',
+                        p_title: `"${project.title}" is now on the cloud`,
+                        p_summary: 'Your project is saved to the cloud and ready to access from any device.',
+                        p_project_id: newProjectId,
+                        p_link_href: `/project/${newProjectId}/story`,
+                        p_event_key: `cloud-migration-completed:${project.id}:${newProjectId}:${user.id}`,
+                        p_metadata: {
+                            local_project_id: project.id,
+                            cloud_project_id: newProjectId,
+                        },
+                    })
+                } catch { /* notification failure is non-blocking */ }
+            })()
+
             toast.success('Successfully migrated project to cloud!')
             setLoading(false)
             setMigrationProgress(null)
             setShowMigrationConfirm(false)
-            
+
             // Redirect to the new cloud project
             onOpenChange(false)
             router.push(`/project/${newProjectId}/story`)
         } catch (error: any) {
             console.error('Migration failed:', error)
             toast.error(error.message || 'Failed to migrate project.')
+
+            // Bell notification for non-trivial failures only
+            const message: string = error?.message ?? ''
+            const isUserError = message.includes('must be logged in') ||
+                message.includes('already been migrated') ||
+                message.includes('Local project not found')
+
+            if (!isUserError) {
+                try {
+                    const { user } = await getUserSafely(supabase)
+                    if (user) {
+                        const stage = message.includes('upload asset') ? 'asset_upload'
+                            : message.includes('Migration Atomicity') ? 'server_error'
+                            : 'unknown'
+                        await supabase.rpc('create_notification', {
+                            p_user_id: user.id,
+                            p_type: 'cloud_migration_failed',
+                            p_title: `Cloud sync failed for "${project.title}"`,
+                            p_summary: 'Your project could not be moved to the cloud. It is safe on this device — try again or contact support.',
+                            p_link_href: '/library',
+                            p_event_key: `cloud-migration-failed:${project.id}:${user.id}:${stage}`,
+                            p_metadata: {
+                                local_project_id: project.id,
+                                failure_stage: stage,
+                                error_message: message.substring(0, 500),
+                            },
+                        })
+                    }
+                } catch { /* notification failure is non-blocking */ }
+            }
+
             setLoading(false)
             setMigrationProgress(null)
         }

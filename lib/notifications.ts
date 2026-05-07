@@ -1,5 +1,5 @@
 import type { Tables } from '@/lib/supabase/types'
-import { MessageSquare, Sparkles, Users, HardDrive, type LucideIcon } from 'lucide-react'
+import { MessageSquare, Sparkles, Users, HardDrive, CheckCircle2, AlertCircle, type LucideIcon } from 'lucide-react'
 
 export type NotificationRecord = Tables<'notifications'>
 
@@ -76,6 +76,8 @@ export const NOTIFICATION_ICONS: Record<NotificationRecord['type'], LucideIcon> 
     project_shared: Users,
     project_role_changed: Users,
     local_transfer_guidance: HardDrive,
+    cloud_migration_completed: CheckCircle2,
+    cloud_migration_failed: AlertCircle,
 }
 
 export function getNotificationDisplayTitle(notification: NotificationRecord, pathname?: string | null, resolvedLocationLabel?: string | null) {
@@ -118,6 +120,14 @@ export function getNotificationTargetHref(notification: NotificationRecord, path
         return '/notifications/' + notification.id
     }
 
+    if (notification.type === 'cloud_migration_completed' && notification.project_id) {
+        return `/project/${notification.project_id}/story`
+    }
+
+    if (notification.type === 'cloud_migration_failed') {
+        return '/library'
+    }
+
     return notification.link_href || null
 }
 
@@ -132,6 +142,14 @@ export function getNotificationActionLabel(notification: NotificationRecord, pat
 
     if (notification.type === 'local_transfer_guidance') {
         return 'Read guidance'
+    }
+
+    if (notification.type === 'cloud_migration_completed') {
+        return 'Open cloud project'
+    }
+
+    if (notification.type === 'cloud_migration_failed') {
+        return 'Back to library'
     }
 
     if (notification.type === 'collaborator_feedback' && isViewingNotificationProject(notification, pathname)) {

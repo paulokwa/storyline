@@ -5,6 +5,61 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-07 - Phase 3 Local/Cloud migration notifications
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Audited the full Local → Cloud migration code path in `lib/persistence/local-to-cloud.ts` and its UI trigger in `components/project/ProjectSettingsModal.tsx`.
+- Confirmed migration is client-side, synchronous from the user's perspective, multi-step (auth → extract → remap → dry-run → project insert → asset upload → DB inserts → local marker write).
+- Confirmed existing user feedback: in-modal progress text, toast on success, toast on failure.
+- Identified reliable single catch point in `handleMigration()` for failure notifications.
+- Applied SQL migration `20260507190000_add_cloud_migration_notification_types.sql` to linked Supabase; verified both `cloud_migration_completed` and `cloud_migration_failed` now exist in the live `notification_type` enum.
+- Updated `lib/supabase/types.ts` manually in both the union type and the `Constants` array.
+- Updated `lib/notifications.ts`: added `CheckCircle2` and `AlertCircle` icons, routing logic (`cloud_migration_completed` → cloud project, `cloud_migration_failed` → library), and action labels.
+- Updated `handleMigration()` in `ProjectSettingsModal.tsx`:
+  - Success: fire-and-forget `cloud_migration_completed` notification (non-blocking, does not delay redirect). Event key: `cloud-migration-completed:<localId>:<cloudId>:<userId>`.
+  - Failure: creates `cloud_migration_failed` notification only for non-trivial server errors (not for user-error failures like "not logged in", "already migrated", "project not found"). Stage-keyed event key prevents spam per failure type.
+- `npx tsc --noEmit --pretty false` passed clean.
+- `lib/notifications.ts` and `lib/supabase/types.ts` lint clean. Pre-existing `any` errors in `ProjectSettingsModal.tsx` are unchanged from before this pass.
+- Deferred `local_backup_recommended` — existing confirmation modal + backup reminder system already handle this; no bell notification needed.
+
+### Files changed
+
+- `supabase/migrations/20260507190000_add_cloud_migration_notification_types.sql` (new)
+- `lib/supabase/types.ts`
+- `lib/notifications.ts`
+- `components/project/ProjectSettingsModal.tsx`
+- `TESTING.md`
+- `SESSION_HANDOVER.md`
+- `TASK_BOARD.md`
+
+### Current status
+
+Phase 3 Local/Cloud migration notifications are implemented and live on the linked Supabase project:
+- `cloud_migration_completed` bell notification fires after every successful migration, deduped per (local, cloud, user) triplet.
+- `cloud_migration_failed` bell notification fires for server-side migration failures only, deduped per (local project, user, failure stage).
+- Bell routing opens the correct cloud project on success, or returns to library on failure.
+- TypeScript passes, focused lint passes on changed files.
+
+### Next recommended step
+
+Manual browser validation:
+1. Take a local project through the full Enable Cloud Sync flow and confirm one `cloud_migration_completed` notification appears in the bell.
+2. Click the notification and confirm it opens the correct cloud project.
+3. Confirm a second migration attempt on the same local project does not create a duplicate notification (already-migrated guard fires first).
+4. For failure testing: requires simulating a server-side error (e.g. temporarily invalid asset) — mark as Needs retest until browser-tested.
+
+### Risks or warnings
+
+- Repo-wide lint is still not clean (pre-existing). The `ProjectSettingsModal.tsx` file still has pre-existing `@typescript-eslint/no-explicit-any` errors unrelated to this pass.
+- The linked Supabase project still has the same migration drift noted in the previous session (local-only `20260430000000`, `20260504`; remote-only `20260430025720`).
+- `cloud_migration_failed` notifications use `ON CONFLICT DO NOTHING` dedupe per stage — if a user repeatedly fails with the same stage error, they will see only 1 failure notification. This is intentional to avoid spam.
+
+---
 ## 2026-05-07 - Collaborator reply notifications
 
 ### Current branch
