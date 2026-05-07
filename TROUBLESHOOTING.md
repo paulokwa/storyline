@@ -221,6 +221,35 @@ Add a short entry using this format:
 - Risks, warnings, or follow-up
 ```
 
+## Issue: Settings save fails because `ai_context_mode` is missing from Supabase schema cache
+
+### Symptoms
+
+- Saving Settings after switching AI Context Mode fails.
+- The API returns `Could not find the 'ai_context_mode' column of 'user_api_keys' in the schema cache`.
+
+### Cause
+
+- The application code and generated types expect `user_api_keys.ai_context_mode`, but migration `20260507210000_add_ai_context_mode_and_exclusions.sql` has not been applied to the linked Supabase database yet.
+- Until the migration is applied, PostgREST cannot see the column in its schema cache.
+
+### Fix
+
+- Confirm drift with `npx supabase migration list --linked`.
+- Apply the pending migration with `npx supabase db push --linked`.
+- Verify the migration appears in both Local and Remote columns.
+- Verify PostgREST sees the column by selecting `user_id,ai_context_mode` from `user_api_keys` with the service-role Supabase client.
+
+### Verification
+
+- `npx supabase migration list --linked` shows `20260507210000` in both Local and Remote.
+- A service-role Supabase client query selecting `user_id,ai_context_mode` from `user_api_keys` succeeds.
+
+### Notes
+
+- Do not work around this by removing `ai_context_mode` from Settings saves; Smart Context / Manual Context persistence depends on the column.
+- Docker is required for `npx supabase db dump`; if Docker Desktop is unavailable, use migration history plus a direct Supabase client query for verification.
+
 ## Issue: Incomplete guided setup resumes at the wrong step
 
 ### Symptoms
@@ -781,4 +810,42 @@ Next.js 16 uses a new segment cache with two prefetch header variants (`next-rou
 
 - The `LocalProjectShell` equivalent (`touchLocalProject`) was already in a `useEffect` — correctly client-side — so it was never affected by this issue.
 - Do NOT move this call back to server-side unless a mechanism exists to reliably distinguish prefetch from navigation at the server level.
+
+---
+
+## Netlify build fails bundling Next.js 16 proxy middleware Edge Function
+
+### Symptoms
+
+- `npm run build` passes, but `netlify build --context production` fails in `Edge Functions bundling`.
+- Netlify packages `___netlify-edge-handler-node-middleware`.
+- Errors can include:
+  - `Failed to compile CJS module: .../.netlify/edge-functions/___netlify-edge-handler-node-middleware/server/.next/server/middleware.js`
+  - `ChunkLoadError: Failed to load chunk ... [externals]`
+  - `Invalid source map ... _module.findSourceMap is not a function`
+  - `Cannot read properties of undefined (reading 'crypto')` when running the generated handler with older Deno.
+
+### Cause
+
+With Next.js 16, the root `proxy.ts` output is node middleware, but Netlify Next.js Runtime v5.15.10 still generates an internal Edge Function wrapper for it. The generated Deno/Edge bundling path is incompatible in this project. Turbopack output also produced a chunk path that Netlify could not resolve.
+
+### Fix
+
+- Use webpack for production builds: `"build": "next build --webpack"`.
+- Remove the root `proxy.ts` middleware so Next.js no longer emits `Proxy (Middleware)`.
+- Preserve auth behavior with route-level guards:
+  - Keep `app/(app)/layout.tsx` as the authenticated app guard.
+  - Add a protected layout for any protected route outside `(app)` such as `/feedback`.
+  - Redirect signed-in users away from auth routes in the route page/component itself.
+
+### Verification
+
+- `npm run build` should pass and the route summary should not include `Proxy (Middleware)`.
+- `netlify build --context production` should complete without an `Edge Functions bundling` failure for `___netlify-edge-handler-node-middleware`.
+- Focused ESLint should pass for touched route/auth files.
+
+### Notes
+
+- `NEXT_DISABLE_NETLIFY_EDGE=true` did not stop the current v5 runtime from generating the internal proxy Edge Function.
+- Do not re-add root `proxy.ts` without rerunning `netlify build --context production`.
 

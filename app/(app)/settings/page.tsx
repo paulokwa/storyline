@@ -33,6 +33,7 @@ export default async function SettingsPage() {
                     ai_enabled: runtime.aiSettings?.ai_enabled ?? false,
                     billing_mode: runtime.aiSettings?.billing_mode ?? 'app_managed_trial',
                     ai_provider: runtime.aiSettings?.ai_provider ?? 'gemini',
+                    ai_context_mode: runtime.contextMode,
                     ai_fallback_enabled: runtime.aiSettings?.ai_fallback_enabled ?? false,
                     ollama_model: runtime.aiSettings?.ollama_model ?? 'llama3',
                     ollama_url: runtime.aiSettings?.ollama_url ?? 'http://127.0.0.1:11434',

@@ -73,17 +73,19 @@ Before writing code, state:
 ## Now
 
 
-### 1. Continue Smart Context / Manual Context implementation
+### 1. Smart Context / Manual Context — browser validation required
 
-Phase 1 is complete: database migration and TypeScript support were added for `ai_context_mode` and `exclude_from_ai`.
+Phases 1–4 complete. All code changes are done and build passes.
 
-Next phase:
+Requires manual browser validation before the feature is fully signed off:
 
-- Thread `ai_context_mode` through AI runtime settings.
-- Update `/api/ai/preferences` to save and return the context mode.
-- Add the AI settings UI control for Smart Context vs Manual Context.
+1. **Manual mode**: open a scene → confirm LinkedContext row visible → send AI request → only scene-linked entities appear
+2. **Smart mode**: open a scene → confirm LinkedContext row hidden + "Smart Context on" indicator → send AI request → all non-excluded project entities appear
+3. **exclude_from_ai**: in smart mode, exclude a character → confirm excluded character absent from AI context
+4. **Scene Analysis**: use Analyze Scene in both modes → behavior must be identical (mode must not affect it)
+5. **Manual context preservation**: switch smart → manual → confirm scene-linked entities still appear (no data loss)
 
-Do not touch `app/api/ai/analyze-scene/route.ts`. Scene Analysis must remain scene-text-only.
+After passing browser tests, remove this task entirely.
 
 ---
 

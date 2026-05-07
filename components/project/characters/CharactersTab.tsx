@@ -15,6 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import AssetPicker from '@/components/project/assets/AssetPicker'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { ItemRowActionButton } from '@/components/project/ItemRowActionButton'
+import { Switch } from '@/components/ui/switch'
 import {
     createWritingEntity,
     reorderWritingEntities,
@@ -216,6 +217,12 @@ export default function CharactersTab({
             // Rollback
             setLocalCharacters(localCharacters)
         }
+    }
+
+    const handleExcludeToggle = (id: string, excluded: boolean) => {
+        if (isReadOnly) return
+        setLocalCharacters((prev: Character[]) => prev.map(c => c.id === id ? { ...c, exclude_from_ai: excluded } : c))
+        saveCharacter(id, { exclude_from_ai: excluded })
     }
 
     if (localCharacters.length === 0) {
@@ -498,6 +505,22 @@ export default function CharactersTab({
                                     availableEntities={availableEntities}
                                     disabled={isReadOnly}
                                 />
+                            )}
+
+                            {/* AI Context */}
+                            {!isReadOnly && (
+                                <div className="pt-8 border-t border-stone-50 flex items-center justify-between gap-6">
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-[9px] uppercase tracking-widest text-slate-300 font-bold">AI Context</span>
+                                        <span className="text-[11px] text-stone-400">
+                                            {selectedCharacter.exclude_from_ai ? 'Excluded from Smart Context' : 'Included in Smart Context'}
+                                        </span>
+                                    </div>
+                                    <Switch
+                                        checked={!selectedCharacter.exclude_from_ai}
+                                        onCheckedChange={(included) => handleExcludeToggle(selectedCharacter.id, !included)}
+                                    />
+                                </div>
                             )}
 
                             {/* Stats/Metatadata section */}

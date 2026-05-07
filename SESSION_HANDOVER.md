@@ -5,6 +5,237 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-07 - Smart Context Phase 4 complete
+
+### Current branch
+
+`main`
+
+### What was completed
+
+Implemented Phase 4 of Smart Context / Manual Context — wired AI Partner to branch on `ai_context_mode`.
+
+**Completed:**
+- `components/project/story/StoryTab.tsx`:
+  - Added `import { buildSmartContext } from '@/lib/ai/smart-context'`
+  - Added pre-`return` computation block: reads `aiSettings.ai_context_mode`, computes `manualLinked*` arrays (exact existing join-table filter), calls `buildSmartContext()` for smart arrays, selects `aiPartnerLinked*` based on mode
+  - Updated `LinkedContext` topbar row: in smart mode, hides the `<LinkedContext>` component and shows a compact "Smart Context on" indicator dot; in manual mode, preserves exact existing UI
+  - Updated **mobile** AiHelperPanel: replaced inline `projectCharacters.filter(...)` with `aiPartnerLinked*` vars
+  - Updated **desktop** AiHelperPanel: replaced inline `projectCharacters.filter(...)` with `aiPartnerLinked*` vars
+- `components/project/ai/AiFullCanvas.tsx`:
+  - Added `import { buildSmartContext } from '@/lib/ai/smart-context'`
+  - Added same context computation block (same `aiContextMode` / `manualLinked*` / `smartContext` / `aiPartnerLinked*` pattern)
+  - Updated AiHelperPanel props to use `aiPartnerLinked*` vars
+
+**Not touched:**
+- `app/api/ai/analyze-scene/route.ts` — completely isolated, unchanged
+- `app/api/ai/route.ts` — server-side builder unchanged; receives whatever arrays are passed by caller
+- Manual context join-table system — all scene-entity links preserved
+
+### Files changed
+
+- `components/project/story/StoryTab.tsx`
+- `components/project/ai/AiFullCanvas.tsx`
+
+### Verification
+
+- `npx tsc --noEmit --pretty false` — passes with zero new errors
+- `npm run build` — passes, all routes compile and render
+
+### Current status
+
+Phase 4 is complete. Smart Context is now wired into all three AiHelperPanel instances (StoryTab mobile, StoryTab desktop, AiFullCanvas). Requires manual browser validation before marking fully done.
+
+### Next recommended step
+
+Manual browser test checklist:
+1. **Manual mode**: set AI to Manual Context → open a scene → confirm LinkedContext row is visible → send AI request → confirm only scene-linked entities appear in context
+2. **Smart mode**: set AI to Smart Context → open a scene → confirm LinkedContext row is hidden and "Smart Context on" indicator appears → send AI request → confirm all non-excluded project entities are included
+3. **exclude_from_ai**: in smart mode, exclude a character → send AI request → confirm excluded character is absent from context
+4. **Scene Analysis**: use Analyze Scene in both modes → confirm it works and behavior is identical (mode must not affect Scene Analysis)
+5. **Manual context preservation**: switch from smart → manual → confirm scene-linked entities still appear correctly (no data loss)
+
+After browser validation, the Smart Context / Manual Context feature is complete.
+
+### Risks or warnings
+
+- `linkedAiFeedback` is always filtered by `source_scene_id` regardless of mode (intentional — AI feedback is always scene-scoped)
+- `aiContextMode` defaults to `'manual'` if `aiSettings` is null/undefined (safe fallback)
+- Pre-existing ESLint `any` annotations in StoryTab.tsx; not introduced by this phase
+
+---
+## 2026-05-07 - Smart Context Phase 3 complete
+
+### Current branch
+
+`main`
+
+### What was completed
+
+Implemented Phase 3 of Smart Context / Manual Context.
+
+**Completed:**
+- Created `lib/ai/smart-context.ts` — a typed, pure filter utility.
+  - `filterForSmartContext<T>(entities)` — filters any entity array to `!deleted_at && !exclude_from_ai`.
+  - `buildSmartContext({ characters, ideas, locations, objects })` — builds all four filtered arrays in one call.
+  - This is the function StoryTab will call in Phase 4 when `ai_context_mode === 'smart'`.
+- Added `exclude_from_ai` toggle (AI Context section) to all four entity detail panels:
+  - `components/project/characters/CharactersTab.tsx`
+  - `components/project/ideas/IdeasTab.tsx`
+  - `components/project/locations/LocationsTab.tsx`
+  - `components/project/objects/ObjectsTab.tsx`
+  - Each tab: Switch import, `handleExcludeToggle()` function, and UI section above the stats bar.
+  - Toggle shows "Included in Smart Context" / "Excluded from Smart Context".
+  - Optimistic local update + immediate save on toggle change.
+  - Hidden for read-only/viewer role.
+
+**Scene Analysis:** not touched.
+**AI Partner wiring:** not changed — Smart Context is built but not yet connected.
+
+### Files changed
+
+- `lib/ai/smart-context.ts` (new)
+- `components/project/characters/CharactersTab.tsx`
+- `components/project/ideas/IdeasTab.tsx`
+- `components/project/locations/LocationsTab.tsx`
+- `components/project/objects/ObjectsTab.tsx`
+
+### Current status
+
+Phase 3 is complete. `npx tsc --noEmit` passes with no new errors.
+Smart Context is built but not yet wired into AI Partner requests.
+
+### Next recommended step
+
+Phase 4: Wire AI Partner context in `StoryTab.tsx`.
+When `aiSettings.ai_context_mode === 'smart'`, replace the manual filter with `buildSmartContext()` output for `linkedCharacters`, `linkedIdeas`, `linkedLocations`, `linkedObjects`.
+The `LinkedContext` row and its join-table system should remain untouched.
+Scene Analysis must not be changed.
+
+### Risks or warnings
+
+- Browser/UI validation still needed: open a character/idea/location/object, toggle AI Context off, save, refresh, confirm `exclude_from_ai = true` persists.
+- Manual Context join-table system is unchanged — existing scene links are safe.
+- `npm run lint` may flag pre-existing debt unrelated to this phase.
+
+---
+## 2026-05-07 - Smart Context schema-cache save failure fixed
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Diagnosed the Settings save error: `Could not find the 'ai_context_mode' column of 'user_api_keys' in the schema cache`.
+- Checked `TROUBLESHOOTING.md`; no matching known issue existed before this session.
+- Confirmed `npx supabase migration list --linked` showed `20260507210000_add_ai_context_mode_and_exclusions.sql` was local-only.
+- Applied the pending migration to the linked Supabase database with `npx supabase db push --linked`.
+- Verified migration history now shows `20260507210000` in both Local and Remote.
+- Verified PostgREST/schema cache can see the column by selecting `user_id,ai_context_mode` from `user_api_keys` with the service-role Supabase client.
+- Added a troubleshooting entry for this exact schema-cache failure.
+
+**Scene Analysis:** not touched.
+
+### Current status
+
+The linked Supabase database now has `ai_context_mode` and the Phase 1 exclusion columns. Settings saves that include `ai_context_mode` should no longer fail with the schema-cache error.
+
+### Next recommended step
+
+Browser-test Settings: switch between Smart Context and Manual Context, save, refresh Settings, and confirm the selected mode persists.
+
+### Risks or warnings
+
+- Docker Desktop is not running, so `npx supabase db dump --linked --schema public` could not be used for schema inspection.
+- This was a remote database migration application, not an application-code change.
+- The worktree still contains unrelated uncommitted Netlify/auth changes from earlier work.
+
+---
+## 2026-05-07 - Smart Context / Manual Context Phase 2 stop
+
+### Current branch
+
+`main`
+
+### What was completed
+
+Implemented the second requested stop point for Smart Context / Manual Context: settings persistence and the Settings UI control.
+
+**Completed:**
+- Threaded `ai_context_mode` through `getAiRuntimeState()` as `contextMode`.
+- Updated `/api/ai/preferences` to accept, validate, save, and return `ai_context_mode`.
+- Preserved existing settings rows by keeping the current value when the request does not include a context mode.
+- Defaulted newly created settings through the preferences API to `smart`, matching the Phase 1 migration and trigger direction.
+- Added a Settings control under AI Partner Settings:
+  - `Smart Context`: "Storyline automatically includes eligible story details for AI Partner."
+  - `Manual Context`: "You choose which story elements are included for each scene."
+- Passed the context mode through project story and full-canvas AI page props for future AI Partner wiring.
+
+**Scene Analysis:** not touched.
+
+### Files changed
+
+- `app/api/ai/preferences/route.ts`
+- `lib/ai/runtime.ts`
+- `app/(app)/settings/page.tsx`
+- `app/(app)/project/[id]/story/page.tsx`
+- `app/(app)/project/[id]/ai/page.tsx`
+- `components/app/SettingsView.tsx`
+- `components/project/story/StoryTab.tsx`
+- `SESSION_HANDOVER.md`
+- `TASK_BOARD.md`
+- `TESTING.md`
+
+### Current status
+
+Phase 2 is ready for review. Smart Context is still not wired into AI Partner request context and should not be considered usable yet.
+
+### Next recommended step
+
+Continue with the next implementation phase:
+1. Add `Exclude from AI context` controls to character, idea, location, and object create/edit UIs.
+2. Build a Smart Context helper that returns eligible characters, ideas, locations, and objects while excluding `deleted_at`, archived items if present, and `exclude_from_ai = true`.
+3. Wire AI Partner to choose Manual Context vs Smart Context without touching Scene Analysis.
+
+### Risks or warnings
+
+- `npm run lint` still fails on existing repo-wide lint debt unrelated to this phase.
+- `npm run typecheck` does not exist; `npx tsc --noEmit --pretty false` was used instead.
+- Browser/database validation is still needed for the Settings save flow.
+- The worktree already contained unrelated uncommitted Netlify/auth changes before this phase; they were left untouched.
+
+---
+## 2026-05-07 - Netlify Edge middleware bundling fixed
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Reproduced the Netlify production build failure during Edge Functions bundling.
+- Confirmed `next build --webpack` removes the Turbopack chunk-path failure but does not by itself fix Netlify's generated Edge middleware bundle.
+- Removed the root `proxy.ts` so Next.js no longer emits `Proxy (Middleware)` for Netlify to wrap as an Edge Function.
+- Preserved auth behavior with existing `app/(app)/layout.tsx` protection, a new protected `/feedback` layout, a server-side signed-in redirect on `/login`, and a client-side signed-in redirect on `/signup`.
+- Kept `package.json` build on `next build --webpack`.
+- Added troubleshooting, testing, and decision-log entries for the confirmed fix.
+
+### Current status
+
+`npm run build`, focused ESLint for touched route files, and `netlify build --context production` pass locally.
+
+### Next recommended step
+
+Before committing/pushing these deployment-affecting changes, keep using the new Master Brief rule: rerun `netlify build --context production` if anything else changes.
+
+### Risks or warnings
+
+- Repo-wide `npm run lint` still fails on pre-existing lint debt unrelated to this fix; focused ESLint for changed route files passes.
+- `/signup` signed-in redirect is client-side because the existing page is a client component.
+- The ignored `.local/tools/deno-*` folders were used only for diagnosis and are not required for the fixed build path.
+
+---
 ## 2026-05-07 - Netlify build check workflow rule
 
 ### Current branch

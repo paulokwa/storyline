@@ -6,6 +6,26 @@ Keep entries concise. Do not rewrite old decisions unless explicitly instructed.
 
 ---
 
+## 2026-05-07 - Replace global proxy middleware with route-level auth guards for Netlify compatibility
+
+Decision:
+Remove the root `proxy.ts` middleware and keep auth enforcement in normal Next.js route rendering, while using `next build --webpack` for production builds.
+
+Reason:
+Netlify Next.js Runtime v5.15.10 generated an internal Edge Function for Next.js 16 proxy/node middleware and failed during Edge Functions bundling. The app already protected authenticated application routes through `app/(app)/layout.tsx`, so moving the remaining proxy responsibilities to route-level checks avoided the incompatible Edge bundle without weakening the main app guard.
+
+Impact:
+- `app/(app)/layout.tsx` remains the primary guard for authenticated app routes.
+- `/feedback` is protected by its own route layout.
+- `/login` redirects signed-in users server-side; `/signup` redirects signed-in users client-side.
+- Netlify production build preflight now passes locally.
+- Production build uses webpack until Netlify/Next Turbopack compatibility is confirmed.
+
+Status:
+Approved.
+
+---
+
 ## 2026-05-07 - Run Netlify build checks before deployment-affecting pushes
 
 Decision:

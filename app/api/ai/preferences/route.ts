@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getBillingModeLabel, type BillingMode } from '@/lib/ai/modes'
+import { getBillingModeLabel, type AiContextMode, type BillingMode } from '@/lib/ai/modes'
 import { logAiModeChange } from '@/lib/ai/trial-server'
 import { getRequestContext } from '@/lib/server/request-context'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -10,6 +10,7 @@ type PreferencesBody = {
     billingMode?: BillingMode
     aiProvider?: 'openai' | 'gemini' | 'ollama'
     aiFallbackEnabled?: boolean
+    aiContextMode?: AiContextMode
     ollamaModel?: string
     ollamaUrl?: string
     apiKey?: string
@@ -45,6 +46,13 @@ export async function POST(request: Request) {
         .maybeSingle()
 
     const nextBillingMode = body.billingMode ?? (currentSettings?.billing_mode as BillingMode | null) ?? 'app_managed_trial'
+
+    if (body.aiContextMode && body.aiContextMode !== 'smart' && body.aiContextMode !== 'manual') {
+        return NextResponse.json({ error: 'Unsupported AI context mode.' }, { status: 400 })
+    }
+
+    const nextContextMode: AiContextMode =
+        body.aiContextMode ?? currentSettings?.ai_context_mode ?? 'smart'
 
     let nextProvider = body.aiProvider ?? (currentSettings?.ai_provider as 'openai' | 'gemini' | 'ollama' | null) ?? 'openai'
     if (nextBillingMode === 'app_managed_trial') nextProvider = 'openai'
@@ -107,6 +115,7 @@ export async function POST(request: Request) {
         ai_enabled: body.aiEnabled ?? currentSettings?.ai_enabled ?? false,
         billing_mode: nextBillingMode,
         ai_provider: nextProvider,
+        ai_context_mode: nextContextMode,
         ai_fallback_enabled: body.aiFallbackEnabled ?? currentSettings?.ai_fallback_enabled ?? false,
         ollama_model: body.ollamaModel?.trim() || currentSettings?.ollama_model || 'llama3',
         ollama_url: body.ollamaUrl?.trim() || currentSettings?.ollama_url || 'http://127.0.0.1:11434',
@@ -147,6 +156,7 @@ export async function POST(request: Request) {
             ai_enabled: payload.ai_enabled,
             billing_mode: payload.billing_mode,
             ai_provider: payload.ai_provider,
+            ai_context_mode: payload.ai_context_mode,
             ai_fallback_enabled: payload.ai_fallback_enabled,
             ollama_model: payload.ollama_model,
             ollama_url: payload.ollama_url,

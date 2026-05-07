@@ -10,6 +10,7 @@ import { getSceneTextForAi } from '@/lib/story/scene-text'
 import { readStoredSceneNodeId, resolveSceneNodeId, writeStoredSceneNodeId } from '@/lib/project/active-scene'
 import { getAiProviderLabel } from '@/lib/ai/providers'
 import { getBillingModeLabel } from '@/lib/ai/modes'
+import { buildSmartContext } from '@/lib/ai/smart-context'
 import { formatTrialRemainingPct } from '@/lib/ai/trial'
 import { AI_TOUR_COMPLETE_KEY, queueAiTourStart } from '@/lib/ai/tour'
 
@@ -96,6 +97,25 @@ export default function AiFullCanvas({
         queueAiTourStart()
     }, [])
 
+    const aiContextMode = aiSettings?.ai_context_mode ?? 'manual'
+
+    const manualLinkedCharacters = projectCharacters.filter((c: any) => activeCharacters[c.id] !== false && activeScene?.scene_characters?.some((sc: any) => sc.characters?.id === c.id))
+    const manualLinkedIdeas = projectIdeas.filter((i: any) => activeIdeas[i.id] !== false && activeScene?.scene_ideas?.some((si: any) => si.ideas?.id === i.id))
+    const manualLinkedLocations = projectLocations.filter((l: any) => activeLocations[l.id] !== false && activeScene?.scene_locations?.some((sl: any) => sl.locations?.id === l.id))
+    const manualLinkedObjects = projectObjects.filter((o: any) => activeObjects[o.id] !== false && activeScene?.scene_objects?.some((so: any) => so.objects?.id === o.id))
+
+    const smartContext = buildSmartContext({
+        characters: projectCharacters,
+        ideas: projectIdeas,
+        locations: projectLocations,
+        objects: projectObjects,
+    })
+
+    const aiPartnerLinkedCharacters = aiContextMode === 'smart' ? smartContext.characters : manualLinkedCharacters
+    const aiPartnerLinkedIdeas = aiContextMode === 'smart' ? smartContext.ideas : manualLinkedIdeas
+    const aiPartnerLinkedLocations = aiContextMode === 'smart' ? smartContext.locations : manualLinkedLocations
+    const aiPartnerLinkedObjects = aiContextMode === 'smart' ? smartContext.objects : manualLinkedObjects
+
     const handleReturnToSidebar = () => {
         setAiPanelOpen(true)
         router.push(`/project/${projectId}/story${activeNodeId ? `?nodeId=${activeNodeId}` : ''}`)
@@ -137,10 +157,10 @@ export default function AiFullCanvas({
                         sceneIdeas={activeScene?.scene_ideas ?? []}
                         sceneLocations={activeScene?.scene_locations ?? []}
                         sceneObjects={activeScene?.scene_objects ?? []}
-                        linkedCharacters={projectCharacters.filter(c => activeCharacters[c.id] !== false && activeScene?.scene_characters?.some((sc: any) => sc.characters?.id === c.id))}
-                        linkedIdeas={projectIdeas.filter(i => activeIdeas[i.id] !== false && activeScene?.scene_ideas?.some((si: any) => si.ideas?.id === i.id))}
-                        linkedLocations={projectLocations.filter(l => activeLocations[l.id] !== false && activeScene?.scene_locations?.some((sl: any) => sl.locations?.id === l.id))}
-                        linkedObjects={projectObjects.filter(o => activeObjects[o.id] !== false && activeScene?.scene_objects?.some((so: any) => so.objects?.id === o.id))}
+                        linkedCharacters={aiPartnerLinkedCharacters}
+                        linkedIdeas={aiPartnerLinkedIdeas}
+                        linkedLocations={aiPartnerLinkedLocations}
+                        linkedObjects={aiPartnerLinkedObjects}
                         projectCharacters={projectCharacters}
                         projectIdeas={projectIdeas}
                         projectLocations={projectLocations}

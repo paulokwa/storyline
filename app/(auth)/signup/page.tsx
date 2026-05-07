@@ -1,9 +1,11 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { startGuardedAuthRedirect } from '@/lib/auth/client-navigation'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,6 +20,23 @@ export default function SignupPage() {
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
     const [sentEmail, setSentEmail] = useState('')
+
+    useEffect(() => {
+        let mounted = true
+        const supabase = createClient()
+
+        supabase.auth.getUser().then(({ data }) => {
+            if (mounted && data.user) {
+                router.replace('/library')
+            }
+        }).catch(() => {
+            // Signup remains available when the current browser has no valid session.
+        })
+
+        return () => {
+            mounted = false
+        }
+    }, [router])
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
@@ -100,7 +119,7 @@ export default function SignupPage() {
                             <p className="text-slate-400 text-sm mb-2 leading-relaxed">
                                 Open the email and click the link to finish creating your account.
                             </p>
-                            <p className="text-slate-300 text-xs mb-8">Can't find it? Check your spam or junk folder.</p>
+                            <p className="text-slate-300 text-xs mb-8">Can&apos;t find it? Check your spam or junk folder.</p>
                             <Link href="/login">
                                 <Button className="w-full h-12 bg-[#546354] hover:bg-[#3d4a3d] text-white rounded-full font-serif italic text-lg shadow-lg hover:shadow-xl transition-all duration-300 mb-4">
                                     Go to sign in

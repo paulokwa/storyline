@@ -30,6 +30,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { analyzeContextSize, ContextSizingResult } from '@/lib/ai/config'
+import { buildSmartContext } from '@/lib/ai/smart-context'
 import { AiSafeguardDialogs } from '@/components/project/ai/AiSafeguardDialogs'
 import { readStoredSceneNodeId, resolveSceneNodeId, writeStoredSceneNodeId } from '@/lib/project/active-scene'
 import { getSceneTextForAi } from '@/lib/story/scene-text'
@@ -74,6 +75,7 @@ interface StoryTabProps {
         ai_enabled: boolean
         billing_mode: string
         ai_provider: string
+        ai_context_mode: 'smart' | 'manual'
         ai_fallback_enabled: boolean
         ollama_model: string
         ollama_url: string
@@ -746,6 +748,30 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
         closeRightPanels()
     }, [closeRightPanels, isFocusModeActive, setSidebarOpen])
 
+    // ── AI Partner context ────────────────────────────────────────────────────
+    // Conservative fallback: treat any missing/invalid value as 'manual'.
+    const aiContextMode = aiSettings?.ai_context_mode ?? 'manual'
+
+    // Manual Context: scene join-table items that are currently toggled active.
+    const manualLinkedCharacters = projectCharacters.filter((c: any) => activeCharacters[c.id] !== false && activeScene?.scene_characters?.some((sc: any) => sc.characters?.id === c.id))
+    const manualLinkedIdeas = projectIdeas.filter((i: any) => activeIdeas[i.id] !== false && activeScene?.scene_ideas?.some((si: any) => si.ideas?.id === i.id))
+    const manualLinkedLocations = projectLocations.filter((l: any) => activeLocations[l.id] !== false && activeScene?.scene_locations?.some((sl: any) => sl.locations?.id === l.id))
+    const manualLinkedObjects = projectObjects.filter((o: any) => activeObjects[o.id] !== false && activeScene?.scene_objects?.some((so: any) => so.objects?.id === o.id))
+
+    // Smart Context: all eligible project entities (not soft-deleted, not excluded).
+    const smartContext = buildSmartContext({
+        characters: projectCharacters,
+        ideas: projectIdeas,
+        locations: projectLocations,
+        objects: projectObjects,
+    })
+
+    // Final arrays: branch on mode. Scene Analysis is unaffected — it never receives these.
+    const aiPartnerLinkedCharacters = aiContextMode === 'smart' ? smartContext.characters : manualLinkedCharacters
+    const aiPartnerLinkedIdeas = aiContextMode === 'smart' ? smartContext.ideas : manualLinkedIdeas
+    const aiPartnerLinkedLocations = aiContextMode === 'smart' ? smartContext.locations : manualLinkedLocations
+    const aiPartnerLinkedObjects = aiContextMode === 'smart' ? smartContext.objects : manualLinkedObjects
+
     return (
         <div className="flex flex-1 min-h-0 overflow-hidden relative">
             {/* Backdrop for mobile */}
@@ -822,34 +848,40 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 {activeNodeId && activeScene && !isLocalOnly && role !== 'viewer' && !isFocusModeActive && (
                     <div className="story-workspace-topbar bg-[#fbf9f5] border-b border-slate-100 z-10">
                         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-start sm:items-center justify-between gap-4">
-                            <div className="flex-1 snap-row">
-                                <LinkedContext
-                                sceneId={activeScene.id}
-                                sceneCharacters={activeScene.scene_characters}
-                                sceneIdeas={activeScene.scene_ideas}
-                                sceneLocations={activeScene.scene_locations}
-                                sceneObjects={activeScene.scene_objects}
-                                projectCharacters={projectCharacters}
-                                projectIdeas={projectIdeas}
-                                projectLocations={projectLocations}
-                                projectObjects={projectObjects}
-                                onUpdate={() => router.refresh()}
-                                activeCharacters={activeCharacters}
-                                setActiveCharacters={setActiveCharacters}
-                                activeIdeas={activeIdeas}
-                                setActiveIdeas={setActiveIdeas}
-                                activeLocations={activeLocations}
-                                setActiveLocations={setActiveLocations}
-                                activeObjects={activeObjects}
-                                setActiveObjects={setActiveObjects}
-                                selectedNodeIds={orderedExplicitSelectedNodeIds}
-                                onToggleNodeSelection={handleNodeToggleSelection}
-                                allNodes={nodes}
-                                />
-                            </div>
+                            {aiContextMode === 'smart' ? (
+                                <div className="flex items-center gap-2 py-1">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#546354]" />
+                                    <span className="text-[10px] font-sans tracking-[0.2em] uppercase text-[#546354] font-bold">Smart Context on</span>
+                                </div>
+                            ) : (
+                                <div className="flex-1 snap-row">
+                                    <LinkedContext
+                                    sceneId={activeScene.id}
+                                    sceneCharacters={activeScene.scene_characters}
+                                    sceneIdeas={activeScene.scene_ideas}
+                                    sceneLocations={activeScene.scene_locations}
+                                    sceneObjects={activeScene.scene_objects}
+                                    projectCharacters={projectCharacters}
+                                    projectIdeas={projectIdeas}
+                                    projectLocations={projectLocations}
+                                    projectObjects={projectObjects}
+                                    onUpdate={() => router.refresh()}
+                                    activeCharacters={activeCharacters}
+                                    setActiveCharacters={setActiveCharacters}
+                                    activeIdeas={activeIdeas}
+                                    setActiveIdeas={setActiveIdeas}
+                                    activeLocations={activeLocations}
+                                    setActiveLocations={setActiveLocations}
+                                    activeObjects={activeObjects}
+                                    setActiveObjects={setActiveObjects}
+                                    selectedNodeIds={orderedExplicitSelectedNodeIds}
+                                    onToggleNodeSelection={handleNodeToggleSelection}
+                                    allNodes={nodes}
+                                    />
+                                </div>
+                            )}
                             <div className="flex items-center gap-4 shrink-0" />
                         </div>
-
                     </div>
                 )}
 
@@ -999,11 +1031,11 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                         sceneIdeas={activeScene?.scene_ideas ?? []}
                         sceneLocations={activeScene?.scene_locations ?? []}
                         sceneObjects={activeScene?.scene_objects ?? []}
-                        linkedCharacters={projectCharacters.filter(c => activeCharacters[c.id] !== false && activeScene?.scene_characters?.some((sc: any) => sc.characters?.id === c.id))}
-                        linkedIdeas={projectIdeas.filter(i => activeIdeas[i.id] !== false && activeScene?.scene_ideas?.some((si: any) => si.ideas?.id === i.id))}
-                        linkedLocations={projectLocations.filter(l => activeLocations[l.id] !== false && activeScene?.scene_locations?.some((sl: any) => sl.locations?.id === l.id))}
-                        linkedObjects={projectObjects.filter(o => activeObjects[o.id] !== false && activeScene?.scene_objects?.some((so: any) => so.objects?.id === o.id))}
-                        linkedAiFeedback={projectAiFeedback.filter(response => response.source_scene_id === activeScene?.id)}
+                        linkedCharacters={aiPartnerLinkedCharacters}
+                        linkedIdeas={aiPartnerLinkedIdeas}
+                        linkedLocations={aiPartnerLinkedLocations}
+                        linkedObjects={aiPartnerLinkedObjects}
+                        linkedAiFeedback={projectAiFeedback.filter((response: any) => response.source_scene_id === activeScene?.id)}
                         projectCharacters={projectCharacters}
                         projectIdeas={projectIdeas}
                         projectLocations={projectLocations}
@@ -1087,11 +1119,11 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                 sceneIdeas={activeScene?.scene_ideas ?? []}
                                 sceneLocations={activeScene?.scene_locations ?? []}
                                 sceneObjects={activeScene?.scene_objects ?? []}
-                                linkedCharacters={projectCharacters.filter(c => activeCharacters[c.id] !== false && activeScene?.scene_characters?.some((sc: any) => sc.characters?.id === c.id))}
-                                linkedIdeas={projectIdeas.filter(i => activeIdeas[i.id] !== false && activeScene?.scene_ideas?.some((si: any) => si.ideas?.id === i.id))}
-                                linkedLocations={projectLocations.filter(l => activeLocations[l.id] !== false && activeScene?.scene_locations?.some((sl: any) => sl.locations?.id === l.id))}
-                                linkedObjects={projectObjects.filter(o => activeObjects[o.id] !== false && activeScene?.scene_objects?.some((so: any) => so.objects?.id === o.id))}
-                                linkedAiFeedback={projectAiFeedback.filter(response => response.source_scene_id === activeScene?.id)}
+                                linkedCharacters={aiPartnerLinkedCharacters}
+                                linkedIdeas={aiPartnerLinkedIdeas}
+                                linkedLocations={aiPartnerLinkedLocations}
+                                linkedObjects={aiPartnerLinkedObjects}
+                                linkedAiFeedback={projectAiFeedback.filter((response: any) => response.source_scene_id === activeScene?.id)}
                                 projectCharacters={projectCharacters}
                                 projectIdeas={projectIdeas}
                                 projectLocations={projectLocations}

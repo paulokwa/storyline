@@ -15,7 +15,7 @@ import { THEMES, useTheme } from '@/components/providers/ThemeProvider'
 import { cn } from '@/lib/utils'
 import AiSetupGuide from '@/components/app/AiSetupGuide'
 import { getAiProviderLabel } from '@/lib/ai/providers'
-import { getBillingModeLabel, type BillingMode } from '@/lib/ai/modes'
+import { getBillingModeLabel, type AiContextMode, type BillingMode } from '@/lib/ai/modes'
 import { formatTrialRemainingPct, getTrialStatusMessage, isLowTrialBalance } from '@/lib/ai/trial'
 import { uploadUserAvatar } from '@/lib/supabase/user-avatars'
 
@@ -42,6 +42,7 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
         ai_enabled: boolean,
         billing_mode: string,
         ai_provider: string,
+        ai_context_mode: AiContextMode,
         ai_fallback_enabled: boolean,
         ollama_model: string,
         ollama_url: string
@@ -76,6 +77,7 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
     const [aiEnabled, setAiEnabled] = useState(aiSettings.ai_enabled)
     const [billingMode, setBillingMode] = useState(aiSettings.billing_mode)
     const [aiProvider, setAiProvider] = useState(aiSettings.ai_provider)
+    const [aiContextMode, setAiContextMode] = useState<AiContextMode>(aiSettings.ai_context_mode)
     const [aiFallback, setAiFallback] = useState(aiSettings.ai_fallback_enabled)
     const [ollamaModel, setOllamaModel] = useState(aiSettings.ollama_model)
     const [ollamaUrl, setOllamaUrl] = useState(aiSettings.ollama_url)
@@ -281,6 +283,7 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                 aiEnabled,
                 billingMode,
                 aiProvider,
+                aiContextMode,
                 aiFallbackEnabled: aiFallback,
                 ollamaModel,
                 ollamaUrl,
@@ -319,6 +322,7 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
             body: JSON.stringify({
                 billingMode: billingMode === 'byok' ? 'app_managed_trial' : billingMode,
                 aiProvider: billingMode === 'ollama' ? 'ollama' : 'openai',
+                aiContextMode,
                 aiEnabled,
                 aiFallbackEnabled: aiFallback,
                 ollamaModel,
@@ -890,6 +894,42 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
 
                         {aiEnabled && (
                             <div className="space-y-6 animate-in fade-in duration-300">
+                                <div className="space-y-3">
+                                    <Label>AI Partner context</Label>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <label className={`cursor-pointer rounded-xl border p-4 transition-all ${aiContextMode === 'smart' ? 'border-primary bg-slate-50 ring-1 ring-primary/30' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'}`}>
+                                            <div className="flex items-start gap-2">
+                                                <input
+                                                    type="radio"
+                                                    name="aiContextMode"
+                                                    checked={aiContextMode === 'smart'}
+                                                    onChange={() => setAiContextMode('smart')}
+                                                    className="mt-0.5 shrink-0"
+                                                />
+                                                <span className="font-medium text-slate-900">Smart Context</span>
+                                            </div>
+                                            <p className="ml-5 mt-2 text-sm leading-6 text-slate-500">
+                                                Storyline automatically includes eligible story details for AI Partner.
+                                            </p>
+                                        </label>
+                                        <label className={`cursor-pointer rounded-xl border p-4 transition-all ${aiContextMode === 'manual' ? 'border-primary bg-slate-50 ring-1 ring-primary/30' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'}`}>
+                                            <div className="flex items-start gap-2">
+                                                <input
+                                                    type="radio"
+                                                    name="aiContextMode"
+                                                    checked={aiContextMode === 'manual'}
+                                                    onChange={() => setAiContextMode('manual')}
+                                                    className="mt-0.5 shrink-0"
+                                                />
+                                                <span className="font-medium text-slate-900">Manual Context</span>
+                                            </div>
+                                            <p className="ml-5 mt-2 text-sm leading-6 text-slate-500">
+                                                You choose which story elements are included for each scene.
+                                            </p>
+                                        </label>
+                                    </div>
+                                </div>
+
                                 <div className="space-y-3">
                                     <Label>How you want to use AI</Label>
                                     <div className="grid gap-3 sm:grid-cols-3">

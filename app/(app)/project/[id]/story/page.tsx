@@ -18,6 +18,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
         ai_enabled: runtime.aiSettings?.ai_enabled ?? false,
         billing_mode: runtime.aiSettings?.billing_mode ?? 'app_managed_trial',
         ai_provider: runtime.aiSettings?.ai_provider ?? 'openai',
+        ai_context_mode: runtime.contextMode,
         ai_fallback_enabled: runtime.aiSettings?.ai_fallback_enabled ?? false,
         ollama_model: runtime.aiSettings?.ollama_model ?? '',
         ollama_url: runtime.aiSettings?.ollama_url ?? '',

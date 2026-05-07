@@ -11,6 +11,7 @@ import AssetPicker from '@/components/project/assets/AssetPicker'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { ItemRowActionButton } from '@/components/project/ItemRowActionButton'
+import { Switch } from '@/components/ui/switch'
 import {
     createWritingEntity,
     reorderWritingEntities,
@@ -189,6 +190,12 @@ export default function LocationsTab({
             console.error('Error updating location order:', error)
             setLocalLocations(localLocations)
         }
+    }
+
+    const handleExcludeToggle = (id: string, excluded: boolean) => {
+        if (isReadOnly) return
+        setLocalLocations((prev: any[]) => prev.map(l => l.id === id ? { ...l, exclude_from_ai: excluded } : l))
+        saveLocation(id, { exclude_from_ai: excluded })
     }
 
     if (localLocations.length === 0) {
@@ -398,6 +405,22 @@ export default function LocationsTab({
                                     />
                                 </div>
                             </div>
+
+                            {/* AI Context */}
+                            {!isReadOnly && (
+                                <div className="pt-8 border-t border-stone-50 flex items-center justify-between gap-6">
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-[9px] uppercase tracking-widest text-slate-300 font-bold">AI Context</span>
+                                        <span className="text-[11px] text-stone-400">
+                                            {selectedLocation.exclude_from_ai ? 'Excluded from Smart Context' : 'Included in Smart Context'}
+                                        </span>
+                                    </div>
+                                    <Switch
+                                        checked={!selectedLocation.exclude_from_ai}
+                                        onCheckedChange={(included) => handleExcludeToggle(selectedLocation.id, !included)}
+                                    />
+                                </div>
+                            )}
 
                             <div className="pt-16 flex items-center justify-between border-t border-stone-50">
                                 <div className="flex items-center gap-6">
