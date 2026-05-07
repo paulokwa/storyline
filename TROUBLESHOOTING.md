@@ -623,6 +623,27 @@ Add a short entry using this format:
 
 - `signOut({ scope: 'local' })` clears the auth cookie from the response headers without making a server round-trip, so it is safe to call in a server component.
 
+### Extra dev/local-production note
+
+This error can also appear during development when the same browser is used for both the production site and localhost with the same Supabase project/account.
+
+Example scenario:
+- User is signed in on the production site.
+- User then signs in on `localhost:3000` in the same browser/profile.
+- Next.js dev overlay or console shows:
+  `AuthApiError: Invalid Refresh Token: Refresh Token Not Found`
+- The app may still work normally.
+
+This is usually caused by stale or rotated Supabase refresh tokens between environments, not by a production auth breach or account-mixing issue.
+
+Recommended handling:
+- Do not treat this as launch-blocking if it only happens while mixing localhost and production in the same browser/profile.
+- Use separate browser profiles/browsers for production and local testing where possible.
+- Clear site data for `localhost` or the production domain if the error becomes annoying.
+- Escalate only if the error appears in a clean production-only browser flow, blocks login, signs users out unexpectedly, or appears to normal users.
+
+Do not change app auth logic for this note unless a clean production-only reproduction exists.
+
 ## Issue: Signup verification link can fall back into another user's active session
 
 ### Symptoms
