@@ -36,7 +36,8 @@ Default branch: `main`
 16. If a meaningful decision was made, append it to `DECISION_LOG.md` only if it passes the Decision Log Gate below.
 17. If the user confirms that something is fixed, completed, working, resolved, verified, tested, or otherwise done, update the relevant non-Master Brief files to reflect that status. Usually this means moving items in `TASK_BOARD.md`, adding a concise note to `SESSION_HANDOVER.md`, and updating `TESTING.md` when testing is involved. Do not add to `DECISION_LOG.md` unless the user also made or approved a meaningful decision.
 18. After completing session-end updates, commit and push the changes to GitHub unless the user explicitly says not to, there are no changes to commit, or the agent/tool does not have Git/GitHub write access. If unable to commit or push, say so clearly and provide the exact files that still need committing.
-19. Do not edit `MASTER_BRIEF.md` unless the user explicitly asks for the Master Brief itself to be changed.
+19. Before committing and pushing changes that could affect the production build or deploy, run a Netlify build check when the session has access to do so, preferably `netlify build --context production`. If Netlify CLI/build access is missing, first try to set it up or link the existing Netlify site using the available CLI/MCP tools instead of skipping the check. If the check cannot be run or cannot be configured safely, report the blocker clearly before committing or pushing. If the Netlify build check fails, do not push deployment-affecting changes unless the user explicitly approves pushing despite the known failure.
+20. Do not edit `MASTER_BRIEF.md` unless the user explicitly asks for the Master Brief itself to be changed.
 
 ## Decision Log Gate
 
@@ -88,6 +89,7 @@ Agents: when a dev/test login is needed, read `docs/dev-test-account.md` first a
 - Use concise session start and session end prompts to force agents to load and update context.
 - Markdown files are preferred because they are visible to all agents and portable across machines.
 - Session-end continuity updates should be committed and pushed to GitHub when possible.
+- Deployment-affecting commits should be preceded by a local Netlify build check when the session can access or configure Netlify CLI/build tooling.
 - `MASTER_BRIEF.md` is controlled by the user and should only be edited when explicitly directed.
 - `AGENTS.md` is the repo-level execution guide for coding agents and should be kept aligned with, but separate from, the Master Brief.
 - `TROUBLESHOOTING.md` is the canonical location for debugging patterns and should be updated instead of duplicating fixes elsewhere.

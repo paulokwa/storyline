@@ -6,6 +6,24 @@ Keep entries concise. Do not rewrite old decisions unless explicitly instructed.
 
 ---
 
+## 2026-05-07 - Run Netlify build checks before deployment-affecting pushes
+
+Decision:
+When an agent is asked to commit and push changes that could affect production build or deploy, it should run a Netlify build check first when available, preferably `netlify build --context production`.
+
+Reason:
+`npm run build` can pass while Netlify-specific plugin, environment, function, or edge-function bundling fails. Running the Netlify build check before pushing reduces avoidable server-side build failures across devices and sessions.
+
+Impact:
+- Agents should use existing Netlify CLI/MCP access when available.
+- If Netlify build access is missing, agents should try to configure or link the existing Netlify site before skipping the check.
+- If the Netlify build check fails, agents should not push deployment-affecting changes unless the user explicitly approves pushing despite the known failure.
+
+Status:
+Approved.
+
+---
+
 ## 2026-04-28 - Unified export schema with CommentMark support
 
 Decision:

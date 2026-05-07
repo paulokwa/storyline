@@ -5,6 +5,32 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-07 - Netlify build check workflow rule
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Updated `MASTER_BRIEF.md` to require a Netlify build check before committing and pushing deployment-affecting changes when the session has Netlify build access.
+- Added guidance that agents should try to configure or link the existing Netlify site before skipping the check.
+- Added a `DECISION_LOG.md` entry because this is a durable agent workflow/deployment rule.
+
+### Current status
+
+Future agents should run `netlify build --context production` before pushing production-build-affecting changes when available. If the check fails, they should not push those changes unless the user explicitly approves pushing despite the known failure.
+
+### Next recommended step
+
+Diagnose the current Netlify Edge Functions bundling failure found by `netlify build` before relying on server-side Netlify deploys.
+
+### Risks or warnings
+
+- This session's documentation-only commit does not change application build output.
+- The current local Netlify build check is known to fail during Edge Functions bundling even though `npm run build` passes.
+
+---
 ## 2026-05-07 - Impeccable availability and tooling exclusion fix
 
 ### Current branch
