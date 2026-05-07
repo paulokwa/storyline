@@ -97,6 +97,61 @@ Before changing export code, check `TESTING.md`, `SESSION_HANDOVER.md`, and `doc
 ## Later
 
 
+### 1. Expand the in-app notification system for high-value user events
+
+Product task to revisit the current notification bell/center and decide whether to add more helpful, low-noise notification triggers.
+
+ChatGPT planning reference:
+https://chatgpt.com/g/g-p-69c7f39a24148191910ed755d079daab-creative-ai-app/c/69fbe2d9-5a64-83ea-a69a-5cb7461f9b45
+
+Current product direction:
+
+- Keep the bell as an important-event inbox, not a general activity feed.
+- Avoid noisy notifications for routine autosave, normal scene edits, ordinary AI completions, generic reminders, or motivational nudges unless they become explicit opt-in features later.
+- Prioritize notifications that protect the user's work, clarify collaboration, or guide important setup/recovery moments.
+
+Candidate areas to scope later:
+
+1. Foundation fixes
+   - Add/verify a proper SQL migration for `local_transfer_guidance` to avoid schema drift.
+   - Add event-key dedupe for `project_shared` so re-adding someone does not create noisy duplicate share notifications.
+   - Review the existing read-state behavior and decide whether comment viewing should clear related notifications or whether only bell/detail views should do so.
+
+2. Collaboration improvements
+   - Expand `collaborator_feedback` beyond owner-only notifications.
+   - Consider notifying collaborators when someone replies to a thread they started or participated in.
+   - Defer @mentions unless/until the app supports explicit mention UX.
+
+3. Local/cloud safety notifications
+   - Cloud migration started/completed/failed.
+   - Local backup recommended before risky migration or transfer flows.
+   - Local-to-cloud guidance that is properly migrated, deduped, and not browser-local only.
+
+4. Import/export notifications
+   - Import completed.
+   - Import needs review.
+   - Export ready.
+   - Export failed.
+   - Use only for longer-running or user-missable jobs; keep quick operations as toast-only.
+
+5. AI setup and credit guidance
+   - AI key missing.
+   - AI key/auth/billing failure.
+   - Trial credit low/used, if the trial-credit system is active.
+   - Deduplicate aggressively so AI setup problems do not spam the user.
+
+6. Storage/quota warnings
+   - Storage quota warning around 80-90%.
+   - Storage quota exceeded/upload blocked.
+   - Large asset upload failed.
+
+Before implementation:
+
+- Run a fresh audit of migrations, generated Supabase types, notification RPCs/triggers, notification UI, and comment/collaboration flows.
+- Convert the chosen scope into phased instructions for Codex, Antigravity, Claude, or OpenCode Go.
+- Keep this as a product-design task first; do not let an agent implement every candidate trigger in one pass.
+
+---
 
 ## Not Here Anymore
 
