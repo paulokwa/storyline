@@ -1,5 +1,6 @@
 export type BillingMode = 'app_managed_trial' | 'byok' | 'ollama'
 export type SupportedAiProvider = 'openai' | 'gemini' | 'ollama'
+export type AiContextMode = 'smart' | 'manual'
 
 export function getBillingModeLabel(mode: BillingMode) {
     switch (mode) {
@@ -26,4 +27,10 @@ export function resolveBillingModeFromSettings(settings: {
     if (settings?.ai_provider === 'ollama') return 'ollama'
     if (settings?.api_key) return 'byok'
     return 'app_managed_trial'
+}
+
+export function resolveAiContextModeFromSettings(settings: {
+    ai_context_mode?: string | null
+} | null | undefined): AiContextMode {
+    return settings?.ai_context_mode === 'smart' ? 'smart' : 'manual'
 }

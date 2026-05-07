@@ -377,6 +377,7 @@ export type Database = {
           created_at: string | null
           deleted_at: string | null
           description: string | null
+          exclude_from_ai: boolean
           id: string
           name: string
           notes: string | null
@@ -387,6 +388,7 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           description?: string | null
+          exclude_from_ai?: boolean
           id?: string
           name: string
           notes?: string | null
@@ -397,6 +399,7 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           description?: string | null
+          exclude_from_ai?: boolean
           id?: string
           name?: string
           notes?: string | null
@@ -507,6 +510,7 @@ export type Database = {
           content: string | null
           created_at: string | null
           deleted_at: string | null
+          exclude_from_ai: boolean
           id: string
           order_index: number
           project_id: string
@@ -517,6 +521,7 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           deleted_at?: string | null
+          exclude_from_ai?: boolean
           id?: string
           order_index?: number
           project_id: string
@@ -527,6 +532,7 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           deleted_at?: string | null
+          exclude_from_ai?: boolean
           id?: string
           order_index?: number
           project_id?: string
@@ -549,6 +555,7 @@ export type Database = {
           created_at: string | null
           deleted_at: string | null
           description: string | null
+          exclude_from_ai: boolean
           id: string
           name: string
           order_index: number
@@ -560,6 +567,7 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           description?: string | null
+          exclude_from_ai?: boolean
           id?: string
           name: string
           order_index?: number
@@ -571,6 +579,7 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           description?: string | null
+          exclude_from_ai?: boolean
           id?: string
           name?: string
           order_index?: number
@@ -672,6 +681,7 @@ export type Database = {
           created_at: string | null
           deleted_at: string | null
           description: string | null
+          exclude_from_ai: boolean
           id: string
           name: string
           order_index: number
@@ -683,6 +693,7 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           description?: string | null
+          exclude_from_ai?: boolean
           id?: string
           name: string
           order_index?: number
@@ -694,6 +705,7 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           description?: string | null
+          exclude_from_ai?: boolean
           id?: string
           name?: string
           order_index?: number
@@ -1450,6 +1462,7 @@ export type Database = {
         Row: {
           ai_enabled: boolean | null
           ai_fallback_enabled: boolean | null
+          ai_context_mode: "smart" | "manual"
           billing_mode: string | null
           ai_provider: string | null
           api_key: string | null
@@ -1463,6 +1476,7 @@ export type Database = {
         Insert: {
           ai_enabled?: boolean | null
           ai_fallback_enabled?: boolean | null
+          ai_context_mode?: "smart" | "manual"
           billing_mode?: string | null
           ai_provider?: string | null
           api_key?: string | null
@@ -1476,6 +1490,7 @@ export type Database = {
         Update: {
           ai_enabled?: boolean | null
           ai_fallback_enabled?: boolean | null
+          ai_context_mode?: "smart" | "manual"
           billing_mode?: string | null
           ai_provider?: string | null
           api_key?: string | null

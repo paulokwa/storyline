@@ -73,7 +73,21 @@ Before writing code, state:
 ## Now
 
 
-### 1. Check and fix export issues, starting with PDF
+### 1. Continue Smart Context / Manual Context implementation
+
+Phase 1 is complete: database migration and TypeScript support were added for `ai_context_mode` and `exclude_from_ai`.
+
+Next phase:
+
+- Thread `ai_context_mode` through AI runtime settings.
+- Update `/api/ai/preferences` to save and return the context mode.
+- Add the AI settings UI control for Smart Context vs Manual Context.
+
+Do not touch `app/api/ai/analyze-scene/route.ts`. Scene Analysis must remain scene-text-only.
+
+---
+
+### 2. Check and fix export issues, starting with PDF
 
 Audit and fix export problems, starting with PDF output and then verifying other export formats.
 

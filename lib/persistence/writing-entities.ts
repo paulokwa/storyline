@@ -108,6 +108,7 @@ export async function createWritingEntity<T extends WritingEntityTable>(
             case 'characters':
                 data = {
                     description: '',
+                    exclude_from_ai: false,
                     name: '',
                     notes: '',
                     order_index: 0,
@@ -121,6 +122,7 @@ export async function createWritingEntity<T extends WritingEntityTable>(
             case 'ideas':
                 data = {
                     content: '',
+                    exclude_from_ai: false,
                     order_index: 0,
                     project_id: input.project_id,
                     title: '',
@@ -135,6 +137,7 @@ export async function createWritingEntity<T extends WritingEntityTable>(
                 data = {
                     atmosphere: '',
                     description: '',
+                    exclude_from_ai: false,
                     name: '',
                     order_index: 0,
                     project_id: input.project_id,
@@ -148,6 +151,7 @@ export async function createWritingEntity<T extends WritingEntityTable>(
             case 'objects':
                 data = {
                     description: '',
+                    exclude_from_ai: false,
                     name: '',
                     order_index: 0,
                     project_id: input.project_id,

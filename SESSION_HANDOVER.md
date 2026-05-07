@@ -5,6 +5,59 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-07 - Smart Context / Manual Context Phase 1 stop
+
+### Current branch
+
+`main`
+
+### What was completed
+
+Implemented the first requested stop point for Smart Context / Manual Context: database migration support and TypeScript type support.
+
+**Completed:**
+- Added migration `20260507210000_add_ai_context_mode_and_exclusions.sql`.
+- Added `user_api_keys.ai_context_mode` with allowed values `smart` and `manual`.
+- Existing `user_api_keys` rows are backfilled to `manual`.
+- Future `user_api_keys` rows default to `smart`, including the `ensure_default_ai_settings_for_user()` trigger.
+- Added `exclude_from_ai boolean not null default false` to `characters`, `ideas`, `locations`, and `objects`.
+- Added project/deleted/exclusion indexes for future Smart Context eligibility queries.
+- Updated `lib/supabase/types.ts` for the new fields.
+- Added shared `AiContextMode` and `resolveAiContextModeFromSettings()` in `lib/ai/modes.ts`.
+- Updated local-first entity creation defaults so local character, idea, location, and object rows include `exclude_from_ai: false`.
+
+**Scene Analysis:** not touched.
+
+### Files changed
+
+- `supabase/migrations/20260507210000_add_ai_context_mode_and_exclusions.sql`
+- `lib/ai/modes.ts`
+- `lib/supabase/types.ts`
+- `lib/persistence/local-projects.ts`
+- `lib/persistence/writing-entities.ts`
+- `SESSION_HANDOVER.md`
+- `TASK_BOARD.md`
+- `TESTING.md`
+
+### Current status
+
+Phase 1 is ready for review. The migration file has not been applied to the linked Supabase database in this session.
+
+### Next recommended step
+
+Continue with Settings UI and persistence:
+1. Thread `ai_context_mode` through `getAiRuntimeState()` consumers.
+2. Update `/api/ai/preferences` to save and return the context mode.
+3. Add the Smart Context / Manual Context control to AI settings.
+
+### Risks or warnings
+
+- Full `npm run build` compiles app code but fails during TypeScript on the existing `impeccable/site` Astro type dependency issue.
+- Full repo lint is blocked by existing generated/tooling folders such as `.netlify`, `.agents`, `.claude`, and `impeccable` fixtures.
+- Supabase CLI is not installed in this shell, so local migration lint was not available.
+- Smart Context is not wired yet and must not be considered usable until settings persistence, exclusion UI, the builder, and AI Partner wiring are complete.
+
+---
 ## 2026-05-07 - Supabase migration drift reconciliation
 
 ### Current branch

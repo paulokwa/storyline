@@ -183,6 +183,10 @@ Future agents: treat this workflow as established. Before asking the user about 
 
 | Test | Status | Tested by | Date tested | Notes |
 |---|---|---|---|---|
+| Smart/Manual Context Phase 1 schema and types | Needs retest | AI agent | 2026-05-07 | Migration and TypeScript type support added for `ai_context_mode` and `exclude_from_ai`. Focused eslint passed on changed TS files. Full build/typecheck remains blocked by the existing `impeccable/site` Astro type dependency issue. |
+| Smart Context settings persistence | Not tested | - | - | Confirm `/api/ai/preferences` saves and returns `ai_context_mode`, with existing users defaulting to Manual Context and new settings rows defaulting to Smart Context. |
+| Smart Context excludes opted-out items | Not tested | - | - | Confirm characters, ideas, locations, and objects with `exclude_from_ai = true` are not included in Smart Context. |
+| Scene Analysis remains scene-text-only with context modes | Not tested | - | - | Test Scene Analysis in both Manual Context and Smart Context and confirm no characters, ideas, locations, objects, chapters, or manuscript text are included. |
 | AI-disabled scene analyzer feedback | Passed | User | 2026-04-29 | User manually verified clicking Analyze with AI off opens the AI sidebar with analyzer-specific access messaging. |
 | AI partner mode selector dropdown | Passed | User | 2026-04-26 | User confirmed the horizontal mode button issue is resolved. |
 | AI story-context selection roll-up | Passed | User | 2026-04-26 | User confirmed act/scene selection behavior is now working again after tree and AI-ready bar fixes. |
@@ -365,6 +369,7 @@ Future agents: treat this workflow as established. Before asking the user about 
 
 Newest confirmations go at the top.
 
+| 2026-05-07 | AI agent | Focused lint after Smart Context / Manual Context Phase 1 | Passed | `npx eslint lib/ai/modes.ts lib/persistence/local-projects.ts lib/persistence/writing-entities.ts lib/supabase/types.ts` passed after adding context-mode and AI-exclusion types/defaults. |
 | 2026-05-07 | AI agent | TypeScript compile after collaborator reply notification pass | Passed | `npx tsc --noEmit --pretty false` passed after adding reply-recipient notification SQL, reply-aware notification titles in `lib/notifications.ts`, and exact thread/reply activation support in `CommentsPanel.tsx`. |
 | 2026-05-07 | AI agent | Linked Supabase notification foundation validation | Passed | Confirmed remote migration history for `20260427213327` and `20260507123000`, applied the live SQL body for `20260507123000`, verified `notify_project_membership_changes()` now uses the `project-shared:` event key, SQL-tested remove/re-add dedupe on a throwaway project, confirmed cleanup, and verified the typed `create_notification` client RPC path for `local_transfer_guidance`. |
 | 2026-05-05 | AI agent | Midnight theme readability pass — feedback, AI partner, manuscript view, scene gallery, notifications | Passed | `npx next build` compiled successfully (pre-existing `astro:content` error only) across all 10 modified files. |
