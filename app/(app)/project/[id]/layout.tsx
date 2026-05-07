@@ -1,5 +1,4 @@
 import { Suspense } from 'react'
-import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import ProjectShell from '@/components/project/ProjectShell'
@@ -9,6 +8,7 @@ import { isLocalProjectId } from '@/lib/persistence/project-mode'
 import type { Database } from '@/lib/supabase/types'
 import { requireVerifiedUser } from '@/lib/supabase/auth'
 import RouteLoadingScreen from '@/components/app/RouteLoadingScreen'
+import { TouchProject } from '@/components/project/TouchProject'
 
 type ProjectRole = Database['public']['Enums']['project_role']
 type ProjectLayoutRow = Database['public']['Tables']['projects']['Row'] & {
@@ -129,19 +129,10 @@ async function ProjectLayoutLoader({
         role: currentMembership?.role ?? (projectData.user_id === user.id ? 'owner' : 'viewer'),
     }
 
-    // Only touch last_accessed_at on real navigation — not on Next.js prefetch.
-    // Prefetch requests send Next-Router-Prefetch: 1; skipping here prevents the
-    // library page from stamping every visible project card as "just accessed".
-    const requestHeaders = await headers()
-    const isPrefetch = requestHeaders.get('Next-Router-Prefetch') === '1'
-    if (!isPrefetch) {
-        void supabase.rpc('touch_project', { p_id: id }).then(({ error }) => {
-            if (error) console.error('Failed to update last_accessed_at:', error)
-        })
-    }
-
     return (
         <ProjectProvider role={project.role}>
+            {/* TouchProject fires client-side only (useEffect), so prefetch can never trigger it */}
+            <TouchProject id={id} />
             <ProjectShell
                 project={project}
                 currentUserId={user.id}

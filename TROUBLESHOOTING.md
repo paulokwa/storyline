@@ -721,24 +721,32 @@ Querying `projects` and finding groups of 3–4 projects with identical `last_ac
 
 ### Fix
 
-In `app/(app)/project/[id]/layout.tsx`, check the `Next-Router-Prefetch: 1` header and skip `touch_project` for prefetch requests:
+Move `touch_project` out of the server component and into a dedicated client component. Create `components/project/TouchProject.tsx`:
 
-```typescript
-import { headers } from 'next/headers'
-// ...inside ProjectLayoutLoader:
-const requestHeaders = await headers()
-const isPrefetch = requestHeaders.get('Next-Router-Prefetch') === '1'
-if (!isPrefetch) {
-    void supabase.rpc('touch_project', { p_id: id }).then(({ error }) => {
-        if (error) console.error('Failed to update last_accessed_at:', error)
-    })
+```tsx
+'use client'
+import { useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+
+export function TouchProject({ id }: { id: string }) {
+    useEffect(() => {
+        const supabase = createClient()
+        void supabase.rpc('touch_project', { p_id: id }).then(({ error }) => {
+            if (error) console.error('Failed to update last_accessed_at:', error)
+        })
+    }, [id])
+    return null
 }
 ```
 
-This preserves prefetch performance (loading skeletons still preload) while ensuring `last_accessed_at` only updates on real user navigation.
+Then in `app/(app)/project/[id]/layout.tsx`, replace the server-side RPC call with `<TouchProject id={id} />` inside `ProjectProvider`. `useEffect` is purely client-side and is never invoked during server-side prefetch, regardless of Next.js version or prefetch header changes.
+
+### Why not header-based detection
+
+Next.js 16 uses a new segment cache with two prefetch header variants (`next-router-prefetch` and `next-router-segment-prefetch`). Checking headers is fragile and version-dependent. The client component approach is version-proof: prefetch is always server-side, so `useEffect` simply cannot fire.
 
 ### Notes
 
-- The `LocalProjectShell` equivalent (`touchLocalProject`) runs inside a `useEffect` — client-side only — so it was never affected by this issue.
-- If the header approach ever becomes unreliable (e.g. Next.js renames it), the fallback fix is `prefetch={false}` on the `<Link>` in `ProjectGrid.tsx:675`.
+- The `LocalProjectShell` equivalent (`touchLocalProject`) was already in a `useEffect` — correctly client-side — so it was never affected by this issue.
+- Do NOT move this call back to server-side unless a mechanism exists to reliably distinguish prefetch from navigation at the server level.
 
