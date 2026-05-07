@@ -1514,6 +1514,22 @@ export type Database = {
         Args: { p_blueprint: Json }
         Returns: string
       }
+      create_notification: {
+        Args: {
+          p_actor_id?: string
+          p_body?: string
+          p_comment_id?: string
+          p_event_key?: string
+          p_link_href?: string
+          p_metadata?: Json
+          p_project_id?: string
+          p_summary?: string
+          p_title: string
+          p_type: Database["public"]["Enums"]["notification_type"]
+          p_user_id: string
+        }
+        Returns: string
+      }
       admin_adjust_ai_trial: {
         Args: {
           p_admin_user_id: string

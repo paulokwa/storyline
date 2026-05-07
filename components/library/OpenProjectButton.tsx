@@ -9,7 +9,7 @@
  * Placement: Library header action area (alongside "Start New Project").
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Upload } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -46,6 +46,11 @@ export default function OpenProjectButton({
     const [pendingImport, setPendingImport] = useState<PendingLibraryImport | null>(null)
     const [selectedUpdateProjectId, setSelectedUpdateProjectId] = useState<string>('')
 
+    const handleClick = useCallback(() => {
+        setErrorMessage(null)
+        inputRef.current?.click()
+    }, [])
+
     // Handle '?action=open' from notifications
     useEffect(() => {
         if (searchParams?.get('action') === 'open') {
@@ -55,8 +60,8 @@ export default function OpenProjectButton({
             const newQuery = params.toString()
             router.replace(`/library${newQuery ? `?${newQuery}` : ''}`)
             
-            // Trigger the click
-            handleClick()
+            // Open the picker directly to avoid scheduling state updates from within the effect.
+            inputRef.current?.click()
         }
     }, [searchParams, router])
 
@@ -72,8 +77,7 @@ export default function OpenProjectButton({
 
             // Use the SECURITY DEFINER RPC — direct insert is blocked by RLS (no INSERT policy).
             // ON CONFLICT (event_key) DO NOTHING makes this safe to call more than once.
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (supabase.rpc as any)('create_notification', {
+            await supabase.rpc('create_notification', {
                 p_user_id: currentUserId,
                 p_type: 'local_transfer_guidance',
                 p_title: 'Working on another device?',
@@ -87,11 +91,6 @@ export default function OpenProjectButton({
 
         void checkAndCreateNotification()
     }, [currentUserId])
-
-    function handleClick() {
-        setErrorMessage(null)
-        inputRef.current?.click()
-    }
 
     async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0]

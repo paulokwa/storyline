@@ -110,6 +110,12 @@ Current product direction:
 - Avoid noisy notifications for routine autosave, normal scene edits, ordinary AI completions, generic reminders, or motivational nudges unless they become explicit opt-in features later.
 - Prioritize notifications that protect the user's work, clarify collaboration, or guide important setup/recovery moments.
 
+Current status after the 2026-05-07 foundation pass:
+
+- Migration history was repaired for `local_transfer_guidance`.
+- `project_shared` dedupe groundwork was added in SQL.
+- Broader trigger expansion is still deferred pending manual validation and Phase 2 scoping.
+
 Candidate areas to scope later:
 
 1. Foundation fixes

@@ -5,6 +5,70 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-07 - Notification foundation audit and schema repair
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Ran the required continuity audit for the TASK_BOARD Later item: notification-system expansion.
+- Confirmed the current notification types and creation paths are still limited to:
+  - `welcome`
+  - `collaborator_feedback`
+  - `project_shared`
+  - `project_role_changed`
+  - `local_transfer_guidance`
+- Confirmed app-side notification creation is still intentionally narrow:
+  - the only frontend-originated creation path is `components/library/OpenProjectButton.tsx`, which uses the `create_notification` RPC for `local_transfer_guidance`
+  - all other current notification creation is database-triggered
+- Confirmed the read-state behavior is still asymmetric:
+  - bell clicks mark a notification read immediately
+  - notification detail page marks it read on mount
+  - opening the comments panel through `?feedback=1` / `commentId` does not currently clear `read_at`
+- Repaired the missing migration history for `local_transfer_guidance` by adding the missing enum migration file back into `supabase/migrations/`.
+- Added a small SQL foundation migration that backfills one canonical event key for each existing `project_shared` notification target and updates `notify_project_membership_changes()` so re-adding the same collaborator does not keep creating duplicate share notifications.
+- Updated `lib/supabase/types.ts` with the missing `create_notification` RPC typing and removed the `as any` cast from `OpenProjectButton.tsx`.
+
+### Files changed
+
+- `supabase/migrations/20260427213327_add_local_transfer_guidance_notification_type.sql`
+- `supabase/migrations/20260507123000_dedupe_project_shared_notifications.sql`
+- `lib/supabase/types.ts`
+- `components/library/OpenProjectButton.tsx`
+- `TESTING.md`
+- `SESSION_HANDOVER.md`
+
+### Commands run
+
+- `git log --oneline -20`
+- `git status --short`
+- `rg -n "notification|notifications|create_notification|local_transfer_guidance|project_shared|collaborator_feedback|project_role_changed|welcome" -S .`
+- `supabase migration list`
+- `supabase gen types typescript --linked --schema public | Select-String -Pattern "create_notification|notification_type|local_transfer_guidance|project_shared|project_role_changed" -Context 2,3`
+- `supabase gen types typescript --linked --schema public | Select-String -Pattern "create_notification:" -Context 0,20`
+
+### Current status
+
+The notification system is still intentionally small and behaves more like an important-event inbox than a general feed. Phase 1 foundation repairs are now in place in repo history and SQL, but broader notification expansion remains deferred.
+
+### Next recommended step
+
+Manual browser / shared-account validation:
+
+1. Confirm `project_shared` dedupe by adding a collaborator, removing them, and re-adding the same account.
+2. Confirm `collaborator_feedback` still appears normally for the owner after comment creation/edit.
+3. Decide whether opening comments from a notification should mark related `collaborator_feedback` rows read, or whether read state should stay limited to bell/detail views.
+4. If that policy changes, implement it narrowly in Phase 2 rather than bundling it with broader notification expansion.
+
+### Risks or warnings
+
+- `collaborator_feedback` is still owner-only in SQL. Collaborators are not yet notified when someone replies to a thread they started or participated in.
+- The linked Supabase project has remote migration-history drift beyond this notification fix: `20260430025720_expand_disposable_email_list.sql` exists remotely as a duplicate timestamp variant of the existing local disposable-email migration. I did not fold that unrelated history discrepancy into this notification pass.
+- I intentionally did not implement new bell triggers for cloud migration, import/export, AI setup, quota, or collaborator replies in this pass.
+
+---
 ## 2026-05-06 - Library survey nudge floating placement
 
 ### Current branch
