@@ -5,6 +5,42 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-06 - Notifications 403 fix (POST /rest/v1/notifications)
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Investigated `POST /rest/v1/notifications 403 (Forbidden)` appearing in the browser console during incognito / fresh sessions.
+- Root cause: `components/library/OpenProjectButton.tsx` called `supabase.from('notifications').insert(...)` directly from the browser client. The `notifications` table has no INSERT RLS policy — all notification creation is intentionally server-controlled via the SECURITY DEFINER `create_notification` RPC.
+- Fixed by replacing the direct insert (and its pre-check count query) with a single `supabase.rpc('create_notification', {...})` call, passing `p_event_key: 'local_transfer_guidance:<userId>'` so the RPC's built-in `ON CONFLICT DO NOTHING` handles deduplication.
+- Added `as any` cast because `create_notification` is not yet in the auto-generated `lib/supabase/types.ts`.
+- Updated `TROUBLESHOOTING.md` with a full issue entry.
+- Updated `TESTING.md` with a Needs retest row.
+
+### Files changed
+
+- `components/library/OpenProjectButton.tsx`
+- `TROUBLESHOOTING.md`
+- `TESTING.md`
+- `SESSION_HANDOVER.md`
+
+### Current status
+
+`npx tsc --noEmit --pretty false` passes (no new errors). Browser validation in incognito is still needed to confirm the 403 is gone and the notification still appears in the bell.
+
+### Next recommended step
+
+Open the live site in an incognito window, sign in, and check the browser console for any remaining `POST /rest/v1/notifications 403`. Confirm the "Working on another device?" notification appears in the bell.
+
+### Risks or warnings
+
+- `local_transfer_guidance` is in the live DB enum but has no SQL migration file (was added manually). This is a schema-drift risk if the DB is ever recreated from migrations.
+- The `as any` cast in `OpenProjectButton.tsx` should be removed once `create_notification` is added to the generated types (run `supabase gen types`).
+
+---
 ## 2026-05-06 - Password reset redirect URL fix
 
 ### Current branch

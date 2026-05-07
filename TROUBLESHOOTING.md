@@ -647,6 +647,37 @@ Add a short entry using this format:
 
 - `npx tsc --noEmit --pretty false`
 
+---
+
+## Issue: POST /rest/v1/notifications 403 on library page load (incognito / fresh session)
+
+### Symptoms
+
+- Browser console shows `POST https://<project>.supabase.co/rest/v1/notifications 403 (Forbidden)` on library page load.
+- Appears in incognito or any session where the user has not previously visited the library (no localStorage key).
+- The app continues to work normally; the error is a background notification creation attempt.
+
+### Cause
+
+- `components/library/OpenProjectButton.tsx` tried to create a `local_transfer_guidance` notification by calling `supabase.from('notifications').insert(...)` directly from the browser client.
+- The `notifications` table has SELECT, UPDATE, and DELETE RLS policies but **no INSERT policy** — all notification creation is intended to go through the SECURITY DEFINER `create_notification` RPC.
+
+### Fix
+
+- Replace the direct `supabase.from('notifications').insert(...)` call with `supabase.rpc('create_notification', { ... })`.
+- Pass `p_event_key: 'local_transfer_guidance:<userId>'` so the function's built-in `ON CONFLICT (event_key) DO NOTHING` handles deduplication — the separate count pre-check is no longer needed.
+
+### Verification
+
+- `npx tsc --noEmit --pretty false` passes.
+- Load the library page in an incognito session; confirm no 403 appears in the browser console.
+- Confirm a `local_transfer_guidance` notification row is created in the `notifications` table.
+
+### Notes
+
+- `local_transfer_guidance` is in the live DB enum but has no corresponding SQL migration file — was added manually. Flag for a follow-up migration if schema drift matters.
+- Do not add an INSERT RLS policy to `notifications` — all notification creation should remain server-controlled via SECURITY DEFINER functions.
+
 ### Notes
 
 - Manual browser validation is still required for four flows: fresh signup verification, reusing a consumed signup verification link, opening an invalid/reused signup link while another user is signed in, and confirming password-reset emails still use the clean production callback URL.

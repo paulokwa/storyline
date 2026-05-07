@@ -69,23 +69,18 @@ export default function OpenProjectButton({
             if (localStorage.getItem(storageKey)) return
 
             const supabase = createClient()
-            
-            // Check if it already exists in DB
-            const { count } = await supabase
-                .from('notifications')
-                .select('*', { count: 'exact', head: true })
-                .eq('user_id', currentUserId)
-                .eq('type', 'local_transfer_guidance')
 
-            if (count === 0) {
-                await supabase.from('notifications').insert({
-                    user_id: currentUserId,
-                    type: 'local_transfer_guidance',
-                    title: 'Working on another device?',
-                    summary: 'Learn how to transfer your local projects between devices or enable cloud sync.',
-                    body: 'Local projects stay on the device where they were created. To use a project on this device, save it as a .storyline file on your other device and open it here. You can also enable cloud sync for projects you want available across devices.',
-                })
-            }
+            // Use the SECURITY DEFINER RPC — direct insert is blocked by RLS (no INSERT policy).
+            // ON CONFLICT (event_key) DO NOTHING makes this safe to call more than once.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (supabase.rpc as any)('create_notification', {
+                p_user_id: currentUserId,
+                p_type: 'local_transfer_guidance',
+                p_title: 'Working on another device?',
+                p_summary: 'Learn how to transfer your local projects between devices or enable cloud sync.',
+                p_body: 'Local projects stay on the device where they were created. To use a project on this device, save it as a .storyline file on your other device and open it here. You can also enable cloud sync for projects you want available across devices.',
+                p_event_key: `local_transfer_guidance:${currentUserId}`,
+            })
 
             localStorage.setItem(storageKey, 'true')
         }
