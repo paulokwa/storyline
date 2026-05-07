@@ -5,6 +5,36 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-07 - Supabase CLI project setup
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Installed the Supabase CLI as a project dev dependency (`supabase@2.98.2`).
+- Ran `npx supabase init --yes` to create the missing local CLI config.
+- Added the generated `supabase/.gitignore` so `.temp`, branch metadata, and local env files are ignored going forward.
+- Adjusted `supabase/config.toml` so seed loading is disabled because this repo does not currently have `supabase/seed.sql`.
+- Verified the local package with `npm exec supabase -- --version`.
+- Verified the linked remote is reachable with `npx supabase migration list --linked`.
+
+### Current status
+
+Supabase CLI is ready to use from the repo via `npx supabase ...` or `npm exec supabase -- ...`.
+
+### Next recommended step
+
+Start Docker Desktop before running local stack commands such as `npx supabase start` or `npx supabase status`.
+
+### Risks or warnings
+
+- `npx supabase status` is blocked until the Docker daemon is available in this Windows shell.
+- `npx supabase migration list --linked` shows `20260507210000` is local-only and not applied to the linked remote yet, matching the prior Smart Context Phase 1 handover.
+- `npm install` reported existing audit findings: 10 moderate, 3 high, and 2 critical vulnerabilities. No audit fix was run.
+
+---
 ## 2026-05-07 - Smart Context / Manual Context Phase 1 stop
 
 ### Current branch

@@ -369,6 +369,7 @@ Future agents: treat this workflow as established. Before asking the user about 
 
 Newest confirmations go at the top.
 
+| 2026-05-07 | AI agent | Supabase CLI setup verification | Passed | `npm exec supabase -- --version` returned `2.98.2`; `npm ls supabase --depth=0` showed `supabase@2.98.2`; `npx supabase migration list --linked` connected to the linked remote and listed migrations. `npx supabase status` is blocked until Docker Desktop/daemon is running. |
 | 2026-05-07 | AI agent | Focused lint after Smart Context / Manual Context Phase 1 | Passed | `npx eslint lib/ai/modes.ts lib/persistence/local-projects.ts lib/persistence/writing-entities.ts lib/supabase/types.ts` passed after adding context-mode and AI-exclusion types/defaults. |
 | 2026-05-07 | AI agent | TypeScript compile after collaborator reply notification pass | Passed | `npx tsc --noEmit --pretty false` passed after adding reply-recipient notification SQL, reply-aware notification titles in `lib/notifications.ts`, and exact thread/reply activation support in `CommentsPanel.tsx`. |
 | 2026-05-07 | AI agent | Linked Supabase notification foundation validation | Passed | Confirmed remote migration history for `20260427213327` and `20260507123000`, applied the live SQL body for `20260507123000`, verified `notify_project_membership_changes()` now uses the `project-shared:` event key, SQL-tested remove/re-add dedupe on a throwaway project, confirmed cleanup, and verified the typed `create_notification` client RPC path for `local_transfer_guidance`. |
