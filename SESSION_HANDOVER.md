@@ -5,6 +5,57 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-07 - Storage quota bar added to AssetManager
+
+### Current branch
+
+`main`
+
+### What was completed
+
+Added a storage quota usage bar to `components/project/assets/AssetManager.tsx`.
+
+- Added `formatBytes()` utility (MB/GB human-readable formatting).
+- Added `quotaInfo` state and `fetchQuota()` function that calls `check_storage_quota` RPC with `p_incoming_file_size: 0` on mount.
+- Quota is refreshed after successful upload and after successful delete so the bar stays accurate without a page reload.
+- Quota fetch fails silently — if the RPC fails or the user is unauthenticated, the bar simply doesn't appear. Asset management is never blocked.
+- Quota bar only renders for cloud projects (`!isLocalOnly && quotaInfo`). Local-only projects don't have quota constraints.
+- Bar states: neutral (< 80%), amber warning (80–90%), red critical (> 90%). Background tint changes to match the state.
+- Positioned as a thin strip between the page header and the asset grid, with a `border-b` separator.
+- Copy: "Storage" / "Nearing storage limit" / "Storage almost full" with "X MB of Y MB" on the right.
+- No new notification types. No bell notifications. No unrelated changes.
+
+### Files changed
+
+- `components/project/assets/AssetManager.tsx`
+- `SESSION_HANDOVER.md`
+- `TESTING.md`
+- `TASK_BOARD.md`
+
+### Current status
+
+Storage quota bar is implemented. The pre-condition logged in Phase 6 is now met — the assets page is a meaningful destination for future quota notifications.
+
+TypeScript: clean (no errors).
+Lint: both pre-existing warnings (`react-hooks/exhaustive-deps`, `@next/next/no-img-element`) were present before this change. No new warning categories introduced.
+
+### Next recommended step
+
+Manual browser validation:
+1. Open a cloud project's Assets page.
+2. Verify quota bar appears below the header.
+3. Upload an image and confirm the bar updates.
+4. Delete an image and confirm the bar updates.
+5. Verify neutral / warning / critical visual states are correct at the appropriate usage thresholds.
+
+Storage/quota bell notifications can now be re-evaluated in a future pass — the prerequisite routing destination now exists.
+
+### Risks or warnings
+
+- Quota bar makes one extra RPC call (`check_storage_quota`) on mount per page load. This is the same RPC already called during every upload — it's cheap (SELECT + SUM). Acceptable overhead.
+- Quota refresh after delete fires `fetchQuota()` before the Supabase storage trigger has updated `storage_used_bytes`. There is a brief window where the bar may show slightly stale data. This resolves on the next mount or upload. Acceptable for a progress bar.
+
+---
 ## 2026-05-07 - Phase 6 Storage/quota notification audit (no implementation)
 
 ### Current branch

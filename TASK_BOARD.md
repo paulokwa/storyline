@@ -146,7 +146,7 @@ Candidate areas to scope later:
 
 6. Storage/quota warnings
    - ✅ Audited (Phase 6) — **no bell notifications warranted at this time.** The primary upload path (`AssetManager.tsx`) surfaces quota errors synchronously at point of use with a descriptive toast — user is always on-page. Critical blocker: no storage management UI exists. Settings page does not fetch or display `storage_used_bytes`. The assets page shows the asset grid but no quota bar. Without a storage quota bar, any bell notification has no useful destination to route users to.
-   - **Prerequisite before implementing**: Add a storage quota bar to `AssetManager.tsx`. Once that exists, a near-limit warning notification at 80-90% would be valuable and have a meaningful destination.
+   - **Prerequisite**: ✅ Storage quota bar added to `AssetManager.tsx` (2026-05-07). The assets page now shows usage and is a meaningful notification destination.
    - **Technical debt gap**: `/api/migration/upload-asset` bypasses `check_storage_quota`. Users near quota who migrate image-heavy local projects can silently exceed quota. Logged in `docs/technical-debt-roadmap.md`.
    - Revisit after the quota bar UI is added.
 

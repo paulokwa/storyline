@@ -142,6 +142,20 @@ Future agents: treat this workflow as established. Before asking the user about 
 | Backup large-file warning (image-heavy project) | Needs retest | AI agent | 2026-05-03 | `BackupBanner.tsx` and both backup callers in `ProjectShell.tsx` now show a `toast.warning` when the backup exceeds 20 MB. To test: open a local project, attach several images as visual references, then trigger a backup from the reminder banner and from the project menu. Confirm a yellow toast appears with wording like "Backup is X MB — your project contains embedded images which increase file size. This is normal." |
 | Backup no-warning for text-only project | Needs retest | AI agent | 2026-05-03 | Trigger a backup on a text-only local project (no attached images). Confirm no size warning toast appears. Also confirm the backup file still downloads correctly and `recordBackupComplete` still fires (reminder resets). |
 
+## Assets / Storage
+
+| Test | Status | Tested by | Date tested | Notes |
+|---|---|---|---|---|
+| Storage quota bar visible on Assets page (cloud project) | Needs retest | AI agent | 2026-05-07 | `AssetManager.tsx` now fetches `check_storage_quota` on mount and renders a thin bar between the page header and the asset grid. Browser validation: open a cloud project, go to Assets — confirm the bar appears with "Storage" label and "X MB of Y MB" text. |
+| Storage quota bar absent for local-only projects | Needs retest | AI agent | 2026-05-07 | Local projects don't have server-side quota. Confirm the bar is completely absent on a local-only project's Assets page. |
+| Storage quota bar refreshes after upload | Needs retest | AI agent | 2026-05-07 | Upload an image on a cloud project. After `toast.success('Asset uploaded successfully')`, the quota bar should update to reflect the new usage without a page reload. |
+| Storage quota bar refreshes after delete | Needs retest | AI agent | 2026-05-07 | Delete an asset on a cloud project. After `toast.success('Asset deleted')`, the quota bar should update to reflect the freed space. |
+| Storage quota bar warning state at 80%+ | Needs retest | AI agent | 2026-05-07 | At 80–90% usage, the bar label should change to "Nearing storage limit" (amber), the bar fill should be amber, and the background strip should be amber-tinted. |
+| Storage quota bar critical state at 90%+ | Needs retest | AI agent | 2026-05-07 | At 90%+ usage, the bar label should change to "Storage almost full" (red), bar fill red, background red-tinted. |
+| Storage quota bar fails silently if RPC errors | Needs retest | AI agent | 2026-05-07 | If `check_storage_quota` RPC fails (e.g. simulate with network throttle or revoke), the quota bar should simply not appear. Asset upload and delete must still function normally. No error toast or broken state should result from the quota fetch failure. |
+| Upload quota error toast still works (regression) | Needs retest | AI agent | 2026-05-07 | Simulate or reach quota limit and attempt an upload. The pre-upload `check_storage_quota` call should still fire and display `toast.error('Storage quota exceeded', { description: '...' })`. This path is unchanged. |
+| Storage formatBytes: MB and GB formatting | Needs retest | AI agent | 2026-05-07 | `formatBytes()` should output "X.X MB" for values under 1 GB and "X.X GB" for values at or above 1 GB. Verify with: 0 bytes → "0.0 MB", 1MB → "1.0 MB", 104857600 (100MB) → "100.0 MB", 1073741824 (1GB) → "1.0 GB". |
+
 ## .storyline File Workflow (Save/Save As/Open)
 
 | Test | Status | Tested by | Date tested | Notes |

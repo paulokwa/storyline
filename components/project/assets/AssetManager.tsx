@@ -4,17 +4,19 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { 
-    Upload, 
-    Image as ImageIcon, 
-    X, 
-    Loader2, 
-    Trash2, 
+import {
+    Upload,
+    Image as ImageIcon,
+    X,
+    Loader2,
+    Trash2,
     Search,
     Info,
-    ExternalLink
+    ExternalLink,
+    HardDrive,
 } from 'lucide-react'
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { getUserSafely } from '@/lib/supabase/client-auth'
 import {
@@ -36,6 +38,11 @@ type StorageQuotaCheckResult = {
 
 function getErrorMessage(error: unknown) {
     return error instanceof Error ? error.message : String(error)
+}
+
+function formatBytes(bytes: number): string {
+    if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 function parseStorageQuotaCheckResult(value: unknown): StorageQuotaCheckResult | null {
@@ -68,11 +75,13 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
     const [loading, setLoading] = useState(true)
     const [uploading, setUploading] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
+    const [quotaInfo, setQuotaInfo] = useState<{ current_usage_bytes: number; effective_quota_bytes: number } | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
     const supabase = createClient()
 
     useEffect(() => {
         fetchAssets()
+        fetchQuota()
     }, [projectId])
 
     async function fetchAssets() {
@@ -96,6 +105,27 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
             toast.error('Failed to load assets')
         } finally {
             setLoading(false)
+        }
+    }
+
+    async function fetchQuota() {
+        if (isLocalOnly) return
+        try {
+            const { user } = await getUserSafely(supabase)
+            if (!user) return
+            const { data } = await supabase.rpc('check_storage_quota', {
+                p_user_id: user.id,
+                p_incoming_file_size: 0,
+            })
+            const result = parseStorageQuotaCheckResult(data)
+            if (result) {
+                setQuotaInfo({
+                    current_usage_bytes: result.current_usage_bytes,
+                    effective_quota_bytes: result.effective_quota_bytes,
+                })
+            }
+        } catch {
+            // fail quietly — quota bar is informational only
         }
     }
 
@@ -172,6 +202,7 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
 
             toast.success('Asset uploaded successfully')
             fetchAssets()
+            fetchQuota()
         } catch (error: unknown) {
             console.error('Upload failed:', error)
             toast.error('Upload failed: ' + getErrorMessage(error))
@@ -202,6 +233,7 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
             if (error) throw error
 
             setAssets(prev => prev.filter(a => a.id !== asset.id))
+            fetchQuota()
             toast.success('Asset deleted')
         } catch (error: unknown) {
             console.error('Delete failed:', error)
@@ -228,6 +260,12 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
         return isLocalOnly ? getLocalAssetUrl({ storage_path: path }) : supabase.storage.from('project-assets').getPublicUrl(path).data.publicUrl
     }
 
+    const quotaPct = quotaInfo
+        ? Math.min(100, Math.round((quotaInfo.current_usage_bytes / quotaInfo.effective_quota_bytes) * 100))
+        : 0
+    const quotaIsCritical = quotaPct >= 90
+    const quotaIsWarning = quotaPct >= 80 && quotaPct < 90
+
     return (
         <TooltipProvider>
             <div className="flex-1 flex flex-col min-h-0 bg-background">
@@ -242,15 +280,15 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                     <div className="relative flex-1 sm:w-64">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input 
-                            placeholder="Search assets..." 
+                        <Input
+                            placeholder="Search assets..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="pl-9 bg-secondary/50 border-none"
                         />
                     </div>
-                    
-                    <Button 
+
+                    <Button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploading}
                         className="rounded-xl shadow-lg shadow-primary/20 gap-2"
@@ -258,15 +296,52 @@ export default function AssetManager({ projectId }: AssetManagerProps) {
                         {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                         {uploading ? 'Uploading...' : 'Upload Image'}
                     </Button>
-                    <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        className="hidden" 
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
                         accept="image/*"
                         onChange={handleUpload}
                     />
                 </div>
             </div>
+
+            {!isLocalOnly && quotaInfo && (
+                <div className={cn(
+                    'px-6 py-3 border-b border-border',
+                    quotaIsCritical ? 'bg-red-50/60' : quotaIsWarning ? 'bg-amber-50/60' : 'bg-slate-50/50'
+                )}>
+                    <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-1.5">
+                            <HardDrive className={cn(
+                                'w-3 h-3',
+                                quotaIsCritical ? 'text-red-500' : quotaIsWarning ? 'text-amber-500' : 'text-muted-foreground'
+                            )} />
+                            <span className={cn(
+                                'text-xs font-medium',
+                                quotaIsCritical ? 'text-red-600' : quotaIsWarning ? 'text-amber-600' : 'text-muted-foreground'
+                            )}>
+                                {quotaIsCritical ? 'Storage almost full' : quotaIsWarning ? 'Nearing storage limit' : 'Storage'}
+                            </span>
+                        </div>
+                        <span className={cn(
+                            'text-xs tabular-nums',
+                            quotaIsCritical ? 'text-red-500' : quotaIsWarning ? 'text-amber-500' : 'text-muted-foreground'
+                        )}>
+                            {formatBytes(quotaInfo.current_usage_bytes)} of {formatBytes(quotaInfo.effective_quota_bytes)}
+                        </span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                            className={cn(
+                                'h-full rounded-full transition-all duration-500',
+                                quotaIsCritical ? 'bg-red-500' : quotaIsWarning ? 'bg-amber-500' : 'bg-primary/50'
+                            )}
+                            style={{ width: `${quotaPct}%` }}
+                        />
+                    </div>
+                </div>
+            )}
 
             <div className="flex-1 overflow-y-auto p-6 scroll-smooth">
                 {loading ? (
