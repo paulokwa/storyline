@@ -118,7 +118,31 @@ Trial cost finalization now prefers provider-reported token usage where availabl
 
 ---
 
-### 5. AI Abuse Controls Hardening
+### 5. Migration Upload Bypasses Storage Quota Check
+
+**Why it matters:**
+`/api/migration/upload-asset` uploads project assets to the `project-assets` Supabase Storage bucket using the admin client, which bypasses RLS and quota enforcement entirely. The storage trigger (`project_assets_sync_profile_storage_usage`) updates `storage_used_bytes` after the migration transaction inserts into `project_assets`, but the upload itself is never blocked.
+
+A user with near-quota storage (e.g., 95 MB used of 100 MB quota) who migrates an image-heavy local project will silently exceed their quota. They will only discover this the next time they try to upload a new asset in `AssetManager.tsx` and hit the quota check.
+
+**Risk if ignored:**
+Silent quota overruns during migration. Users are surprised by blocked uploads without understanding why. Quota enforcement is inconsistent across upload paths.
+
+**Current state:**
+Discovered during the 2026-05-07 Phase 6 storage notification audit. No fix applied yet.
+
+**Fix options:**
+1. Add a `check_storage_quota` call at the start of the migration upload route (preferred — consistent enforcement). Return a 413 if the upload would exceed quota.
+2. Add a post-migration quota check in `handleMigration()` in `ProjectSettingsModal.tsx` and fire a warning toast or bell notification if storage is now near or over limit.
+3. Implement option 1 for enforcement and option 2 for user-visible feedback.
+
+**Note:** Because `/api/migration/upload-asset` uses the admin client for legitimate bypass of storage RLS, the quota check must be done via `supabase.rpc('check_storage_quota', ...)` using the authenticated user client before calling the admin upload — same pattern as `/api/project-assets/upload/route.ts`.
+
+**Priority:** Medium. Local-to-cloud migration is not yet heavily used. The trigger still keeps `storage_used_bytes` accurate. The gap is UX (surprise at next upload), not data loss.
+
+---
+
+### 6. AI Abuse Controls Hardening
 
 **Why it matters:**
 Sponsored AI credits are attractive to abuse. Current protections are useful, but signals such as email normalization, disposable-domain lists, forwarded IPs, and browser fingerprints are never perfect.

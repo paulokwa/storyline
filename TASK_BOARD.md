@@ -110,7 +110,7 @@ Current product direction:
 - Avoid noisy notifications for routine autosave, normal scene edits, ordinary AI completions, generic reminders, or motivational nudges unless they become explicit opt-in features later.
 - Prioritize notifications that protect the user's work, clarify collaboration, or guide important setup/recovery moments.
 
-Current status after the 2026-05-07 Phase 3 and Phase 4 audit:
+Current status after the 2026-05-07 Phase 3–6 audit:
 
 - Migration history was repaired for `local_transfer_guidance`.
 - `project_shared` dedupe groundwork was added in SQL.
@@ -140,15 +140,15 @@ Candidate areas to scope later:
    - Revisit only if a background export queue or async import pipeline is added in the future.
 
 5. AI setup and credit guidance
-   - AI key missing.
-   - AI key/auth/billing failure.
-   - Trial credit low/used, if the trial-credit system is active.
-   - Deduplicate aggressively so AI setup problems do not spam the user.
+   - ✅ Audited (Phase 5) — **no bell notifications warranted**. All AI errors surface synchronously at point of use. `AiHelperPanel.tsx` already has rich inline error handling with Settings links for all named error codes. `analyzeScene()` shows a generic toast (weaker UX but adequate; the fix is better toast differentiation, not bell notifications). No background AI pipeline exists.
+   - Note: `analyzeScene()` in `ProjectContext.tsx` does not differentiate `NO_API_KEY` / `TRIAL_EXHAUSTED` from generic errors — a future UX improvement (not a notification task) would add specific messages with a Settings link for these codes.
+   - Revisit only if a background/deferred AI pipeline is added in the future.
 
 6. Storage/quota warnings
-   - Storage quota warning around 80-90%.
-   - Storage quota exceeded/upload blocked.
-   - Large asset upload failed.
+   - ✅ Audited (Phase 6) — **no bell notifications warranted at this time.** The primary upload path (`AssetManager.tsx`) surfaces quota errors synchronously at point of use with a descriptive toast — user is always on-page. Critical blocker: no storage management UI exists. Settings page does not fetch or display `storage_used_bytes`. The assets page shows the asset grid but no quota bar. Without a storage quota bar, any bell notification has no useful destination to route users to.
+   - **Prerequisite before implementing**: Add a storage quota bar to `AssetManager.tsx`. Once that exists, a near-limit warning notification at 80-90% would be valuable and have a meaningful destination.
+   - **Technical debt gap**: `/api/migration/upload-asset` bypasses `check_storage_quota`. Users near quota who migrate image-heavy local projects can silently exceed quota. Logged in `docs/technical-debt-roadmap.md`.
+   - Revisit after the quota bar UI is added.
 
 Before implementation of remaining candidates:
 

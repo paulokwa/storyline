@@ -5,6 +5,118 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-07 - Phase 6 Storage/quota notification audit (no implementation)
+
+### Current branch
+
+`main`
+
+### What was completed
+
+**Audit scope:** All asset upload entry points, the quota system, current user feedback, and whether bell notifications could route usefully.
+
+**Upload entry points and quota tracking:**
+- `AssetManager.tsx` → `/api/project-assets/upload` → `project-assets` bucket: quota tracked, quota checked both client-side (via `check_storage_quota` RPC) and server-side, errors surfaced as informative toast with exact MB numbers.
+- `CoverPicker.tsx` → `project-covers` bucket: NOT quota-tracked, separate bucket, no quota check.
+- `SettingsView.tsx` → `user-avatars` bucket: NOT quota-tracked, separate bucket, no quota check.
+- `/api/migration/upload-asset` → `project-assets` bucket (admin client): **bypasses quota check entirely**. Storage trigger updates `storage_used_bytes` after the fact, but upload is not blocked. Users near quota can silently exceed quota during local-to-cloud migration.
+- `SceneAssetsPanel.tsx` / `AssetPicker.tsx`: only select existing assets, no uploads.
+
+**Quota system:**
+- Default quota 100MB per user. Effective quota = `GREATEST(100MB, storage_quota_bytes, quota_override_bytes)`.
+- Only `project_assets` rows count against quota (not covers or avatars).
+- `check_storage_quota` refreshes usage from DB before checking — no stale-counter issues.
+- Trigger `project_assets_sync_profile_storage_usage` keeps `storage_used_bytes` current on every insert/update/delete to `project_assets`.
+
+**Current user feedback for quota errors:**
+- Client-side: descriptive toast — `"Storage quota exceeded: You are using X MB of your Y MB limit."` User is on-page and cannot miss it.
+- Server-side fallback: generic `"Upload failed: Storage quota exceeded."` toast.
+- No near-limit warning exists anywhere.
+- No quota bar, usage counter, or storage management UI exists anywhere in the app. Settings page selects only `display_name, avatar_url, bio` — not storage fields. Assets page shows asset grid but no quota info.
+
+**Bell notification verdict: No bell notifications warranted.**
+- Primary upload path: user is on-page, sees informative toast immediately. Bell would be redundant noise.
+- Critical blocking issue: even if a bell fired, there is **no destination page with storage context** to route the user to. `/project/[id]/assets` shows the asset grid but no quota bar or usage info. Routing there without that UI gives the user no actionable information.
+- The prerequisite for useful storage notifications is a storage quota bar in `AssetManager.tsx`. Once that exists, a near-limit warning notification would have a meaningful destination.
+- Near-limit warning: no mechanism to trigger it, and same routing-destination problem.
+
+**Technical debt gap identified:**
+- `/api/migration/upload-asset` bypasses `check_storage_quota`. A user with near-quota storage who migrates an image-heavy local project could silently exceed quota, discovering the problem only on their next upload attempt.
+- Logged in `docs/technical-debt-roadmap.md`.
+
+**No code was changed. No migrations were added.**
+
+### Files changed
+
+- `TASK_BOARD.md`
+- `SESSION_HANDOVER.md`
+- `docs/technical-debt-roadmap.md`
+
+### Current status
+
+Notification expansion through Phase 6 (storage/quota) is now complete. No new notification types were added. The bell remains low-noise.
+
+### Next recommended step
+
+The storage notification work has a clear prerequisite: add a storage quota bar to `AssetManager.tsx`. This gives the assets page a meaningful destination for future quota notifications and gives users proactive storage awareness. It is a UX improvement, not a notification task — scoped separately.
+
+For notifications: the audit is closed for this notification expansion pass. All six phases are now complete.
+
+Manual browser validation backlog from prior phases still needs a dedicated session:
+1. Cloud migration completed/failed bell notifications (Phase 3 — `ProjectSettingsModal.tsx`).
+2. Collaborator reply notification bell/detail/comment-panel flow (Phase 2).
+
+### Risks or warnings
+
+- Migration upload quota bypass is a real data-integrity gap. Users who migrate image-heavy local projects near quota will silently exceed quota. Logged as medium-priority tech debt.
+
+---
+## 2026-05-07 - Phase 5 AI setup/credit notification audit (no implementation)
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Audited all AI error surfaces across both AI entry points:
+  - `AiHelperPanel.tsx` — rich inline error block handles all named error codes (`NO_API_KEY`, `APP_MANAGED_AI_UNAVAILABLE`, `TRIAL_EXHAUSTED`, `TRIAL_UNAVAILABLE`) with persistent inline UI and direct Settings link. `toast.error` also fires at time of failure.
+  - `analyzeScene()` in `ProjectContext.tsx` — calls `/api/ai/analyze-scene`; on AI setup errors, falls through to `toast.error('Scene analysis could not run right now.')` — a generic message with no Settings link. This is weaker UX but surfaces at point of use.
+  - `/api/ai/analyze-scene` route — same billing-mode checks and error codes as the main AI route.
+- Confirmed **no background AI processes** exist. All AI errors surface synchronously exactly when the user interacts with an AI feature.
+- Determined that **no bell notifications are warranted** for any AI setup/credit/provider failure flow:
+  - All errors occur at point of use; the user cannot miss them without also abandoning the action.
+  - `AiHelperPanel.tsx` inline error block is already more informative and more actionable than any bell notification would be.
+  - `analyzeScene` toast is weaker but the remedy is better toast differentiation, not bell notifications.
+  - Bell notifications here would add noise without value beyond what already appears inline at the moment of failure.
+- The `analyzeScene` error handler (`ProjectContext.tsx`) does not differentiate between AI setup errors (`NO_API_KEY`, `TRIAL_EXHAUSTED`) and generic provider errors — a future improvement would be to add specific error messages with a Settings link for setup-related codes. This is a UX debt item, not a notification task.
+- No code was changed. No migrations were added.
+- Updated `TASK_BOARD.md` and `SESSION_HANDOVER.md`.
+
+### Files changed
+
+- `TASK_BOARD.md`
+- `SESSION_HANDOVER.md`
+
+### Current status
+
+Notification expansion through Phase 5 (AI setup/credit) is now complete. No new notification types were added. The bell remains low-noise.
+
+### Next recommended step
+
+Remaining notification candidate: **storage/quota warnings** (Phase 6). Requires its own audit pass before implementation.
+
+Manual browser validation backlog from prior phases still needs a dedicated session:
+1. Cloud migration completed/failed bell notifications (Phase 3 — `ProjectSettingsModal.tsx`).
+2. Collaborator reply notification bell/detail/comment-panel flow (Phase 2).
+
+A separate UX improvement (not a notification task): differentiate `NO_API_KEY` and `TRIAL_EXHAUSTED` errors in `analyzeScene()` in `ProjectContext.tsx` so the toast points users toward Settings.
+
+### Risks or warnings
+
+- No new risks introduced in this session. Audit-only pass.
+
+---
 ## 2026-05-07 - Phase 4 Import/Export notification audit (no implementation)
 
 ### Current branch
