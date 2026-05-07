@@ -595,6 +595,38 @@ Add a short entry using this format:
 
 ---
 
+## Issue: TypeScript scans local Impeccable tooling checkout
+
+### Symptoms
+
+- `npx tsc --noEmit --pretty false` fails with errors under `impeccable/site`, `impeccable/tests`, or other `impeccable/*` paths.
+- Errors mention optional tooling dependencies such as `astro:content`, `astro/loaders`, `styled-components`, `@emotion/react`, `vite`, or `@vitejs/plugin-react`.
+
+### Cause
+
+- The local Impeccable tool checkout lives under the repo root, but it is not Storyline application source.
+- A broad TypeScript include such as `**/*.ts`, `**/*.tsx`, and `**/*.mts` can pick up ignored local tooling folders unless they are also listed in `tsconfig.json` `exclude`.
+
+### Fix
+
+- Keep local tooling folders ignored by git.
+- Exclude `.agents`, `.claude`, `.netlify`, and `impeccable` from `tsconfig.json`.
+- Add matching global ignores in `eslint.config.mjs` so repo lint does not scan local tool/plugin checkouts.
+
+### Verification
+
+- `node .agents/skills/impeccable/scripts/load-context.mjs`
+- `npx tsc --noEmit --pretty false`
+- `npx eslint impeccable/site/content.config.ts --no-warn-ignored`
+- `npx eslint .agents/skills/impeccable/SKILL.md --no-warn-ignored`
+
+### Notes
+
+- This does not install or commit the Impeccable skill itself; `.agents/skills/impeccable/` and `impeccable/` remain local ignored tooling.
+- Repo-wide `npm run lint` may still fail on unrelated Storyline lint debt.
+
+---
+
 ## Issue: `AuthApiError: Invalid Refresh Token: Refresh Token Not Found` on showcase page load
 
 ### Symptoms

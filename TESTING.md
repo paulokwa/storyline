@@ -183,7 +183,7 @@ Future agents: treat this workflow as established. Before asking the user about 
 
 | Test | Status | Tested by | Date tested | Notes |
 |---|---|---|---|---|
-| Smart/Manual Context Phase 1 schema and types | Needs retest | AI agent | 2026-05-07 | Migration and TypeScript type support added for `ai_context_mode` and `exclude_from_ai`. Focused eslint passed on changed TS files. Full build/typecheck remains blocked by the existing `impeccable/site` Astro type dependency issue. |
+| Smart/Manual Context Phase 1 schema and types | Needs retest | AI agent | 2026-05-07 | Migration and TypeScript type support added for `ai_context_mode` and `exclude_from_ai`. Focused eslint passed on changed TS files. The prior `impeccable/site` TypeScript blocker was resolved by excluding local tooling folders; browser/database validation is still needed. |
 | Smart Context settings persistence | Not tested | - | - | Confirm `/api/ai/preferences` saves and returns `ai_context_mode`, with existing users defaulting to Manual Context and new settings rows defaulting to Smart Context. |
 | Smart Context excludes opted-out items | Not tested | - | - | Confirm characters, ideas, locations, and objects with `exclude_from_ai = true` are not included in Smart Context. |
 | Scene Analysis remains scene-text-only with context modes | Not tested | - | - | Test Scene Analysis in both Manual Context and Smart Context and confirm no characters, ideas, locations, objects, chapters, or manuscript text are included. |
@@ -369,6 +369,7 @@ Future agents: treat this workflow as established. Before asking the user about 
 
 Newest confirmations go at the top.
 
+| 2026-05-07 | AI agent | Impeccable availability and TypeScript exclusion fix | Passed | Impeccable context loader found Storyline `PRODUCT.md` and `DESIGN.md`; `npx tsc --noEmit --pretty false` and `npm run build` passed after excluding local tooling folders; targeted ESLint ignore checks passed for `impeccable/site/content.config.ts` and `.agents/skills/impeccable/SKILL.md`. |
 | 2026-05-07 | AI agent | Supabase CLI setup verification | Passed | `npm exec supabase -- --version` returned `2.98.2`; `npm ls supabase --depth=0` showed `supabase@2.98.2`; `npx supabase migration list --linked` connected to the linked remote and listed migrations. `npx supabase status` is blocked until Docker Desktop/daemon is running. |
 | 2026-05-07 | AI agent | Focused lint after Smart Context / Manual Context Phase 1 | Passed | `npx eslint lib/ai/modes.ts lib/persistence/local-projects.ts lib/persistence/writing-entities.ts lib/supabase/types.ts` passed after adding context-mode and AI-exclusion types/defaults. |
 | 2026-05-07 | AI agent | TypeScript compile after collaborator reply notification pass | Passed | `npx tsc --noEmit --pretty false` passed after adding reply-recipient notification SQL, reply-aware notification titles in `lib/notifications.ts`, and exact thread/reply activation support in `CommentsPanel.tsx`. |

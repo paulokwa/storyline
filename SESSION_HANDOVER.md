@@ -5,6 +5,36 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-07 - Impeccable availability and tooling exclusion fix
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Confirmed the Impeccable skill is present locally at `.agents/skills/impeccable/` and `C:\Users\mwake\.agents\skills\impeccable`.
+- Confirmed Impeccable context loads successfully from Storyline root `PRODUCT.md` and `DESIGN.md`.
+- Reproduced the prior TypeScript failure where `npx tsc --noEmit --pretty false` scanned the ignored local `impeccable/` tool checkout.
+- Updated `tsconfig.json` to exclude local tooling folders: `.agents`, `.claude`, `.netlify`, and `impeccable`.
+- Updated `eslint.config.mjs` with matching global ignores.
+- Added a troubleshooting entry for this exact failure pattern.
+- Verified `npm run build` now completes successfully.
+
+### Current status
+
+Impeccable is available as a local skill, and Storyline TypeScript checks no longer fail because of the local Impeccable checkout.
+
+### Next recommended step
+
+For future UI work using Impeccable, run `node .agents/skills/impeccable/scripts/load-context.mjs` first and follow the project guardrail in `DESIGN.md`: audit first, preserve Sanctuary, and avoid broad redesigns unless explicitly requested.
+
+### Risks or warnings
+
+- Repo-wide `npm run lint -- --no-warn-ignored` still fails on existing Storyline lint debt unrelated to Impeccable.
+- `.agents/skills/impeccable/` and `impeccable/` remain local ignored tooling and are not committed skill payloads.
+
+---
 ## 2026-05-07 - Supabase CLI project setup
 
 ### Current branch
@@ -82,7 +112,7 @@ Continue with Settings UI and persistence:
 
 ### Risks or warnings
 
-- Full `npm run build` compiles app code but fails during TypeScript on the existing `impeccable/site` Astro type dependency issue.
+- The prior `impeccable/site` TypeScript blocker was resolved later by excluding local tooling folders from app checks.
 - Full repo lint is blocked by existing generated/tooling folders such as `.netlify`, `.agents`, `.claude`, and `impeccable` fixtures.
 - Supabase CLI is not installed in this shell, so local migration lint was not available.
 - Smart Context is not wired yet and must not be considered usable until settings persistence, exclusion UI, the builder, and AI Partner wiring are complete.
