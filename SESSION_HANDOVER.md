@@ -5,6 +5,51 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-06 - Library survey nudge floating placement
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Reworked the Library survey nudge from an inline bottom-of-page banner into a subtle floating card so it is visible without scrolling on long libraries.
+- Kept the existing survey trigger and deduplication rules intact:
+  - still Library-only
+  - still requires at least 1 project
+  - still hides after `storyline_survey_v1` is set to `dismissed` or `completed`
+- Kept the survey modal, survey API, Supabase schema expectations, admin feedback reader, and Help-triggered feedback entry unchanged.
+- Added the requested manual test coverage to `TESTING.md` for floating visibility, open, dismiss persistence, completion persistence, mobile placement, 0-project gating, and Help-path regression.
+
+### Files changed
+
+- `components/survey/FeedbackNudge.tsx`
+- `TESTING.md`
+- `SESSION_HANDOVER.md`
+
+### Commands run
+
+- `npx eslint components/survey/FeedbackNudge.tsx`
+
+### Current status
+
+Focused eslint passed for the updated floating nudge component. Manual browser verification is still needed for Library desktop/mobile placement and persistence behavior.
+
+### Manual testing still needed
+
+- Library with 1+ project shows the floating nudge without scrolling.
+- Clicking `Share thoughts` opens the survey modal.
+- Dismissing the nudge hides it and persists after refresh.
+- Completing the survey hides it and persists after refresh.
+- Mobile/narrow viewport placement stays visible without covering key Library actions.
+- Library with 0 projects does not show the nudge.
+- Help `Share feedback` still opens the survey.
+
+### Layout risks
+
+- On very short mobile viewports, the floating card could still overlap the bottom edge of the last visible library cards while scrolling. The current placement respects safe-area padding and stays compact, but it still needs a real-device check.
+
+---
 ## 2026-05-06 - Notifications 403 fix (POST /rest/v1/notifications)
 
 ### Current branch
