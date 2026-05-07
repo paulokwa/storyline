@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import ProjectShell from '@/components/project/ProjectShell'
@@ -128,10 +129,16 @@ async function ProjectLayoutLoader({
         role: currentMembership?.role ?? (projectData.user_id === user.id ? 'owner' : 'viewer'),
     }
 
-    // Update last accessed time asynchronously via RPC (safe for all members)
-    void supabase.rpc('touch_project', { p_id: id }).then(({ error }) => {
-        if (error) console.error('Failed to update last_accessed_at:', error)
-    })
+    // Only touch last_accessed_at on real navigation — not on Next.js prefetch.
+    // Prefetch requests send Next-Router-Prefetch: 1; skipping here prevents the
+    // library page from stamping every visible project card as "just accessed".
+    const requestHeaders = await headers()
+    const isPrefetch = requestHeaders.get('Next-Router-Prefetch') === '1'
+    if (!isPrefetch) {
+        void supabase.rpc('touch_project', { p_id: id }).then(({ error }) => {
+            if (error) console.error('Failed to update last_accessed_at:', error)
+        })
+    }
 
     return (
         <ProjectProvider role={project.role}>

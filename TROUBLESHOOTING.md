@@ -703,3 +703,42 @@ Do not change app auth logic for this note unless a clean production-only reprod
 
 - Manual browser validation is still required for four flows: fresh signup verification, reusing a consumed signup verification link, opening an invalid/reused signup link while another user is signed in, and confirming password-reset emails still use the clean production callback URL.
 
+---
+
+## Library: Projects Showing False "Last Accessed" Timestamps
+
+### Symptom
+
+Multiple projects in the library show a very recent `last_accessed_at` timestamp (e.g. "just now" or "X minutes ago") even though the user has not opened those projects. The spurious timestamps appear in bursts — several projects touched within milliseconds of each other.
+
+### Cause
+
+Next.js App Router prefetches `<Link>` targets when they enter the viewport. The project card links (`/project/[id]/story`) are prefetched as the library page renders. Each prefetch is a real server-side RSC request that runs `ProjectLayoutLoader`, including the `void supabase.rpc('touch_project', ...)` call. Because the Supabase session cookie is present in every request, `touch_project` updates `last_accessed_at` during prefetch as if the user had opened the project.
+
+### Confirmed by
+
+Querying `projects` and finding groups of 3–4 projects with identical `last_accessed_at` timestamps within 35–400ms of each other — consistent with concurrent prefetch requests, not manual navigation.
+
+### Fix
+
+In `app/(app)/project/[id]/layout.tsx`, check the `Next-Router-Prefetch: 1` header and skip `touch_project` for prefetch requests:
+
+```typescript
+import { headers } from 'next/headers'
+// ...inside ProjectLayoutLoader:
+const requestHeaders = await headers()
+const isPrefetch = requestHeaders.get('Next-Router-Prefetch') === '1'
+if (!isPrefetch) {
+    void supabase.rpc('touch_project', { p_id: id }).then(({ error }) => {
+        if (error) console.error('Failed to update last_accessed_at:', error)
+    })
+}
+```
+
+This preserves prefetch performance (loading skeletons still preload) while ensuring `last_accessed_at` only updates on real user navigation.
+
+### Notes
+
+- The `LocalProjectShell` equivalent (`touchLocalProject`) runs inside a `useEffect` — client-side only — so it was never affected by this issue.
+- If the header approach ever becomes unreliable (e.g. Next.js renames it), the fallback fix is `prefetch={false}` on the `<Link>` in `ProjectGrid.tsx:675`.
+
