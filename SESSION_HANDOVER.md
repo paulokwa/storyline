@@ -5,6 +5,47 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-07 - Phase 4 Import/Export notification audit (no implementation)
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Audited all import flows: new project manuscript import (`ImportWizard.tsx` → `/api/import`), AI Magic Detect (`/api/import/ai-detect`), chunk review/finalize step, Open Project File (`OpenProjectButton.tsx` → `importLocalBackup`/`restoreLocalBackup`), and Restore Backup into project (`RestoreBackupModal.tsx`).
+- Audited all export flows: MD, HTML, TXT (instant in-browser), DOCX, PDF, EPUB (async in-browser, seconds to ~30s for large content) — all via `ExportModal.tsx`.
+- Determined that **no bell notifications are warranted** for any import or export flow:
+  - All import paths block the user in-flow until completion; errors are shown inline in the component.
+  - All export paths run inside the `ExportModal` which stays open on failure; success triggers a browser download; no server-side pipeline exists.
+  - The user cannot navigate away from any of these flows before the outcome is known.
+  - Adding bell notifications here would be noise, contradicting the product rule.
+- No code was changed. No migrations were added.
+- Updated `TASK_BOARD.md` to mark import/export notifications as audited and closed for this pass.
+
+### Files changed
+
+- `TASK_BOARD.md`
+- `TESTING.md`
+- `SESSION_HANDOVER.md`
+
+### Current status
+
+Notification expansion through Phase 4 (import/export) is now complete. No new notification types were added. The bell remains low-noise.
+
+### Next recommended step
+
+Next notification candidate: **AI setup and credit guidance** (Phase 5), or **storage/quota warnings** (Phase 6). Both require their own audit pass before implementation.
+
+Manual browser validation backlog from prior phases still needs a dedicated session:
+1. Cloud migration completed/failed bell notifications (Phase 3 — `ProjectSettingsModal.tsx`).
+2. Collaborator reply notification bell/detail/comment-panel flow (Phase 2).
+
+### Risks or warnings
+
+- No new risks introduced in this session. Audit-only pass.
+
+---
 ## 2026-05-07 - Phase 3 Local/Cloud migration notifications
 
 ### Current branch

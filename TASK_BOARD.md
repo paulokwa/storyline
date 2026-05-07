@@ -110,13 +110,14 @@ Current product direction:
 - Avoid noisy notifications for routine autosave, normal scene edits, ordinary AI completions, generic reminders, or motivational nudges unless they become explicit opt-in features later.
 - Prioritize notifications that protect the user's work, clarify collaboration, or guide important setup/recovery moments.
 
-Current status after the 2026-05-07 Phase 3 pass:
+Current status after the 2026-05-07 Phase 3 and Phase 4 audit:
 
 - Migration history was repaired for `local_transfer_guidance`.
 - `project_shared` dedupe groundwork was added in SQL.
 - Linked Supabase validation is now complete for `local_transfer_guidance` migration history, live `project_shared` dedupe behavior, and the typed `create_notification` client RPC path.
 - Phase 2 collaborator reply notifications are now implemented for thread authors and prior participants, with per-recipient reply event keys and linked-Supabase validation complete.
 - Phase 3 Local → Cloud migration notifications are now implemented: `cloud_migration_completed` and `cloud_migration_failed` added to the enum (SQL migration `20260507190000`), applied to linked Supabase, TypeScript types updated, `lib/notifications.ts` updated with icons/routing/labels, and `ProjectSettingsModal.tsx` updated to fire bell notifications on success and non-trivial failure.
+- Phase 4 import/export audit complete — **no bell notifications warranted**. All import flows are synchronous and blocking (errors shown inline). All export flows run inside a blocking modal (user cannot navigate away; download triggers immediately on success; toast shows on failure while modal stays open). No background pipeline exists. Adding notifications here would be noise without benefit.
 - Broader trigger expansion is still deferred pending manual browser validation and later scoped passes.
 
 Candidate areas to scope later:
@@ -131,16 +132,12 @@ Candidate areas to scope later:
    - Defer @mentions unless/until the app supports explicit mention UX.
 
 3. Local/cloud safety notifications
-   - Cloud migration started/completed/failed.
-   - Local backup recommended before risky migration or transfer flows.
-   - Local-to-cloud guidance that is properly migrated, deduped, and not browser-local only.
+   - ✅ Cloud migration completed/failed — DONE (Phase 3).
+   - Local backup recommended before risky migration or transfer flows — deferred (existing modal is sufficient).
 
 4. Import/export notifications
-   - Import completed.
-   - Import needs review.
-   - Export ready.
-   - Export failed.
-   - Use only for longer-running or user-missable jobs; keep quick operations as toast-only.
+   - ✅ Audited (Phase 4) — **no bell notifications warranted**. All flows are synchronous and user-attended; errors are inline or in-modal toast.
+   - Revisit only if a background export queue or async import pipeline is added in the future.
 
 5. AI setup and credit guidance
    - AI key missing.
@@ -153,7 +150,7 @@ Candidate areas to scope later:
    - Storage quota exceeded/upload blocked.
    - Large asset upload failed.
 
-Before implementation:
+Before implementation of remaining candidates:
 
 - Run a fresh audit of migrations, generated Supabase types, notification RPCs/triggers, notification UI, and comment/collaboration flows.
 - Convert the chosen scope into phased instructions for Codex, Antigravity, Claude, or OpenCode Go.
