@@ -5,6 +5,84 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-07 - Notification foundation validation on linked Supabase
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Checked current local vs linked Supabase migration status with `supabase migration list`.
+- Confirmed the linked remote already had `20260427213327_add_local_transfer_guidance_notification_type.sql` in migration history and the `notification_type` enum already included `local_transfer_guidance`.
+- Confirmed the linked remote did **not** initially have the live SQL effects of `20260507123000_dedupe_project_shared_notifications.sql`:
+  - `notify_project_membership_changes()` did not yet contain the `project-shared:` event-key logic
+  - `project_shared` notifications still had no non-null `event_key`
+- Applied the SQL body of `supabase/migrations/20260507123000_dedupe_project_shared_notifications.sql` directly to the linked remote with `supabase db query --linked --file ...`.
+- Verified the linked remote now includes:
+  - both notification migration versions in `supabase_migrations.schema_migrations`
+  - `local_transfer_guidance` in the enum
+  - live `notify_project_membership_changes()` logic that uses the `project-shared:` event key
+  - non-null `project_shared` event keys in `public.notifications`
+- Ran a contained SQL dedupe test with dedicated test accounts and a throwaway project:
+  - first collaborator insert created exactly 1 `project_shared` notification
+  - removing and re-adding the same collaborator kept the total at 1
+  - the canonical event key was `project-shared:<projectId>:<userId>`
+  - the throwaway project and its notifications were deleted afterward
+- Verified the typed app-side `local_transfer_guidance` RPC path still works:
+  - `npx tsc --noEmit --pretty false` passed
+  - a signed-in Supabase JS client successfully called `rpc('create_notification', ...)`, fetched the created row, and deleted it without any `as any` workaround
+
+### Files changed
+
+- `TESTING.md`
+- `SESSION_HANDOVER.md`
+- `TASK_BOARD.md`
+
+### Commands run
+
+- `git log --oneline -20`
+- `git status --short --branch`
+- `supabase migration list`
+- `supabase db push --help`
+- `supabase migration repair --help`
+- `supabase db query --help`
+- `supabase db query --linked "select version from supabase_migrations.schema_migrations ..."`
+- `supabase db query --linked "select ... from pg_type / pg_enum ..."`
+- `supabase db query --linked "select position('project-shared:' in pg_get_functiondef(...)) ..."`
+- `supabase db query --linked --file supabase/migrations/20260507123000_dedupe_project_shared_notifications.sql`
+- inline Node admin-client script to get/create dedicated test accounts
+- linked SQL dedupe test against a throwaway project
+- linked SQL cleanup verification
+- inline Node client-auth RPC validation for `create_notification`
+- `npx tsc --noEmit --pretty false`
+
+### Current status
+
+The linked Supabase project now matches the Phase 1 notification foundation work for the validated scope:
+- `local_transfer_guidance` migration history is present
+- `project_shared` event-key dedupe/backfill behavior is live
+- `notify_project_membership_changes()` is updated remotely
+- the typed `create_notification` client RPC path works at runtime
+
+### Next recommended step
+
+Keep notification scope frozen for now and move to product-level Phase 2 planning only when ready:
+
+1. Decide whether comment-panel opening should ever clear notification read state.
+2. Scope collaborator-reply notifications as a separate, minimal pass.
+3. Keep import/export, AI, storage, and other notification candidates deferred until they are explicitly selected.
+
+### Risks or warnings
+
+- The linked Supabase project still has unrelated migration drift:
+  - local-only `20260430000000`
+  - local-only `20260504`
+  - remote-only `20260430025720`
+- During this validation pass, `supabase migration repair --status applied 20260507123000` succeeded before the SQL body had landed, which temporarily put remote migration history ahead of live schema. I corrected that by applying the SQL body directly and re-verifying the live function/event-key behavior afterward.
+- `collaborator_feedback` is still owner-only, and comment-panel opening still does not mark those notifications read.
+
+---
 ## 2026-05-07 - Notification foundation audit and schema repair
 
 ### Current branch
@@ -55,12 +133,11 @@ The notification system is still intentionally small and behaves more like an im
 
 ### Next recommended step
 
-Manual browser / shared-account validation:
+Manual browser validation that still remains outside the SQL/CLI scope:
 
-1. Confirm `project_shared` dedupe by adding a collaborator, removing them, and re-adding the same account.
-2. Confirm `collaborator_feedback` still appears normally for the owner after comment creation/edit.
-3. Decide whether opening comments from a notification should mark related `collaborator_feedback` rows read, or whether read state should stay limited to bell/detail views.
-4. If that policy changes, implement it narrowly in Phase 2 rather than bundling it with broader notification expansion.
+1. Confirm `collaborator_feedback` still appears normally for the owner after comment creation/edit.
+2. Decide whether opening comments from a notification should mark related `collaborator_feedback` rows read, or whether read state should stay limited to bell/detail views.
+3. If that policy changes, implement it narrowly in Phase 2 rather than bundling it with broader notification expansion.
 
 ### Risks or warnings
 

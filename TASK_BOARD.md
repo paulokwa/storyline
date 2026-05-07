@@ -114,6 +114,7 @@ Current status after the 2026-05-07 foundation pass:
 
 - Migration history was repaired for `local_transfer_guidance`.
 - `project_shared` dedupe groundwork was added in SQL.
+- Linked Supabase validation is now complete for `local_transfer_guidance` migration history, live `project_shared` dedupe behavior, and the typed `create_notification` client RPC path.
 - Broader trigger expansion is still deferred pending manual validation and Phase 2 scoping.
 
 Candidate areas to scope later:
