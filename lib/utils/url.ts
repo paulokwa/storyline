@@ -1,12 +1,54 @@
-export const getURL = () => {
-  let url =
-    process?.env?.NEXT_PUBLIC_SITE_URL ?? // Set this to your production URL in Netlify/Vercel
-    process?.env?.NEXT_PUBLIC_VERCEL_URL ?? // Automatically set by Vercel
-    'http://localhost:3000/';
+function isLocalhost(hostname: string) {
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+}
 
-  // Make sure to include `https://` when not localhost
-  url = url.includes('http') ? url : `https://${url}`;
-  // Make sure to include a trailing slash
-  url = url.charAt(url.length - 1) === '/' ? url : `${url}/`;
-  return url;
+function isNetlifyHost(hostname: string) {
+  return hostname.endsWith('.netlify.app');
+}
+
+function parseUrl(value?: string | null) {
+  if (!value) return null;
+
+  try {
+    return new URL(value.includes('http') ? value : `https://${value}`);
+  } catch {
+    return null;
+  }
+}
+
+function ensureTrailingSlash(value: string) {
+  return value.endsWith('/') ? value : `${value}/`;
+}
+
+export const getURL = (currentOrigin?: string) => {
+  const currentUrl = parseUrl(currentOrigin);
+  const configuredSiteUrl = parseUrl(process?.env?.NEXT_PUBLIC_SITE_URL);
+  const vercelUrl = parseUrl(process?.env?.NEXT_PUBLIC_VERCEL_URL);
+
+  if (currentUrl && isLocalhost(currentUrl.hostname)) {
+    return ensureTrailingSlash(currentUrl.origin);
+  }
+
+  if (
+    configuredSiteUrl &&
+    currentUrl &&
+    isNetlifyHost(currentUrl.hostname) &&
+    currentUrl.hostname !== configuredSiteUrl.hostname
+  ) {
+    return ensureTrailingSlash(configuredSiteUrl.origin);
+  }
+
+  if (currentUrl) {
+    return ensureTrailingSlash(currentUrl.origin);
+  }
+
+  if (configuredSiteUrl) {
+    return ensureTrailingSlash(configuredSiteUrl.origin);
+  }
+
+  if (vercelUrl) {
+    return ensureTrailingSlash(vercelUrl.origin);
+  }
+
+  return 'http://localhost:3000/';
 };

@@ -5,6 +5,48 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-06 - Password reset redirect URL fix
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Investigated the production password reset redirect failure where a live recovery email used `redirect_to=http://localhost:3000/reset-password`.
+- Confirmed the reset flow was calling `supabase.auth.resetPasswordForEmail(...)` from the client with `redirectTo: \`${getURL()}reset-password\``, which could fall back to localhost.
+- Updated `lib/utils/url.ts` so `getURL(...)` can accept the current browser origin, preserve localhost for local development, and canonicalize Netlify preview/deploy hosts to `NEXT_PUBLIC_SITE_URL` when configured.
+- Updated `app/(auth)/forgot-password/page.tsx` to call `getURL(window.location.origin)` when building the password reset `redirectTo`.
+- Left the signup verification flow unchanged apart from reusing the now-safer shared URL helper.
+- Updated the existing password reset row in `TESTING.md` with the confirmed localhost failure and the retest requirement.
+
+### Files changed
+
+- `lib/utils/url.ts`
+- `app/(auth)/forgot-password/page.tsx`
+- `TESTING.md`
+- `SESSION_HANDOVER.md`
+
+### Current status
+
+Password reset emails should now use the active browser origin in local development and the canonical production host in production instead of falling back to localhost.
+
+Focused eslint passed for the changed files.
+
+The requested `npx tsc --noEmit --pretty false` run still reports the same unrelated pre-existing `impeccable/*` fixture and missing optional dependency errors.
+
+### Next recommended step
+
+Request a fresh password reset from the live production site, copy the email link, decode the Supabase `redirect_to`, and confirm it contains:
+- `https://storyline-paulokwa-v2.netlify.app/reset-password`
+- no `localhost`
+- no Netlify branch/deploy permalink host
+
+### Risks or warnings
+
+- If a user intentionally opens the forgot-password page on a Netlify preview/deploy host and `NEXT_PUBLIC_SITE_URL` is missing, the reset link can only use the current host because there is no canonical host configured to promote to.
+
+---
 ## 2026-05-06 - Canonical auth normalization follow-up
 
 ### Current branch

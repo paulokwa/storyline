@@ -25,7 +25,7 @@ export default function ForgotPasswordPage() {
             const supabase = createClient()
             console.log('Supabase client created, calling reset API...')
             const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: `${getURL()}reset-password`,
+                redirectTo: `${getURL(window.location.origin)}reset-password`,
             })
             console.log('Reset API responded. Error:', error)
 
@@ -37,9 +37,9 @@ export default function ForgotPasswordPage() {
                 setSubmitted(true)
                 setLoading(false)
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Caught exception during reset:', err)
-            setError(err.message || 'An unexpected error occurred')
+            setError(err instanceof Error ? err.message : 'An unexpected error occurred')
             setLoading(false)
         }
     }
@@ -63,7 +63,7 @@ export default function ForgotPasswordPage() {
                             </div>
                             <h1 className="text-3xl font-serif text-slate-800 leading-tight">Check your email</h1>
                             <p className="text-slate-500 font-medium leading-relaxed italic">
-                                We've sent a recovery link to <span className="text-slate-800 font-semibold not-italic">{email}</span>.
+                                We&apos;ve sent a recovery link to <span className="text-slate-800 font-semibold not-italic">{email}</span>.
                             </p>
                             <div className="pt-6">
                                 <Link href="/login">
@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
                     ) : (
                         <>
                             <h1 className="text-3xl font-serif text-slate-800 mb-2 leading-tight">Recover your access</h1>
-                            <p className="text-slate-400 font-medium mb-8">We'll help you find your way back</p>
+                            <p className="text-slate-400 font-medium mb-8">We&apos;ll help you find your way back</p>
 
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 <div className="space-y-2">
