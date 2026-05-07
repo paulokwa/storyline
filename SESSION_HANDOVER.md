@@ -5,6 +5,50 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-07 - Migration upload quota enforcement
+
+### Current branch
+
+`main`
+
+### What was completed
+
+Fixed the storage quota bypass in `/api/migration/upload-asset/route.ts` (technical debt item 5 from `docs/technical-debt-roadmap.md`).
+
+**Change:**
+- Added `parseStorageQuotaCheckResult` helper (same pattern as the normal asset upload route).
+- After decoding the base64 payload (file size now known) and before the admin storage upload, the route now calls `supabase.rpc('check_storage_quota', { p_user_id: user.id, p_incoming_file_size: fileSize })` using the authenticated server-side Supabase client.
+- If quota is exceeded, returns HTTP 413 with a human-readable error: `"Storage quota exceeded (X MB of Y MB used). Free up space by deleting project assets, then retry the migration."`
+- This error propagates through `local-to-cloud.ts` → `handleMigration()` → `toast.error(error.message)` and is shown to the user verbatim.
+- If the quota RPC itself fails, returns HTTP 500 with `"Unable to verify storage quota."` — no silent pass-through.
+
+**Known limitation (documented):** During a multi-asset migration, `project_assets` rows are inserted only after all uploads complete (for atomicity). The per-asset quota check therefore sees pre-migration usage, not the running batch total. The fix still blocks users already at/over quota and prevents any single asset from independently exceeding available space. Full batch-aware pre-flight would require summing all asset sizes in `local-to-cloud.ts` before the upload loop — deferred.
+
+**No changes to:** `local-to-cloud.ts`, `ProjectSettingsModal.tsx`, `AssetManager.tsx`, migrations, or notification types.
+
+### Files changed
+
+- `app/api/migration/upload-asset/route.ts`
+- `docs/technical-debt-roadmap.md`
+- `SESSION_HANDOVER.md`
+- `TESTING.md`
+
+### Current status
+
+TypeScript: clean. Lint: both pre-existing issues (`no-unused-vars` for `fileName`, `no-explicit-any` in catch) were present before this change.
+
+### Next recommended step
+
+Browser/integration validation:
+1. Migrate a local project with image assets when storage is under quota — confirm migration succeeds normally.
+2. Simulate or reach quota and attempt migration — confirm toast shows the quota-specific error.
+3. Confirm the AssetManager quota bar reflects updated usage after a successful migration.
+
+### Risks or warnings
+
+- The per-asset quota check adds one extra RPC call per migrated asset. For a project with many assets, this adds latency to the migration upload loop. Acceptable given the correctness benefit. No changes to the normal upload path.
+
+---
 ## 2026-05-07 - Storage quota bar added to AssetManager
 
 ### Current branch
