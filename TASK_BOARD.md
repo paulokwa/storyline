@@ -115,7 +115,8 @@ Current status after the 2026-05-07 foundation pass:
 - Migration history was repaired for `local_transfer_guidance`.
 - `project_shared` dedupe groundwork was added in SQL.
 - Linked Supabase validation is now complete for `local_transfer_guidance` migration history, live `project_shared` dedupe behavior, and the typed `create_notification` client RPC path.
-- Broader trigger expansion is still deferred pending manual validation and Phase 2 scoping.
+- Phase 2 collaborator reply notifications are now implemented for thread authors and prior participants, with per-recipient reply event keys and linked-Supabase validation complete.
+- Broader trigger expansion is still deferred pending manual browser validation and later scoped passes.
 
 Candidate areas to scope later:
 
@@ -125,8 +126,7 @@ Candidate areas to scope later:
    - Review the existing read-state behavior and decide whether comment viewing should clear related notifications or whether only bell/detail views should do so.
 
 2. Collaboration improvements
-   - Expand `collaborator_feedback` beyond owner-only notifications.
-   - Consider notifying collaborators when someone replies to a thread they started or participated in.
+   - Continue refining `collaborator_feedback` now that reply notifications exist for thread authors and prior participants.
    - Defer @mentions unless/until the app supports explicit mention UX.
 
 3. Local/cloud safety notifications

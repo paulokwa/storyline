@@ -23,6 +23,17 @@ function getNotificationMetadata(notification: NotificationRecord): Notification
     return notification.metadata as NotificationMetadata
 }
 
+function isReplyNotification(notification: NotificationRecord) {
+    const metadata = getNotificationMetadata(notification)
+
+    if (metadata?.kind === 'reply') {
+        return true
+    }
+
+    const parentId = metadata?.parent_id
+    return typeof parentId === 'string' && parentId.length > 0
+}
+
 function isViewingNotificationProject(notification: NotificationRecord, pathname?: string | null) {
     if (!notification.project_id) return false
     return getProjectIdFromPathname(pathname) === notification.project_id
@@ -74,7 +85,7 @@ export function getNotificationDisplayTitle(notification: NotificationRecord, pa
     ) {
         const locationLabel = resolvedLocationLabel || getFeedbackLocationLabel(notification)
         if (locationLabel) {
-            return `New feedback in ${locationLabel}`
+            return `${isReplyNotification(notification) ? 'New reply' : 'New feedback'} in ${locationLabel}`
         }
     }
 

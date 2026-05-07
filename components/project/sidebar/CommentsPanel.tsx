@@ -652,6 +652,11 @@ export default function CommentsPanel({
         return threadIds
     }, [sessionNewCommentIds, unreadNotificationThreadIds])
 
+    const activeThreadId = useMemo(() => {
+        if (!activeCommentId) return null
+        return rootCommentIdByCommentId.get(activeCommentId) ?? activeCommentId
+    }, [activeCommentId, rootCommentIdByCommentId])
+
     const filteredComments = useMemo(() => {
         let list = authorFilter === 'hidden' && !isLocalOnly
             ? [...visibleCommentsByHiddenState.hidden]
@@ -1091,8 +1096,10 @@ export default function CommentsPanel({
                                                                 jumpToComment(comment.id)
                                                             }}
                                                             role={role}
-                                                            isActive={activeCommentId === comment.id}
+                                                            activeCommentId={activeCommentId}
+                                                            isActive={activeThreadId === comment.id}
                                                             onActivate={() => setActiveCommentId(comment.id)}
+                                                            onActivateReply={(id: string) => setActiveCommentId(id)}
                                                             typingUsers={typingUsers.filter(u => u.threadId === comment.id)}
                                                             onTypingChange={(isTyping: boolean) => sendTypingIndicator(isTyping ? comment.id : null)}
                                                             dragHandleProps={provided.dragHandleProps}
@@ -1141,8 +1148,10 @@ export default function CommentsPanel({
                                                     jumpToComment(comment.id)
                                                 }}
                                                 role={role}
-                                                isActive={activeCommentId === comment.id}
+                                                activeCommentId={activeCommentId}
+                                                isActive={activeThreadId === comment.id}
                                                 onActivate={() => setActiveCommentId(comment.id)}
+                                                onActivateReply={(id: string) => setActiveCommentId(id)}
                                                 typingUsers={typingUsers.filter(u => u.threadId === comment.id)}
                                                 onTypingChange={(isTyping: boolean) => sendTypingIndicator(isTyping ? comment.id : null)}
                                                 dragHandleProps={null}
@@ -1230,8 +1239,10 @@ function CommentThread({
     onToggleShare,
     onSelectNode,
     role,
+    activeCommentId,
     isActive,
     onActivate,
+    onActivateReply,
     typingUsers,
     onTypingChange,
     onJumpTo,
@@ -1319,6 +1330,9 @@ function CommentThread({
                                 onCancelEdit={onCancelEdit}
                                 onDelete={() => onDelete(reply.id)}
                                 isReply
+                                isActive={activeCommentId === reply.id}
+                                onActivate={() => onActivateReply(reply.id)}
+                                onSelectNode={onSelectNode}
                                 onToggleShare={(isShared: boolean) => onToggleShare(reply.id, isShared)}
                                 onAddToAssistant={onAddToAssistant}
                                 onAddThreadToAssistant={onAddThreadToAssistant}

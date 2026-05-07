@@ -5,6 +5,86 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-07 - Collaborator reply notifications
+
+### Current branch
+
+`main`
+
+### What was completed
+
+- Re-ran the required continuity files and notification audit before starting the Phase 2 collaborator-reply pass.
+- Confirmed the current comment model still uses `project_comments.parent_id` for replies and that the existing `notify_owner_of_collaborator_feedback()` function was still owner-only for all non-placeholder feedback.
+- Added `supabase/migrations/20260507164000_add_collaborator_reply_notifications.sql` to keep top-level owner notifications intact while adding reply notifications for:
+  - the original thread author
+  - prior thread participants
+  - excluding the reply author
+  - deduped by `comment-reply:<threadId>:<replyId>:<recipientUserId>`
+- Kept the bell low-noise:
+  - no new notification categories
+  - no self-notifications
+  - no placeholder `Add your feedback...` notifications
+  - no broad read-state changes
+- Added a small UI foundation tweak so collaborator reply notifications read as replies in-project and the comments panel can activate the root thread plus the specific reply when a notification targets a reply comment id.
+- Applied the new migration SQL to the linked Supabase project and recorded the migration version as applied.
+- Validated the linked remote behavior with a contained owner + 2 collaborator scenario:
+  - Collaborator A top-level comment -> exactly 1 owner notification
+  - Owner reply -> exactly 1 reply notification for Collaborator A only
+  - Collaborator B reply -> reply notifications for Owner + Collaborator A only
+  - editing the same reply did not create duplicate notifications
+  - the temporary validation project was deleted and cleanup confirmed no remaining notifications for that project
+
+### Files changed
+
+- `supabase/migrations/20260507164000_add_collaborator_reply_notifications.sql`
+- `lib/notifications.ts`
+- `components/project/sidebar/CommentsPanel.tsx`
+- `TESTING.md`
+- `SESSION_HANDOVER.md`
+- `TASK_BOARD.md`
+
+### Commands run
+
+- `git status --short --branch`
+- `git log --oneline -20`
+- `rg -n "project_comments|notify_owner_of_collaborator_feedback|collaborator_feedback|commentId|feedback=1|NotificationBell|NotificationDetailClient|create_notification|parent_id|Add your feedback" -S .`
+- `Get-Content ...` on the continuity files, notification SQL, comments UI, bell/detail UI, and Next docs
+- `npx tsc --noEmit --pretty false`
+- `npx eslint lib/notifications.ts`
+- `npm run lint`
+- `npx eslint components/project/sidebar/CommentsPanel.tsx --rule "@typescript-eslint/no-explicit-any: off" --rule "react/no-unescaped-entities: off"`
+- `supabase db query --linked --file supabase/migrations/20260507164000_add_collaborator_reply_notifications.sql`
+- `supabase migration repair --linked --status applied 20260507164000 --yes`
+- `supabase db query --linked "select exists(...20260507164000...), position('comment-reply:' in pg_get_functiondef(...)) ..."`
+- inline Node admin script to create/reuse collaborator test accounts, build a throwaway validation project, insert comments, verify notification counts/event keys, and clean up
+- inline Node admin cleanup check for remaining notifications on the throwaway project
+
+### Current status
+
+Phase 2 collaborator reply notifications are now implemented and live on the linked Supabase project for the validated scope:
+- top-level collaborator feedback still notifies the owner
+- replies now notify only thread participants who are not the reply author
+- reply notifications are deduped per recipient and carry thread metadata
+- read-state behavior is unchanged: bell/detail mark read, opening the comments panel still does not
+
+### Next recommended step
+
+Manual browser validation for the exact in-app flow:
+
+1. Open a shared project with owner + collaborators and create the same reply sequence from the real UI.
+2. Click a reply notification from the bell and confirm the comments panel opens the correct thread and highlights the targeted reply.
+3. Reconfirm the intended read-state policy: bell/detail mark read, comments-panel opening alone does not.
+
+### Risks or warnings
+
+- Repo-wide lint is still not clean. `npx tsc --noEmit --pretty false` passed, and `lib/notifications.ts` linted cleanly, but `npm run lint` still fails on large unrelated pre-existing errors across the repo. The modified `CommentsPanel.tsx` also still carries pre-existing warnings under the relaxed focused lint run.
+- The linked Supabase project still has unrelated migration drift outside this pass:
+  - local-only `20260430000000`
+  - local-only `20260504`
+  - remote-only `20260430025720`
+- Comment-panel opening still does not mark collaborator notifications read, by design for this pass.
+
+---
 ## 2026-05-07 - Notification foundation validation on linked Supabase
 
 ### Current branch
