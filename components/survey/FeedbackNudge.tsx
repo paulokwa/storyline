@@ -73,7 +73,7 @@ export default function FeedbackNudge({ projectCount }: Props) {
                                     >
                                         <MessageSquarePlus className="h-4 w-4" />
                                     </div>
-                                    <div className="min-w-0">
+                                    <div className="min-w-0 flex-1">
                                         <p
                                             className={cn(
                                                 'text-sm font-semibold',
@@ -88,8 +88,21 @@ export default function FeedbackNudge({ projectCount }: Props) {
                                                 isMidnight ? 'text-slate-300' : 'text-slate-600'
                                             )}
                                         >
-                                            Share a quick thought about what&apos;s working or confusing.
+                                            Share one quick thought about what&apos;s working, what&apos;s confusing, or what you&apos;d love next.
                                         </p>
+
+                                        <button
+                                            type="button"
+                                            onClick={handleOpen}
+                                            className={cn(
+                                                'mt-4 inline-flex max-w-full items-center justify-center rounded-full px-4 py-2 text-sm font-semibold transition',
+                                                isMidnight
+                                                    ? 'bg-[#546354] text-white hover:bg-[#65745f]'
+                                                    : 'bg-[#546354] text-white hover:bg-[#485748]'
+                                            )}
+                                        >
+                                            Share thoughts
+                                        </button>
                                     </div>
                                 </div>
                                 <button
@@ -106,19 +119,6 @@ export default function FeedbackNudge({ projectCount }: Props) {
                                     <X className="h-4 w-4" />
                                 </button>
                             </div>
-
-                            <button
-                                type="button"
-                                onClick={handleOpen}
-                                className={cn(
-                                    'mt-4 inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold transition',
-                                    isMidnight
-                                        ? 'bg-[#546354] text-white hover:bg-[#65745f]'
-                                        : 'bg-[#546354] text-white hover:bg-[#485748]'
-                                )}
-                            >
-                                Share thoughts
-                            </button>
                         </div>
                     </div>
                 </div>

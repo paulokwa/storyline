@@ -14,6 +14,8 @@ Agents should update this file before ending a session.
 ### What was completed
 
 - Reworked the Library survey nudge from an inline bottom-of-page banner into a subtle floating card so it is visible without scrolling on long libraries.
+- Polished the floating nudge copy to: `Help shape Storyline` and `Share one quick thought about what's working, what's confusing, or what you'd love next.`
+- Realigned the `Share thoughts` CTA so it starts under the heading/body text column instead of under the icon column, while keeping the icon left-aligned and the dismiss button unchanged.
 - Kept the existing survey trigger and deduplication rules intact:
   - still Library-only
   - still requires at least 1 project
