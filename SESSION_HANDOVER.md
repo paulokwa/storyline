@@ -5,6 +5,60 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-07 - Supabase migration drift reconciliation
+
+### Current branch
+
+`main`
+
+### What was completed
+
+Full audit and reconciliation of local-vs-remote Supabase migration drift. No schema changes were made — only migration tracking metadata was corrected.
+
+**Drift found (5 migrations):**
+
+| Migration | Before | After |
+|-----------|--------|-------|
+| `20260430000000` | local-only | synced — repaired via `migration repair` |
+| `20260430025720` | remote-only | synced — created local stub file |
+| `20260504` | local-only | synced — repaired via `migration repair` |
+| `20260507050303` | remote-only | synced — created local stub file |
+| `20260507190000` | local-only | synced — repaired via `migration repair` |
+
+**Investigation findings:**
+- `20260430000000` and `20260430025720` are equivalent — both apply the same `CREATE OR REPLACE FUNCTION evaluate_and_grant_ai_trial(...)` with the 40-domain disposable email blocklist. Verified by comparing live remote function body against local file.
+- `20260504_feedback_responses.sql` and `20260507050303` are equivalent — the remote migration created the `feedback_responses` table with identical schema and RLS policies. Verified by querying `information_schema.columns` and `pg_policies` on remote.
+- `20260507050303` also applied the `cloud_migration_completed` and `cloud_migration_failed` enum values (Phase 3 notification types). Verified by querying `pg_enum` — values already present on remote before `20260507190000` was applied.
+- `20260507190000` was therefore already applied to remote via `20260507050303`. Marking it as applied is safe — `ADD VALUE IF NOT EXISTS` is idempotent.
+
+**Actions taken:**
+1. Created `supabase/migrations/20260430025720_expand_disposable_email_list.sql` — no-op stub with explanation comment.
+2. Created `supabase/migrations/20260507050303_feedback_responses_and_notification_enum.sql` — full SQL reconstructed from live remote schema (idempotent with IF NOT EXISTS guards), with explanation comment.
+3. Ran `supabase migration repair --status applied 20260430000000 --linked`
+4. Ran `supabase migration repair --status applied 20260504 --linked`
+5. Ran `supabase migration repair --status applied 20260507190000 --linked`
+6. Verified: `supabase migration list --linked` shows all migrations fully synced.
+
+### Files changed
+
+- `supabase/migrations/20260430025720_expand_disposable_email_list.sql` (new — stub)
+- `supabase/migrations/20260507050303_feedback_responses_and_notification_enum.sql` (new — stub)
+- `SESSION_HANDOVER.md`
+
+### Current status
+
+`supabase migration list --linked` shows zero drift. All 57 local migrations match remote.
+
+### Next recommended step
+
+Export audit task (`TASK_BOARD.md` → Now → item 1): audit and fix export issues starting with PDF.
+
+### Risks or warnings
+
+- The two stub files contain `CREATE TABLE IF NOT EXISTS` and `ADD VALUE IF NOT EXISTS` guards so they are safe to run on fresh local databases. The `20260430025720` stub uses `SELECT 1` and does not re-run the function definition (which is already covered by `20260430000000`).
+- `migration repair` only modifies `supabase_migrations.schema_migrations` (tracking metadata). No schema objects were created or modified on remote.
+
+---
 ## 2026-05-07 - Migration upload quota enforcement
 
 ### Current branch
