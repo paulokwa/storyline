@@ -60,6 +60,10 @@ This matters because mixed terms can make the app feel unfinished. It also affec
 
 Once Kwame chooses the terminology, AI can audit the app and update copy consistently.
 
+### AI Partner Story Scope cleanup
+
+After the new AI Partner `Story Scope` selector is browser-tested, decide whether to remove or de-emphasize the old Structure-panel scene checkboxes. They are intentionally still present for now as a safe fallback. Cross-reference: `TASK_BOARD.md` / `TESTING.md` Phase 6 Story Scope validation.
+
 
 ### Branding and design help
 
@@ -227,6 +231,7 @@ Before public launch, review:
 - Auth verification edge-case launch check completed using `TESTING.md` Auth / Sessions entries
 - Trial/cloud pricing model decided
 - AI terminology chosen
+- AI Partner Story Scope validated; old Structure-panel scene checkboxes removed or intentionally kept as a fallback
 - Help Center audit/rewrite completed or intentionally deferred
 - Showcase page updated with final screenshots
 - In-app launch survey implemented
