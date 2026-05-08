@@ -19,6 +19,14 @@ const CHUNK_SIZE = 150000 // ~30k words per AI pass
 const OVERLAP = 15000     // 10% overlap
 const RATE_LIMIT_MS = 30_000
 
+// Output estimation for trial credit reservation.
+// AI chapter-detection returns compact JSON (~100-150 chars per chapter entry).
+// 8,000 chars per chunk is generous; 100,000 chars total is a hard cap.
+// estimateTrialReserveMicros() has no built-in safety multiplier, so we apply 1.25x here.
+const ESTIMATED_OUTPUT_CHARS_PER_CHUNK = 8_000
+const MAX_ESTIMATED_OUTPUT_CHARS = 100_000
+const ESTIMATE_SAFETY_MULTIPLIER = 1.25
+
 export async function POST(req: NextRequest) {
     // Captured after a successful trial reservation so the outer catch can release it
     let trialCleanup: (() => Promise<void>) | null = null
@@ -57,6 +65,17 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'AI import detection currently requires Gemini or OpenAI as your active cloud provider.' }, { status: 400 })
         }
 
+        // --- Partitioning (runs before billing gate so trial reservation uses actual chunk sizes) ---
+        const totalLen = text.length
+        const chunks: string[] = []
+        let pos = 0
+        while (pos < totalLen) {
+            const end = Math.min(pos + CHUNK_SIZE, totalLen)
+            chunks.push(text.substring(pos, end))
+            if (chunks.length >= MAX_CHUNKS) break
+            pos += (CHUNK_SIZE - OVERLAP)
+        }
+
         // --- Billing-mode-specific gates ---
         if (runtime.billingMode === 'app_managed_trial') {
             // Check trial account status
@@ -92,13 +111,21 @@ export async function POST(req: NextRequest) {
                 })
             }
 
-            // Conservative multi-chunk cost estimate: each chunk is up to CHUNK_SIZE, each may produce up to 4096 output tokens
-            const estimatedNumChunks = Math.min(MAX_CHUNKS, Math.max(1, Math.ceil(text.length / (CHUNK_SIZE - OVERLAP))))
-            const reservedMicros = estimateTrialReserveMicros({
-                endpoint: 'import_ai_detect',
-                inputChars: estimatedNumChunks * CHUNK_SIZE,
-                outputTokensCap: estimatedNumChunks * 4096,
-            })
+            // Reserve using actual chunk sizes. estimateTrialReserveMicros() has no built-in
+            // safety margin, so we apply ESTIMATE_SAFETY_MULTIPLIER (1.25x) explicitly.
+            const estimatedInputChars = chunks.reduce((sum, chunk) => sum + chunk.length, 0)
+            const estimatedOutputChars = Math.min(
+                chunks.length * ESTIMATED_OUTPUT_CHARS_PER_CHUNK,
+                MAX_ESTIMATED_OUTPUT_CHARS
+            )
+            const estimatedOutputTokens = estimateTokensFromChars(estimatedOutputChars)
+            const reservedMicros = Math.ceil(
+                estimateTrialReserveMicros({
+                    endpoint: 'import_ai_detect',
+                    inputChars: estimatedInputChars,
+                    outputTokensCap: estimatedOutputTokens,
+                }) * ESTIMATE_SAFETY_MULTIPLIER
+            )
 
             const reserveResult = await supabase.rpc('reserve_ai_trial_usage', {
                 p_user_id: user.id,
@@ -108,8 +135,8 @@ export async function POST(req: NextRequest) {
                 p_model: APP_MANAGED_OPENAI_MODEL,
                 p_reserved_micros: reservedMicros,
                 p_input_chars: text.length,
-                p_estimated_input_tokens: estimateTokensFromChars(text),
-                p_estimated_output_tokens: estimatedNumChunks * 4096,
+                p_estimated_input_tokens: estimateTokensFromChars(estimatedInputChars),
+                p_estimated_output_tokens: estimatedOutputTokens,
                 p_ip_address: requestContext.ipAddress ?? '',
                 p_device_fingerprint: requestContext.deviceFingerprint ?? '',
                 p_user_agent: requestContext.userAgent ?? '',
@@ -168,17 +195,6 @@ export async function POST(req: NextRequest) {
                     },
                 })
             }
-        }
-
-        // --- Partitioning ---
-        const totalLen = text.length
-        const chunks: string[] = []
-        let pos = 0
-        while (pos < totalLen) {
-            const end = Math.min(pos + CHUNK_SIZE, totalLen)
-            chunks.push(text.substring(pos, end))
-            if (chunks.length >= MAX_CHUNKS) break
-            pos += (CHUNK_SIZE - OVERLAP)
         }
 
         const allChapters: any[] = []
