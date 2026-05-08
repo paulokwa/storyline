@@ -5,6 +5,211 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-08 - Smart Context testing log cleanup
+
+### What was completed
+
+Updated `TESTING.md` to reflect the user's browser validation of Smart Context / Manual Context:
+
+- Manual Context selected/deselected linked-item behavior passed.
+- Smart Context editor row hiding passed.
+- Smart Context AI Partner read-only summary passed after Phase 4.5.
+- Manual Context AI Partner selector remains preserved.
+- Mode switching preserved manual links.
+- Scene Analysis remained isolated.
+
+### Remaining validation
+
+- Smart Context size warnings and extreme confirmation still need browser validation with large context.
+- `context_mode` usage metadata needs DB/log validation.
+- Entity Smart Context include/exclude switch visibility remains a follow-up UI issue.
+
+---
+## 2026-05-08 - Smart Context Phase 5 safeguards implemented
+
+### Current branch
+
+`main`
+
+### What was completed
+
+Implemented Phase 5: Smart Context safeguards, preview clarity, and AI Partner usage metadata.
+
+**Completed:**
+- Added `analyzeSmartContextSize()` and `SMART_CONTEXT_TOKEN_THRESHOLDS` in `lib/ai/config.ts`.
+  - Medium notice above 10k estimated Smart Context tokens.
+  - High warning above 25k estimated Smart Context tokens.
+  - Extreme handling above 50k estimated Smart Context tokens.
+- Updated `components/project/story/AiHelperPanel.tsx`:
+  - Smart mode summary remains read-only.
+  - Added helper copy: `Switch to Manual Context in Settings for scene-by-scene control.`
+  - Added Smart Context size warning copy for medium/high/extreme Smart Context sizes.
+  - Included Smart Context text in request preflight sizing so large Smart Context is not invisible to existing safeguards.
+  - Extreme Smart Context uses the existing `AiSafeguardDialogs` flow.
+  - No per-item Smart Context deselection was added.
+- Added low-risk AI Partner usage metadata:
+  - `/api/ai` metadata now includes `ai_feature: 'ai_partner'` and `context_mode: 'smart' | 'manual'` for helper requests.
+  - `/api/ai/local-usage` logs the same metadata for local Ollama AI Partner usage.
+
+**Not touched:**
+- `app/api/ai/analyze-scene/route.ts` - unchanged.
+- `lib/ai/smart-context.ts` - unchanged.
+- Manual Context join-table links and selector behavior - unchanged.
+- Smart Context entity eligibility rules - unchanged.
+
+### Files changed
+
+- `lib/ai/config.ts`
+- `components/project/story/AiHelperPanel.tsx`
+- `app/api/ai/route.ts`
+- `app/api/ai/local-usage/route.ts`
+- `SESSION_HANDOVER.md`
+- `TASK_BOARD.md`
+- `TESTING.md`
+
+### Verification
+
+- `npx tsc --noEmit --pretty false` - passed after fixing JSX balance.
+- Focused ESLint with existing `no-explicit-any` debt disabled passed for Phase 5 changed files, with pre-existing unused-variable warnings in `AiHelperPanel.tsx`.
+- Focused ESLint for entity-control follow-up files passed with pre-existing warnings in older tabs.
+- `app/api/ai/analyze-scene/route.ts` has no diff.
+
+### Current status
+
+Phase 5 code is complete and statically verified. Browser validation is still needed for the Smart Context size warning and summary copy.
+
+### Next recommended step
+
+Browser-test Phase 5:
+1. Smart mode: confirm read-only summary remains clean and no `Scene Context` selector appears.
+2. Large Smart Context: confirm the warning appears when the project has enough eligible entity content.
+3. Manual mode: confirm the interactive `Scene Context` selector and select/deselect behavior still work.
+4. Scene Analysis: confirm Smart/Manual modes still do not affect it.
+5. Ask AI Partner whether it received full scene/chapter/manuscript text outside the current scene; it should not claim full manuscript context.
+
+### Risks or warnings
+
+- Browser validation for Phase 5 was not run in this session.
+- The Smart Context warning thresholds are fixed product thresholds, not user-configurable.
+- `supabase/.temp/cli-latest` remains a pre-existing unrelated modified file in the worktree.
+
+---
+## 2026-05-08 - Phase 4/4.5 browser validation passed and entity Smart Context control polished
+
+### Current branch
+
+`main`
+
+### What was completed
+
+User browser validation confirmed Phase 4/4.5 passed:
+- Manual Context: PASS.
+- Smart Context UI: PASS.
+- Smart Context content: PASS.
+- Mode switching preserves manual links: PASS.
+- Scene Analysis isolation: PASS.
+
+Implemented the follow-up UI polish for entity-level Smart Context include/exclude controls:
+- Added shared `components/project/SmartContextControl.tsx`.
+- Replaced the subtle bare switch rows in character, idea, location, and object detail pages.
+- The control now clearly shows `Include in Smart Context`, an `Included in Smart Context` / `Excluded from Smart Context` status pill, an On/Off label, and the existing switch.
+- Preserved the existing `exclude_from_ai` persistence handlers and viewer/read-only restrictions.
+
+**Not touched:**
+- `lib/ai/smart-context.ts` - unchanged.
+- AI Partner mode logic - unchanged.
+- `app/api/ai/analyze-scene/route.ts` - unchanged.
+
+### Files changed
+
+- `components/project/SmartContextControl.tsx`
+- `components/project/characters/CharactersTab.tsx`
+- `components/project/ideas/IdeasTab.tsx`
+- `components/project/locations/LocationsTab.tsx`
+- `components/project/objects/ObjectsTab.tsx`
+- `SESSION_HANDOVER.md`
+- `TASK_BOARD.md`
+- `TESTING.md`
+
+### Verification
+
+- `npx tsc --noEmit --pretty false` - passed.
+- `npx eslint components/project/SmartContextControl.tsx` - passed.
+- `npx eslint components/project/characters/CharactersTab.tsx components/project/ideas/IdeasTab.tsx components/project/locations/LocationsTab.tsx components/project/objects/ObjectsTab.tsx --rule "@typescript-eslint/no-explicit-any: off"` - passed with pre-existing unused-variable warnings in older tabs.
+- Full focused ESLint without rule override still fails on pre-existing `no-explicit-any` debt in the entity tabs.
+
+### Current status
+
+Phase 4/4.5 is browser-validated and ready for Phase 5. The new entity include/exclude control polish is statically verified but still needs browser retest.
+
+### Next recommended step
+
+Browser-retest the visible entity Smart Context control:
+1. Character page: toggle off, confirm `Excluded from Smart Context`, refresh, confirm persistence, toggle on.
+2. Spot-check idea, location, and object pages.
+
+### Risks or warnings
+
+- Browser validation for the new polished entity control was not run in this session.
+- `supabase/.temp/cli-latest` remains a pre-existing unrelated modified file in the worktree.
+
+---
+## 2026-05-08 - Smart Context Phase 4.5 AI Partner UI cleanup
+
+### Current branch
+
+`main`
+
+### What was completed
+
+Implemented Phase 4.5 for Smart Context / Manual Context in AI Partner.
+
+**Completed:**
+- `components/project/story/AiHelperPanel.tsx` now receives `aiContextMode`.
+- In Smart Context mode, AI Partner shows a compact read-only `Smart Context on` summary using the already supplied `linkedCharacters`, `linkedIdeas`, `linkedLocations`, and `linkedObjects` arrays.
+- In Smart Context mode, AI Partner no longer renders the interactive `Scene Context` dropdown/list UI, so users cannot deselect individual Smart Context entities from AI Partner.
+- In Manual Context mode, the existing interactive `Scene Context` selector remains unchanged.
+- `components/project/story/StoryTab.tsx` and `components/project/ai/AiFullCanvas.tsx` pass the Phase 4 `aiContextMode` value into AiHelperPanel.
+
+**Not touched:**
+- `app/api/ai/analyze-scene/route.ts` - unchanged.
+- Scene Analysis behavior - unchanged.
+- Entity-level `exclude_from_ai` controls - unchanged.
+
+### Files changed
+
+- `components/project/story/AiHelperPanel.tsx`
+- `components/project/story/StoryTab.tsx`
+- `components/project/ai/AiFullCanvas.tsx`
+- `SESSION_HANDOVER.md`
+- `TASK_BOARD.md`
+- `TESTING.md`
+
+### Verification
+
+- `npx tsc --noEmit --pretty false` - passed.
+- `npm run build` - passed on retry with a longer timeout. First attempt timed out at 120s and produced an EPIPE from the forced timeout.
+- `git diff --check` - passed.
+- `git status --short` - shows the three code files, continuity docs, and pre-existing/unrelated `supabase/.temp/cli-latest`.
+
+### Current status
+
+Phase 4.5 code is complete and statically verified. Browser validation is still needed for the Smart mode and Manual mode AI Partner UI.
+
+### Next recommended step
+
+Run the Phase 4.5 browser checklist:
+1. Smart mode: confirm AI Partner shows `Smart Context on` / read-only summary and no interactive `Scene Context` selector.
+2. Smart mode: ask AI Partner to list supplied context grouped by Characters, Ideas, Locations, and Objects.
+3. Manual mode: confirm the interactive `Scene Context` selector still appears and linked scene items can be selected/deselected.
+4. Scene Analysis: run in both modes and confirm behavior is unchanged.
+
+### Risks or warnings
+
+- Browser validation was not run in this session.
+- `supabase/.temp/cli-latest` was already modified in the worktree and was left untouched.
+
+---
 ## 2026-05-07 - Smart Context Phase 4 complete
 
 ### Current branch

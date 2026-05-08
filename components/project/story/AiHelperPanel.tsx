@@ -12,17 +12,15 @@ import { SanctuarySelect } from '@/components/ui/sanctuary-select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import SaveAiResponseModal from '@/components/project/ai/SaveAiResponseModal'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
 import type { Database as SupabaseDatabase } from '@/lib/supabase/types'
 import { AI_TOUR_COMPLETE_KEY, AI_TOUR_PENDING_KEY, AI_TOUR_START_EVENT, AI_TOUR_STARTED_KEY } from '@/lib/ai/tour'
 import { formatTrialRemainingPct, isLowTrialBalance } from '@/lib/ai/trial'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { useComments } from '@/components/project/CommentsContext'
-import { analyzeContextSize, ContextSizingResult, SAFEGUARD_THRESHOLDS } from '@/lib/ai/config'
+import { analyzeContextSize, analyzeSmartContextSize, ContextSizingResult, SAFEGUARD_THRESHOLDS } from '@/lib/ai/config'
 import { getAiProviderLabel } from '@/lib/ai/providers'
-import { getBillingModeLabel } from '@/lib/ai/modes'
+import { getBillingModeLabel, type AiContextMode } from '@/lib/ai/modes'
 import { AiSafeguardDialogs } from '@/components/project/ai/AiSafeguardDialogs'
 import AiPartnerTour from './AiPartnerTour'
 import { useTheme } from '@/components/providers/ThemeProvider'
@@ -62,6 +60,7 @@ interface AiHelperPanelProps {
     onReturnToSidebar?: () => void
     allowViewerFeedback?: boolean
     accessContext?: AiAccessContext
+    aiContextMode?: AiContextMode
     aiSettings: {
         ai_enabled: boolean
         billing_mode: string
@@ -165,6 +164,65 @@ function partitionIdeas(items: any[] = []) {
     })
 
     return { feedback, regular }
+}
+
+function buildSmartContextSizingText({
+    characters,
+    ideas,
+    locations,
+    objects,
+}: {
+    characters: any[]
+    ideas: any[]
+    locations: any[]
+    objects: any[]
+}) {
+    const sections: string[] = []
+
+    if (characters.length > 0) {
+        sections.push([
+            'CHARACTERS',
+            ...characters.map((item) => [
+                item?.name || 'Unnamed character',
+                item?.description || '',
+                item?.notes || '',
+            ].filter(Boolean).join('\n')),
+        ].join('\n'))
+    }
+
+    if (ideas.length > 0) {
+        sections.push([
+            'IDEAS',
+            ...ideas.map((item) => [
+                item?.title || 'Untitled idea',
+                item?.content || '',
+            ].filter(Boolean).join('\n')),
+        ].join('\n'))
+    }
+
+    if (locations.length > 0) {
+        sections.push([
+            'LOCATIONS',
+            ...locations.map((item) => [
+                item?.name || 'Unnamed location',
+                item?.atmosphere || '',
+                item?.description || '',
+            ].filter(Boolean).join('\n')),
+        ].join('\n'))
+    }
+
+    if (objects.length > 0) {
+        sections.push([
+            'OBJECTS',
+            ...objects.map((item) => [
+                item?.name || 'Unnamed object',
+                item?.significance || '',
+                item?.description || '',
+            ].filter(Boolean).join('\n')),
+        ].join('\n'))
+    }
+
+    return sections.join('\n\n')
 }
 
 function extractTextFromJson(content: any): string {
@@ -602,6 +660,7 @@ export default function AiHelperPanel({
     onClose,
     allowViewerFeedback = false,
     accessContext = 'partner',
+    aiContextMode = 'manual',
 }: AiHelperPanelProps) {
     const label = getProjectTypeLabel(projectType)
     const isNovel = projectType === 'novel'
@@ -672,6 +731,7 @@ export default function AiHelperPanel({
     const lastSubmittedPromptRef = useRef('')
     const hasShownProjectPreviewNoticeRef = useRef(false)
     const aiAccessIssue = useMemo(() => getAiAccessIssue(aiSettings, accessContext), [accessContext, aiSettings])
+    const isSmartContextMode = aiContextMode === 'smart'
 
     const currentContextDraft = useMemo(
         () => buildContextDraft({
@@ -750,6 +810,12 @@ export default function AiHelperPanel({
             setShowAiAccessNotice(false)
         }
     }, [aiAccessIssue])
+
+    useEffect(() => {
+        if (isSmartContextMode && contextManagerOpen) {
+            setContextManagerOpen(false)
+        }
+    }, [contextManagerOpen, isSmartContextMode])
 
     useEffect(() => {
         if (typeof window === 'undefined') return
@@ -988,6 +1054,44 @@ export default function AiHelperPanel({
             }))
             .filter((group) => group.count > 0)
     }, [contextDraft, contextEntityGroups])
+
+    const smartContextSizingText = useMemo(
+        () => buildSmartContextSizingText({
+            characters: linkedCharacters,
+            ideas: linkedIdeas,
+            locations: linkedLocations,
+            objects: linkedObjects,
+        }),
+        [linkedCharacters, linkedIdeas, linkedLocations, linkedObjects]
+    )
+
+    const smartContextSizing = useMemo(
+        () => analyzeSmartContextSize(smartContextSizingText),
+        [smartContextSizingText]
+    )
+
+    const smartContextWarning = useMemo(() => {
+        if (!isSmartContextMode || smartContextSizing.level === 'low') return null
+
+        if (smartContextSizing.level === 'medium') {
+            return {
+                tone: 'medium' as const,
+                message: 'Smart Context is getting detailed. AI replies may take a little longer.',
+            }
+        }
+
+        if (smartContextSizing.level === 'high') {
+            return {
+                tone: 'high' as const,
+                message: 'Your Smart Context is getting large. For faster and cheaper AI replies, consider Manual Context for this project.',
+            }
+        }
+
+        return {
+            tone: 'extreme' as const,
+            message: 'Smart Context is very large. You may be asked to confirm large AI requests before sending.',
+        }
+    }, [isSmartContextMode, smartContextSizing.level])
 
     const contextSnapshotString = useMemo(() => {
         const parts = []
@@ -1436,6 +1540,7 @@ export default function AiHelperPanel({
                     prompt: finalPrompt,
                     requestId,
                     deviceFingerprint,
+                    contextMode: aiContextMode,
                     projectId,
                     sceneId: activeSceneId,
                     input: contextText,
@@ -1648,6 +1753,7 @@ export default function AiHelperPanel({
                     inputChars: fullInternalPrompt.length,
                     outputChars: accumulated.length,
                     deviceFingerprint,
+                    contextMode: aiContextMode,
                 }),
             }).catch(() => {})
         } catch (err: any) {
@@ -1663,6 +1769,7 @@ export default function AiHelperPanel({
                         outputChars: 0,
                         errorCode: 'cancelled',
                         deviceFingerprint,
+                        contextMode: aiContextMode,
                     }),
                 }).catch(() => {})
                 return
@@ -1679,6 +1786,7 @@ export default function AiHelperPanel({
                     outputChars: 0,
                     errorCode: err?.message || 'ollama_error',
                     deviceFingerprint,
+                    contextMode: aiContextMode,
                 }),
             }).catch(() => {})
 
@@ -1861,20 +1969,33 @@ export default function AiHelperPanel({
         // Select strategy and prepare context
         const strategy = getContextStrategy(promptMode)
         const contextText = buildContextText(sceneTextRef.current, strategy)
+        const providerForSizing = isOllamaMode ? 'ollama' : aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider
+        const modelForSizing = aiSettings.billing_mode === 'byok' && aiSettings.ai_provider === 'gemini'
+            ? (aiSettings.ai_fallback_enabled ? 'gemini-1.5-flash' : 'gemini-1.5-pro')
+            : 'default'
+        const contextTextForSizing = isSmartContextMode && smartContextSizingText
+            ? `${contextText}\n\n${smartContextSizingText}`
+            : contextText
 
         // Safeguard Preflight
         const analysis = analyzeContextSize(
-            contextText, 
-            isOllamaMode ? 'ollama' : aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider,
-            aiSettings.billing_mode === 'byok' && aiSettings.ai_provider === 'gemini'
-                ? (aiSettings.ai_fallback_enabled ? 'gemini-1.5-flash' : 'gemini-1.5-pro')
-                : 'default'
+            contextTextForSizing,
+            providerForSizing,
+            modelForSizing
         )
-        setPreflight(analysis)
+        const smartExtremeAnalysis = isSmartContextMode && smartContextSizing.level === 'extreme'
+            ? {
+                ...smartContextSizing,
+                charCount: contextTextForSizing.length,
+                estimatedTokens: Math.max(analysis.estimatedTokens, smartContextSizing.estimatedTokens),
+                estimatedCost: analysis.estimatedCost,
+            }
+            : null
+        setPreflight(smartExtremeAnalysis ?? analysis)
 
         const requestPayload = { finalPrompt, contextText, strategy }
 
-        if (analysis.level === 'extreme') {
+        if (smartExtremeAnalysis || analysis.level === 'extreme') {
             setPendingRequest(requestPayload)
             setIsExtremeContext(true)
             return
@@ -2020,6 +2141,34 @@ export default function AiHelperPanel({
         ? ['Review / Chat', 'Continue Writing', 'What happens next?', 'Improve Scene', 'More tense', 'More natural', 'Add Conflict', 'Rewrite with Emotion', 'Dialogue idea', 'How to end it?']
         : ['Review / Chat', 'Write as Script Scene', 'Continue Writing', 'What happens next?', 'Improve Scene', 'More tense', 'More natural', 'Add Conflict', 'Rewrite with Emotion', 'Dialogue idea', 'How to end it?']
     const modeSelectOptions = modeOptions.map((mode) => ({ value: mode, label: mode }))
+    const sidebarAiStatus = !isFullCanvas ? (
+        <div className="mt-2 flex items-center justify-between gap-3 px-1">
+            <div className="min-w-0 flex items-center gap-2">
+                {aiSettings.ai_enabled && (
+                    <p className="truncate text-[9px] font-bold uppercase tracking-[0.22em] text-[#8fa0c0]">
+                        {modeLabel} &middot; {isOllamaMode ? 'Ollama' : getAiProviderLabel(aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider)}
+                    </p>
+                )}
+                {showTrialNudge && (
+                    <p className={cn(
+                        "shrink-0 text-[9px] font-bold uppercase tracking-[0.22em]",
+                        isLowTrialBalance(aiSettings.trial?.remaining_micros) ? "text-amber-500" : "text-slate-400"
+                    )}>
+                        Trial: {trialRemainingPct}% left
+                    </p>
+                )}
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+                <div className={cn("h-1 w-1 rounded-full", headerStatusDotClass)} />
+                <span className={cn(
+                    "text-[8px] font-bold uppercase tracking-tight",
+                    headerStatusTextClass
+                )}>
+                    {headerStatusLabel}
+                </span>
+            </div>
+        </div>
+    ) : null
 
     return (
         <div className="ai-helper-panel flex flex-col h-full min-h-0 overflow-hidden border-l border-[#d8ddcf] bg-[linear-gradient(180deg,#f5f4ef_0%,#fbf9f5_52%,#f8f6f1_100%)] shadow-[inset_1px_0_0_rgba(255,255,255,0.45),-18px_0_40px_rgba(84,99,84,0.04)]">
@@ -2050,9 +2199,9 @@ export default function AiHelperPanel({
                             isFullCanvas && onReturnToSidebar ? "hidden md:block" : "block"
                         )}>
                             {!isFullCanvas && (
-                                <h3 className="mb-1 truncate text-sm font-serif font-bold italic tracking-tight text-slate-800">AI Partner</h3>
+                                <h3 className="truncate text-sm font-serif font-bold italic tracking-tight text-slate-800">AI Partner</h3>
                             )}
-                            <div className={cn("flex items-center gap-2", isFullCanvas ? "hidden" : "flex")}>
+                            <div className="hidden">
                                 {aiSettings.ai_enabled && (
                                     <p className="truncate text-[9px] font-bold uppercase tracking-[0.22em] text-[#8fa0c0]">
                                         {modeLabel} · {isOllamaMode ? 'Ollama' : getAiProviderLabel(aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider)}
@@ -2137,129 +2286,81 @@ export default function AiHelperPanel({
             </div>
 
             {/* Context Indicator */}
-                <div className={cn(
-                    "ai-helper-context hidden border-b md:block",
-                    isMidnight ? "border-slate-700/60 bg-slate-900/70" : "border-[#e2ddd3] bg-[rgba(250,248,243,0.92)]"
-                )}>
-                <div
-                    data-tour="ai-context-strip"
-                    className="flex items-center gap-3 overflow-hidden px-6 py-2"
-                >
-                    <button
-                        type="button"
-                        onClick={handleContextManagerToggle}
-                            disabled={isReadOnly || !activeSceneId || isApplyingContext}
-                            className={cn(
-                                "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] transition-all",
-                                contextManagerOpen
-                                    ? cn(
-                                        isMidnight ? "border-indigo-400/30 bg-indigo-500/20 text-indigo-300" : "border-indigo-100 bg-indigo-50/90 text-indigo-600"
-                                    )
-                                    : cn(
-                                        isMidnight ? "border-transparent bg-white/8 text-slate-400 hover:bg-white/15 hover:text-slate-200" : "border-transparent bg-white/40 text-slate-500 hover:bg-white/80 hover:text-slate-700"
-                                    ),
-                                (isReadOnly || !activeSceneId || isApplyingContext) && "cursor-not-allowed opacity-60"
-                            )}
-                        >
-                            <Database className="h-3 w-3" />
-                            <span>{isApplyingContext ? 'Saving...' : 'Scene Context'}</span>
-                            {contextManagerOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                        </button>
+            <div className={cn(
+                "ai-helper-context hidden border-b md:block",
+                isMidnight ? "border-slate-700/60 bg-slate-900/70" : "border-[#e2ddd3] bg-[rgba(250,248,243,0.92)]"
+            )}>
+                {isSmartContextMode ? (
+                    <div
+                        data-tour="ai-context-strip"
+                        className="space-y-1.5 px-6 py-2"
+                    >
+                        <div className="flex items-center gap-3 overflow-hidden">
+                            <div
+                                className={cn(
+                                    "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em]",
+                                    isMidnight
+                                        ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-300"
+                                        : "border-[#d6e4d4] bg-[#eef4ed] text-[#546354]"
+                                )}
+                            >
+                                <Database className="h-3 w-3" />
+                                <span>Smart Context on</span>
+                            </div>
 
-                    <div className={cn("h-4 w-px shrink-0", isMidnight ? "bg-slate-700" : "bg-slate-200")} />
+                            <div className={cn("h-4 w-px shrink-0", isMidnight ? "bg-slate-700" : "bg-slate-200")} />
 
-                    <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto no-scrollbar">
-                        {contextSummaryItems.map((item) => {
-                            const Icon = item.icon
-                            return (
-                                <div
-                                    key={item.key}
-                                    className={cn(
-                                        "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium shadow-sm",
-                                        isMidnight
-                                            ? "border-slate-600/40 bg-white/10 text-slate-300"
-                                            : "border-slate-200/70 bg-white/85 text-slate-600"
-                                    )}
-                                >
-                                    <Icon className={cn("h-3 w-3", item.iconClassName)} />
-                                    <span>{item.title}</span>
-                                    <span className={isMidnight ? "text-slate-500" : "text-slate-400"}>{item.count}</span>
-                                </div>
-                            )
-                        })}
-
-                        {selectedNodes.length > 0 && (
+                            <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto no-scrollbar">
+                                <span className={cn("shrink-0 text-[10px] font-medium", isMidnight ? "text-slate-400" : "text-slate-500")}>
+                                    Storyline is automatically including eligible story details.
+                                </span>
+                                <span className={cn("shrink-0 text-[10px]", isMidnight ? "text-slate-500" : "text-slate-400")}>
+                                    Switch to Manual Context in Settings for scene-by-scene control.
+                                </span>
+                            </div>
+                        </div>
+                        {smartContextWarning && (
                             <div className={cn(
-                                "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium shadow-sm",
-                                isMidnight
-                                    ? "border-indigo-400/30 bg-indigo-500/20 text-indigo-300"
-                                    : "border-indigo-200/70 bg-indigo-50/90 text-indigo-700"
+                                "flex items-center gap-1.5 text-[10px] font-medium",
+                                smartContextWarning.tone === 'medium'
+                                    ? isMidnight ? "text-amber-300" : "text-amber-700"
+                                    : isMidnight ? "text-amber-200" : "text-amber-800"
                             )}>
-                                <div className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
-                                <span className="truncate max-w-[220px]">{storySelectionLabel}</span>
+                                <AlertCircle className="h-3 w-3 shrink-0" />
+                                <span>{smartContextWarning.message}</span>
                             </div>
                         )}
-
-                        {contextSummaryItems.length === 0 && selectedNodes.length === 0 && (
-                            <div className={cn("text-[10px] italic", isMidnight ? "text-slate-600" : "text-slate-300")}>No specific items linked</div>
-                        )}
                     </div>
-                </div>
-
-                {contextManagerOpen && (
-                    <div className={cn(
-                        "border-t px-6 py-3",
-                        isMidnight ? "border-slate-700/60 bg-slate-800/60" : "border-white/70 bg-[rgba(245,244,239,0.88)]"
-                    )}>
-                        {contextManagerList}
-                    </div>
-                )}
-            </div>
-
-            <div 
-                data-tour="ai-context-strip"
-                className={cn(
-                    "ai-helper-context shrink-0 overflow-hidden border-b md:hidden",
-                    isMidnight ? "border-slate-700/60 bg-slate-900/70" : "border-[#e2ddd3] bg-[rgba(250,248,243,0.92)]"
-                )}
-            >
-                <div className="px-4 py-1.5">
-                    <div className="flex items-center gap-3">
-                        <button
-                            type="button"
-                            onClick={handleContextManagerToggle}
-                            disabled={isReadOnly || !activeSceneId || isApplyingContext}
-                            className={cn(
-                                "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] transition-all",
-                                contextManagerOpen
-                                    ? cn(
-                                        isMidnight ? "border-indigo-400/30 bg-indigo-500/20 text-indigo-300" : "border-indigo-100 bg-indigo-50/90 text-indigo-600"
-                                    )
-                                    : cn(
-                                        isMidnight ? "border-transparent bg-white/8 text-slate-400" : "border-transparent bg-white/40 text-slate-500"
-                                    ),
-                                (isReadOnly || !activeSceneId || isApplyingContext) && "cursor-not-allowed opacity-60"
-                            )}
+                ) : (
+                    <>
+                        <div
+                            data-tour="ai-context-strip"
+                            className="flex items-center gap-3 overflow-hidden px-6 py-2"
                         >
-                            <Database className="h-3 w-3" />
-                            <span>{isApplyingContext ? 'Saving...' : 'Scene Context'}</span>
-                            {contextManagerOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                        </button>
-
-                        <div className="min-w-0 flex-1 overflow-x-auto no-scrollbar">
-                            <div className="flex min-w-max items-center gap-2 pr-1">
-                                {selectedNodes.length > 0 && (
-                                    <div className={cn(
-                                        "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium shadow-sm",
-                                        isMidnight
-                                            ? "border-indigo-400/30 bg-indigo-500/20 text-indigo-300"
-                                            : "border-indigo-200/70 bg-indigo-50/90 text-indigo-700"
-                                    )}>
-                                        <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
-                                        <span className="truncate">{storySelectionLabel}</span>
-                                    </div>
+                            <button
+                                type="button"
+                                onClick={handleContextManagerToggle}
+                                disabled={isReadOnly || !activeSceneId || isApplyingContext}
+                                className={cn(
+                                    "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] transition-all",
+                                    contextManagerOpen
+                                        ? cn(
+                                            isMidnight ? "border-indigo-400/30 bg-indigo-500/20 text-indigo-300" : "border-indigo-100 bg-indigo-50/90 text-indigo-600"
+                                        )
+                                        : cn(
+                                            isMidnight ? "border-transparent bg-white/8 text-slate-400 hover:bg-white/15 hover:text-slate-200" : "border-transparent bg-white/40 text-slate-500 hover:bg-white/80 hover:text-slate-700"
+                                        ),
+                                    (isReadOnly || !activeSceneId || isApplyingContext) && "cursor-not-allowed opacity-60"
                                 )}
+                            >
+                                <Database className="h-3 w-3" />
+                                <span>{isApplyingContext ? 'Saving...' : 'Scene Context'}</span>
+                                {contextManagerOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                            </button>
 
+                            <div className={cn("h-4 w-px shrink-0", isMidnight ? "bg-slate-700" : "bg-slate-200")} />
+
+                            <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto no-scrollbar">
                                 {contextSummaryItems.map((item) => {
                                     const Icon = item.icon
                                     return (
@@ -2279,20 +2380,151 @@ export default function AiHelperPanel({
                                     )
                                 })}
 
+                                {selectedNodes.length > 0 && (
+                                    <div className={cn(
+                                        "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium shadow-sm",
+                                        isMidnight
+                                            ? "border-indigo-400/30 bg-indigo-500/20 text-indigo-300"
+                                            : "border-indigo-200/70 bg-indigo-50/90 text-indigo-700"
+                                    )}>
+                                        <div className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                                        <span className="truncate max-w-[220px]">{storySelectionLabel}</span>
+                                    </div>
+                                )}
+
                                 {contextSummaryItems.length === 0 && selectedNodes.length === 0 && (
-                                    <div className={cn("text-[10px] italic shrink-0", isMidnight ? "text-slate-600" : "text-slate-300")}>No specific items linked</div>
+                                    <div className={cn("text-[10px] italic", isMidnight ? "text-slate-600" : "text-slate-300")}>No specific items linked</div>
                                 )}
                             </div>
                         </div>
+
+                        {contextManagerOpen && (
+                            <div className={cn(
+                                "border-t px-6 py-3",
+                                isMidnight ? "border-slate-700/60 bg-slate-800/60" : "border-white/70 bg-[rgba(245,244,239,0.88)]"
+                            )}>
+                                {contextManagerList}
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
+
+            <div
+                data-tour="ai-context-strip"
+                className={cn(
+                    "ai-helper-context shrink-0 overflow-hidden border-b md:hidden",
+                    isMidnight ? "border-slate-700/60 bg-slate-900/70" : "border-[#e2ddd3] bg-[rgba(250,248,243,0.92)]"
+                )}
+            >
+                {isSmartContextMode ? (
+                    <div className="px-4 py-1.5">
+                        <div className="space-y-1.5">
+                            <div className="flex items-center gap-3">
+                                <div
+                                    className={cn(
+                                        "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em]",
+                                        isMidnight
+                                            ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-300"
+                                            : "border-[#d6e4d4] bg-[#eef4ed] text-[#546354]"
+                                    )}
+                                >
+                                    <Database className="h-3 w-3" />
+                                    <span>Smart Context on</span>
+                                </div>
+                                <div className="min-w-0 flex-1 overflow-x-auto no-scrollbar">
+                                    <div className={cn("flex min-w-max items-center gap-2 pr-1 text-[10px]", isMidnight ? "text-slate-400" : "text-slate-500")}>
+                                        <span>Automatic story details</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {smartContextWarning && (
+                                <div className={cn(
+                                    "flex items-center gap-1.5 text-[10px] font-medium",
+                                    smartContextWarning.tone === 'medium'
+                                        ? isMidnight ? "text-amber-300" : "text-amber-700"
+                                        : isMidnight ? "text-amber-200" : "text-amber-800"
+                                )}>
+                                    <AlertCircle className="h-3 w-3 shrink-0" />
+                                    <span>{smartContextWarning.message}</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
-                {contextManagerOpen && (
-                    <div className={cn(
-                        "border-t px-4 py-3",
-                        isMidnight ? "border-slate-700/60 bg-slate-800/60" : "border-white/70 bg-[rgba(245,244,239,0.88)]"
-                    )}>
-                        {contextManagerList}
-                    </div>
+                ) : (
+                    <>
+                        <div className="px-4 py-1.5">
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={handleContextManagerToggle}
+                                    disabled={isReadOnly || !activeSceneId || isApplyingContext}
+                                    className={cn(
+                                        "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] transition-all",
+                                        contextManagerOpen
+                                            ? cn(
+                                                isMidnight ? "border-indigo-400/30 bg-indigo-500/20 text-indigo-300" : "border-indigo-100 bg-indigo-50/90 text-indigo-600"
+                                            )
+                                            : cn(
+                                                isMidnight ? "border-transparent bg-white/8 text-slate-400" : "border-transparent bg-white/40 text-slate-500"
+                                            ),
+                                        (isReadOnly || !activeSceneId || isApplyingContext) && "cursor-not-allowed opacity-60"
+                                    )}
+                                >
+                                    <Database className="h-3 w-3" />
+                                    <span>{isApplyingContext ? 'Saving...' : 'Scene Context'}</span>
+                                    {contextManagerOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                                </button>
+
+                                <div className="min-w-0 flex-1 overflow-x-auto no-scrollbar">
+                                    <div className="flex min-w-max items-center gap-2 pr-1">
+                                        {selectedNodes.length > 0 && (
+                                            <div className={cn(
+                                                "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium shadow-sm",
+                                                isMidnight
+                                                    ? "border-indigo-400/30 bg-indigo-500/20 text-indigo-300"
+                                                    : "border-indigo-200/70 bg-indigo-50/90 text-indigo-700"
+                                            )}>
+                                                <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
+                                                <span className="truncate">{storySelectionLabel}</span>
+                                            </div>
+                                        )}
+
+                                        {contextSummaryItems.map((item) => {
+                                            const Icon = item.icon
+                                            return (
+                                                <div
+                                                    key={item.key}
+                                                    className={cn(
+                                                        "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium shadow-sm",
+                                                        isMidnight
+                                                            ? "border-slate-600/40 bg-white/10 text-slate-300"
+                                                            : "border-slate-200/70 bg-white/85 text-slate-600"
+                                                    )}
+                                                >
+                                                    <Icon className={cn("h-3 w-3", item.iconClassName)} />
+                                                    <span>{item.title}</span>
+                                                    <span className={isMidnight ? "text-slate-500" : "text-slate-400"}>{item.count}</span>
+                                                </div>
+                                            )
+                                        })}
+
+                                        {contextSummaryItems.length === 0 && selectedNodes.length === 0 && (
+                                            <div className={cn("text-[10px] italic shrink-0", isMidnight ? "text-slate-600" : "text-slate-300")}>No specific items linked</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {contextManagerOpen && (
+                            <div className={cn(
+                                "border-t px-4 py-3",
+                                isMidnight ? "border-slate-700/60 bg-slate-800/60" : "border-white/70 bg-[rgba(245,244,239,0.88)]"
+                            )}>
+                                {contextManagerList}
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
 
@@ -2381,7 +2613,7 @@ export default function AiHelperPanel({
                                 {emptyStateCall}
                             </p>
                             <p className="max-w-[200px] text-xs font-serif italic leading-relaxed text-slate-500">
-                                "{emptyStateHint}"
+                                &quot;{emptyStateHint}&quot;
                             </p>
                         </div>
                     </div>
@@ -2970,6 +3202,7 @@ export default function AiHelperPanel({
                                 )}
                             </button>
                         </div>
+                        {sidebarAiStatus}
                     </form>
                 </div>
             </div>

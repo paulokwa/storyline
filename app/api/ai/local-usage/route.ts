@@ -19,6 +19,7 @@ export async function POST(request: Request) {
         outputChars?: number
         errorCode?: string | null
         deviceFingerprint?: string | null
+        contextMode?: 'smart' | 'manual'
     } | null
 
     if (!body?.requestId || !body?.endpoint || !body?.status) {
@@ -44,7 +45,11 @@ export async function POST(request: Request) {
         deviceFingerprint: context.deviceFingerprint,
         normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
         userAgent: context.userAgent,
-        metadata: { source: 'local_ollama_client' },
+        metadata: {
+            source: 'local_ollama_client',
+            ai_feature: 'ai_partner',
+            context_mode: body.contextMode === 'smart' ? 'smart' : 'manual',
+        },
     })
 
     return NextResponse.json({ ok: true })

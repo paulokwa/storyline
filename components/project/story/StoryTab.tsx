@@ -1049,6 +1049,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                         projectPremise={project.premise}
                         projectTone={project.tone}
                         aiSettings={aiSettings}
+                        aiContextMode={aiContextMode}
                         accessContext={aiAccessContext}
                         allowViewerFeedback={project.allow_viewer_feedback ?? false}
                         activeNodeId={activeNodeId}
@@ -1137,6 +1138,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                 projectPremise={project.premise}
                                 projectTone={project.tone}
                                 aiSettings={aiSettings}
+                                aiContextMode={aiContextMode}
                                 accessContext={aiAccessContext}
                                 allowViewerFeedback={project.allow_viewer_feedback ?? false}
                                 activeNodeId={activeNodeId}

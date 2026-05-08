@@ -75,6 +75,7 @@ export async function POST(req: Request) {
         apiKeyOverride,
         requestId,
         deviceFingerprint,
+        contextMode,
         linkedCharacters, 
         linkedIdeas, 
         linkedAiFeedback,
@@ -91,6 +92,7 @@ export async function POST(req: Request) {
         apiKeyOverride?: string
         requestId?: string
         deviceFingerprint?: string | null
+        contextMode?: 'smart' | 'manual'
         linkedCharacters?: any[]
         linkedIdeas?: any[]
         linkedAiFeedback?: any[]
@@ -312,6 +314,10 @@ export async function POST(req: Request) {
     const metadata = {
         action,
         projectId,
+        ...(action === 'helper' ? {
+            ai_feature: 'ai_partner',
+            context_mode: contextMode === 'smart' ? 'smart' : 'manual',
+        } : {}),
     }
 
     if (runtime.billingMode === 'app_managed_trial') {

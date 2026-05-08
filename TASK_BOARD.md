@@ -73,23 +73,50 @@ Before writing code, state:
 ## Now
 
 
-### 1. Smart Context / Manual Context — browser validation required
+### 1. Smart Context Phase 5 - browser validation required
 
-Phases 1–4 complete. All code changes are done and build passes.
+Phase 5 code is implemented and statically verified. Browser validation is still needed before signing off Smart Context safeguards.
 
-Requires manual browser validation before the feature is fully signed off:
+Retest:
 
-1. **Manual mode**: open a scene → confirm LinkedContext row visible → send AI request → only scene-linked entities appear
-2. **Smart mode**: open a scene → confirm LinkedContext row hidden + "Smart Context on" indicator → send AI request → all non-excluded project entities appear
-3. **exclude_from_ai**: in smart mode, exclude a character → confirm excluded character absent from AI context
-4. **Scene Analysis**: use Analyze Scene in both modes → behavior must be identical (mode must not affect it)
-5. **Manual context preservation**: switch smart → manual → confirm scene-linked entities still appear (no data loss)
+1. Smart mode: confirm AI Partner shows the read-only Smart Context summary with no interactive `Scene Context` selector and no manual-looking entity count strip such as `Characters 2 | Ideas 1 | Locations 2`.
+2. Smart mode with large eligible entity context: confirm the Smart Context size warning appears.
+3. Manual mode: confirm the interactive `Scene Context` selector still appears and selected/deselected linked items affect AI context.
+4. Scene Analysis: run in Smart and Manual modes and confirm behavior is unchanged.
+5. Smart mode: ask AI Partner whether it received full scene/chapter/manuscript text outside the current scene; it should not claim all scenes, chapters, or full manuscript text.
 
-After passing browser tests, remove this task entirely.
+Seeded warning fixtures for later browser testing:
+
+- Medium warning project: `[Smart Context Warning Test] Medium 2026-05-08T04-33-12`
+  - Project ID: `5cad62c8-eb36-4cd9-a263-9f3d02c343a1`
+  - Open: `/project/5cad62c8-eb36-4cd9-a263-9f3d02c343a1/story`
+  - Expected: Smart Context summary should show the medium note because eligible entity context is about `12,012` estimated tokens.
+- High warning project: `[Smart Context Warning Test] High 2026-05-08T04-33-12`
+  - Project ID: `e896c90e-2a47-4a15-92a4-08f440516fde`
+  - Open: `/project/e896c90e-2a47-4a15-92a4-08f440516fde/story`
+  - Expected: Smart Context summary should show the high warning because eligible entity context is about `31,051` estimated tokens.
+
+Cross-reference: `TESTING.md` has the same fixture details under `Smart Context Phase 5 safeguards and clarity`.
 
 ---
 
-### 2. Check and fix export issues, starting with PDF
+### 2. Smart Context entity include/exclude control - browser retest required
+
+Phase 4/4.5 browser validation passed on 2026-05-08.
+
+Follow-up UI polish was added because the entity-level Include/Exclude control existed but was not visually obvious enough in browser testing.
+
+Retest:
+
+1. Open a character detail page and confirm `Include in Smart Context` is clearly visible and obviously interactive.
+2. Toggle it off and confirm status changes to `Excluded from Smart Context`.
+3. Refresh and confirm the setting persists.
+4. Toggle it back on and confirm status changes to `Included in Smart Context`.
+5. Spot-check the same control on idea, location, and object detail pages.
+
+---
+
+### 3. Check and fix export issues, starting with PDF
 
 Audit and fix export problems, starting with PDF output and then verifying other export formats.
 

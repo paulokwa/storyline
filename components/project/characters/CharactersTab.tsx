@@ -15,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import AssetPicker from '@/components/project/assets/AssetPicker'
 import { useProjectActions } from '@/components/project/ProjectContext'
 import { ItemRowActionButton } from '@/components/project/ItemRowActionButton'
-import { Switch } from '@/components/ui/switch'
+import { SmartContextControl } from '@/components/project/SmartContextControl'
 import {
     createWritingEntity,
     reorderWritingEntities,
@@ -509,18 +509,11 @@ export default function CharactersTab({
 
                             {/* AI Context */}
                             {!isReadOnly && (
-                                <div className="pt-8 border-t border-stone-50 flex items-center justify-between gap-6">
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-[9px] uppercase tracking-widest text-slate-300 font-bold">AI Context</span>
-                                        <span className="text-[11px] text-stone-400">
-                                            {selectedCharacter.exclude_from_ai ? 'Excluded from Smart Context' : 'Included in Smart Context'}
-                                        </span>
-                                    </div>
-                                    <Switch
-                                        checked={!selectedCharacter.exclude_from_ai}
-                                        onCheckedChange={(included) => handleExcludeToggle(selectedCharacter.id, !included)}
-                                    />
-                                </div>
+                                <SmartContextControl
+                                    className="mt-2"
+                                    included={!selectedCharacter.exclude_from_ai}
+                                    onIncludedChange={(included) => handleExcludeToggle(selectedCharacter.id, !included)}
+                                />
                             )}
 
                             {/* Stats/Metatadata section */}

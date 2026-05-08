@@ -171,6 +171,7 @@ export default function AiFullCanvas({
                         allNodes={allNodes}
                         allScenes={allScenes}
                         aiSettings={aiSettings}
+                        aiContextMode={aiContextMode}
                         projectType={project.type}
                         projectPremise={project.premise}
                         projectTone={project.tone}

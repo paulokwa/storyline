@@ -36,6 +36,12 @@ export const SAFEGUARD_THRESHOLDS = {
     PERFORMANCE_WARNING_LOCAL_CHARS: 30000, // Warn about speed for local models
 };
 
+export const SMART_CONTEXT_TOKEN_THRESHOLDS = {
+    INLINE_NOTICE_TOKENS: 10_000,
+    WARNING_TOKENS: 25_000,
+    EXTREME_TOKENS: 50_000,
+};
+
 /**
  * Rough token estimation (approx 4 chars per token)
  */
@@ -87,5 +93,26 @@ export function analyzeContextSize(text: string, provider: string, model?: strin
         estimatedTokens: tokens,
         estimatedCost: cost,
         level
+    };
+}
+
+export function analyzeSmartContextSize(text: string): ContextSizingResult {
+    const charCount = text.length;
+    const tokens = estimateTokensApprox(text);
+
+    let level: ContextSizingResult['level'] = 'low';
+    if (tokens > SMART_CONTEXT_TOKEN_THRESHOLDS.EXTREME_TOKENS) {
+        level = 'extreme';
+    } else if (tokens > SMART_CONTEXT_TOKEN_THRESHOLDS.WARNING_TOKENS) {
+        level = 'high';
+    } else if (tokens > SMART_CONTEXT_TOKEN_THRESHOLDS.INLINE_NOTICE_TOKENS) {
+        level = 'medium';
+    }
+
+    return {
+        charCount,
+        estimatedTokens: tokens,
+        estimatedCost: null,
+        level,
     };
 }
