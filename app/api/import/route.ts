@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import * as mammoth from 'mammoth'
 import JSZip from 'jszip'
 
+const MAX_FILE_BYTES = 50 * 1024 * 1024 // 50 MB
+const PDF_TIMEOUT_MS = 30_000 // 30 seconds
+
 export async function POST(req: NextRequest) {
     try {
         const formData = await req.formData()
@@ -9,6 +12,10 @@ export async function POST(req: NextRequest) {
 
         if (!file) {
             return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+        }
+
+        if (file.size > MAX_FILE_BYTES) {
+            return NextResponse.json({ error: 'File too large. Please upload a manuscript under 50MB.' }, { status: 413 })
         }
 
         const buffer = Buffer.from(await file.arrayBuffer())
@@ -23,7 +30,13 @@ export async function POST(req: NextRequest) {
             text = buffer.toString('utf-8')
         } else if (filename.endsWith('.pdf')) {
             const pdfParse = require('pdf-parse')
-            const result = await pdfParse(buffer)
+            const timeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(
+                    () => reject(new Error('PDF import took too long. Please try a smaller PDF or export your manuscript as DOCX or TXT.')),
+                    PDF_TIMEOUT_MS
+                )
+            )
+            const result = await Promise.race([pdfParse(buffer) as Promise<{ text: string }>, timeoutPromise])
             text = result.text
         } else if (filename.endsWith('.epub')) {
             const zip = await JSZip.loadAsync(buffer)

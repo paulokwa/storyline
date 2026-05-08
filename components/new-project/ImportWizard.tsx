@@ -81,8 +81,8 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
         if (strategy === 'single') {
             outputChunks = [{ title: 'Full Document', content: text }]
         } else if (strategy === 'chapter_keyword') {
-            // Split natively where lines start with Chapter ignoring case
-            const parts = text.split(/\n(?=[ \t]*chapter\b)/i)
+            // Split on common structural headings (case-insensitive)
+            const parts = text.split(/\n(?=[ \t]*(?:chapter|prologue|epilogue|part|interlude|book|section|act)\b)/i)
             outputChunks = parts.map((part, i) => {
                 const lines = part.split('\n')
                 const firstLine = lines[0].trim().substring(0, 50) || `Segment ${i + 1}`
@@ -283,7 +283,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                     <div className="space-y-4">
                         <h3 className="font-serif text-xl font-medium text-slate-800">How should we split it?</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <StrategyCard active={splitStrategy === 'chapter_keyword'} onClick={() => updateStrategy('chapter_keyword')} title="By 'Chapter'" desc="Split when a line begins with 'Chapter'" />
+                        <StrategyCard active={splitStrategy === 'chapter_keyword'} onClick={() => updateStrategy('chapter_keyword')} title="By Heading" desc="Split on Chapter, Prologue, Epilogue, Part, and other common headings" />
                         <StrategyCard active={splitStrategy === 'custom'} onClick={() => updateStrategy('custom')} title="Custom Marker" desc="Split at a specific character (e.g. ***)" />
                         <StrategyCard active={splitStrategy === 'single'} onClick={() => updateStrategy('single')} title="Single Scene" desc="Don't split. Import as one bulk scene." />
                     </div>
@@ -448,19 +448,19 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                                     ✨ Magic Detect is an experimental feature. We recommend manual import for the highest reliability.
                                 </p>
                                 <p className="text-slate-500 text-sm leading-relaxed font-medium px-1">
-                                    Your manuscript text will be processed across **one or more** AI requests to automatically identify chapters. 
+                                    Your manuscript text will be processed across one or more AI requests to automatically identify chapters.
                                 </p>
                                 <div className="p-6 bg-amber-50 rounded-2xl border border-amber-100 space-y-3">
                                     <div className="flex items-start gap-3">
                                         <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
                                         <p className="text-sm text-amber-900 font-medium leading-relaxed">
-                                            This action uses your AI API quota for <span className="font-bold underline">~{Math.round(rawText.length / 4.7).toLocaleString()} words</span>.
+                                            Your manuscript (~<span className="font-bold">{Math.round(rawText.length / 5).toLocaleString()} words</span>) will be sent to AI across one or more requests.
                                         </p>
                                     </div>
                                     <div className="flex items-start gap-3">
                                         <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
                                         <p className="text-sm text-amber-900 font-medium leading-relaxed">
-                                            Approximate cost: <span className="font-bold">~${Math.max(1, Math.ceil((rawText.length / 1000000) * 1.5))}.00 USD</span> (or 0 credits on free-tier keys).
+                                            Estimated cost: usually under $0.10 for most manuscripts, depending on your provider and manuscript length. This will use your AI trial credits or connected provider.
                                         </p>
                                     </div>
                                     <div className="flex items-start gap-3">

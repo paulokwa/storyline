@@ -3,6 +3,12 @@ import { createClient } from '@/lib/supabase/server'
 import { DEFAULT_OPENAI_MODEL, extractOpenAiOutputText } from '@/lib/ai/providers'
 import { enforceAiRateLimit } from '@/lib/ai/rate-limit'
 import { getAiRuntimeState } from '@/lib/ai/runtime'
+import {
+    APP_MANAGED_OPENAI_MODEL,
+    estimateTokensFromChars,
+    estimateTrialReserveMicros,
+    resolveTrialFinalization,
+} from '@/lib/ai/trial'
 import { getRequestContext } from '@/lib/server/request-context'
 import { logUsageEvent } from '@/lib/ai/trial-server'
 
@@ -14,6 +20,9 @@ const OVERLAP = 15000     // 10% overlap
 const RATE_LIMIT_MS = 30_000
 
 export async function POST(req: NextRequest) {
+    // Captured after a successful trial reservation so the outer catch can release it
+    let trialCleanup: (() => Promise<void>) | null = null
+
     try {
         const { text, projectType, requestId, deviceFingerprint } = await req.json()
         const requestKey = typeof requestId === 'string' && requestId ? requestId : crypto.randomUUID()
@@ -27,7 +36,6 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Manuscript too large (over 1M characters). Please use manual markers.' }, { status: 413 })
         }
 
-        // Fetch User API Key Securely (same pattern as /api/ai/route.ts)
         const supabase = await createClient()
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -35,66 +43,134 @@ export async function POST(req: NextRequest) {
         const runtime = await getAiRuntimeState(supabase, user.id)
         const metadata = { endpoint: 'import_ai_detect', textLength: text.length }
 
-        if (runtime.billingMode === 'app_managed_trial') {
-            await logUsageEvent({
-                userId: user.id,
-                requestKey,
-                endpoint: 'import_ai_detect',
-                billingMode: runtime.billingMode,
-                provider: runtime.provider,
-                model: runtime.model,
-                status: 'blocked',
-                inputChars: text.length,
-                errorCode: 'trial_restricted_import_detect',
-                httpStatus: 403,
-                ipAddress: requestContext.ipAddress,
-                deviceFingerprint: requestContext.deviceFingerprint,
-                normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
-                userAgent: requestContext.userAgent,
-                metadata,
-            })
-
-            return NextResponse.json({
-                error: 'Magic Detect is available with your own API key for now. Free Trial AI does not cover this feature in v1 because it can fan out into multiple costly AI passes.'
-            }, { status: 403 })
-        }
-
+        // --- API key check (billing-mode-aware message) ---
         const apiKey = runtime.apiKey
         if (!apiKey) {
-            return NextResponse.json({ error: 'No cloud AI API key found in Settings. Please save your Gemini or OpenAI key first.' }, { status: 400 })
+            return NextResponse.json({
+                error: runtime.billingMode === 'app_managed_trial'
+                    ? 'AI import is temporarily unavailable. Please try again or use manual import.'
+                    : 'No cloud AI API key found in Settings. Please save your Gemini or OpenAI key first.',
+            }, { status: 400 })
         }
 
         if (runtime.provider !== 'gemini' && runtime.provider !== 'openai') {
             return NextResponse.json({ error: 'AI import detection currently requires Gemini or OpenAI as your active cloud provider.' }, { status: 400 })
         }
 
-        const rateLimit = await enforceAiRateLimit({
-            userId: user.id,
-            requestKey,
-            endpoint: 'import_ai_detect',
-            billingMode: runtime.billingMode,
-            provider: runtime.provider,
-            model: runtime.model,
-            inputChars: text.length,
-            normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
-            ipAddress: requestContext.ipAddress,
-            deviceFingerprint: requestContext.deviceFingerprint,
-            userAgent: requestContext.userAgent,
-            metadata,
-            minIntervalMs: RATE_LIMIT_MS,
-            recordAcceptedRequest: true,
-        })
+        // --- Billing-mode-specific gates ---
+        if (runtime.billingMode === 'app_managed_trial') {
+            // Check trial account status
+            if (runtime.trialAccount?.status !== 'active') {
+                return NextResponse.json({
+                    error: runtime.trialAccount?.status === 'exhausted'
+                        ? 'Your AI trial credits have been used up. Add your own API key in Settings to continue using AI features, or use manual import.'
+                        : 'AI trial is not available right now. You can still use manual import.',
+                }, { status: runtime.trialAccount?.status === 'exhausted' ? 402 : 403 })
+            }
 
-        if (!rateLimit.ok) {
-            return NextResponse.json({ error: 'RATE_LIMITED' }, {
-                status: 429,
-                headers: {
-                    'Retry-After': String(rateLimit.retryAfterSeconds),
-                },
+            // Rate limit (without recordAcceptedRequest — reserve_ai_trial_usage handles recording)
+            const rateLimit = await enforceAiRateLimit({
+                userId: user.id,
+                requestKey,
+                endpoint: 'import_ai_detect',
+                billingMode: runtime.billingMode,
+                provider: runtime.provider,
+                model: runtime.model,
+                inputChars: text.length,
+                normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
+                ipAddress: requestContext.ipAddress,
+                deviceFingerprint: requestContext.deviceFingerprint,
+                userAgent: requestContext.userAgent,
+                metadata,
+                minIntervalMs: RATE_LIMIT_MS,
             })
+
+            if (!rateLimit.ok) {
+                return NextResponse.json({ error: 'RATE_LIMITED' }, {
+                    status: 429,
+                    headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) },
+                })
+            }
+
+            // Conservative multi-chunk cost estimate: each chunk is up to CHUNK_SIZE, each may produce up to 4096 output tokens
+            const estimatedNumChunks = Math.min(MAX_CHUNKS, Math.max(1, Math.ceil(text.length / (CHUNK_SIZE - OVERLAP))))
+            const reservedMicros = estimateTrialReserveMicros({
+                endpoint: 'import_ai_detect',
+                inputChars: estimatedNumChunks * CHUNK_SIZE,
+                outputTokensCap: estimatedNumChunks * 4096,
+            })
+
+            const reserveResult = await supabase.rpc('reserve_ai_trial_usage', {
+                p_user_id: user.id,
+                p_request_key: requestKey,
+                p_endpoint: 'import_ai_detect',
+                p_provider: runtime.provider,
+                p_model: APP_MANAGED_OPENAI_MODEL,
+                p_reserved_micros: reservedMicros,
+                p_input_chars: text.length,
+                p_estimated_input_tokens: estimateTokensFromChars(text),
+                p_estimated_output_tokens: estimatedNumChunks * 4096,
+                p_ip_address: requestContext.ipAddress ?? '',
+                p_device_fingerprint: requestContext.deviceFingerprint ?? '',
+                p_user_agent: requestContext.userAgent ?? '',
+                p_metadata: metadata,
+            })
+
+            if (reserveResult.error) {
+                return NextResponse.json({ error: 'Unable to reserve AI credits. Please try again or use manual import.' }, { status: 500 })
+            }
+
+            const reserveData = reserveResult.data as { ok?: boolean, status?: string, reason?: string } | null
+            if (!reserveData?.ok) {
+                return NextResponse.json({
+                    error: reserveData?.status === 'exhausted'
+                        ? 'Not enough AI credits for this import. Try a shorter section, or add your own API key in Settings.'
+                        : 'AI trial is not available right now. You can still use manual import.',
+                }, { status: reserveData?.status === 'exhausted' ? 402 : 403 })
+            }
+
+            // Register cleanup for unexpected errors after this point
+            trialCleanup = async () => {
+                try {
+                    await supabase.rpc('fail_ai_trial_usage', {
+                        p_user_id: user.id,
+                        p_request_key: requestKey,
+                        p_error_code: 'unexpected_error',
+                        p_http_status: 500,
+                        p_metadata: metadata,
+                    })
+                } catch {}
+            }
+        } else {
+            // BYOK path: rate-limit with usage recording
+            const rateLimit = await enforceAiRateLimit({
+                userId: user.id,
+                requestKey,
+                endpoint: 'import_ai_detect',
+                billingMode: runtime.billingMode,
+                provider: runtime.provider,
+                model: runtime.model,
+                inputChars: text.length,
+                normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
+                ipAddress: requestContext.ipAddress,
+                deviceFingerprint: requestContext.deviceFingerprint,
+                userAgent: requestContext.userAgent,
+                metadata,
+                minIntervalMs: RATE_LIMIT_MS,
+                recordAcceptedRequest: true,
+            })
+
+            if (!rateLimit.ok) {
+                return NextResponse.json({ error: 'RATE_LIMITED' }, {
+                    status: 429,
+                    headers: {
+                        'Retry-After': String(rateLimit.retryAfterSeconds),
+                    },
+                })
+            }
         }
 
-        // Partitioning
+        // --- Partitioning ---
         const totalLen = text.length
         const chunks: string[] = []
         let pos = 0
@@ -106,6 +182,7 @@ export async function POST(req: NextRequest) {
         }
 
         const allChapters: any[] = []
+        let totalOutputChars = 0
 
         for (const chunk of chunks) {
             const promptText = `Analyze the following manuscript segment and identify logical major chapter start points.
@@ -181,6 +258,8 @@ ${chunk}`
                 ? responseData?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
                 : extractOpenAiOutputText(responseData)
 
+            totalOutputChars += rawText.length
+
             try {
                 // Strip markdown code fences if present
                 const clean = rawText.replace(/```json/gi, '').replace(/```/g, '').trim()
@@ -198,6 +277,58 @@ ${chunk}`
         const uniqueChapters = Array.from(new Map(allChapters.map(c => [c.markerSnippet, c])).values())
 
         if (uniqueChapters.length > 100) {
+            if (runtime.billingMode === 'app_managed_trial') {
+                trialCleanup = null
+                await supabase.rpc('fail_ai_trial_usage', {
+                    p_user_id: user.id,
+                    p_request_key: requestKey,
+                    p_error_code: 'implausible_chapter_count',
+                    p_http_status: 422,
+                    p_metadata: metadata,
+                })
+            } else {
+                await logUsageEvent({
+                    userId: user.id,
+                    requestKey,
+                    endpoint: 'import_ai_detect',
+                    billingMode: runtime.billingMode,
+                    provider: runtime.provider,
+                    model: runtime.model,
+                    status: 'failed',
+                    inputChars: text.length,
+                    errorCode: 'implausible_chapter_count',
+                    httpStatus: 422,
+                    ipAddress: requestContext.ipAddress,
+                    deviceFingerprint: requestContext.deviceFingerprint,
+                    normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
+                    userAgent: requestContext.userAgent,
+                    metadata,
+                })
+            }
+            return NextResponse.json({
+                error: 'AI identified an implausible number of chapters (>100). Please use manual markers or refine your manuscript structure.'
+            }, { status: 422 })
+        }
+
+        // --- Finalize usage tracking ---
+        trialCleanup = null // Clear cleanup before clean exit
+
+        if (runtime.billingMode === 'app_managed_trial') {
+            const finalization = resolveTrialFinalization({
+                endpoint: 'import_ai_detect',
+                inputChars: text.length,
+                outputChars: totalOutputChars,
+                providerUsage: null, // multi-chunk; use estimated costing
+            })
+            await supabase.rpc('finalize_ai_trial_usage', {
+                p_user_id: user.id,
+                p_request_key: requestKey,
+                p_final_micros: finalization.finalMicros,
+                p_output_chars: totalOutputChars,
+                p_http_status: 200,
+                p_metadata: { ...metadata, chunkCount: chunks.length, chapterCount: uniqueChapters.length },
+            })
+        } else {
             await logUsageEvent({
                 userId: user.id,
                 requestKey,
@@ -205,42 +336,22 @@ ${chunk}`
                 billingMode: runtime.billingMode,
                 provider: runtime.provider,
                 model: runtime.model,
-                status: 'failed',
+                status: 'completed',
                 inputChars: text.length,
-                errorCode: 'implausible_chapter_count',
-                httpStatus: 422,
+                httpStatus: 200,
                 ipAddress: requestContext.ipAddress,
                 deviceFingerprint: requestContext.deviceFingerprint,
                 normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
                 userAgent: requestContext.userAgent,
-                metadata,
+                metadata: { ...metadata, chunkCount: chunks.length, chapterCount: uniqueChapters.length },
             })
-            return NextResponse.json({
-                error: 'AI identified an implausible number of chapters (>100). Please use manual markers or refine your manuscript structure.'
-            }, { status: 422 })
         }
-
-        await logUsageEvent({
-            userId: user.id,
-            requestKey,
-            endpoint: 'import_ai_detect',
-            billingMode: runtime.billingMode,
-            provider: runtime.provider,
-            model: runtime.model,
-            status: 'completed',
-            inputChars: text.length,
-            httpStatus: 200,
-            ipAddress: requestContext.ipAddress,
-            deviceFingerprint: requestContext.deviceFingerprint,
-            normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
-            userAgent: requestContext.userAgent,
-            metadata: { ...metadata, chunkCount: chunks.length, chapterCount: uniqueChapters.length },
-        })
 
         return NextResponse.json({ chapters: uniqueChapters })
 
     } catch (error: any) {
         console.error('AI Detect Error:', error)
+        if (trialCleanup) await trialCleanup()
         return NextResponse.json({ error: error.message || 'AI detection failed' }, { status: 500 })
     }
 }
