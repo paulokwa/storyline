@@ -51,6 +51,7 @@ export default function AiFullCanvas({
         activeLocations,
         activeObjects,
         selectedNodeIds,
+        setSelectedNodeIds,
         setAiPanelOpen
     } = useProjectActions()
 
@@ -67,7 +68,12 @@ export default function AiFullCanvas({
         () => activeScene ? getSceneTextForAi(activeScene.content) : '',
         [activeScene]
     )
-    const selectedNodes = allNodes.filter(n => selectedNodeIds.includes(n.id))
+    const selectedNodes = useMemo(() => {
+        return [
+            ...(selectedNodeIds.includes('virtual-root') ? [{ id: 'virtual-root', title: project.title, type: 'root' }] : []),
+            ...allNodes.filter(n => selectedNodeIds.includes(n.id))
+        ]
+    }, [allNodes, project.title, selectedNodeIds])
     const isAiEnabled = !!aiSettings?.ai_enabled
     const collaborationLabel = isAiEnabled ? getBillingModeLabel(aiSettings?.billing_mode ?? 'app_managed_trial') : 'AI Partner is off'
     const collaborationDotClass = isAiEnabled ? 'bg-green-400' : 'bg-red-400'
@@ -121,6 +127,19 @@ export default function AiFullCanvas({
         router.push(`/project/${projectId}/story${activeNodeId ? `?nodeId=${activeNodeId}` : ''}`)
     }
 
+    const handleToggleStoryScopeNode = (nodeId: string) => {
+        setSelectedNodeIds((previous) => {
+            if (nodeId === 'virtual-root') {
+                return previous.includes('virtual-root') ? [] : ['virtual-root']
+            }
+
+            const withoutRoot = previous.filter((id) => id !== 'virtual-root')
+            return withoutRoot.includes(nodeId)
+                ? withoutRoot.filter((id) => id !== nodeId)
+                : [...withoutRoot, nodeId]
+        })
+    }
+
     return (
         <div className="ai-full-canvas flex-1 flex flex-col bg-[#fbf9f5] overflow-hidden">
             {/* Minimalist Top Nav for AI Tab */}
@@ -170,6 +189,8 @@ export default function AiFullCanvas({
                         projectRelationships={projectRelationships}
                         allNodes={allNodes}
                         allScenes={allScenes}
+                        onClearSelection={() => setSelectedNodeIds([])}
+                        onToggleNodeSelection={handleToggleStoryScopeNode}
                         aiSettings={aiSettings}
                         aiContextMode={aiContextMode}
                         projectType={project.type}

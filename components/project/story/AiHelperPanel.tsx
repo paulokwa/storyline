@@ -5,7 +5,7 @@ import { getProjectTypeLabel } from '@/lib/constants'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Bookmark, Database, Maximize2, Users, Lightbulb, MapPin, Box, HelpCircle, Layout, Square } from 'lucide-react'
+import { Sparkles, Send, Loader2, Plus, MessageSquare, AlertCircle, RefreshCcw, Copy, X, Check, ChevronDown, ChevronUp, Info, Settings, Bookmark, Database, Maximize2, Users, Lightbulb, MapPin, Box, HelpCircle, Layout, Square, BookOpen, FileText, Shield } from 'lucide-react'
 import { PremiumEditor } from '@/components/ui/premium-editor'
 import { Button } from '@/components/ui/button'
 import { SanctuarySelect } from '@/components/ui/sanctuary-select'
@@ -49,6 +49,7 @@ interface AiHelperPanelProps {
     allNodes?: any[]
     allScenes?: any[]
     onClearSelection?: () => void
+    onToggleNodeSelection?: (nodeId: string) => void
     onInsert: (content: any) => void
     activeNodeId?: string | null
     activeSceneId?: string | null
@@ -293,6 +294,25 @@ function getDescendantScenes(nodeId: string, allNodes: any[], allScenes: any[], 
     }
     const children = allNodes.filter(n => n.parent_id === nodeId)
     return children.flatMap(c => getDescendantScenes(c.id, allNodes, allScenes))
+}
+
+function getUncappedDescendantSceneCount(nodeId: string, allNodes: any[], allScenes: any[]): number {
+    if (nodeId === 'virtual-root') return allScenes.length
+    return getDescendantScenes(nodeId, allNodes, allScenes, 'full').length
+}
+
+function formatSceneCount(count: number) {
+    return `${count} ${count === 1 ? 'scene' : 'scenes'}`
+}
+
+function getStoryScopeTypeLabel(node: any, projectType?: 'tv_script' | 'novel') {
+    if (!node || node.id === 'virtual-root' || node.type === 'root') return 'Entire Project'
+    if (node.type === 'scene') return 'Scene'
+    if (node.type === 'chapter') return 'Chapter'
+    if (node.type === 'episode') return 'Episode'
+    if (node.type === 'act') return 'Act'
+    if (node.type === 'arc') return 'Arc'
+    return projectType === 'tv_script' ? 'Story Section' : 'Chapter'
 }
 
 const EMPTY_HINTS = [
@@ -652,7 +672,7 @@ export default function AiHelperPanel({
     linkedCharacters = EMPTY_ARRAY, linkedIdeas = EMPTY_ARRAY, linkedLocations = EMPTY_ARRAY, linkedObjects = EMPTY_ARRAY, linkedAiFeedback = EMPTY_ARRAY,
     projectCharacters = EMPTY_ARRAY, projectIdeas = EMPTY_ARRAY, projectLocations = EMPTY_ARRAY, projectObjects = EMPTY_ARRAY, projectAiFeedback = EMPTY_ARRAY,
     projectRelationships = EMPTY_ARRAY,
-    selectedNodes = EMPTY_ARRAY, allNodes = EMPTY_ARRAY, allScenes = EMPTY_ARRAY, onClearSelection, aiSettings, projectType,
+    selectedNodes = EMPTY_ARRAY, allNodes = EMPTY_ARRAY, allScenes = EMPTY_ARRAY, onClearSelection, onToggleNodeSelection, aiSettings, projectType,
     projectPremise, projectTone,
     activeNodeId, activeSceneId,
     isFullCanvas = false,
@@ -717,6 +737,7 @@ export default function AiHelperPanel({
     const [isSavingToFeedback, setIsSavingToFeedback] = useState(false)
     const [tourOpen, setTourOpen] = useState(false)
     const [contextManagerOpen, setContextManagerOpen] = useState(false)
+    const [scopeSelectorOpen, setScopeSelectorOpen] = useState(false)
     const [isApplyingContext, setIsApplyingContext] = useState(false)
     const [pendingContextDraft, setPendingContextDraft] = useState<ContextDraft | null>(null)
     const [requestNotice, setRequestNotice] = useState<string | null>(null)
@@ -866,6 +887,71 @@ export default function AiHelperPanel({
     const isVirtualRootSelected = useMemo(() => {
         return selectedNodes.some(n => n.id === 'virtual-root')
     }, [selectedNodes])
+
+    const activeStoryNode = useMemo(() => {
+        if (!activeNodeId) return null
+        return allNodes.find(n => n.id === activeNodeId) ?? null
+    }, [activeNodeId, allNodes])
+
+    const storyScopeOptions = useMemo(() => {
+        const depthById = new Map<string, number>()
+        const nodeById = new Map(allNodes.map((node) => [node.id, node]))
+
+        const getDepth = (node: any) => {
+            if (depthById.has(node.id)) return depthById.get(node.id) ?? 0
+            let depth = 0
+            let parentId = node.parent_id
+            let guard = 0
+            while (parentId && guard < 20) {
+                const parent = nodeById.get(parentId)
+                if (!parent) break
+                depth += 1
+                parentId = parent.parent_id
+                guard += 1
+            }
+            depthById.set(node.id, depth)
+            return depth
+        }
+
+        return allNodes
+            .filter((node) => !node.deleted_at && ['chapter', 'episode', 'act', 'arc', 'scene'].includes(node.type))
+            .map((node) => ({
+                node,
+                depth: getDepth(node),
+                sceneCount: getUncappedDescendantSceneCount(node.id, allNodes, allScenes),
+            }))
+    }, [allNodes, allScenes])
+
+    const storyScopeLabel = useMemo(() => {
+        if (selectedNodes.length === 0) return 'Current scene'
+
+        if (isVirtualRootSelected) {
+            if (projectContextMode === 'default') return `Entire Project · first ${Math.min(allScenes.length, 10)} scenes`
+            if (projectContextMode === 'expanded') return `Entire Project · first ${Math.min(allScenes.length, 50)} scenes`
+            return `Entire Project · ${formatSceneCount(allScenes.length)}`
+        }
+
+        if (selectedNodes.length === 1) {
+            const node = selectedNodes[0]
+            const sceneCount = getUncappedDescendantSceneCount(node.id, allNodes, allScenes)
+            return node.type === 'scene'
+                ? node.title || 'Scene'
+                : `${node.title || getStoryScopeTypeLabel(node, projectType)} · ${formatSceneCount(sceneCount)}`
+        }
+
+        return `${selectedNodes.length} scopes · ${formatSceneCount(storySelectionContext.length)}`
+    }, [allNodes, allScenes, isVirtualRootSelected, projectContextMode, projectType, selectedNodes, storySelectionContext.length])
+
+    const largeStoryScopeWarning = useMemo(() => {
+        if (isVirtualRootSelected || selectedNodes.length === 0 || storySelectionContext.length <= 10) return null
+
+        if (selectedNodes.length === 1 && selectedNodes[0].type !== 'scene') {
+            const typeLabel = getStoryScopeTypeLabel(selectedNodes[0], projectType).toLowerCase()
+            return `This ${typeLabel} includes ${formatSceneCount(storySelectionContext.length)}. AI replies may take longer and use more credits.`
+        }
+
+        return `This scope includes ${formatSceneCount(storySelectionContext.length)}. For faster replies, select fewer scenes.`
+    }, [isVirtualRootSelected, projectType, selectedNodes, storySelectionContext.length])
 
     const linkedEntitiesSnapshot = useMemo(() => {
         return {
@@ -1214,6 +1300,148 @@ export default function AiHelperPanel({
         </TooltipProvider>
     )
 
+    const selectedScopeIds = useMemo(() => new Set(selectedNodes.map((node) => node.id)), [selectedNodes])
+
+    const storyScopeSelectorList = (
+        <div className="max-h-72 space-y-1 overflow-y-auto pr-1 custom-scrollbar">
+            <button
+                type="button"
+                onClick={handleUseCurrentSceneScope}
+                className={cn(
+                    "flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left transition-all",
+                    selectedNodes.length === 0
+                        ? isMidnight ? "border-slate-600/40 bg-slate-700/60 text-slate-100 shadow-sm" : "border-slate-200 bg-white text-slate-800 shadow-sm"
+                        : isMidnight ? "border-transparent bg-white/6 text-slate-400 hover:border-slate-600/40 hover:bg-slate-700/40" : "border-transparent bg-white/50 text-slate-500 hover:border-slate-200 hover:bg-white"
+                )}
+            >
+                <div className={cn(
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-xl",
+                    selectedNodes.length === 0
+                        ? isMidnight ? "bg-slate-800 text-emerald-300" : "bg-[#eef4ed] text-[#546354]"
+                        : isMidnight ? "bg-slate-800/70 text-slate-500" : "bg-slate-100 text-slate-400"
+                )}>
+                    <FileText className="h-3.5 w-3.5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                        <span className="truncate text-[12px] font-semibold">Current scene</span>
+                        {selectedNodes.length === 0 && <Check className="h-3.5 w-3.5 shrink-0 text-[#546354]" />}
+                    </div>
+                    <p className={cn("truncate text-[10px]", isMidnight ? "text-slate-500" : "text-slate-400")}>
+                        {activeStoryNode?.title || 'The scene open in the editor'}
+                    </p>
+                </div>
+            </button>
+
+            <button
+                type="button"
+                onClick={() => handleToggleStoryScopeNode('virtual-root')}
+                disabled={!onToggleNodeSelection}
+                className={cn(
+                    "flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60",
+                    selectedScopeIds.has('virtual-root')
+                        ? isMidnight ? "border-indigo-400/30 bg-indigo-500/20 text-indigo-200 shadow-sm" : "border-indigo-200 bg-indigo-50 text-indigo-800 shadow-sm"
+                        : isMidnight ? "border-transparent bg-white/6 text-slate-400 hover:border-slate-600/40 hover:bg-slate-700/40" : "border-transparent bg-white/50 text-slate-500 hover:border-slate-200 hover:bg-white"
+                )}
+            >
+                <div className={cn(
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-xl",
+                    selectedScopeIds.has('virtual-root')
+                        ? isMidnight ? "bg-indigo-500/20 text-indigo-200" : "bg-white text-indigo-600"
+                        : isMidnight ? "bg-slate-800/70 text-slate-500" : "bg-slate-100 text-slate-400"
+                )}>
+                    <Shield className="h-3.5 w-3.5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                        <span className="truncate text-[12px] font-semibold">Entire Project</span>
+                        {selectedScopeIds.has('virtual-root') && <Check className="h-3.5 w-3.5 shrink-0 text-indigo-500" />}
+                    </div>
+                    <p className={cn("truncate text-[10px]", isMidnight ? "text-slate-500" : "text-slate-400")}>
+                        {projectContextMode === 'default' && `Default: first ${Math.min(allScenes.length, 10)} scenes`}
+                        {projectContextMode === 'expanded' && `Expanded: first ${Math.min(allScenes.length, 50)} scenes`}
+                        {projectContextMode === 'full' && `Full: ${formatSceneCount(allScenes.length)}`}
+                    </p>
+                </div>
+            </button>
+
+            {storyScopeOptions.map(({ node, depth, sceneCount }) => {
+                const selected = selectedScopeIds.has(node.id)
+                const Icon = node.type === 'scene' ? FileText : BookOpen
+                return (
+                    <button
+                        key={node.id}
+                        type="button"
+                        onClick={() => handleToggleStoryScopeNode(node.id)}
+                        disabled={!onToggleNodeSelection}
+                        className={cn(
+                            "flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60",
+                            selected
+                                ? isMidnight ? "border-slate-600/40 bg-slate-700/60 text-slate-100 shadow-sm" : "border-slate-200 bg-white text-slate-800 shadow-sm"
+                                : isMidnight ? "border-transparent bg-white/6 text-slate-400 hover:border-slate-600/40 hover:bg-slate-700/40" : "border-transparent bg-white/50 text-slate-500 hover:border-slate-200 hover:bg-white"
+                        )}
+                        style={{ paddingLeft: `${12 + Math.min(depth, 4) * 12}px` }}
+                    >
+                        <div className={cn(
+                            "flex h-7 w-7 shrink-0 items-center justify-center rounded-xl",
+                            selected
+                                ? isMidnight ? "bg-slate-800 text-emerald-300" : "bg-[#eef4ed] text-[#546354]"
+                                : isMidnight ? "bg-slate-800/70 text-slate-500" : "bg-slate-100 text-slate-400"
+                        )}>
+                            <Icon className="h-3.5 w-3.5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                                <span className="truncate text-[12px] font-semibold">{node.title || getStoryScopeTypeLabel(node, projectType)}</span>
+                                {selected && <Check className="h-3.5 w-3.5 shrink-0 text-[#546354]" />}
+                            </div>
+                            <p className={cn("truncate text-[10px]", isMidnight ? "text-slate-500" : "text-slate-400")}>
+                                {getStoryScopeTypeLabel(node, projectType)} · {formatSceneCount(sceneCount)}
+                            </p>
+                        </div>
+                    </button>
+                )
+            })}
+        </div>
+    )
+
+    const renderStoryScopeRow = (compact = false) => (
+        <div className={cn("space-y-1.5", compact && "space-y-1")}>
+            <div className={cn("flex items-center gap-2", compact ? "min-w-0" : "gap-3")}>
+                <div className={cn(
+                    "flex shrink-0 items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.18em]",
+                    isMidnight ? "text-slate-500" : "text-slate-400"
+                )}>
+                    <Layout className="h-3 w-3" />
+                    <span>Story Scope</span>
+                </div>
+                <button
+                    type="button"
+                    onClick={handleScopeSelectorToggle}
+                    className={cn(
+                        "inline-flex min-w-0 flex-1 items-center justify-between gap-2 rounded-full border px-3 py-1.5 text-left text-[11px] font-semibold transition-all",
+                        scopeSelectorOpen
+                            ? isMidnight ? "border-indigo-400/30 bg-indigo-500/20 text-indigo-200" : "border-indigo-200 bg-indigo-50 text-indigo-800"
+                            : isMidnight ? "border-slate-700/60 bg-white/8 text-slate-300 hover:bg-white/12" : "border-slate-200/70 bg-white/80 text-slate-700 hover:bg-white"
+                    )}
+                    aria-expanded={scopeSelectorOpen}
+                >
+                    <span className="truncate">{storyScopeLabel}</span>
+                    {scopeSelectorOpen ? <ChevronUp className="h-3.5 w-3.5 shrink-0" /> : <ChevronDown className="h-3.5 w-3.5 shrink-0" />}
+                </button>
+            </div>
+            {largeStoryScopeWarning && (
+                <div className={cn(
+                    "flex items-start gap-1.5 text-[10px] font-medium leading-snug",
+                    isMidnight ? "text-amber-300" : "text-amber-700"
+                )}>
+                    <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
+                    <span>{largeStoryScopeWarning}</span>
+                </div>
+            )}
+        </div>
+    )
+
     const contextManagerList = (
         <div className="max-h-72 space-y-4 overflow-y-auto pr-1 custom-scrollbar">
             {contextEntityGroups.map((group) => {
@@ -1414,8 +1642,23 @@ export default function AiHelperPanel({
             return
         }
 
+        setScopeSelectorOpen(false)
         setContextDraft(pendingContextDraft ?? currentContextDraft)
         setContextManagerOpen(true)
+    }
+
+    function handleScopeSelectorToggle() {
+        setContextManagerOpen(false)
+        setScopeSelectorOpen((open) => !open)
+    }
+
+    function handleUseCurrentSceneScope() {
+        onClearSelection?.()
+        setScopeSelectorOpen(false)
+    }
+
+    function handleToggleStoryScopeNode(nodeId: string) {
+        onToggleNodeSelection?.(nodeId)
     }
 
     // What to display: live completion takes priority; fall back to previous while loading
@@ -2290,9 +2533,25 @@ export default function AiHelperPanel({
                 "ai-helper-context hidden border-b md:block",
                 isMidnight ? "border-slate-700/60 bg-slate-900/70" : "border-[#e2ddd3] bg-[rgba(250,248,243,0.92)]"
             )}>
+                <div
+                    data-tour="ai-context-strip"
+                    className={cn(
+                        "space-y-2 border-b px-6 py-2",
+                        isMidnight ? "border-slate-700/60" : "border-white/70"
+                    )}
+                >
+                    {renderStoryScopeRow(false)}
+                    {scopeSelectorOpen && (
+                        <div className={cn(
+                            "rounded-2xl border p-2 shadow-sm",
+                            isMidnight ? "border-slate-700/60 bg-slate-800/70" : "border-slate-200/70 bg-[rgba(245,244,239,0.92)]"
+                        )}>
+                            {storyScopeSelectorList}
+                        </div>
+                    )}
+                </div>
                 {isSmartContextMode ? (
                     <div
-                        data-tour="ai-context-strip"
                         className="space-y-1.5 px-6 py-2"
                     >
                         <div className="flex items-center gap-3 overflow-hidden">
@@ -2305,7 +2564,7 @@ export default function AiHelperPanel({
                                 )}
                             >
                                 <Database className="h-3 w-3" />
-                                <span>Smart Context on</span>
+                                <span>Smart Context</span>
                             </div>
 
                             <div className={cn("h-4 w-px shrink-0", isMidnight ? "bg-slate-700" : "bg-slate-200")} />
@@ -2354,7 +2613,7 @@ export default function AiHelperPanel({
                                 )}
                             >
                                 <Database className="h-3 w-3" />
-                                <span>{isApplyingContext ? 'Saving...' : 'Scene Context'}</span>
+                                <span>{isApplyingContext ? 'Saving...' : 'Story Elements'}</span>
                                 {contextManagerOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                             </button>
 
@@ -2380,20 +2639,8 @@ export default function AiHelperPanel({
                                     )
                                 })}
 
-                                {selectedNodes.length > 0 && (
-                                    <div className={cn(
-                                        "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium shadow-sm",
-                                        isMidnight
-                                            ? "border-indigo-400/30 bg-indigo-500/20 text-indigo-300"
-                                            : "border-indigo-200/70 bg-indigo-50/90 text-indigo-700"
-                                    )}>
-                                        <div className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
-                                        <span className="truncate max-w-[220px]">{storySelectionLabel}</span>
-                                    </div>
-                                )}
-
-                                {contextSummaryItems.length === 0 && selectedNodes.length === 0 && (
-                                    <div className={cn("text-[10px] italic", isMidnight ? "text-slate-600" : "text-slate-300")}>No specific items linked</div>
+                                {contextSummaryItems.length === 0 && (
+                                    <div className={cn("text-[10px] italic", isMidnight ? "text-slate-600" : "text-slate-300")}>No story elements linked</div>
                                 )}
                             </div>
                         </div>
@@ -2417,6 +2664,20 @@ export default function AiHelperPanel({
                     isMidnight ? "border-slate-700/60 bg-slate-900/70" : "border-[#e2ddd3] bg-[rgba(250,248,243,0.92)]"
                 )}
             >
+                <div className={cn(
+                    "space-y-2 border-b px-4 py-2",
+                    isMidnight ? "border-slate-700/60" : "border-white/70"
+                )}>
+                    {renderStoryScopeRow(true)}
+                    {scopeSelectorOpen && (
+                        <div className={cn(
+                            "rounded-2xl border p-2 shadow-sm",
+                            isMidnight ? "border-slate-700/60 bg-slate-800/70" : "border-slate-200/70 bg-[rgba(245,244,239,0.92)]"
+                        )}>
+                            {storyScopeSelectorList}
+                        </div>
+                    )}
+                </div>
                 {isSmartContextMode ? (
                     <div className="px-4 py-1.5">
                         <div className="space-y-1.5">
@@ -2430,7 +2691,7 @@ export default function AiHelperPanel({
                                     )}
                                 >
                                     <Database className="h-3 w-3" />
-                                    <span>Smart Context on</span>
+                                    <span>Smart Context</span>
                                 </div>
                                 <div className="min-w-0 flex-1 overflow-x-auto no-scrollbar">
                                     <div className={cn("flex min-w-max items-center gap-2 pr-1 text-[10px]", isMidnight ? "text-slate-400" : "text-slate-500")}>
@@ -2472,24 +2733,12 @@ export default function AiHelperPanel({
                                     )}
                                 >
                                     <Database className="h-3 w-3" />
-                                    <span>{isApplyingContext ? 'Saving...' : 'Scene Context'}</span>
+                                    <span>{isApplyingContext ? 'Saving...' : 'Story Elements'}</span>
                                     {contextManagerOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                                 </button>
 
                                 <div className="min-w-0 flex-1 overflow-x-auto no-scrollbar">
                                     <div className="flex min-w-max items-center gap-2 pr-1">
-                                        {selectedNodes.length > 0 && (
-                                            <div className={cn(
-                                                "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium shadow-sm",
-                                                isMidnight
-                                                    ? "border-indigo-400/30 bg-indigo-500/20 text-indigo-300"
-                                                    : "border-indigo-200/70 bg-indigo-50/90 text-indigo-700"
-                                            )}>
-                                                <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
-                                                <span className="truncate">{storySelectionLabel}</span>
-                                            </div>
-                                        )}
-
                                         {contextSummaryItems.map((item) => {
                                             const Icon = item.icon
                                             return (
@@ -2509,8 +2758,8 @@ export default function AiHelperPanel({
                                             )
                                         })}
 
-                                        {contextSummaryItems.length === 0 && selectedNodes.length === 0 && (
-                                            <div className={cn("text-[10px] italic shrink-0", isMidnight ? "text-slate-600" : "text-slate-300")}>No specific items linked</div>
+                                        {contextSummaryItems.length === 0 && (
+                                            <div className={cn("text-[10px] italic shrink-0", isMidnight ? "text-slate-600" : "text-slate-300")}>No story elements</div>
                                         )}
                                     </div>
                                 </div>
@@ -3060,7 +3309,7 @@ export default function AiHelperPanel({
                             {storySelectionContext.length > 0 && (
                                 <div>
                                     <div className="mb-1 flex items-center justify-between font-bold text-slate-500">
-                                        <span>STORY CONTEXT ({storySelectionContext.length} scenes):</span>
+                                        <span>STORY SCOPE ({storySelectionContext.length} scenes):</span>
                                         {onClearSelection && (
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); onClearSelection() }}
@@ -3080,7 +3329,7 @@ export default function AiHelperPanel({
                                             </div>
                                         ))}
                                         {storySelectionContext.length > 3 && (
-                                            <div className="py-1 text-center italic text-slate-500">+ {storySelectionContext.length - 3} more elements</div>
+                                            <div className="py-1 text-center italic text-slate-500">+ {storySelectionContext.length - 3} more scenes</div>
                                         )}
                                     </div>
                                 </div>

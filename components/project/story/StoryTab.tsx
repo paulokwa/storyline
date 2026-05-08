@@ -1044,6 +1044,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                         selectedNodes={orderedExplicitSelectedNodes}
                         allNodes={nodes}
                         allScenes={scenes}
+                        onToggleNodeSelection={handleNodeToggleSelection}
                         projectRelationships={projectRelationships}
                         projectType={project.type as any}
                         projectPremise={project.premise}
@@ -1133,6 +1134,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                 selectedNodes={orderedExplicitSelectedNodes}
                                 allNodes={nodes}
                                 allScenes={scenes}
+                                onToggleNodeSelection={handleNodeToggleSelection}
                                 projectRelationships={projectRelationships}
                                 projectType={project.type as any}
                                 projectPremise={project.premise}

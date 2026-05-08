@@ -5,6 +5,57 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-08 - Phase 6 Story Scope selector implemented
+
+### What was completed
+
+Implemented the corrected Phase 6 AI Partner Story Scope selector without changing the existing Entire Project safeguard.
+
+**Completed:**
+- Added a separate `Story Scope` selector inside AI Partner for both Smart Context and Manual Context.
+- Kept `Smart Context` as a read-only automatic story-elements summary.
+- Renamed the Manual Context control in AI Partner to `Story Elements` while preserving the existing manual linked-item selector.
+- Reused the existing `selectedNodeIds`, `virtual-root`, `projectContextMode`, `Use more context`, `AiSafeguardDialogs`, `storyContext` payload, and send-time safeguards.
+- Confirmed the important edge case: selecting a specific chapter, act, or episode already includes all descendant scenes unconditionally.
+- Added a lightweight inline warning when a non-root selected scope includes more than 10 scenes.
+- Wired the same Story Scope UI into full-screen AI.
+
+**Not touched:**
+- `app/api/ai/analyze-scene/route.ts` - unchanged.
+- `/api/ai/route.ts` - unchanged.
+- The old Structure panel selector - still present.
+
+### Files changed
+
+- `components/project/story/AiHelperPanel.tsx`
+- `components/project/story/StoryTab.tsx`
+- `components/project/ai/AiFullCanvas.tsx`
+- `SESSION_HANDOVER.md`
+- `TASK_BOARD.md`
+- `TESTING.md`
+
+### Verification
+
+- `npx tsc --noEmit --pretty false` - passed.
+- Focused ESLint on touched AI Partner files passed with pre-existing warnings in `AiHelperPanel.tsx`.
+- `git diff --check` - passed.
+- `npm run build` - passed.
+- `app/api/ai/analyze-scene/route.ts` and `app/api/ai/route.ts` have no diff.
+
+### Current status
+
+Phase 6 code is complete and statically verified. Browser validation is still needed for Smart mode, Manual mode, Entire Project context escalation, large chapter/act/episode warnings, and full-screen AI parity.
+
+### Next recommended step
+
+Browser-test the Phase 6 checklist in `TESTING.md`.
+
+### Risks or warnings
+
+- Full-screen AI now has the same selector UI, but its in-panel multi-select behavior is intentionally simple compared with the full Structure panel roll-up logic.
+- Browser validation was not run in this session.
+
+---
 ## 2026-05-08 - Smart Context testing log cleanup
 
 ### What was completed

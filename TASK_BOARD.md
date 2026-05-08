@@ -73,7 +73,24 @@ Before writing code, state:
 ## Now
 
 
-### 1. Smart Context Phase 5 - browser validation required
+### 1. Phase 6 Story Scope selector - browser validation required
+
+Phase 6 code is implemented and statically verified. Browser validation is still needed before signing off the corrected Story Scope behavior.
+
+Retest:
+
+1. Smart mode: confirm AI Partner shows `Story Scope` plus read-only `Smart Context`.
+2. Manual mode: confirm AI Partner shows `Story Scope` plus separate interactive `Story Elements`.
+3. Entire Project: confirm the selector shows the first-10 scene state and the existing inline notice still says the first 10 scenes are loaded.
+4. Entire Project: click `Use more context` and confirm the existing Default / Expanded / Full Project Manuscript modal still offers 10 / 50 / all scenes.
+5. Chapter/act/episode selection: select a scope with more than 10 descendant scenes and confirm a friendly inline warning appears.
+6. Full-screen AI: confirm the same Story Scope UI appears and updates the same selected writing scope.
+7. Scene Analysis: confirm behavior is unchanged.
+
+---
+
+
+### 2. Smart Context Phase 5 - browser validation required
 
 Phase 5 code is implemented and statically verified. Browser validation is still needed before signing off Smart Context safeguards.
 
@@ -100,7 +117,7 @@ Cross-reference: `TESTING.md` has the same fixture details under `Smart Context 
 
 ---
 
-### 2. Smart Context entity include/exclude control - browser retest required
+### 3. Smart Context entity include/exclude control - browser retest required
 
 Phase 4/4.5 browser validation passed on 2026-05-08.
 
@@ -116,7 +133,7 @@ Retest:
 
 ---
 
-### 3. Check and fix export issues, starting with PDF
+### 4. Check and fix export issues, starting with PDF
 
 Audit and fix export problems, starting with PDF output and then verifying other export formats.
 
