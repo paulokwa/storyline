@@ -59,7 +59,7 @@ export async function logUsageEvent(params: {
 
     const now = new Date().toISOString()
 
-    await admin.from('ai_usage_events').upsert({
+    const { error } = await admin.from('ai_usage_events').upsert({
         user_id: params.userId,
         request_key: params.requestKey,
         endpoint: params.endpoint,
@@ -82,4 +82,5 @@ export async function logUsageEvent(params: {
     }, {
         onConflict: 'request_key',
     })
+    if (error) console.error('[logUsageEvent] failed:', error.code, error.message)
 }
