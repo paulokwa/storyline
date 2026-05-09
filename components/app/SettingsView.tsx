@@ -520,15 +520,18 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                 </Button>
             </div>
 
-            {successMessage && (
-                <div className="p-4 bg-green-50 text-green-700 rounded-md border border-green-200">
-                    {successMessage}
-                </div>
-            )}
-            
-            {errorMessage && (
-                <div className="p-4 bg-red-50 text-red-700 rounded-md border border-red-200">
-                    {errorMessage}
+            {(successMessage || errorMessage) && (
+                <div className="fixed bottom-6 left-1/2 z-50 w-full max-w-md -translate-x-1/2 px-4">
+                    {successMessage && (
+                        <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700 shadow-lg">
+                            {successMessage}
+                        </div>
+                    )}
+                    {errorMessage && (
+                        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 shadow-lg">
+                            {errorMessage}
+                        </div>
+                    )}
                 </div>
             )}
 
