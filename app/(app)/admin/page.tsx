@@ -504,6 +504,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                   <option value="all">All</option>
                   <option value="openai">OpenAI</option>
                   <option value="gemini">Gemini</option>
+                  <option value="openrouter">OpenRouter</option>
                   <option value="ollama">Ollama</option>
                 </select>
               </div>
