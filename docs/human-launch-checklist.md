@@ -40,6 +40,35 @@ Questions to answer:
 
 AI agents should not invent this business model. Once Kwame decides, an AI agent can update pricing copy, onboarding copy, settings copy, and any relevant UI.
 
+### Subscription readiness without hidden billing
+
+Before launch, decide whether to add only the minimum account-plan structure needed for future paid plans, without building or hiding a full subscription/billing system.
+
+Current guidance:
+
+- Do not build a full hidden subscription system before launch.
+- Do add a lightweight plan/entitlement skeleton so paid plans can be enabled later without a panic rebuild.
+- Keep launch focused on free early access, user feedback, and validation before implementing Stripe/Paddle/Lemon Squeezy billing.
+
+Possible account/profile fields to consider:
+
+```ts
+plan: "early_access" | "free" | "pro";
+early_access_grandfathered: boolean;
+plan_started_at: string | null;
+plan_source: "early_access" | "manual" | "billing" | null;
+```
+
+Product decisions to make before implementation:
+
+- Should all early access users automatically become lifetime Pro if paid plans launch later?
+- What exact wording should be used so the promise is generous but not legally reckless? Example: "Free lifetime Pro access for this app/account, as long as the service continues to operate."
+- Should the UI be quietly structured so future Pro features can be gated later, even if nothing is gated at launch?
+- Which features would likely become Pro later, and which features must remain free/local-first to preserve the app's trust position?
+- Should launch pricing be framed as an early-supporter price, for example $3.99 USD/month, with a possible later standard price such as $5.99 USD/month?
+
+AI agents can help design the entitlement fields and future-proof UI logic, but they should not implement live billing or user-facing paywalls until Kwame explicitly decides to start paid-plan work.
+
 ### Final app name
 
 Decide the final public app name before final branding, screenshots, icons, email copy, and naming consistency work.
@@ -230,6 +259,7 @@ Before public launch, review:
 - Supabase auth redirect allowlist decision made after production email links are confirmed
 - Auth verification edge-case launch check completed using `TESTING.md` Auth / Sessions entries
 - Trial/cloud pricing model decided
+- Subscription readiness/early-access grandfathering decision made before any billing implementation
 - AI terminology chosen
 - AI Partner Story Scope validated; old Structure-panel scene checkboxes removed or intentionally kept as a fallback
 - Help Center audit/rewrite completed or intentionally deferred
