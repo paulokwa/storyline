@@ -467,6 +467,45 @@ Add a short entry using this format:
 
 ---
 
+## Issue: OpenRouter usage events silently rejected — `ai_usage_events_provider_check` constraint
+
+### Symptoms
+
+- AI Partner and Analyze Scene return responses correctly for OpenRouter BYOK users.
+- No rows appear in `ai_usage_events` for `provider = 'openrouter'`.
+- Server log shows: `[logUsageEvent] failed: { code: '23514', message: 'new row for relation "ai_usage_events" violates check constraint "ai_usage_events_provider_check"' }`.
+- `supabase db push` may report "Remote database is up to date" even if an earlier fix migration did not actually execute.
+
+### Cause
+
+- The `ai_usage_events_provider_check` CHECK constraint was created without `'openrouter'` in the allowed values array. Every OpenRouter usage event insert/upsert was silently rejected by the database.
+- The `logUsageEvent()` function in `lib/ai/trial-server.ts` previously discarded the upsert result (`await admin.from(...).upsert(...)`) without capturing `{ error }`, so failures were invisible.
+
+### Fix
+
+1. Capture the upsert error in `logUsageEvent`: `const { error } = await admin.from('ai_usage_events').upsert(...)` and add `if (error) console.error('[logUsageEvent] failed:', error.code, error.message)` so failures are visible.
+2. Create migration `supabase/migrations/20260509170000_fix_provider_check_idempotent.sql`:
+   ```sql
+   ALTER TABLE ai_usage_events DROP CONSTRAINT IF EXISTS ai_usage_events_provider_check;
+   ALTER TABLE ai_usage_events ADD CONSTRAINT ai_usage_events_provider_check
+       CHECK (provider = ANY (ARRAY['openai'::text, 'gemini'::text, 'ollama'::text, 'openrouter'::text]));
+   ```
+3. Apply: `npx supabase db push` — confirm output shows the migration being applied (not "up to date").
+
+### Verification
+
+- Send an AI Partner message using an OpenRouter BYOK key.
+- Terminal should show no `[logUsageEvent] failed:` output.
+- Row appears in `ai_usage_events` with `provider = 'openrouter'` in the Supabase dashboard.
+
+### Notes
+
+- Use `DROP CONSTRAINT IF EXISTS` (not `DROP CONSTRAINT`) to make the migration idempotent — safe to apply even if a previous broken migration was recorded as applied but did not execute.
+- A migration recorded in the Supabase history table is NOT proof that the DDL ran. If `db push` says "up to date" but the bug persists, create a new migration with a later timestamp using `IF EXISTS`.
+- `logUsageEvent` does not throw on error by design — failures are logged but not surfaced to users.
+
+---
+
 ## Issue: "Permission Required" toast when saving a local project
 
 ### Symptoms

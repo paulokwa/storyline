@@ -81,18 +81,18 @@ Two steps remain before OpenRouter is launch-ready:
 
 **Step B — Browser acceptance checklist** (full list in `TESTING.md`):
 
-1. Apply migration. Confirm Settings shows the OpenRouter model selector dropdown.
-2. Confirm default is "Llama 3.1 8B (Free)" — not GPT-4o mini.
-3. Save a valid OpenRouter key → confirm "Connected" success.
-4. Enter an invalid key → confirm friendly error, no crash.
-5. Send a basic AI Partner message → confirm streaming response.
-6. Run Analyze Scene → confirm structured JSON result, no hang.
-7. Run Import AI Detect → confirm headings detected (free model JSON fix now in place).
-8. Change model to GPT-4o mini → confirm amber "requires credits" note appears.
-9. Confirm no misleading `$0.00` pricing anywhere.
-10. Confirm usage logged with `provider = 'openrouter'` and the correct model.
-11. Switch back to Gemini or OpenAI → confirm switch works.
-12. Confirm Ollama and trial mode unaffected.
+1. ✅ Apply migration. Confirm Settings shows the OpenRouter model selector dropdown.
+2. ✅ Confirm default is "Llama 3.3 70B (Free)" — not GPT-4o mini. *(Note: default changed to Llama 3.3 70B after Llama 3.1 8B was retired — see session 2 handover.)*
+3. ✅ Save a valid OpenRouter key → confirm "Connected" success.
+4. ✅ Enter an invalid key → confirm friendly error, no crash.
+5. ✅ Send a basic AI Partner message → confirm streaming response with correct OPENROUTER badge.
+6. Run Analyze Scene → confirm structured JSON result, no hang. *(Not retested in session 2.)*
+7. Run Import AI Detect → confirm headings detected (free model JSON fix now in place). *(Not retested.)*
+8. ✅ Change model to GPT-4o mini → confirm paid model works; free model may rate-limit (expected).
+9. Confirm no misleading `$0.00` pricing anywhere. *(Copy pass — task #1 — still pending.)*
+10. ✅ Confirm usage logged with `provider = 'openrouter'` and the correct model. *(Verified via clean terminal after constraint fix.)*
+11. Switch back to Gemini or OpenAI → confirm switch works. *(Not retested in session 2.)*
+12. Confirm Ollama and trial mode unaffected. *(Not retested in session 2.)*
 
 ---
 

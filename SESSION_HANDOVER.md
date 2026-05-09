@@ -5,6 +5,78 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-09 (session 2) — OpenRouter BYOK bug fixes: key validation, model IDs, usage logging, error copy
+
+### What was completed
+
+Six bugs discovered during manual testing of OpenRouter BYOK. All fixed, applied to production, and committed.
+
+**1. Key validation accepted fake keys (`lib/ai/providers.ts`)**
+`testCloudProviderKey` was calling `GET /api/v1/models` — a public OpenRouter endpoint requiring no authentication. Any string passed as a key returned 200. Fixed by switching to `GET /api/v1/auth/key`, which validates the bearer token.
+
+**2. Retired free model IDs causing 404s (`lib/ai/providers.ts`, `lib/ai/runtime.ts`, migration)**
+`meta-llama/llama-3.1-8b-instruct:free` and `mistralai/mistral-7b-instruct:free` were retired on OpenRouter as of May 2026. Fixed:
+- `DEFAULT_OPENROUTER_MODEL` changed to `meta-llama/llama-3.3-70b-instruct:free`.
+- `OPENROUTER_CURATED_MODELS` trimmed to two entries: Llama 3.3 70B free and GPT-4o mini paid.
+- Runtime guard added: stored model validated against `OPENROUTER_CURATED_MODEL_IDS`; falls back to default if retired/unknown.
+- DB migration `20260509150000_fix_retired_openrouter_models.sql` resets retired model IDs in `user_api_keys` and updates the column DEFAULT. Applied to production.
+
+**3. AI Partner routing OpenRouter requests as Gemini (`components/project/story/AiHelperPanel.tsx`)**
+`cloudProvider` ternary was missing an `openrouter` branch — OpenRouter fell through to `'gemini'`, causing wrong provider dispatch and a "GEMINI" badge on responses. Fixed by adding explicit `aiSettings.ai_provider === 'openrouter' ? 'openrouter'` branch. Added violet badge styling for OpenRouter.
+
+**4. Analyze Scene showing raw `AI_SERVICE_ERROR` text (`app/api/ai/analyze-scene/route.ts`, `components/project/ProjectContext.tsx`)**
+All six error return points in `analyze-scene/route.ts` returned raw `AI_SERVICE_ERROR: <status> <body>` strings. Replaced with `getCloudProviderErrorMessage(provider, status, errBody)` and actual HTTP status pass-through. `ProjectContext.tsx` updated to show the error body as toast description. Error copy now matches AI Partner.
+
+**5. `ai_usage_events` constraint blocking all OpenRouter writes (`supabase/migrations/`)**
+The `ai_usage_events_provider_check` CHECK constraint only listed `'openai'`, `'gemini'`, `'ollama'`. Every OpenRouter usage event write was silently rejected with Postgres code `23514`. Root cause found by temporarily adding `{ error }` capture to the previously unchecked `.upsert()` call in `logUsageEvent`. Two migrations created:
+- `20260509160000_add_openrouter_to_provider_check.sql` — was recorded as applied but DDL may not have executed.
+- `20260509170000_fix_provider_check_idempotent.sql` — uses `DROP CONSTRAINT IF EXISTS` + `ADD CONSTRAINT`; confirmed applied to production and verified clean terminal.
+Permanent minimal error logging added to `logUsageEvent`: `if (error) console.error('[logUsageEvent] failed:', error.code, error.message)` so future upsert failures are visible in server logs.
+
+**6. Admin Provider filter missing OpenRouter (`app/(app)/admin/page.tsx`)**
+Provider filter dropdown did not include `openrouter`. Added. The Provider Usage card (`admin-dashboard.ts`) was already fully dynamic — it groups by whatever provider values exist in `ai_usage_events`, so OpenRouter rows will appear automatically.
+
+### Migrations applied to production this session
+
+| Migration | Applied |
+|---|---|
+| `20260509150000_fix_retired_openrouter_models.sql` | Yes — via `supabase db push` |
+| `20260509160000_add_openrouter_to_provider_check.sql` | Recorded as applied; DDL uncertain |
+| `20260509170000_fix_provider_check_idempotent.sql` | Yes — confirmed applied and verified |
+
+### Files changed this session
+
+- `lib/ai/providers.ts`
+- `lib/ai/runtime.ts`
+- `lib/ai/trial-server.ts`
+- `app/api/ai/route.ts`
+- `app/api/ai/analyze-scene/route.ts`
+- `components/project/ProjectContext.tsx`
+- `components/project/story/AiHelperPanel.tsx`
+- `app/(app)/admin/page.tsx`
+- `supabase/migrations/20260509150000_fix_retired_openrouter_models.sql` (new)
+- `supabase/migrations/20260509160000_add_openrouter_to_provider_check.sql` (new)
+- `supabase/migrations/20260509170000_fix_provider_check_idempotent.sql` (new)
+
+### Verification
+
+Manual end-to-end test confirmed:
+- Fake key correctly rejected, real key correctly accepted.
+- AI Partner with `openai/gpt-4o-mini` returns responses with OPENROUTER violet badge.
+- Terminal clean — no `[logUsageEvent] failed:` errors on both legacy and new projects.
+
+### Remaining tasks for OpenRouter
+
+- Task board item #0 acceptance checklist — most items manually passed this session; outstanding: Import AI Detect (not retested this session), full switch-back to Gemini/OpenAI test.
+- Task board item #1 — OpenRouter copy pass (AI pricing, setup, onboarding, showcase) — still pending.
+
+### Notes / warnings for next agent
+
+- Free Llama 3.3 70B model uses shared capacity on Venice provider — rate limiting (429) is common. This is expected behavior, not a bug.
+- The `20260509160000` migration is marked applied in Supabase history but may not have changed the constraint. The `20260509170000` idempotent migration is the definitive fix. Do not re-run or recreate either.
+- `logUsageEvent` now captures and logs upsert errors but does not throw — failures are visible in server logs, not surfaced to users.
+
+---
 ## 2026-05-09 - OpenRouter model selector, JSON fix, error hardening
 
 ### What was completed
