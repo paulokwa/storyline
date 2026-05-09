@@ -92,7 +92,85 @@ Test checklist (full acceptance test list in `TESTING.md`):
 
 ---
 
-### 1. Phase 6 Story Scope selector - browser validation required
+### 1. OpenRouter copy pass — AI pricing, setup, onboarding, and showcase copy
+
+OpenRouter support changes how AI-provider copy should be worded. Existing copy may assume only OpenAI, Gemini, Ollama, or app-managed trial AI, and some cost-warning copy may imply exact dollar estimates even when OpenRouter pricing is unknown, variable, or free-model-limited.
+
+Goal:
+
+- Audit and update all user-facing AI copy so the app clearly supports OpenRouter without misleading users about cost, credits, free models, quotas, or setup.
+
+Required scope:
+
+1. Audit all AI cost/context warning copy.
+   - AI Partner warnings
+   - Analyze Scene warnings
+   - Import AI detection warnings
+   - Large book import warnings
+   - Large-context confirmation modals
+   - Extreme-context safeguards
+   - Any labels that mention estimated cost, credits, tokens, provider usage, or `$0.00`
+
+2. Update warning language so it works for:
+   - known-priced OpenAI/Gemini models
+   - unknown or variable OpenRouter model pricing
+   - OpenRouter free models
+   - Ollama/local models
+   - app-managed trial AI
+
+3. Preserve known-cost estimates where they are reliable.
+   - If exact pricing exists, continue showing approximate estimated cost.
+   - If pricing is unknown or OpenRouter-based, do not show misleading `$0.00`.
+   - Use wording like: `OpenRouter pricing depends on the model you select. Large requests may use more OpenRouter credits or hit model limits.`
+   - For free OpenRouter models, use wording like: `This model may be free to use, but large requests can still hit rate limits or free-model quotas.`
+
+4. Audit and update all AI setup/provider copy.
+   - Settings AI configuration
+   - First-run AI setup
+   - AI setup guide
+   - Any provider comparison cards/tables
+   - Empty states or disabled-AI prompts
+   - Missing-key / invalid-key / billing / provider-unavailable messages
+
+5. Audit and update all onboarding/showcase/marketing copy that mentions AI.
+   - Showcase page
+   - Landing/public pages
+   - Onboarding screens
+   - Setup configuration text
+   - Any feature descriptions that explain supported AI providers
+   - Any copy that says or implies only OpenAI/Gemini/Ollama are supported
+
+6. Keep the feature positioning simple.
+   - OpenRouter should be described as an optional BYOK provider.
+   - Do not imply OpenRouter is free in general.
+   - Do not imply every OpenRouter model works without billing.
+   - Do not imply Storyline pays for OpenRouter usage.
+   - Make clear that OpenRouter usage is billed/limited by OpenRouter and the selected model.
+
+7. Do not change billing logic, provider routing, or warning thresholds in this task unless a copy bug exposes a blocker.
+   - This is a copy/UX clarity pass first.
+   - Any logic issue found should be reported before implementation.
+
+Acceptance checks:
+
+1. Searching the codebase for AI provider names should find no outdated provider list that excludes OpenRouter where OpenRouter should be included.
+2. Searching for `$0.00`, `estimated cost`, `credits`, `free`, `provider`, `OpenAI`, `Gemini`, `Ollama`, and `OpenRouter` should reveal no misleading AI copy.
+3. Gemini/OpenAI known-cost estimates still display when available.
+4. OpenRouter unknown/free model copy does not show misleading zero-cost certainty.
+5. OpenRouter is represented consistently in Settings, onboarding, setup guide, and showcase/marketing copy.
+6. Manual browser review confirms the copy reads naturally and does not overcrowd the UI.
+
+Suggested output after completion:
+
+- Files changed
+- Before/after copy summary
+- Confirmation that no outdated AI-provider copy remains in the searched areas
+- Confirmation that pricing copy is accurate for OpenRouter paid, unknown, and free models
+- Tests/searches run
+
+---
+
+### 2. Phase 6 Story Scope selector - browser validation required
 
 Phase 6 code is implemented and statically verified. Browser validation is still needed before signing off the corrected Story Scope behavior.
 
@@ -109,7 +187,7 @@ Retest:
 ---
 
 
-### 2. Smart Context Phase 5 - browser validation required
+### 3. Smart Context Phase 5 - browser validation required
 
 Phase 5 code is implemented and statically verified. Browser validation is still needed before signing off Smart Context safeguards.
 
@@ -136,7 +214,7 @@ Cross-reference: `TESTING.md` has the same fixture details under `Smart Context 
 
 ---
 
-### 3. Smart Context entity include/exclude control - browser retest required
+### 4. Smart Context entity include/exclude control - browser retest required
 
 Phase 4/4.5 browser validation passed on 2026-05-08.
 
@@ -152,7 +230,7 @@ Retest:
 
 ---
 
-### 4. Check and fix export issues, starting with PDF
+### 5. Check and fix export issues, starting with PDF
 
 Audit and fix export problems, starting with PDF output and then verifying other export formats.
 
