@@ -715,7 +715,7 @@ export default function AiHelperPanel({
     const [ollamaStatus, setOllamaStatus] = useState<'online' | 'offline' | 'checking'>('online')
     const [cloudStatus, setCloudStatus] = useState<'online' | 'offline' | 'checking'>('online')
     const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
-    const [lastUsedProvider, setLastUsedProvider] = useState<'gemini' | 'openai' | 'ollama' | null>(null)
+    const [lastUsedProvider, setLastUsedProvider] = useState<'gemini' | 'openai' | 'openrouter' | 'ollama' | null>(null)
     const [contextWarning, setContextWarning] = useState<string | null>(null)
     const [showAiAccessNotice, setShowAiAccessNotice] = useState(false)
     
@@ -1757,7 +1757,9 @@ export default function AiHelperPanel({
             ? 'openai'
             : aiSettings.ai_provider === 'openai'
                 ? 'openai'
-                : 'gemini'
+                : aiSettings.ai_provider === 'openrouter'
+                    ? 'openrouter'
+                    : 'gemini'
         const deviceFingerprint = await getDeviceFingerprint()
         const requestId = crypto.randomUUID()
         setLastUsedProvider(cloudProvider)
@@ -3023,7 +3025,9 @@ export default function AiHelperPanel({
                                             ? "bg-indigo-50 border-indigo-100 text-indigo-400"
                                             : lastUsedProvider === 'openai'
                                                 ? "bg-sky-50 border-sky-100 text-sky-500"
-                                                : "bg-blue-50 border-blue-100 text-blue-400"
+                                                : lastUsedProvider === 'openrouter'
+                                                    ? "bg-violet-50 border-violet-100 text-violet-500"
+                                                    : "bg-blue-50 border-blue-100 text-blue-400"
                                     )}>
                                         {lastUsedProvider}
                                     </div>
