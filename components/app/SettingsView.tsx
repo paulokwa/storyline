@@ -987,7 +987,7 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                                         : 'Requests go directly to your local Ollama server.'}
                                             </p>
                                         </div>
-                                        <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                                        <span className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
                                             {billingMode === 'app_managed_trial' ? 'App-managed trial' : billingMode === 'byok' ? 'Your API key' : 'Local only'}
                                         </span>
                                     </div>
@@ -1057,7 +1057,7 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                                             <input type="radio" name="provider" value="openrouter" checked={aiProvider === 'openrouter'} onChange={() => setAiProvider('openrouter')} />
                                                             <span className="font-medium text-slate-900">OpenRouter</span>
                                                         </div>
-                                                        <p className="ml-5 mt-2 text-sm leading-6 text-slate-500">Access multiple AI models with a single OpenRouter API key.</p>
+                                                        <p className="ml-5 mt-2 text-sm leading-6 text-slate-500">Access multiple AI models with a single OpenRouter API key. Get one at{' '}<a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="font-medium text-[#546354] underline-offset-2 hover:underline">openrouter.ai/keys</a>.</p>
                                                     </label>
                                                 </div>
                                                 {aiProvider === 'openrouter' && (
