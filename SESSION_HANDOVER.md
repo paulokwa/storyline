@@ -12,7 +12,7 @@ Agents should update this file before ending a session.
 Full implementation of the OpenRouter follow-up audit requirements.
 
 **1. DB migration — `openrouter_model` column (`supabase/migrations/20260509120000_add_openrouter_model.sql`)**
-Added `openrouter_model TEXT DEFAULT 'meta-llama/llama-3.1-8b-instruct:free'` to `user_api_keys`. Additive, non-destructive. Must be applied to the Supabase project via `supabase db push` or the Supabase dashboard SQL editor.
+Added `openrouter_model TEXT DEFAULT 'meta-llama/llama-3.1-8b-instruct:free'` to `user_api_keys`. **Applied to production via `supabase db push` on 2026-05-09.** Confirmed by CLI: "Applying migration 20260509120000_add_openrouter_model.sql... Finished supabase db push."
 
 **2. `lib/ai/providers.ts`**
 - Changed `DEFAULT_OPENROUTER_MODEL` from `openai/gpt-4o-mini` (paid) to `meta-llama/llama-3.1-8b-instruct:free` (free).
@@ -56,7 +56,7 @@ Added `openrouter_model: string | null` to `user_api_keys` Row, Insert, and Upda
 
 ### Remaining manual steps before OpenRouter is fully launch-ready
 
-1. **Apply DB migration** — run `supabase db push` or paste the SQL from `supabase/migrations/20260509120000_add_openrouter_model.sql` into the Supabase dashboard SQL editor. Without this, the `openrouter_model` column does not exist in production and the preferences save will silently ignore the column (Supabase upserts with extra unknown columns do not always error).
+1. **~~Apply DB migration~~** — Done. Applied via `supabase db push` on 2026-05-09.
 2. **Browser-test all OpenRouter acceptance criteria** — particularly:
    - Model selector appears and saves correctly in Settings.
    - Free model (Llama 3.1 8B) is the pre-selected default.
@@ -67,7 +67,7 @@ Added `openrouter_model: string | null` to `user_api_keys` Row, Insert, and Upda
 
 ### Current status
 
-All code and typecheck complete. Migration must be applied. Browser validation pending.
+All code and typecheck complete. Migration applied to production (2026-05-09). Browser validation pending.
 
 ### Next recommended step
 

@@ -77,8 +77,7 @@ Before writing code, state:
 
 Two steps remain before OpenRouter is launch-ready:
 
-**Step A — Apply DB migration (human action required)**
-Run `supabase db push` or paste `supabase/migrations/20260509120000_add_openrouter_model.sql` into the Supabase dashboard SQL editor. Without this, per-user model selection will not persist.
+**Step A — ~~Apply DB migration~~** — Done 2026-05-09 via `supabase db push`.
 
 **Step B — Browser acceptance checklist** (full list in `TESTING.md`):
 
