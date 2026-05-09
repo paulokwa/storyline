@@ -23,7 +23,7 @@ export const OPENROUTER_CURATED_MODELS: OpenRouterCuratedModel[] = [
         id: 'meta-llama/llama-3.3-70b-instruct:free',
         label: 'Llama 3.3 70B (Meta) — Free',
         pricing: 'free',
-        note: 'Free model — high quality, no billing required, subject to daily quotas.',
+        note: 'Free model — no billing required, but shared capacity means it is often busy or rate-limited. Best for occasional use.',
     },
     {
         id: 'openai/gpt-4o-mini',
