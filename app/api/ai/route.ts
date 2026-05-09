@@ -147,14 +147,22 @@ export async function POST(req: Request) {
             return new Response(JSON.stringify({ ok: false, error: 'UNSUPPORTED_PROVIDER', billingMode: runtime.billingMode }), { status: 200 })
         }
 
+        // Test the stored key against the provider the user currently has selected in the UI.
+        // If they changed the provider radio without entering a new key, this will correctly
+        // fail (e.g. an OpenAI key tested against OpenRouter returns 401), surfacing the
+        // mismatch before they save rather than silently passing with the wrong provider.
+        const providerToTest = (provider === 'gemini' || provider === 'openai' || provider === 'openrouter')
+            ? provider
+            : runtime.provider
+
         try {
-            const data = await testCloudProviderKey(runtime.provider, runtime.apiKey)
+            const data = await testCloudProviderKey(providerToTest, runtime.apiKey)
             return new Response(JSON.stringify({
                 ok: data.ok,
                 status: data.status,
                 error: data.error,
                 billingMode: runtime.billingMode,
-                provider: runtime.provider,
+                provider: providerToTest,
             }), { status: 200 })
         } catch {
             return new Response(JSON.stringify({ ok: false, error: 'FETCH_FAILED', billingMode: runtime.billingMode }), { status: 200 })
