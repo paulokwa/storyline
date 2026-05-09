@@ -6,7 +6,7 @@ import type { AiContextMode, BillingMode } from '@/lib/ai/modes'
 import { resolveAiContextModeFromSettings, resolveBillingModeFromSettings } from '@/lib/ai/modes'
 import { APP_MANAGED_OPENAI_MODEL } from '@/lib/ai/trial'
 import { getAppManagedOpenAiApiKey } from '@/lib/ai/trial-server'
-import { DEFAULT_GEMINI_MODEL, DEFAULT_OPENROUTER_MODEL } from '@/lib/ai/providers'
+import { DEFAULT_GEMINI_MODEL, DEFAULT_OPENROUTER_MODEL, OPENROUTER_CURATED_MODEL_IDS } from '@/lib/ai/providers'
 
 export type AiRuntimeState = {
     aiSettings: Database['public']['Tables']['user_api_keys']['Row'] | null
@@ -71,11 +71,16 @@ export async function getAiRuntimeState(
             ? getAppManagedOpenAiApiKey()
             : aiSettings?.api_key ?? null
 
+    const storedOpenrouterModel = aiSettings?.openrouter_model ?? null
     const model =
         provider === 'gemini'
             ? DEFAULT_GEMINI_MODEL
             : provider === 'openrouter'
-                ? (aiSettings?.openrouter_model ?? DEFAULT_OPENROUTER_MODEL)
+                // Only use the stored model if it's still in the curated list — protects against
+                // retired OpenRouter model IDs (e.g. :free variants that were removed) causing 404s.
+                ? (storedOpenrouterModel && OPENROUTER_CURATED_MODEL_IDS.has(storedOpenrouterModel)
+                    ? storedOpenrouterModel
+                    : DEFAULT_OPENROUTER_MODEL)
                 : APP_MANAGED_OPENAI_MODEL
 
     return {

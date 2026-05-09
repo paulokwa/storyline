@@ -5,8 +5,9 @@ export type SupportedAiProvider = CloudAiProvider | 'ollama'
 
 export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash'
 export const DEFAULT_OPENAI_MODEL = 'gpt-4.1-mini'
-// Default is a free model so users without OpenRouter billing can get started immediately.
-export const DEFAULT_OPENROUTER_MODEL = 'meta-llama/llama-3.1-8b-instruct:free'
+// Default is a confirmed-free model verified against OpenRouter's live catalog.
+// The Llama 3.1 8B :free and Mistral 7B :free variants were retired from OpenRouter as of May 2026.
+export const DEFAULT_OPENROUTER_MODEL = 'meta-llama/llama-3.3-70b-instruct:free'
 
 export type OpenRouterModelPricing = 'free' | 'paid'
 
@@ -19,22 +20,10 @@ export type OpenRouterCuratedModel = {
 
 export const OPENROUTER_CURATED_MODELS: OpenRouterCuratedModel[] = [
     {
-        id: 'meta-llama/llama-3.1-8b-instruct:free',
-        label: 'Llama 3.1 8B (Meta) — Free',
-        pricing: 'free',
-        note: 'Free model — no billing required, but may hit rate limits or daily quotas.',
-    },
-    {
         id: 'meta-llama/llama-3.3-70b-instruct:free',
         label: 'Llama 3.3 70B (Meta) — Free',
         pricing: 'free',
-        note: 'Free model — higher quality, but subject to stricter daily quotas.',
-    },
-    {
-        id: 'mistralai/mistral-7b-instruct:free',
-        label: 'Mistral 7B — Free',
-        pricing: 'free',
-        note: 'Free model — fast responses, may be rate-limited.',
+        note: 'Free model — high quality, no billing required, subject to daily quotas.',
     },
     {
         id: 'openai/gpt-4o-mini',
@@ -87,7 +76,17 @@ export function getCloudProviderErrorMessage(
     const detail = rawError?.toLowerCase() ?? ''
 
     if (status === 401) {
+        if (provider === 'openrouter') {
+            // OpenRouter 401 on completions can mean an invalid key OR a valid key on an account that
+            // needs a payment method added — even for free models. The key test (/auth/key) is less strict
+            // than completions, so a key can pass the test but still fail here.
+            return `OpenRouter blocked the request (401). Your key may be invalid, or your OpenRouter account may need a payment method added at openrouter.ai (required even for free models).`
+        }
         return `We couldn't verify your ${providerLabel} API key. Check the key in Settings and try again.`
+    }
+
+    if (status === 402) {
+        return `${providerLabel} requires a payment method or credits for this request. Visit openrouter.ai to check your account billing.`
     }
 
     if (
@@ -97,6 +96,13 @@ export function getCloudProviderErrorMessage(
         detail.includes('credit')
     ) {
         return `${providerLabel} needs available billing or usage credits before Storyline can use it.`
+    }
+
+    if (status === 400) {
+        if (provider === 'openrouter') {
+            return `OpenRouter rejected the request (400). The selected model may be unavailable or the request was malformed. Try switching to a different model in Settings.`
+        }
+        return `${providerLabel} rejected the request. Please try again.`
     }
 
     if (status === 403) {
@@ -111,7 +117,7 @@ export function getCloudProviderErrorMessage(
         return `${providerLabel} is having a temporary problem right now. Please try again in a moment.`
     }
 
-    return `Storyline couldn't get a response from ${providerLabel}. Please try again.`
+    return `Storyline couldn't get a response from ${providerLabel} (status ${status}). Please try again.`
 }
 
 export function maskApiKey(raw: string | null | undefined) {
@@ -136,7 +142,9 @@ export async function testCloudProviderKey(provider: CloudAiProvider, apiKey: st
     }
 
     if (provider === 'openrouter') {
-        const response = await fetch(`${OPENROUTER_API_BASE}/models`, {
+        // /api/v1/models is a public endpoint — it returns 200 for any key including fake ones.
+        // /api/v1/auth/key actually verifies the bearer token.
+        const response = await fetch(`${OPENROUTER_API_BASE}/auth/key`, {
             method: 'GET',
             headers: {
                 Authorization: `Bearer ${apiKey}`,

@@ -498,7 +498,7 @@ export async function POST(req: Request) {
         }
         const errBody = await providerResponse.text()
         const friendlyError = getCloudProviderErrorMessage(providerName, providerResponse.status, errBody)
-        console.error(`${providerName} API error (${providerResponse.status})`)
+        console.error(`${providerName} API error (${providerResponse.status}):`, errBody)
         return new Response(friendlyError, { status: providerResponse.status })
     }
 
