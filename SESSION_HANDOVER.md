@@ -5,6 +5,57 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-08 - OpenRouter post-launch fixes and audit
+
+### What was completed
+
+Three follow-up items completed after the OpenRouter implementation was pushed:
+
+**1. Settings saved banner moved to fixed bottom (`components/app/SettingsView.tsx`)**
+The success/error banner was a static element near the top of the page. Users scrolled to the AI section at the bottom couldn't see it. Changed to `fixed bottom-6 left-1/2 -translate-x-1/2 z-50` so the banner floats above the bottom of the viewport regardless of scroll position. Applies to all saves on the Settings page.
+
+**2. Heartbeat / Test Connection bug fixed (`app/api/ai/route.ts`)**
+Bug: when the user changed the provider radio (e.g. OpenAI → OpenRouter) without typing a new key, the Test Connection button tested the stored key against the old DB provider (OpenAI), passed, and displayed "Saved OpenRouter API key is connected and working!" — a false positive. The user then saved, writing `ai_provider = 'openrouter'` with an OpenAI key in the DB. AI Partner then called OpenRouter with the OpenAI key → 401.
+
+Fix: the stored key is now tested against the provider currently selected in the UI (`providerToTest` derived from the request body `provider` field). A mismatched key/provider now correctly fails before the user saves.
+
+**3. Post-implementation audit completed**
+Full read-only audit against 10 acceptance criteria. Results: 9/10 pass. One potential functional issue found:
+
+- **`response_format: { type: 'json_object' }` in import/ai-detect OpenRouter branch** — the prompt asks for a JSON array but `json_object` mode on `openai/gpt-4o-mini` may wrap it in an object `{"chapters": [...]}`, causing `Array.isArray(parsed)` to return false and all chunks to silently skip (0 chapters detected). Not confirmed — needs browser testing. Fix if confirmed: remove `response_format: { type: 'json_object' }` from the OpenRouter import branch.
+
+### Open issue: OpenRouter billing / free model support
+
+User's OpenRouter key is valid (test connection passes) but has **no billing credits attached**. The app's hardcoded default model is `openai/gpt-4o-mini`, which requires OpenRouter billing credits. OpenRouter does offer free models (e.g. `meta-llama/llama-3.1-8b-instruct:free`) but the app does not currently support selecting a model — it always sends `openai/gpt-4o-mini`.
+
+**Result:** AI Partner, Analyze Scene, and Import AI Detect will fail for this user at the AI call stage (not the key validation stage) until either:
+- Billing is added to their OpenRouter account, OR
+- The app adds free-model support or a model selector for OpenRouter
+
+This is a known open design question for OpenRouter V2 scope.
+
+### Current state of user's account
+
+User's `ai_provider` in the DB may still be `'openrouter'` from the bad-state save. The Supabase MCP was read-only and could not apply the fix directly. User was instructed to go to Settings → select OpenAI → Save to restore. Status of that fix is unknown at session end. Next agent should verify by checking `user_api_keys` before starting work.
+
+### Files changed this session (post-implementation)
+
+- `components/app/SettingsView.tsx` — fixed banner position
+- `app/api/ai/route.ts` — fixed heartbeat provider mismatch
+
+### Next recommended step
+
+1. Verify user's DB `ai_provider` is in a working state (check via Supabase or ask user to confirm Settings shows their intended provider).
+2. Browser-test the OpenRouter import AI detect issue (the `response_format` concern above) — this is the highest-priority unverified risk.
+3. Decide on OpenRouter billing/free-model strategy before broader user testing.
+
+### Risks or warnings
+
+- OpenRouter without billing will silently fail at the AI call stage with a billing/quota error, not a key error. The error copy may show the 402/429 billing message, which is correct but users may be confused.
+- The `response_format` issue in import/ai-detect may make OpenRouter import useless until confirmed and fixed.
+- The heartbeat fix means users who had the bad state (wrong provider saved) will now immediately see a failing test when they open Settings — which is correct behavior but may look like a regression.
+
+---
 ## 2026-05-08 - OpenRouter BYOK provider implemented
 
 ### What was completed
