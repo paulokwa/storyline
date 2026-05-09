@@ -130,7 +130,7 @@ export function ProjectProvider({
                 } else if (errorCode === 'SCENE_TOO_LARGE') {
                     toast.error('This scene is too large to analyze at once.')
                 } else if (errorCode !== 'RATE_LIMITED') {
-                    toast.error('Scene analysis could not run right now.')
+                    toast.error('Scene analysis could not run.', { description: errorCode })
                 }
             }
         } catch (e) {

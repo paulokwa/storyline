@@ -6,6 +6,7 @@ import {
     extractOpenAiUsage,
     extractOpenRouterCompletionText,
     extractOpenRouterUsage,
+    getCloudProviderErrorMessage,
 } from '@/lib/ai/providers'
 import { getAiRuntimeState } from '@/lib/ai/runtime'
 import {
@@ -272,7 +273,7 @@ export async function POST(req: Request) {
                     p_metadata: metadata,
                 })
             }
-            return new Response('AI_SERVICE_ERROR', { status: 502 })
+            return new Response(getCloudProviderErrorMessage('openrouter', 502, null), { status: 502 })
         }
 
         if (!openRouterResponse.ok) {
@@ -305,7 +306,7 @@ export async function POST(req: Request) {
                     metadata,
                 })
             }
-            return new Response(`AI_SERVICE_ERROR: ${openRouterResponse.status} ${trunc(errBody, 100)}`, { status: 502 })
+            return new Response(getCloudProviderErrorMessage('openrouter', openRouterResponse.status, errBody), { status: openRouterResponse.status })
         }
 
         try {
@@ -360,7 +361,7 @@ export async function POST(req: Request) {
                     p_metadata: metadata,
                 })
             }
-            return new Response('AI_SERVICE_ERROR', { status: 502 })
+            return new Response(getCloudProviderErrorMessage('gemini', 502, null), { status: 502 })
         }
 
         if (!geminiResponse.ok) {
@@ -393,7 +394,7 @@ export async function POST(req: Request) {
                     metadata,
                 })
             }
-            return new Response(`AI_SERVICE_ERROR: ${geminiResponse.status} ${trunc(errBody, 100)}`, { status: 502 })
+            return new Response(getCloudProviderErrorMessage('gemini', geminiResponse.status, errBody), { status: geminiResponse.status })
         }
 
         try {
@@ -471,7 +472,7 @@ export async function POST(req: Request) {
                     p_metadata: metadata,
                 })
             }
-            return new Response('AI_SERVICE_ERROR', { status: 502 })
+            return new Response(getCloudProviderErrorMessage('openai', 502, null), { status: 502 })
         }
 
         if (!openAiResponse.ok) {
@@ -504,7 +505,7 @@ export async function POST(req: Request) {
                     metadata,
                 })
             }
-            return new Response(`AI_SERVICE_ERROR: ${openAiResponse.status} ${trunc(errBody, 100)}`, { status: 502 })
+            return new Response(getCloudProviderErrorMessage('openai', openAiResponse.status, errBody), { status: openAiResponse.status })
         }
 
         try {
