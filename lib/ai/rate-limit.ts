@@ -9,7 +9,7 @@ type EnforceAiRateLimitParams = {
     requestKey: string
     endpoint: TrialEndpoint
     billingMode: BillingMode
-    provider: 'openai' | 'gemini' | 'ollama'
+    provider: 'openai' | 'gemini' | 'openrouter' | 'ollama'
     model?: string | null
     inputChars?: number
     normalizedEmail?: string | null

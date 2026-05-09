@@ -208,6 +208,21 @@ Future agents: treat this workflow as established. Before asking the user about 
 | Screenplay AI insert from non-chat modes | Needs retest | - | - | Verify structured screenplay insertion works. |
 | AI token usage audit | Not tested | - | - | Confirm unnecessary requests are not being sent. |
 | AI terminology consistency | Not tested | - | - | Audit consistency of AI-related wording across the app. |
+| OpenRouter BYOK — save valid key | Needs retest | AI agent | 2026-05-08 | Enter a valid OpenRouter key in Settings. Confirm it saves, shows "Connected", and `user_api_keys.ai_provider = 'openrouter'` is set. |
+| OpenRouter BYOK — invalid key friendly error | Needs retest | AI agent | 2026-05-08 | Enter a bad key and click Test Connection. Confirm a clear error message appears (no crash, no generic 500). |
+| OpenRouter BYOK — basic AI Partner streaming | Needs retest | AI agent | 2026-05-08 | With a valid OpenRouter key, send a message in AI Partner. Confirm streamed response using `choices[0].delta.content` (not OpenAI Responses API format). |
+| OpenRouter BYOK — Analyze Scene | Needs retest | AI agent | 2026-05-08 | Run Analyze Scene with OpenRouter active. Confirm structured JSON result returned, no hang, usage logged with `provider = 'openrouter'`. |
+| OpenRouter BYOK — Import AI Detect | Needs retest | AI agent | 2026-05-08 | Import a document with AI detect active and OpenRouter as provider. Confirm headings detected, no crash, usage logged. |
+| OpenRouter AI Partner large-context warning | Needs retest | AI agent | 2026-05-08 | Send a very large manuscript to AI Partner with OpenRouter. Confirm the large-context warning modal appears and includes "OpenRouter pricing depends on the model you select" copy. |
+| OpenRouter Analyze Scene large-context warning | Needs retest | AI agent | 2026-05-08 | Analyze a very long scene with OpenRouter. Confirm the existing safeguard dialog fires. |
+| OpenRouter import large-book warning | Needs retest | AI agent | 2026-05-08 | Import a large file (>100KB) with AI detect enabled and OpenRouter active. Confirm the cost-confirmation warning appears with the OpenRouter pricing copy. |
+| OpenRouter extreme-context safeguard | Needs retest | AI agent | 2026-05-08 | Trigger extreme context (above the extreme token threshold) with OpenRouter. Confirm the `extreme` safeguard confirmation dialog fires before the request is sent. |
+| OpenRouter no misleading $0.00 pricing | Needs retest | AI agent | 2026-05-08 | With OpenRouter active, confirm no dollar pricing estimates (`$0.00`) appear anywhere in cost warnings. Confirm the "pricing depends on model" notice is shown instead. |
+| OpenRouter usage logging | Needs retest | AI agent | 2026-05-08 | After a completed OpenRouter AI Partner request, check `ai_usage_events`. Confirm a row exists with `provider = 'openrouter'`, `status = 'completed'`, and the correct `endpoint` value. |
+| OpenRouter → switch back to Gemini | Needs retest | AI agent | 2026-05-08 | After using OpenRouter, switch to Gemini in Settings. Confirm AI Partner routes through Gemini (check runtime state or usage events). |
+| OpenRouter → switch back to OpenAI BYOK | Needs retest | AI agent | 2026-05-08 | After using OpenRouter, switch to OpenAI BYOK in Settings. Confirm routing and streaming use OpenAI Responses API path again. |
+| Ollama unaffected after OpenRouter addition | Needs retest | AI agent | 2026-05-08 | With Ollama configured, confirm AI Partner and Analyze Scene still work via Ollama. No regression from the provider type union expansion. |
+| Trial mode unaffected after OpenRouter addition | Needs retest | AI agent | 2026-05-08 | With a trial account (no saved key), confirm trial mode still works. Confirm OpenRouter is not offered to trial users (trial always routes to OpenAI). |
 | BYOK Gemini connection | Not tested | - | - | Confirm user-supplied Gemini key works. |
 | Ollama/local AI connection | Not tested | - | - | Confirm local model connection works if enabled. |
 | Local AI usage logging integrity | Not tested | - | - | Confirm Ollama/local AI requests create accurate `ai_usage_events` rows for completed, failed, and cancelled runs. |

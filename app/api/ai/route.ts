@@ -88,7 +88,7 @@ export async function POST(req: Request) {
         format?: string
         projectId: string
         prompt?: string
-        provider?: 'gemini' | 'openai'
+        provider?: 'gemini' | 'openai' | 'openrouter'
         apiKeyOverride?: string
         requestId?: string
         deviceFingerprint?: string | null
@@ -105,7 +105,7 @@ export async function POST(req: Request) {
     const runtime = await getAiRuntimeState(supabase, user.id)
 
     if (action === 'heartbeat') {
-        if (apiKeyOverride && (provider === 'gemini' || provider === 'openai')) {
+        if (apiKeyOverride && (provider === 'gemini' || provider === 'openai' || provider === 'openrouter')) {
             try {
                 const data = await testCloudProviderKey(provider, apiKeyOverride)
                 return new Response(JSON.stringify({
@@ -143,7 +143,7 @@ export async function POST(req: Request) {
             return new Response(JSON.stringify({ ok: false, error: 'NO_API_KEY', billingMode: runtime.billingMode }), { status: 200 })
         }
 
-        if (runtime.provider !== 'gemini' && runtime.provider !== 'openai') {
+        if (runtime.provider !== 'gemini' && runtime.provider !== 'openai' && runtime.provider !== 'openrouter') {
             return new Response(JSON.stringify({ ok: false, error: 'UNSUPPORTED_PROVIDER', billingMode: runtime.billingMode }), { status: 200 })
         }
 
@@ -307,7 +307,7 @@ export async function POST(req: Request) {
         )
     }
 
-    if (providerName !== 'gemini' && providerName !== 'openai') {
+    if (providerName !== 'gemini' && providerName !== 'openai' && providerName !== 'openrouter') {
         return new Response('UNSUPPORTED_PROVIDER', { status: 400 })
     }
 

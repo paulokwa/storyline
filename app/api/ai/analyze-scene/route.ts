@@ -1,5 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
-import { DEFAULT_OPENAI_MODEL, extractGeminiUsage, extractOpenAiOutputText, extractOpenAiUsage } from '@/lib/ai/providers'
+import {
+    DEFAULT_OPENAI_MODEL,
+    DEFAULT_OPENROUTER_MODEL,
+    extractGeminiUsage,
+    extractOpenAiOutputText,
+    extractOpenAiUsage,
+    extractOpenRouterCompletionText,
+    extractOpenRouterUsage,
+} from '@/lib/ai/providers'
 import { getAiRuntimeState } from '@/lib/ai/runtime'
 import {
     APP_MANAGED_OPENAI_MODEL,
@@ -133,7 +141,7 @@ export async function POST(req: Request) {
     const ai_provider = runtime.provider
     const api_key = runtime.apiKey
 
-    if ((ai_provider !== 'gemini' && ai_provider !== 'openai') || !api_key) {
+    if ((ai_provider !== 'gemini' && ai_provider !== 'openai' && ai_provider !== 'openrouter') || !api_key) {
         return new Response(runtime.billingMode === 'app_managed_trial' ? 'TRIAL_UNAVAILABLE' : 'NO_API_KEY', { status: 403 })
     }
 
@@ -233,7 +241,92 @@ export async function POST(req: Request) {
 
     let rawText = ''
     let providerUsage: ProviderUsage | null = null
-    if (ai_provider === 'gemini') {
+    if (ai_provider === 'openrouter') {
+        let openRouterResponse: Response
+        try {
+            openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${api_key}`,
+                    'HTTP-Referer': 'https://storyline-paulokwa-v2.netlify.app',
+                    'X-Title': 'Storyline',
+                },
+                body: JSON.stringify({
+                    model: DEFAULT_OPENROUTER_MODEL,
+                    messages: [
+                        { role: 'system', content: SYSTEM_PROMPT },
+                        { role: 'user', content: delimitedScene },
+                    ],
+                    max_tokens: 2000,
+                    response_format: { type: 'json_object' },
+                }),
+            })
+        } catch (err) {
+            console.error('[analyze-scene] OpenRouter fetch failed:', err)
+            if (runtime.billingMode === 'app_managed_trial') {
+                await supabase.rpc('fail_ai_trial_usage', {
+                    p_user_id: user.id,
+                    p_request_key: requestKey,
+                    p_error_code: 'openrouter_fetch_failed',
+                    p_http_status: 502,
+                    p_metadata: metadata,
+                })
+            }
+            return new Response('AI_SERVICE_ERROR', { status: 502 })
+        }
+
+        if (!openRouterResponse.ok) {
+            const errBody = await openRouterResponse.text()
+            console.error('[analyze-scene] OpenRouter error response:', openRouterResponse.status, trunc(errBody))
+            if (runtime.billingMode === 'app_managed_trial') {
+                await supabase.rpc('fail_ai_trial_usage', {
+                    p_user_id: user.id,
+                    p_request_key: requestKey,
+                    p_error_code: `provider_${openRouterResponse.status}`,
+                    p_http_status: openRouterResponse.status,
+                    p_metadata: metadata,
+                })
+            } else {
+                await logUsageEvent({
+                    userId: user.id,
+                    requestKey,
+                    endpoint: 'analyze_scene',
+                    billingMode: runtime.billingMode,
+                    provider: ai_provider,
+                    model: runtime.model,
+                    status: 'failed',
+                    inputChars: trimmed.length,
+                    errorCode: `provider_${openRouterResponse.status}`,
+                    httpStatus: openRouterResponse.status,
+                    ipAddress: requestContext.ipAddress,
+                    deviceFingerprint: requestContext.deviceFingerprint,
+                    normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
+                    userAgent: requestContext.userAgent,
+                    metadata,
+                })
+            }
+            return new Response(`AI_SERVICE_ERROR: ${openRouterResponse.status} ${trunc(errBody, 100)}`, { status: 502 })
+        }
+
+        try {
+            const openRouterData = await openRouterResponse.json()
+            providerUsage = extractOpenRouterUsage(openRouterData)
+            rawText = extractOpenRouterCompletionText(openRouterData)
+        } catch (err) {
+            console.error('[analyze-scene] Failed to parse OpenRouter JSON envelope:', err)
+            if (runtime.billingMode === 'app_managed_trial') {
+                await supabase.rpc('fail_ai_trial_usage', {
+                    p_user_id: user.id,
+                    p_request_key: requestKey,
+                    p_error_code: 'invalid_openrouter_response',
+                    p_http_status: 502,
+                    p_metadata: metadata,
+                })
+            }
+            return new Response('INVALID_AI_RESPONSE', { status: 502 })
+        }
+    } else if (ai_provider === 'gemini') {
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${api_key}`
 
         let geminiResponse: Response

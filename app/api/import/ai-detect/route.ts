@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { DEFAULT_OPENAI_MODEL, extractOpenAiOutputText } from '@/lib/ai/providers'
+import {
+    DEFAULT_OPENAI_MODEL,
+    DEFAULT_OPENROUTER_MODEL,
+    extractOpenAiOutputText,
+    extractOpenRouterCompletionText,
+} from '@/lib/ai/providers'
 import { enforceAiRateLimit } from '@/lib/ai/rate-limit'
 import { getAiRuntimeState } from '@/lib/ai/runtime'
 import {
@@ -61,8 +66,8 @@ export async function POST(req: NextRequest) {
             }, { status: 400 })
         }
 
-        if (runtime.provider !== 'gemini' && runtime.provider !== 'openai') {
-            return NextResponse.json({ error: 'AI import detection currently requires Gemini or OpenAI as your active cloud provider.' }, { status: 400 })
+        if (runtime.provider !== 'gemini' && runtime.provider !== 'openai' && runtime.provider !== 'openrouter') {
+            return NextResponse.json({ error: 'AI import detection requires a cloud AI provider (Gemini, OpenAI, or OpenRouter). Please check your AI settings.' }, { status: 400 })
         }
 
         // --- Partitioning (runs before billing gate so trial reservation uses actual chunk sizes) ---
@@ -224,8 +229,9 @@ Return ONLY a valid JSON array. No markdown, no explanation, no code blocks.
 MANUSCRIPT SEGMENT:
 ${chunk}`
 
-            const providerResponse = runtime.provider === 'gemini'
-                ? await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+            let providerResponse: Response
+            if (runtime.provider === 'gemini') {
+                providerResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -243,7 +249,27 @@ ${chunk}`
                         },
                     }),
                 })
-                : await fetch('https://api.openai.com/v1/responses', {
+            } else if (runtime.provider === 'openrouter') {
+                providerResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${apiKey}`,
+                        'HTTP-Referer': 'https://storyline-paulokwa-v2.netlify.app',
+                        'X-Title': 'Storyline',
+                    },
+                    body: JSON.stringify({
+                        model: DEFAULT_OPENROUTER_MODEL,
+                        messages: [
+                            { role: 'system', content: 'Return valid JSON only.' },
+                            { role: 'user', content: promptText },
+                        ],
+                        max_tokens: 2500,
+                        response_format: { type: 'json_object' },
+                    }),
+                })
+            } else {
+                providerResponse = await fetch('https://api.openai.com/v1/responses', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -261,6 +287,7 @@ ${chunk}`
                         },
                     }),
                 })
+            }
 
             if (!providerResponse.ok) {
                 const errBody = await providerResponse.text()
@@ -270,9 +297,12 @@ ${chunk}`
             }
 
             const responseData = await providerResponse.json()
-            const rawText = runtime.provider === 'gemini'
-                ? responseData?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-                : extractOpenAiOutputText(responseData)
+            const rawText =
+                runtime.provider === 'gemini'
+                    ? responseData?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+                    : runtime.provider === 'openrouter'
+                        ? extractOpenRouterCompletionText(responseData)
+                        : extractOpenAiOutputText(responseData)
 
             totalOutputChars += rawText.length
 

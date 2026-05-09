@@ -73,6 +73,25 @@ Before writing code, state:
 ## Now
 
 
+### 0. OpenRouter BYOK — browser validation required
+
+Implementation is complete and statically verified. Browser validation is needed before signing off.
+
+Test checklist (full acceptance test list in `TESTING.md`):
+
+1. Save a valid OpenRouter key in Settings → confirm it saves and shows "Connected".
+2. Enter an invalid key → confirm friendly error, no crash.
+3. Send a basic AI Partner message with OpenRouter → confirm streaming response.
+4. Run Analyze Scene with OpenRouter → confirm structured JSON result, no hang.
+5. Run Import AI Detect with OpenRouter → confirm headings detected correctly.
+6. Trigger the large-context warning (large document in AI Partner) → confirm modal appears with OpenRouter-specific pricing copy.
+7. Check that pricing shows no misleading `$0.00` value — should show "pricing depends on model" notice.
+8. Confirm usage is logged in `ai_usage_events` with `provider = 'openrouter'`.
+9. Switch back to Gemini or OpenAI → confirm the switch works and routing uses the new provider correctly.
+10. Confirm Ollama and trial mode still work (no regression).
+
+---
+
 ### 1. Phase 6 Story Scope selector - browser validation required
 
 Phase 6 code is implemented and statically verified. Browser validation is still needed before signing off the corrected Story Scope behavior.

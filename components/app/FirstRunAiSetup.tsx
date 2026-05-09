@@ -13,7 +13,7 @@ import AiSetupGuide from '@/components/app/AiSetupGuide'
 import { cn } from '@/lib/utils'
 
 type SetupMode = 'trial' | 'byok' | 'ollama' | 'none'
-type CloudProvider = 'openai' | 'gemini'
+type CloudProvider = 'openai' | 'gemini' | 'openrouter'
 
 type FirstRunAiSetupProps = {
     displayName: string
@@ -39,7 +39,11 @@ export default function FirstRunAiSetup({ displayName, initialAiSettings, trialS
         return trialStatus === 'active' ? 'trial' : 'none'
     })
     const [provider, setProvider] = useState<CloudProvider>(
-        initialAiSettings.ai_provider === 'gemini' ? 'gemini' : 'openai'
+        initialAiSettings.ai_provider === 'gemini'
+            ? 'gemini'
+            : initialAiSettings.ai_provider === 'openrouter'
+                ? 'openrouter'
+                : 'openai'
     )
     const [apiKey, setApiKey] = useState('')
     const [ollamaUrl, setOllamaUrl] = useState(initialAiSettings.ollama_url)
@@ -62,8 +66,8 @@ export default function FirstRunAiSetup({ displayName, initialAiSettings, trialS
                 return 'Continue with Free Trial AI'
             case 'byok':
                 return apiKey.trim()
-                    ? `Save ${provider === 'gemini' ? 'Gemini' : 'OpenAI'} Key and Continue`
-                    : `Add ${provider === 'gemini' ? 'Gemini' : 'OpenAI'} Key Below`
+                    ? `Save ${provider === 'gemini' ? 'Gemini' : provider === 'openrouter' ? 'OpenRouter' : 'OpenAI'} Key and Continue`
+                    : `Add ${provider === 'gemini' ? 'Gemini' : provider === 'openrouter' ? 'OpenRouter' : 'OpenAI'} Key Below`
             case 'ollama':
                 return ollamaUrl.trim() && ollamaModel.trim()
                     ? 'Use Ollama and Continue'
@@ -80,7 +84,7 @@ export default function FirstRunAiSetup({ displayName, initialAiSettings, trialS
             case 'trial':
                 return 'Storyline will enable the sponsored free trial and take you straight into your library.'
             case 'byok':
-                return `Storyline will connect to your personal ${provider === 'gemini' ? 'Gemini' : 'OpenAI'} account once you paste your API key below.`
+                return `Storyline will connect to your personal ${provider === 'gemini' ? 'Gemini' : provider === 'openrouter' ? 'OpenRouter' : 'OpenAI'} account once you paste your API key below.`
             case 'ollama':
                 return 'Storyline will use your local Ollama server once the connection details below are filled in.'
             case 'none':
@@ -273,7 +277,7 @@ export default function FirstRunAiSetup({ displayName, initialAiSettings, trialS
                             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#546354]">Selected</p>
                             <p className="text-lg font-semibold text-slate-900">
                                 {mode === 'trial' && 'Free Trial AI'}
-                                {mode === 'byok' && `Use Your Own Key${provider === 'gemini' ? ' - Gemini' : ' - OpenAI'}`}
+                                {mode === 'byok' && `Use Your Own Key${provider === 'gemini' ? ' - Gemini' : provider === 'openrouter' ? ' - OpenRouter' : ' - OpenAI'}`}
                                 {mode === 'ollama' && 'Local AI with Ollama'}
                                 {mode === 'none' && 'No AI for Now'}
                             </p>
@@ -318,7 +322,7 @@ export default function FirstRunAiSetup({ displayName, initialAiSettings, trialS
                 <CardContent className="space-y-5 px-6 pb-6">
                     {mode === 'byok' && (
                         <>
-                            <div className="grid gap-3 md:grid-cols-2">
+                            <div className="grid gap-3 md:grid-cols-3">
                                 <button
                                     type="button"
                                     onClick={() => setProvider('openai')}
@@ -345,17 +349,35 @@ export default function FirstRunAiSetup({ displayName, initialAiSettings, trialS
                                     <p className="font-semibold text-slate-900">Gemini</p>
                                     <p className="mt-1 text-sm text-slate-500">Works well if you want your own Google-hosted AI setup.</p>
                                 </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setProvider('openrouter')}
+                                    className={cn(
+                                        'rounded-2xl border px-4 py-4 text-left transition-all',
+                                        provider === 'openrouter'
+                                            ? 'border-[#546354] bg-[#eef4ed] shadow-sm'
+                                            : 'border-slate-200 hover:border-slate-300'
+                                    )}
+                                >
+                                    <p className="font-semibold text-slate-900">OpenRouter</p>
+                                    <p className="mt-1 text-sm text-slate-500">One key for many models — Anthropic, Mistral, Meta, and more.</p>
+                                </button>
                             </div>
+                            {provider === 'openrouter' && (
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
+                                    OpenRouter pricing depends on the model selected. Large requests may use more OpenRouter credits.
+                                </div>
+                            )}
                             <div className="space-y-2">
                                 <Label htmlFor="first-run-api-key" className="text-slate-800">
-                                    {provider === 'gemini' ? 'Gemini API Key' : 'OpenAI API Key'}
+                                    {provider === 'gemini' ? 'Gemini API Key' : provider === 'openrouter' ? 'OpenRouter API Key' : 'OpenAI API Key'}
                                 </Label>
                                 <Input
                                     id="first-run-api-key"
                                     type="password"
                                     value={apiKey}
                                     onChange={(e) => setApiKey(e.target.value)}
-                                    placeholder={provider === 'gemini' ? 'AIzaSy...' : 'sk-...'}
+                                    placeholder={provider === 'gemini' ? 'AIzaSy...' : provider === 'openrouter' ? 'sk-or-...' : 'sk-...'}
                                     className="bg-white text-slate-900 placeholder:text-slate-400"
                                 />
                                 <p className="text-sm text-slate-500">This is a private key from your AI provider. Storyline stores it in your settings so requests run on your account, and you can change or remove it later.</p>

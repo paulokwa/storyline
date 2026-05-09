@@ -369,7 +369,7 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
         router.refresh()
     }
 
-    const handleTestCloudConnection = async (provider: 'gemini' | 'openai') => {
+    const handleTestCloudConnection = async (provider: 'gemini' | 'openai' | 'openrouter') => {
         const providerLabel = getAiProviderLabel(provider)
         setTestingCloud(true)
         setCloudStatus(null)
@@ -951,7 +951,7 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                                 }} className="mt-0.5 shrink-0" />
                                                 <span className="font-medium text-slate-900">Use Your Own API Key</span>
                                             </div>
-                                            <p className="ml-5 mt-2 text-sm leading-6 text-slate-500">Connect your own OpenAI or Gemini account for ongoing use.</p>
+                                            <p className="ml-5 mt-2 text-sm leading-6 text-slate-500">Connect your own OpenAI, Gemini, or OpenRouter account for ongoing use.</p>
                                         </label>
                                         <label className={`cursor-pointer rounded-xl border p-4 transition-all ${billingMode === 'ollama' ? 'border-primary bg-slate-50 ring-1 ring-primary/30' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'}`}>
                                             <div className="flex items-start gap-2">
@@ -975,7 +975,7 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                                 {billingMode === 'app_managed_trial'
                                                     ? 'Storyline sponsors a limited OpenAI trial for this setup.'
                                                     : billingMode === 'byok'
-                                                        ? `Requests use ${getAiProviderLabel(aiProvider)} with your own API key.`
+                                                        ? `Requests use ${getAiProviderLabel(aiProvider)} with your own API key.${aiProvider === 'openrouter' ? ' Pricing depends on the model selected.' : ''}`
                                                         : 'Requests go directly to your local Ollama server.'}
                                             </p>
                                         </div>
@@ -1029,7 +1029,7 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                         <div className="space-y-4">
                                             <div className="space-y-3">
                                                 <Label>Choose your provider</Label>
-                                                <div className="grid gap-3 sm:grid-cols-2">
+                                                <div className="grid gap-3 sm:grid-cols-3">
                                                     <label className={`cursor-pointer rounded-xl border p-4 transition-all ${aiProvider === 'gemini' ? 'border-primary bg-slate-50 ring-1 ring-primary/30' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'}`}>
                                                         <div className="flex items-center gap-2">
                                                             <input type="radio" name="provider" value="gemini" checked={aiProvider === 'gemini'} onChange={() => setAiProvider('gemini')} />
@@ -1044,7 +1044,22 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                                         </div>
                                                         <p className="ml-5 mt-2 text-sm leading-6 text-slate-500">Connect your OpenAI account using an API key from platform.openai.com.</p>
                                                     </label>
+                                                    <label className={`cursor-pointer rounded-xl border p-4 transition-all ${aiProvider === 'openrouter' ? 'border-primary bg-slate-50 ring-1 ring-primary/30' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'}`}>
+                                                        <div className="flex items-center gap-2">
+                                                            <input type="radio" name="provider" value="openrouter" checked={aiProvider === 'openrouter'} onChange={() => setAiProvider('openrouter')} />
+                                                            <span className="font-medium text-slate-900">OpenRouter</span>
+                                                        </div>
+                                                        <p className="ml-5 mt-2 text-sm leading-6 text-slate-500">Access multiple AI models with a single OpenRouter API key.</p>
+                                                    </label>
                                                 </div>
+                                                {aiProvider === 'openrouter' && (
+                                                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
+                                                        OpenRouter pricing depends on the model Storyline selects. Large requests may use more OpenRouter credits. Get a key at{' '}
+                                                        <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="font-medium text-[#546354] underline-offset-2 hover:underline">
+                                                            openrouter.ai/keys
+                                                        </a>.
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {existingApiKey ? (
@@ -1059,7 +1074,7 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                                 </div>
                                             ) : (
                                                 <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 shadow-sm">
-                                                    No {aiProvider === 'gemini' ? 'Gemini' : 'OpenAI'} API key is saved yet.
+                                                    No {aiProvider === 'gemini' ? 'Gemini' : aiProvider === 'openrouter' ? 'OpenRouter' : 'OpenAI'} API key is saved yet.
                                                 </div>
                                             )}
 
@@ -1069,14 +1084,16 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                                         ? 'Update API Key'
                                                         : aiProvider === 'gemini'
                                                             ? 'Enter Google Gemini API Key'
-                                                            : 'Enter OpenAI API Key'}
+                                                            : aiProvider === 'openrouter'
+                                                                ? 'Enter OpenRouter API Key'
+                                                                : 'Enter OpenAI API Key'}
                                                 </Label>
                                                 <Input
                                                     id="apiKey"
                                                     type="password"
                                                     value={apiKey}
                                                     onChange={(e) => setApiKey(e.target.value)}
-                                                    placeholder={aiProvider === 'gemini' ? 'AIzaSy...' : 'sk-...'}
+                                                    placeholder={aiProvider === 'gemini' ? 'AIzaSy...' : aiProvider === 'openrouter' ? 'sk-or-...' : 'sk-...'}
                                                     className="bg-white"
                                                 />
                                                 <p className="text-sm leading-6 text-slate-500">Requests in this mode run through your own cloud account.</p>
@@ -1087,7 +1104,7 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                                     type="button"
                                                     variant="outline"
                                                     size="sm"
-                                                    onClick={() => handleTestCloudConnection(aiProvider as 'gemini' | 'openai')}
+                                                    onClick={() => handleTestCloudConnection(aiProvider as 'gemini' | 'openai' | 'openrouter')}
                                                     disabled={testingCloud || (!apiKey && !existingApiKey)}
                                                     className="w-full gap-2 border-slate-300 hover:bg-white"
                                                 >

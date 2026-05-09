@@ -16,7 +16,7 @@ export async function logAiModeChange(params: {
     normalizedEmail?: string | null
     emailDomain?: string | null
     billingMode: BillingMode
-    provider: 'openai' | 'gemini' | 'ollama'
+    provider: 'openai' | 'gemini' | 'openrouter' | 'ollama'
     metadata?: Record<string, unknown>
 }) {
     const admin = createAdminClient()
@@ -41,7 +41,7 @@ export async function logUsageEvent(params: {
     requestKey: string
     endpoint: TrialEndpoint
     billingMode: BillingMode
-    provider: 'openai' | 'gemini' | 'ollama'
+    provider: 'openai' | 'gemini' | 'openrouter' | 'ollama'
     model?: string | null
     status: 'completed' | 'failed' | 'blocked' | 'bypassed'
     inputChars?: number

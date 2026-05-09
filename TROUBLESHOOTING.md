@@ -849,3 +849,32 @@ With Next.js 16, the root `proxy.ts` output is node middleware, but Netlify Next
 - `NEXT_DISABLE_NETLIFY_EDGE=true` did not stop the current v5 runtime from generating the internal proxy Edge Function.
 - Do not re-add root `proxy.ts` without rerunning `netlify build --context production`.
 
+---
+
+## Netlify build fails with "Failed publishing static content" on Windows (local CLI)
+
+### Symptoms
+
+- `netlify build --context production` fails in the `@netlify/plugin-nextjs` `onPostBuild` event.
+- Error: `Error: Failed publishing static content`.
+- The Next.js build itself (`build.command`) completes successfully (TypeScript clean, all routes generated).
+
+### Cause
+
+This is a local Windows artifact publishing limitation in `@netlify/plugin-nextjs` v5.x. When the plugin's `onPostBuild` step tries to publish static assets locally, it fails due to Windows path or environment differences. The actual Netlify CI deploy (triggered via GitHub) runs on Linux and does not have this issue.
+
+### Fix
+
+This error is pre-existing and does not indicate a code defect. Ignore it when the Next.js compilation step itself passes cleanly (TypeScript passes, all routes generated, no compilation errors).
+
+Check: if `build.command completed in N minutes` appears and the route table is printed, the Next.js build is clean regardless of the plugin failure.
+
+### Verification
+
+The real production test is a GitHub push to main triggering a Netlify deploy — not the local `netlify build` run.
+
+### Notes
+
+- Confirmed pre-existing on main before OpenRouter changes (stash-tested 2026-05-08).
+- Do not let this error block commits when the Next.js compilation is clean.
+

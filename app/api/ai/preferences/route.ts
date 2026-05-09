@@ -8,7 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 type PreferencesBody = {
     aiEnabled?: boolean
     billingMode?: BillingMode
-    aiProvider?: 'openai' | 'gemini' | 'ollama'
+    aiProvider?: 'openai' | 'gemini' | 'openrouter' | 'ollama'
     aiFallbackEnabled?: boolean
     aiContextMode?: AiContextMode
     ollamaModel?: string
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     const nextContextMode: AiContextMode =
         body.aiContextMode ?? currentSettings?.ai_context_mode ?? 'smart'
 
-    let nextProvider = body.aiProvider ?? (currentSettings?.ai_provider as 'openai' | 'gemini' | 'ollama' | null) ?? 'openai'
+    let nextProvider = body.aiProvider ?? (currentSettings?.ai_provider as 'openai' | 'gemini' | 'openrouter' | 'ollama' | null) ?? 'openai'
     if (nextBillingMode === 'app_managed_trial') nextProvider = 'openai'
     if (nextBillingMode === 'ollama') nextProvider = 'ollama'
 

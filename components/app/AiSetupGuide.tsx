@@ -33,8 +33,8 @@ import {
     ArrowRight,
 } from 'lucide-react'
 
-type GuideView = 'compare' | 'gemini' | 'openai' | 'ollama'
-type ProviderOption = 'gemini' | 'openai' | 'ollama'
+type GuideView = 'compare' | 'gemini' | 'openai' | 'openrouter' | 'ollama'
+type ProviderOption = 'gemini' | 'openai' | 'openrouter' | 'ollama'
 
 interface AiSetupGuideProps {
     open: boolean
@@ -96,6 +96,12 @@ export default function AiSetupGuide({ open, onOpenChange, onNavigateToProvider,
                         onSelect={() => handleSelectProvider('openai')}
                     />
                 )}
+                {view === 'openrouter' && (
+                    <OpenRouterGuide
+                        onBack={() => setView('compare')}
+                        onSelect={() => handleSelectProvider('openrouter')}
+                    />
+                )}
                 {view === 'ollama' && (
                     <OllamaGuide
                         onBack={() => setView('compare')}
@@ -135,7 +141,7 @@ function CompareView({
             </DialogHeader>
 
             {/* Provider Cards */}
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                 <button
                     onClick={onSelectTrial}
                     className="group text-left p-5 rounded-2xl border-2 border-slate-100 hover:border-[#546354] bg-[#eef4ed]/60 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98] relative overflow-hidden flex flex-col"
@@ -209,6 +215,31 @@ function CompareView({
                     </div>
                 </button>
 
+                {/* OpenRouter Card */}
+                <button
+                    onClick={() => onSetView('openrouter')}
+                    className="group text-left p-5 rounded-2xl border-2 border-slate-100 hover:border-violet-200 bg-gradient-to-br from-white to-violet-50/30 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98] relative overflow-hidden flex flex-col"
+                >
+                    <div className="absolute top-0 right-0 p-1">
+                        <span className="text-[10px] font-bold text-violet-700 bg-violet-50 px-2.5 py-1 rounded-bl-xl rounded-tr-lg uppercase tracking-wider">
+                            Multi-model
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 bg-violet-100 rounded-xl group-hover:bg-violet-600 group-hover:text-white transition-colors duration-300">
+                            <Globe className="w-5 h-5" />
+                        </div>
+                        <span className="font-bold text-slate-900 text-base">OpenRouter</span>
+                    </div>
+                    <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                        Access many AI models with one key. Useful if you already use OpenRouter or want model flexibility.
+                    </p>
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#546354] group-hover:gap-3 transition-all mt-auto">
+                        Set up OpenRouter
+                        <ArrowRight className="w-4 h-4" />
+                    </div>
+                </button>
+
                 {/* Ollama Card */}
                 <button
                     onClick={() => onSetView('ollama')}
@@ -246,6 +277,7 @@ function CompareView({
                                 <th className="px-4 py-3 text-[11px] font-bold text-[#546354] uppercase tracking-wider">Free Trial</th>
                                 <th className="px-4 py-3 text-[11px] font-bold text-sky-700 uppercase tracking-wider">Gemini Cloud</th>
                                 <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">OpenAI Cloud</th>
+                                <th className="px-4 py-3 text-[11px] font-bold text-violet-600 uppercase tracking-wider">OpenRouter</th>
                                 <th className="px-4 py-3 text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Local Ollama</th>
                             </tr>
                         </thead>
@@ -256,6 +288,7 @@ function CompareView({
                                 trial="Instant"
                                 gemini="Easy (API Key)"
                                 openai="Easy (API Key)"
+                                openrouter="Easy (API Key)"
                                 ollama="Medium (App Install)"
                             />
                             <CompareRow
@@ -264,6 +297,7 @@ function CompareView({
                                 trial="Cloud Hosted"
                                 gemini="Cloud Hosted"
                                 openai="Cloud Hosted"
+                                openrouter="Cloud Hosted"
                                 ollama="100% On-Device"
                             />
                             <CompareRow
@@ -272,6 +306,7 @@ function CompareView({
                                 trial="Covered by Storyline"
                                 gemini="Free tier available"
                                 openai="Usage-Based"
+                                openrouter="Usage-Based"
                                 ollama="Completely Free"
                             />
                             <CompareRow
@@ -280,6 +315,7 @@ function CompareView({
                                 trial="Works Everywhere"
                                 gemini="Works Everywhere"
                                 openai="Works Everywhere"
+                                openrouter="Works Everywhere"
                                 ollama="Runs on your device"
                             />
                             <CompareRow
@@ -288,6 +324,7 @@ function CompareView({
                                 trial="High Speed"
                                 gemini="High Speed"
                                 openai="High Speed"
+                                openrouter="High Speed"
                                 ollama="Depends on your hardware"
                             />
                         </tbody>
@@ -313,6 +350,7 @@ function CompareRow({
     trial,
     gemini,
     openai,
+    openrouter,
     ollama,
 }: {
     label: string
@@ -320,6 +358,7 @@ function CompareRow({
     trial: string
     gemini: string
     openai: string
+    openrouter: string
     ollama: string
 }) {
     return (
@@ -346,6 +385,12 @@ function CompareRow({
                 <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
                     <span className="text-xs text-slate-600 leading-snug font-medium">{openai}</span>
+                </div>
+            </td>
+            <td className="px-4 py-3.5">
+                <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-violet-300 shrink-0" />
+                    <span className="text-xs text-slate-600 leading-snug font-medium">{openrouter}</span>
                 </div>
             </td>
             <td className="px-4 py-3.5">
@@ -682,6 +727,47 @@ function OllamaGuide({
                     Use Local Ollama
                 </Button>
             </DialogFooter>
+        </div>
+    )
+}
+
+function OpenRouterGuide({ onBack, onSelect }: { onBack: () => void, onSelect: () => void }) {
+    const backRef = useRef<HTMLButtonElement>(null)
+    useEffect(() => { backRef.current?.focus() }, [])
+    return (
+        <div className="space-y-6">
+            <DialogHeader>
+                <button ref={backRef} onClick={onBack} className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-800 transition-colors mb-1 min-h-[44px] px-1 -mx-1"><ChevronLeft className="w-3.5 h-3.5" />Back</button>
+                <div className="flex items-center gap-2.5">
+                    <Globe className="w-5 h-5 text-violet-600" />
+                    <DialogTitle className="text-lg">Setting Up OpenRouter</DialogTitle>
+                </div>
+                <DialogDescription className="text-slate-500">Access many AI models through one API key.</DialogDescription>
+            </DialogHeader>
+            <div className="rounded-xl border border-violet-100 bg-violet-50/40 p-4 text-sm leading-6 text-slate-600">
+                <p className="font-semibold text-slate-800 mb-1">What is OpenRouter?</p>
+                OpenRouter is a service that gives you access to models from many providers (Anthropic, Google, Meta, Mistral, and more) with a single API key. Storyline uses <code className="rounded bg-white px-1 text-xs font-bold">gpt-4o-mini via OpenRouter</code> by default.
+            </div>
+            <div className="rounded-xl border border-amber-100 bg-amber-50/40 px-4 py-3 text-sm leading-6 text-slate-600">
+                <span className="font-semibold text-amber-800">Pricing note: </span>OpenRouter pricing depends on the model selected. Large requests may use more OpenRouter credits. Check your usage at openrouter.ai.
+            </div>
+            <div className="space-y-4">
+                <StepItem number={1} title="Create an OpenRouter account" active>
+                    <p className="text-xs text-slate-600">Sign up at openrouter.ai and add credits to your account.</p>
+                    <a href="https://openrouter.ai" target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-violet-600 flex items-center gap-1 mt-1 underline">Open OpenRouter <ExternalLink className="w-3 h-3" /><span className="sr-only">(opens in new tab)</span></a>
+                </StepItem>
+                <StepItem number={2} title="Get your API key">
+                    <p className="text-xs text-slate-600">Go to <strong>openrouter.ai/keys</strong> and create a new API key. Copy it.</p>
+                    <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-violet-600 flex items-center gap-1 mt-1 underline">Open API Keys <ExternalLink className="w-3 h-3" /><span className="sr-only">(opens in new tab)</span></a>
+                </StepItem>
+                <StepItem number={3} title="Paste Key">
+                    <p className="text-xs text-slate-600">Paste the key in Settings under "Use Your Own API Key" → select OpenRouter.</p>
+                </StepItem>
+                <StepItem number={4} title="Test & Save" done>
+                    <p className="text-xs text-slate-600">Click test connection and save your settings.</p>
+                </StepItem>
+            </div>
+            <DialogFooter><Button variant="outline" onClick={onBack}>Back</Button><Button onClick={onSelect} className="bg-[#546354] hover:bg-[#485748] text-white">Use OpenRouter</Button></DialogFooter>
         </div>
     )
 }

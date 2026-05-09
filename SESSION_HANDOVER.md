@@ -5,6 +5,60 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-08 - OpenRouter BYOK provider implemented
+
+### What was completed
+
+Full OpenRouter support added as a BYOK-only provider option across the entire AI stack. No DB migration required (`ai_provider` is TEXT).
+
+**Backend (lib/):**
+- `lib/ai/providers.ts` — Added `CloudAiProvider`/`SupportedAiProvider` with `openrouter`, `DEFAULT_OPENROUTER_MODEL = 'openai/gpt-4o-mini'`, `testCloudProviderKey()` OpenRouter branch, `createCloudTextStream()` OpenRouter branch (chat completions API, SSE `choices[0].delta.content`), `extractOpenRouterUsage()`, `extractOpenRouterCompletionText()`, `createPlainTextStreamFromProviderResponse()` OpenRouter branch.
+- `lib/ai/modes.ts` — `SupportedAiProvider` union updated to include `'openrouter'`.
+- `lib/ai/runtime.ts` — Provider resolution and model selection updated for OpenRouter; uses `DEFAULT_OPENROUTER_MODEL`.
+- `lib/ai/trial-server.ts` — `logAiModeChange` and `logUsageEvent` `provider` union updated (surfaced by typecheck).
+- `lib/ai/rate-limit.ts` — `EnforceAiRateLimitParams.provider` union updated (surfaced by typecheck).
+
+**API routes:**
+- `app/api/ai/preferences/route.ts` — Accepts `openrouter` as valid `aiProvider`.
+- `app/api/ai/route.ts` — Heartbeat body, guard, and main dispatch updated for `openrouter`.
+- `app/api/ai/analyze-scene/route.ts` — New OpenRouter branch using `POST /v1/chat/completions` with `response_format: { type: 'json_object' }`.
+- `app/api/import/ai-detect/route.ts` — New OpenRouter branch per-chunk with same chat completions format.
+
+**UI components:**
+- `components/app/SettingsView.tsx` — OpenRouter radio option, pricing notice, key input.
+- `components/app/AiSetupGuide.tsx` — OpenRouter card (Globe/violet theme), comparison table column, `OpenRouterGuide` setup steps.
+- `components/app/FirstRunAiSetup.tsx` — OpenRouter button, conditional pricing notice, flow copy.
+
+### Critical technical detail
+
+OpenRouter uses **chat completions API** (`/v1/chat/completions`) with SSE `choices[0].delta.content`. The existing OpenAI path uses the newer Responses API (`/v1/responses`) — these are completely incompatible. All OpenRouter branches are separate from OpenAI branches.
+
+### Verification
+
+- `npx tsc --noEmit` — passed (exit 0).
+- `npm run lint` — exit 255 but ALL errors were pre-existing in unrelated files (`stats/page.tsx`, `ai-disclaimer/page.tsx`). No new lint errors introduced.
+- `netlify build --context production` — Next.js compilation passed cleanly (all 43 routes, TypeScript clean). Failure was `Error: Failed publishing static content` in `@netlify/plugin-nextjs onPostBuild` — confirmed pre-existing on main before our changes (stash-tested). Not a code defect.
+
+### Files changed (13 total)
+
+`lib/ai/providers.ts`, `lib/ai/modes.ts`, `lib/ai/runtime.ts`, `lib/ai/trial-server.ts`, `lib/ai/rate-limit.ts`, `app/api/ai/preferences/route.ts`, `app/api/ai/route.ts`, `app/api/ai/analyze-scene/route.ts`, `app/api/import/ai-detect/route.ts`, `components/app/SettingsView.tsx`, `components/app/AiSetupGuide.tsx`, `components/app/FirstRunAiSetup.tsx`
+
+### Current status
+
+Implementation complete and statically verified. Browser validation not yet run.
+
+### Next recommended step
+
+Browser-test the OpenRouter acceptance tests in `TESTING.md` (see `OpenRouter BYOK provider` section).
+
+### Risks or warnings
+
+- All 15 acceptance tests require browser/manual validation (key save, streaming, scene analysis, import, pricing copy, usage logging, provider switching).
+- OpenRouter pricing is unknown per-model — the UI shows explicit "pricing depends on the model" copy but no dollar estimates. This is intentional per the implementation requirements.
+- Pre-existing lint errors in `stats/page.tsx` and `ai-disclaimer/page.tsx` remain in the codebase (not introduced by this work).
+- The `netlify build` local `onPostBuild` failure is pre-existing on Windows — see new TROUBLESHOOTING.md entry.
+
+---
 ## 2026-05-08 - Phase 6 Story Scope selector implemented
 
 ### What was completed

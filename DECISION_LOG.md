@@ -6,6 +6,27 @@ Keep entries concise. Do not rewrite old decisions unless explicitly instructed.
 
 ---
 
+## 2026-05-08 - Add OpenRouter as a BYOK-only AI provider option
+
+Decision:
+Add OpenRouter as a supported BYOK AI provider alongside OpenAI, Gemini, and Ollama. OpenRouter is BYOK-only — it will never be used for app-managed trial credits. Default model is fixed at `openai/gpt-4o-mini` for V1 (no dynamic model marketplace).
+
+Reason:
+OpenRouter gives users access to dozens of models through a single API key and a unified billing account, without Storyline needing per-model cost tracking. BYOK-only keeps the billing model simple and avoids underwriting unknown model costs.
+
+Impact:
+- `CloudAiProvider` and `SupportedAiProvider` now include `'openrouter'`.
+- All usage logging, rate limiting, context warnings, cost safeguards, and streaming safeguards apply to OpenRouter exactly as they do to other providers.
+- OpenRouter uses chat completions API (`/v1/chat/completions`) — entirely separate code paths from the OpenAI Responses API (`/v1/responses`). The two are not interchangeable.
+- No DB migration required; `ai_provider` is TEXT.
+- V1 pricing display shows "pricing depends on model selected" copy — no dollar estimates.
+- Future model selection feature would require a `openrouter_model` preference column.
+
+Status:
+Approved.
+
+---
+
 ## 2026-05-07 - Replace global proxy middleware with route-level auth guards for Netlify compatibility
 
 Decision:

@@ -1,10 +1,16 @@
 import type { ProviderUsage } from '@/lib/ai/trial'
 
-export type CloudAiProvider = 'gemini' | 'openai'
+export type CloudAiProvider = 'gemini' | 'openai' | 'openrouter'
 export type SupportedAiProvider = CloudAiProvider | 'ollama'
 
 export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash'
 export const DEFAULT_OPENAI_MODEL = 'gpt-4.1-mini'
+export const DEFAULT_OPENROUTER_MODEL = 'openai/gpt-4o-mini'
+
+const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1'
+// Attribution headers required by OpenRouter for app identification
+const OPENROUTER_SITE_URL = 'https://storyline-paulokwa-v2.netlify.app'
+const OPENROUTER_APP_TITLE = 'Storyline'
 
 export function isAbortLikeError(error: unknown) {
     if (!error || typeof error !== 'object') return false
@@ -24,6 +30,8 @@ export function getAiProviderLabel(provider: string | null | undefined) {
             return 'Gemini'
         case 'openai':
             return 'OpenAI'
+        case 'openrouter':
+            return 'OpenRouter'
         case 'ollama':
             return 'Ollama'
         default:
@@ -88,6 +96,23 @@ export async function testCloudProviderKey(provider: CloudAiProvider, apiKey: st
         }
     }
 
+    if (provider === 'openrouter') {
+        const response = await fetch(`${OPENROUTER_API_BASE}/models`, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${apiKey}`,
+            },
+        })
+        const data = await response.json().catch(() => null)
+        const rawError = data?.error?.message ?? null
+
+        return {
+            ok: response.ok,
+            status: response.status,
+            error: !response.ok ? getCloudProviderErrorMessage(provider, response.status, rawError) : null,
+        }
+    }
+
     const response = await fetch('https://api.openai.com/v1/models', {
         method: 'GET',
         headers: {
@@ -139,6 +164,28 @@ export async function createCloudTextStream({
                         thinkingBudget: 0,
                     },
                 },
+            }),
+        })
+    }
+
+    if (provider === 'openrouter') {
+        return fetch(`${OPENROUTER_API_BASE}/chat/completions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${apiKey}`,
+                'HTTP-Referer': OPENROUTER_SITE_URL,
+                'X-Title': OPENROUTER_APP_TITLE,
+            },
+            signal: abortSignal,
+            body: JSON.stringify({
+                model: DEFAULT_OPENROUTER_MODEL,
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userMessage },
+                ],
+                max_tokens: maxOutputTokens,
+                stream: true,
             }),
         })
     }
@@ -224,6 +271,49 @@ export function extractGeminiUsage(payload: unknown): ProviderUsage | null {
     }
 }
 
+// OpenRouter uses the chat completions usage format (prompt_tokens / completion_tokens)
+export function extractOpenRouterUsage(payload: unknown): ProviderUsage | null {
+    if (!payload || typeof payload !== 'object') return null
+
+    const usage = (payload as {
+        usage?: {
+            prompt_tokens?: number
+            completion_tokens?: number
+            total_tokens?: number
+        }
+    }).usage
+
+    if (!usage) return null
+
+    const inputTokens = asPositiveInteger(usage.prompt_tokens)
+    const outputTokens = asPositiveInteger(usage.completion_tokens)
+    const totalTokens = asPositiveInteger(usage.total_tokens)
+
+    if (inputTokens === 0 && outputTokens === 0 && totalTokens === 0) {
+        return null
+    }
+
+    return {
+        inputTokens,
+        outputTokens,
+        totalTokens: totalTokens || null,
+        source: 'provider_reported',
+    }
+}
+
+// Extracts text from a non-streaming OpenRouter chat completions response
+export function extractOpenRouterCompletionText(payload: unknown): string {
+    if (!payload || typeof payload !== 'object') return ''
+
+    const choices = (payload as {
+        choices?: Array<{ message?: { content?: string } }>
+    }).choices
+
+    if (!Array.isArray(choices) || !choices.length) return ''
+
+    return choices[0]?.message?.content?.trim() ?? ''
+}
+
 export function createPlainTextStreamFromProviderResponse(
     provider: CloudAiProvider,
     response: Response,
@@ -237,6 +327,65 @@ export function createPlainTextStreamFromProviderResponse(
     const reader = response.body!.getReader()
     const decoder = new TextDecoder()
     const encoder = new TextEncoder()
+
+    if (provider === 'openrouter') {
+        // OpenRouter uses the standard chat completions SSE format:
+        // data: {"choices":[{"delta":{"content":"text"},...}],"usage":{...}}
+        // data: [DONE]
+        return new ReadableStream({
+            async start(controller) {
+                let buffer = ''
+                let fullText = ''
+                let usage: ProviderUsage | null = null
+
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read()
+                        if (done) break
+
+                        buffer += decoder.decode(value, { stream: true })
+                        const lines = buffer.split('\n')
+                        buffer = lines.pop() ?? ''
+
+                        for (const line of lines) {
+                            if (!line.startsWith('data: ')) continue
+                            const payload = line.slice(6).trim()
+                            if (!payload || payload === '[DONE]') continue
+
+                            try {
+                                const event = JSON.parse(payload)
+                                const eventUsage = extractOpenRouterUsage(event)
+                                if (eventUsage) usage = eventUsage
+
+                                const delta = event?.choices?.[0]?.delta?.content
+                                if (typeof delta === 'string' && delta) {
+                                    fullText += delta
+                                    options?.onChunk?.(delta)
+                                    controller.enqueue(encoder.encode(delta))
+                                }
+                            } catch {
+                                // Ignore malformed OpenRouter chunks.
+                            }
+                        }
+                    }
+                    await options?.onComplete?.({ fullText, usage })
+                } catch (error) {
+                    if (isAbortLikeError(error)) {
+                        await options?.onAbort?.()
+                        return
+                    }
+                    await options?.onError?.(error)
+                    throw error
+                } finally {
+                    try {
+                        controller.close()
+                    } catch {
+                        // Stream may already be closed after an abort.
+                    }
+                }
+            },
+        })
+    }
 
     if (provider === 'gemini') {
         return new ReadableStream({

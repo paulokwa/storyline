@@ -6,14 +6,14 @@ import type { AiContextMode, BillingMode } from '@/lib/ai/modes'
 import { resolveAiContextModeFromSettings, resolveBillingModeFromSettings } from '@/lib/ai/modes'
 import { APP_MANAGED_OPENAI_MODEL } from '@/lib/ai/trial'
 import { getAppManagedOpenAiApiKey } from '@/lib/ai/trial-server'
-import { DEFAULT_GEMINI_MODEL } from '@/lib/ai/providers'
+import { DEFAULT_GEMINI_MODEL, DEFAULT_OPENROUTER_MODEL } from '@/lib/ai/providers'
 
 export type AiRuntimeState = {
     aiSettings: Database['public']['Tables']['user_api_keys']['Row'] | null
     trialAccount: Database['public']['Tables']['ai_trial_accounts']['Row'] | null
     billingMode: BillingMode
     contextMode: AiContextMode
-    provider: 'openai' | 'gemini' | 'ollama'
+    provider: 'openai' | 'gemini' | 'openrouter' | 'ollama'
     model: string
     apiKey: string | null
 }
@@ -62,7 +62,7 @@ export async function getAiRuntimeState(
     const provider =
         billingMode === 'app_managed_trial'
             ? 'openai'
-            : aiSettings?.ai_provider === 'gemini' || aiSettings?.ai_provider === 'ollama'
+            : aiSettings?.ai_provider === 'gemini' || aiSettings?.ai_provider === 'ollama' || aiSettings?.ai_provider === 'openrouter'
                 ? aiSettings.ai_provider
                 : 'openai'
 
@@ -71,13 +71,20 @@ export async function getAiRuntimeState(
             ? getAppManagedOpenAiApiKey()
             : aiSettings?.api_key ?? null
 
+    const model =
+        provider === 'gemini'
+            ? DEFAULT_GEMINI_MODEL
+            : provider === 'openrouter'
+                ? DEFAULT_OPENROUTER_MODEL
+                : APP_MANAGED_OPENAI_MODEL
+
     return {
         aiSettings: aiSettings ?? null,
         trialAccount,
         billingMode,
         contextMode,
         provider,
-        model: provider === 'gemini' ? DEFAULT_GEMINI_MODEL : APP_MANAGED_OPENAI_MODEL,
+        model,
         apiKey,
     }
 }

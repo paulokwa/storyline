@@ -1,5 +1,5 @@
 export type BillingMode = 'app_managed_trial' | 'byok' | 'ollama'
-export type SupportedAiProvider = 'openai' | 'gemini' | 'ollama'
+export type SupportedAiProvider = 'openai' | 'gemini' | 'openrouter' | 'ollama'
 export type AiContextMode = 'smart' | 'manual'
 
 export function getBillingModeLabel(mode: BillingMode) {
