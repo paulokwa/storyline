@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import SettingsView from '@/components/app/SettingsView'
-import { maskApiKey } from '@/lib/ai/providers'
+import { maskApiKey, DEFAULT_OPENROUTER_MODEL } from '@/lib/ai/providers'
 import { getAiRuntimeState } from '@/lib/ai/runtime'
 
 export default async function SettingsPage() {
@@ -37,6 +37,7 @@ export default async function SettingsPage() {
                     ai_fallback_enabled: runtime.aiSettings?.ai_fallback_enabled ?? false,
                     ollama_model: runtime.aiSettings?.ollama_model ?? 'llama3',
                     ollama_url: runtime.aiSettings?.ollama_url ?? 'http://127.0.0.1:11434',
+                    openrouter_model: runtime.aiSettings?.openrouter_model ?? DEFAULT_OPENROUTER_MODEL,
                     trial: runtime.trialAccount,
                 }} 
             />

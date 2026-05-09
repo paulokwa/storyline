@@ -5,6 +5,81 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-09 - OpenRouter model selector, JSON fix, error hardening
+
+### What was completed
+
+Full implementation of the OpenRouter follow-up audit requirements.
+
+**1. DB migration — `openrouter_model` column (`supabase/migrations/20260509120000_add_openrouter_model.sql`)**
+Added `openrouter_model TEXT DEFAULT 'meta-llama/llama-3.1-8b-instruct:free'` to `user_api_keys`. Additive, non-destructive. Must be applied to the Supabase project via `supabase db push` or the Supabase dashboard SQL editor.
+
+**2. `lib/ai/providers.ts`**
+- Changed `DEFAULT_OPENROUTER_MODEL` from `openai/gpt-4o-mini` (paid) to `meta-llama/llama-3.1-8b-instruct:free` (free).
+- Added `OPENROUTER_CURATED_MODELS` array (4 entries: 3 free, 1 paid) with `id`, `label`, `pricing`, `note` per model.
+- Added `OPENROUTER_CURATED_MODEL_IDS` Set for server-side validation.
+- Added optional `model` parameter to `createCloudTextStream()` — OpenRouter branch now uses `model ?? DEFAULT_OPENROUTER_MODEL` instead of hardcoded constant.
+
+**3. `lib/ai/runtime.ts`**
+OpenRouter model now resolved from `aiSettings?.openrouter_model ?? DEFAULT_OPENROUTER_MODEL` so per-user selection flows through the runtime to all AI endpoints.
+
+**4. `app/api/ai/preferences/route.ts`**
+Accepts `openrouterModel` in the request body. Validates against `OPENROUTER_CURATED_MODEL_IDS`. Saves to `openrouter_model` column on upsert.
+
+**5. `app/(app)/settings/page.tsx`**
+Passes `openrouter_model` from runtime down to `SettingsView`.
+
+**6. `components/app/SettingsView.tsx`**
+- Added `openrouter_model` to prop type and `openrouterModel` state.
+- Added curated model `<select>` dropdown (renders when OpenRouter is the active provider) showing each model's label, and a coloured note (green = free, amber = paid).
+- "Current AI setup" description now shows the selected model name and free/paid status.
+- `openrouterModel` included in save request body.
+
+**7. `app/api/import/ai-detect/route.ts` — confirmed bug fixed**
+- Removed `response_format: { type: 'json_object' }` from the OpenRouter chunk request (it caused models to wrap the array as `{"chapters":[...]}`, breaking the `Array.isArray` check).
+- Now uses `runtime.model` instead of the hardcoded constant.
+- Hardened JSON parsing: accepts both a root JSON array and objects keyed as `chapters`, `result`, `data`, or `items`. Logs a clear error for unexpected shapes instead of silently skipping.
+- Fixed missing-key copy to mention OpenRouter alongside Gemini and OpenAI.
+
+**8. `app/api/ai/analyze-scene/route.ts`**
+Now uses `runtime.model` instead of `DEFAULT_OPENROUTER_MODEL`.
+
+**9. `app/api/ai/route.ts` (AI Partner)**
+Passes `model: runtime.model` to `createCloudTextStream()` so AI Partner also uses the selected per-user model.
+
+**10. `lib/supabase/types.ts`**
+Added `openrouter_model: string | null` to `user_api_keys` Row, Insert, and Update types.
+
+### Verification
+
+- `npx tsc --noEmit --pretty false` — exit 0, no errors.
+
+### Remaining manual steps before OpenRouter is fully launch-ready
+
+1. **Apply DB migration** — run `supabase db push` or paste the SQL from `supabase/migrations/20260509120000_add_openrouter_model.sql` into the Supabase dashboard SQL editor. Without this, the `openrouter_model` column does not exist in production and the preferences save will silently ignore the column (Supabase upserts with extra unknown columns do not always error).
+2. **Browser-test all OpenRouter acceptance criteria** — particularly:
+   - Model selector appears and saves correctly in Settings.
+   - Free model (Llama 3.1 8B) is the pre-selected default.
+   - Import AI Detect works with the free model and returns chapters (the JSON fix should resolve the 0-chapter silent failure).
+   - AI Partner streams using the selected model (verify via usage logs or network tab).
+   - Paid model (GPT-4o mini) shows amber "requires credits" note.
+   - Switching back to Gemini/OpenAI still works.
+
+### Current status
+
+All code and typecheck complete. Migration must be applied. Browser validation pending.
+
+### Next recommended step
+
+Apply the migration, then run the OpenRouter browser acceptance checklist in TESTING.md.
+
+### Risks or warnings
+
+- If the migration is not applied, `openrouter_model` will not exist in the DB. The runtime will fall back to `DEFAULT_OPENROUTER_MODEL` (now the free Llama model) from the types default. This is safe but users' model selections won't persist until the migration runs.
+- The curated model list is intentionally small (4 models). Free-model availability on OpenRouter can change; users who hit rate limits should try another model or add credits.
+- `analyze-scene/route.ts` still uses `response_format: { type: 'json_object' }` for OpenRouter — this is intentional there because the prompt requests a JSON *object* (not array), so json_object mode is correct for that endpoint.
+
+---
 ## 2026-05-08 - OpenRouter post-launch fixes and audit
 
 ### What was completed

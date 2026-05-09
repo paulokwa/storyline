@@ -75,7 +75,7 @@ export async function getAiRuntimeState(
         provider === 'gemini'
             ? DEFAULT_GEMINI_MODEL
             : provider === 'openrouter'
-                ? DEFAULT_OPENROUTER_MODEL
+                ? (aiSettings?.openrouter_model ?? DEFAULT_OPENROUTER_MODEL)
                 : APP_MANAGED_OPENAI_MODEL
 
     return {

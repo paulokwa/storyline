@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import {
     DEFAULT_OPENAI_MODEL,
-    DEFAULT_OPENROUTER_MODEL,
     extractOpenAiOutputText,
     extractOpenRouterCompletionText,
 } from '@/lib/ai/providers'
@@ -62,7 +61,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({
                 error: runtime.billingMode === 'app_managed_trial'
                     ? 'AI import is temporarily unavailable. Please try again or use manual import.'
-                    : 'No cloud AI API key found in Settings. Please save your Gemini or OpenAI key first.',
+                    : 'No cloud AI API key found in Settings. Please save your Gemini, OpenAI, or OpenRouter key first.',
             }, { status: 400 })
         }
 
@@ -259,13 +258,15 @@ ${chunk}`
                         'X-Title': 'Storyline',
                     },
                     body: JSON.stringify({
-                        model: DEFAULT_OPENROUTER_MODEL,
+                        model: runtime.model,
                         messages: [
-                            { role: 'system', content: 'Return valid JSON only.' },
+                            { role: 'system', content: 'Return valid JSON only. Do not wrap output in markdown.' },
                             { role: 'user', content: promptText },
                         ],
                         max_tokens: 2500,
-                        response_format: { type: 'json_object' },
+                        // response_format is intentionally omitted: the prompt requests a root JSON
+                        // array, and json_object mode on many models wraps it as {"chapters":[...]},
+                        // breaking the Array.isArray() check. Parsing handles both shapes below.
                     }),
                 })
             } else {
@@ -312,9 +313,18 @@ ${chunk}`
                 const parsed = JSON.parse(clean)
                 if (Array.isArray(parsed)) {
                     allChapters.push(...parsed)
+                } else if (parsed && typeof parsed === 'object') {
+                    // Some models (especially under json_object mode) wrap the array:
+                    // { "chapters": [...] } or { "result": [...] } etc.
+                    const nested = parsed.chapters ?? parsed.result ?? parsed.data ?? parsed.items
+                    if (Array.isArray(nested)) {
+                        allChapters.push(...nested)
+                    } else {
+                        console.error('AI Detect: Unexpected JSON shape from OpenRouter chunk:', JSON.stringify(parsed).slice(0, 200))
+                    }
                 }
             } catch (e) {
-                console.error('AI Detect: Failed to parse chunk JSON:', e, '\nRaw:', rawText)
+                console.error('AI Detect: Failed to parse chunk JSON:', e, '\nRaw:', rawText.slice(0, 300))
                 // Skip malformed chunks
             }
         }

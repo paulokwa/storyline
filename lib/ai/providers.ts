@@ -5,7 +5,46 @@ export type SupportedAiProvider = CloudAiProvider | 'ollama'
 
 export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash'
 export const DEFAULT_OPENAI_MODEL = 'gpt-4.1-mini'
-export const DEFAULT_OPENROUTER_MODEL = 'openai/gpt-4o-mini'
+// Default is a free model so users without OpenRouter billing can get started immediately.
+export const DEFAULT_OPENROUTER_MODEL = 'meta-llama/llama-3.1-8b-instruct:free'
+
+export type OpenRouterModelPricing = 'free' | 'paid'
+
+export type OpenRouterCuratedModel = {
+    id: string
+    label: string
+    pricing: OpenRouterModelPricing
+    note: string
+}
+
+export const OPENROUTER_CURATED_MODELS: OpenRouterCuratedModel[] = [
+    {
+        id: 'meta-llama/llama-3.1-8b-instruct:free',
+        label: 'Llama 3.1 8B (Meta) — Free',
+        pricing: 'free',
+        note: 'Free model — no billing required, but may hit rate limits or daily quotas.',
+    },
+    {
+        id: 'meta-llama/llama-3.3-70b-instruct:free',
+        label: 'Llama 3.3 70B (Meta) — Free',
+        pricing: 'free',
+        note: 'Free model — higher quality, but subject to stricter daily quotas.',
+    },
+    {
+        id: 'mistralai/mistral-7b-instruct:free',
+        label: 'Mistral 7B — Free',
+        pricing: 'free',
+        note: 'Free model — fast responses, may be rate-limited.',
+    },
+    {
+        id: 'openai/gpt-4o-mini',
+        label: 'GPT-4o mini (OpenAI) — Paid',
+        pricing: 'paid',
+        note: 'Requires OpenRouter credits or billing.',
+    },
+]
+
+export const OPENROUTER_CURATED_MODEL_IDS = new Set(OPENROUTER_CURATED_MODELS.map(m => m.id))
 
 const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1'
 // Attribution headers required by OpenRouter for app identification
@@ -135,6 +174,7 @@ export async function createCloudTextStream({
     systemPrompt,
     userMessage,
     maxOutputTokens = 1000,
+    model,
     abortSignal,
 }: {
     provider: CloudAiProvider
@@ -142,6 +182,7 @@ export async function createCloudTextStream({
     systemPrompt: string
     userMessage: string
     maxOutputTokens?: number
+    model?: string
     abortSignal?: AbortSignal
 }) {
     if (provider === 'gemini') {
@@ -179,7 +220,7 @@ export async function createCloudTextStream({
             },
             signal: abortSignal,
             body: JSON.stringify({
-                model: DEFAULT_OPENROUTER_MODEL,
+                model: model ?? DEFAULT_OPENROUTER_MODEL,
                 messages: [
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: userMessage },

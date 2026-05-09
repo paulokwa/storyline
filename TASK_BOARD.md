@@ -73,22 +73,27 @@ Before writing code, state:
 ## Now
 
 
-### 0. OpenRouter BYOK — browser validation required
+### 0. OpenRouter BYOK — apply migration + browser validation required
 
-Implementation is complete and statically verified. Browser validation is needed before signing off.
+Two steps remain before OpenRouter is launch-ready:
 
-Test checklist (full acceptance test list in `TESTING.md`):
+**Step A — Apply DB migration (human action required)**
+Run `supabase db push` or paste `supabase/migrations/20260509120000_add_openrouter_model.sql` into the Supabase dashboard SQL editor. Without this, per-user model selection will not persist.
 
-1. Save a valid OpenRouter key in Settings → confirm it saves and shows "Connected".
-2. Enter an invalid key → confirm friendly error, no crash.
-3. Send a basic AI Partner message with OpenRouter → confirm streaming response.
-4. Run Analyze Scene with OpenRouter → confirm structured JSON result, no hang.
-5. Run Import AI Detect with OpenRouter → confirm headings detected correctly.
-6. Trigger the large-context warning (large document in AI Partner) → confirm modal appears with OpenRouter-specific pricing copy.
-7. Check that pricing shows no misleading `$0.00` value — should show "pricing depends on model" notice.
-8. Confirm usage is logged in `ai_usage_events` with `provider = 'openrouter'`.
-9. Switch back to Gemini or OpenAI → confirm the switch works and routing uses the new provider correctly.
-10. Confirm Ollama and trial mode still work (no regression).
+**Step B — Browser acceptance checklist** (full list in `TESTING.md`):
+
+1. Apply migration. Confirm Settings shows the OpenRouter model selector dropdown.
+2. Confirm default is "Llama 3.1 8B (Free)" — not GPT-4o mini.
+3. Save a valid OpenRouter key → confirm "Connected" success.
+4. Enter an invalid key → confirm friendly error, no crash.
+5. Send a basic AI Partner message → confirm streaming response.
+6. Run Analyze Scene → confirm structured JSON result, no hang.
+7. Run Import AI Detect → confirm headings detected (free model JSON fix now in place).
+8. Change model to GPT-4o mini → confirm amber "requires credits" note appears.
+9. Confirm no misleading `$0.00` pricing anywhere.
+10. Confirm usage logged with `provider = 'openrouter'` and the correct model.
+11. Switch back to Gemini or OpenAI → confirm switch works.
+12. Confirm Ollama and trial mode unaffected.
 
 ---
 

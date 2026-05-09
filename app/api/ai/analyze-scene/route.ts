@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import {
     DEFAULT_OPENAI_MODEL,
-    DEFAULT_OPENROUTER_MODEL,
     extractGeminiUsage,
     extractOpenAiOutputText,
     extractOpenAiUsage,
@@ -253,7 +252,7 @@ export async function POST(req: Request) {
                     'X-Title': 'Storyline',
                 },
                 body: JSON.stringify({
-                    model: DEFAULT_OPENROUTER_MODEL,
+                    model: runtime.model,
                     messages: [
                         { role: 'system', content: SYSTEM_PROMPT },
                         { role: 'user', content: delimitedScene },

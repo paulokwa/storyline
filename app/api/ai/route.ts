@@ -429,6 +429,7 @@ export async function POST(req: Request) {
             systemPrompt: systemPrompt + projectContext,
             userMessage,
             maxOutputTokens: 1000,
+            model: runtime.model,
             abortSignal: req.signal,
         })
     } catch (error) {

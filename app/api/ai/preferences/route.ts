@@ -4,6 +4,7 @@ import { getBillingModeLabel, type AiContextMode, type BillingMode } from '@/lib
 import { logAiModeChange } from '@/lib/ai/trial-server'
 import { getRequestContext } from '@/lib/server/request-context'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { DEFAULT_OPENROUTER_MODEL, OPENROUTER_CURATED_MODEL_IDS } from '@/lib/ai/providers'
 
 type PreferencesBody = {
     aiEnabled?: boolean
@@ -13,6 +14,7 @@ type PreferencesBody = {
     aiContextMode?: AiContextMode
     ollamaModel?: string
     ollamaUrl?: string
+    openrouterModel?: string
     apiKey?: string
     removeApiKey?: boolean
 }
@@ -110,6 +112,12 @@ export async function POST(request: Request) {
         }
     }
 
+    const requestedOpenrouterModel = body.openrouterModel?.trim()
+    const nextOpenrouterModel =
+        requestedOpenrouterModel && OPENROUTER_CURATED_MODEL_IDS.has(requestedOpenrouterModel)
+            ? requestedOpenrouterModel
+            : currentSettings?.openrouter_model ?? DEFAULT_OPENROUTER_MODEL
+
     const payload = {
         user_id: user.id,
         ai_enabled: body.aiEnabled ?? currentSettings?.ai_enabled ?? false,
@@ -119,6 +127,7 @@ export async function POST(request: Request) {
         ai_fallback_enabled: body.aiFallbackEnabled ?? currentSettings?.ai_fallback_enabled ?? false,
         ollama_model: body.ollamaModel?.trim() || currentSettings?.ollama_model || 'llama3',
         ollama_url: body.ollamaUrl?.trim() || currentSettings?.ollama_url || 'http://127.0.0.1:11434',
+        openrouter_model: nextOpenrouterModel,
         api_key: nextApiKey,
     }
 

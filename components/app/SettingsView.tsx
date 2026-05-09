@@ -14,7 +14,7 @@ import type { User } from '@supabase/supabase-js'
 import { THEMES, useTheme } from '@/components/providers/ThemeProvider'
 import { cn } from '@/lib/utils'
 import AiSetupGuide from '@/components/app/AiSetupGuide'
-import { getAiProviderLabel } from '@/lib/ai/providers'
+import { getAiProviderLabel, OPENROUTER_CURATED_MODELS } from '@/lib/ai/providers'
 import { getBillingModeLabel, type AiContextMode, type BillingMode } from '@/lib/ai/modes'
 import { formatTrialRemainingPct, getTrialStatusMessage, isLowTrialBalance } from '@/lib/ai/trial'
 import { uploadUserAvatar } from '@/lib/supabase/user-avatars'
@@ -45,7 +45,8 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
         ai_context_mode: AiContextMode,
         ai_fallback_enabled: boolean,
         ollama_model: string,
-        ollama_url: string
+        ollama_url: string,
+        openrouter_model: string,
         trial: {
             status: string
             remaining_micros: number
@@ -81,6 +82,7 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
     const [aiFallback, setAiFallback] = useState(aiSettings.ai_fallback_enabled)
     const [ollamaModel, setOllamaModel] = useState(aiSettings.ollama_model)
     const [ollamaUrl, setOllamaUrl] = useState(aiSettings.ollama_url)
+    const [openrouterModel, setOpenrouterModel] = useState(aiSettings.openrouter_model)
 
     // AI Setup Guide
     const [showAiGuide, setShowAiGuide] = useState(false)
@@ -287,6 +289,7 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                 aiFallbackEnabled: aiFallback,
                 ollamaModel,
                 ollamaUrl,
+                openrouterModel,
                 apiKey: apiKey || undefined,
             }),
         })
@@ -978,7 +981,9 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                                 {billingMode === 'app_managed_trial'
                                                     ? 'Storyline sponsors a limited OpenAI trial for this setup.'
                                                     : billingMode === 'byok'
-                                                        ? `Requests use ${getAiProviderLabel(aiProvider)} with your own API key.${aiProvider === 'openrouter' ? ' Pricing depends on the model selected.' : ''}`
+                                                        ? aiProvider === 'openrouter'
+                                                            ? `Requests use OpenRouter (${OPENROUTER_CURATED_MODELS.find(m => m.id === openrouterModel)?.label ?? openrouterModel}). ${OPENROUTER_CURATED_MODELS.find(m => m.id === openrouterModel)?.pricing === 'free' ? 'Free model — rate limits may apply.' : 'Requires OpenRouter credits.'}`
+                                                            : `Requests use ${getAiProviderLabel(aiProvider)} with your own API key.`
                                                         : 'Requests go directly to your local Ollama server.'}
                                             </p>
                                         </div>
@@ -1056,11 +1061,50 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                                     </label>
                                                 </div>
                                                 {aiProvider === 'openrouter' && (
-                                                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
-                                                        OpenRouter pricing depends on the model Storyline selects. Large requests may use more OpenRouter credits. Get a key at{' '}
-                                                        <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="font-medium text-[#546354] underline-offset-2 hover:underline">
-                                                            openrouter.ai/keys
-                                                        </a>.
+                                                    <div className="space-y-3">
+                                                        <div className="space-y-1.5">
+                                                            <Label htmlFor="openrouterModel" className="text-sm font-medium text-slate-700">
+                                                                OpenRouter Model
+                                                            </Label>
+                                                            <select
+                                                                id="openrouterModel"
+                                                                value={openrouterModel}
+                                                                onChange={(e) => setOpenrouterModel(e.target.value)}
+                                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                                                            >
+                                                                {OPENROUTER_CURATED_MODELS.map((m) => (
+                                                                    <option key={m.id} value={m.id}>{m.label}</option>
+                                                                ))}
+                                                            </select>
+                                                            {(() => {
+                                                                const selected = OPENROUTER_CURATED_MODELS.find(m => m.id === openrouterModel)
+                                                                return selected ? (
+                                                                    <p className={`text-xs leading-5 ${selected.pricing === 'free' ? 'text-emerald-700' : 'text-amber-700'}`}>
+                                                                        {selected.note}
+                                                                    </p>
+                                                                ) : null
+                                                            })()}
+                                                        </div>
+                                                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
+                                                            {(() => {
+                                                                const selected = OPENROUTER_CURATED_MODELS.find(m => m.id === openrouterModel)
+                                                                return selected?.pricing === 'free'
+                                                                    ? 'This free OpenRouter model may work without credits, but large requests can still hit rate limits or daily quotas.'
+                                                                    : 'This model requires OpenRouter credits or billing. Add credits at '
+                                                            })()}
+                                                            {(() => {
+                                                                const selected = OPENROUTER_CURATED_MODELS.find(m => m.id === openrouterModel)
+                                                                return selected?.pricing === 'paid' ? (
+                                                                    <a href="https://openrouter.ai/credits" target="_blank" rel="noopener noreferrer" className="font-medium text-[#546354] underline-offset-2 hover:underline">
+                                                                        openrouter.ai/credits
+                                                                    </a>
+                                                                ) : null
+                                                            })()}
+                                                            {(() => {
+                                                                const selected = OPENROUTER_CURATED_MODELS.find(m => m.id === openrouterModel)
+                                                                return selected?.pricing === 'paid' ? '.' : null
+                                                            })()}
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>

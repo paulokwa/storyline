@@ -1470,6 +1470,7 @@ export type Database = {
           id: string
           ollama_model: string | null
           ollama_url: string | null
+          openrouter_model: string | null
           updated_at: string | null
           user_id: string
         }
@@ -1484,6 +1485,7 @@ export type Database = {
           id?: string
           ollama_model?: string | null
           ollama_url?: string | null
+          openrouter_model?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -1498,6 +1500,7 @@ export type Database = {
           id?: string
           ollama_model?: string | null
           ollama_url?: string | null
+          openrouter_model?: string | null
           updated_at?: string | null
           user_id?: string
         }
