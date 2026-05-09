@@ -196,6 +196,24 @@ Recommended order:
 4. Capture final screenshots.
 5. Ask AI to update the showcase/landing page.
 
+### Update privacy/legal documentation for OpenRouter and current AI options
+
+Before public launch, review and update the privacy documentation, AI disclaimer, Terms, and any related legal/help copy so they accurately describe the current AI setup.
+
+This became necessary after adding OpenRouter BYOK support alongside OpenAI, Gemini, Ollama/local AI, and app-managed trial AI.
+
+Human/product-owner decisions to confirm before AI rewrites legal copy:
+
+- How plainly to explain that OpenRouter is a third-party AI routing/provider platform.
+- Whether the Privacy Policy should list OpenRouter by name as a third-party processor/service users may choose.
+- How to explain that OpenRouter usage is BYOK and controlled by the user's OpenRouter account, credits, billing, model choice, quotas, and provider limits.
+- How to explain that free OpenRouter models may still have rate limits, quotas, availability issues, or quality differences.
+- Whether the AI disclaimer should mention that prompts and selected project context may be sent to OpenRouter and/or underlying model providers when a user selects OpenRouter.
+- Whether local/Ollama language should be contrasted clearly: local AI can stay on the user's machine, while cloud AI providers require sending prompts/context to external services.
+- Whether showcase/onboarding wording needs a short privacy summary linking to the full policy.
+
+AI can help draft the updated policy/disclaimer text, but Kwame should review the wording before launch because this affects user trust and legal/privacy posture.
+
 ### Rework Help menu/page near launch
 
 The Help Center should be reworked near launch after major feature changes settle.
@@ -215,6 +233,7 @@ Possible videos/guides:
 
 - How to get an OpenAI API key
 - How to get a Gemini API key
+- How to get an OpenRouter API key and choose a model
 - How to connect an AI key to Storyline
 - How to use Storyline without AI
 - How to use Ollama/local AI with Storyline
@@ -262,6 +281,7 @@ Before public launch, review:
 - Subscription readiness/early-access grandfathering decision made before any billing implementation
 - AI terminology chosen
 - AI Partner Story Scope validated; old Structure-panel scene checkboxes removed or intentionally kept as a fallback
+- Privacy/legal documentation updated for OpenRouter and current AI provider options
 - Help Center audit/rewrite completed or intentionally deferred
 - Showcase page updated with final screenshots
 - In-app launch survey implemented
