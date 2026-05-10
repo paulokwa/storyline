@@ -5,6 +5,70 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-10 (session 2) — Phase 1 auth verification testing: callback routing bug under investigation
+
+### Current status: BLOCKED — active bug, do not start Phase 2
+
+The signup verification email now contains the correct production URL and redirect_to. However a new routing bug was observed during live testing. Session ended mid-audit.
+
+### Observed bug
+
+After clicking the verification email link, the browser lands on:
+```
+https://6a0106dcf120c40008cde447--storyline-paulokwa-v2.netlify.app/login?code=...&intent=signup&next=%2Flibrary
+```
+
+Two problems:
+1. **Wrong path**: `/api/auth/callback` is not handling the code — it is ending up on `/login` with the code and query params preserved.
+2. **Wrong origin**: The deploy-specific Netlify URL (`6a0106dcf120c40008cde447--...`) appears instead of the clean production URL.
+
+### Audit completed before session ended
+
+Evidence gathered — no intercept found in these locations:
+
+| Location | Status |
+|---|---|
+| `middleware.ts` / `middleware.js` in project root | Does not exist |
+| `_redirects` file | Does not exist |
+| `netlify.toml` redirects | Minimal — build command only, no redirects |
+| `next.config.ts` redirects/rewrites | None |
+| `.netlify/edge-functions/manifest.json` | `"functions": []` — empty, no edge functions |
+| `app/layout.tsx` (root) | Fonts + providers only, no auth |
+| `app/(app)/layout.tsx` | Calls `requireVerifiedUser()` → redirects to `/login` if unauth — but only covers `(app)` group |
+| `app/feedback/layout.tsx` | Also calls `requireVerifiedUser()` — but only covers `/feedback` |
+
+### What was NOT yet checked when session ended
+
+The audit was in progress. These still need to be investigated:
+
+1. **Whether d9bb667 is the published production deploy on Netlify** — the deploy-specific URL strongly suggests the production alias may point to an older deploy, meaning the commit's code may not be live yet.
+2. **The `.netlify/functions-internal` or server handler generated config** — `@netlify/plugin-nextjs` generates routing rules at build time that can intercept paths before Next.js sees them.
+3. **The `app/(app)/project/[id]/layout.tsx` and `app/(app)/new/layout.tsx`** — confirm they don't have catch-all behavior.
+4. **Whether Supabase is changing the redirect domain** — Supabase's allowed redirect URL list may be causing it to rewrite the production URL to the deploy URL.
+5. **The Supabase auth URL configuration** — check that `https://storyline-paulokwa-v2.netlify.app/**` (with wildcard) is in the Supabase redirect allowlist, not just an exact path.
+
+### Most likely root causes (ranked by evidence)
+
+1. **d9bb667 is not the published production deploy** — the deploy-specific URL in the browser suggests the production alias points to an older deploy that may have had different routing behavior (e.g. an old proxy.ts middleware). This is the first thing to check.
+2. **Netlify-generated server handler is intercepting `/api/auth/callback`** — the plugin-nextjs runtime generates internal redirects and route handlers. If the route is categorized as a protected RSC route, it may redirect unauth requests to `/login` at the Netlify function level, preserving query params.
+3. **Supabase redirect URL rewrite** — if only a deploy-specific URL is in the Supabase allowlist, Supabase may rewrite the redirect to that URL instead of the production URL.
+
+### Next session: start here
+
+1. Check Netlify dashboard: confirm that commit `d9bb667` is the current published production deploy. If not, trigger a new deploy from `main`.
+2. If d9bb667 IS live, check the Netlify-generated server handler config in `.netlify/functions-internal/___netlify-server-handler/` for routing rules.
+3. Check Supabase dashboard: Authentication → URL Configuration → confirm the redirect URL allowlist includes `https://storyline-paulokwa-v2.netlify.app/**` (wildcard).
+4. Do not start Phase 2 (Google OAuth) until the callback route handles the code correctly end-to-end.
+
+### Files changed this session (committed as d9bb667)
+
+- `app/api/auth/signup/route.ts` — `getURL()` → `getURL(new URL(request.url).origin)`
+- `app/api/auth/callback/route.ts` — removed debug `console.log`
+- `app/(auth)/forgot-password/page.tsx` — removed 4 debug `console.log` statements
+- `TROUBLESHOOTING.md` — new entry for localhost redirect bug
+- `SESSION_HANDOVER.md` — session notes
+
+---
 ## 2026-05-10 — Social login audit (Phase 1) + signup redirect fix
 
 ### What was completed
