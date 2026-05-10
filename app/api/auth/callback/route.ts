@@ -57,7 +57,6 @@ export async function GET(request: Request) {
 
         // Exchange the verification code for a secure session cookie
         const { error } = await supabase.auth.exchangeCodeForSession(code)
-        console.log('Code exchange attempt. Error:', error)
 
         if (!error) {
             return NextResponse.redirect(`${origin}${next}`)

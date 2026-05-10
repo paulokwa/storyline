@@ -5,6 +5,50 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-10 — Social login audit (Phase 1) + signup redirect fix
+
+### What was completed
+
+Auth audit for social login readiness. One critical bug fixed; Phase 2 (Google OAuth) is ready to implement pending user approval.
+
+**Critical fix — signup verification emails pointed to localhost**
+- `app/api/auth/signup/route.ts` called `getURL()` with no argument.
+- Without `NEXT_PUBLIC_SITE_URL`, this falls back to `http://localhost:3000/` — confirming the observed production bug.
+- Fixed by passing `new URL(request.url).origin` so the real server origin is used: `getURL(new URL(request.url).origin)`.
+- `npx tsc --noEmit --pretty false` passes clean.
+- TROUBLESHOOTING.md updated with the new entry.
+
+### Audit findings — what was checked and is clean
+
+| Check | Status |
+|---|---|
+| Signup verification email redirect | FIXED (see above) |
+| OAuth callback origin (`/api/auth/callback`) | Clean — uses `new URL(request.url)` origin |
+| Login/signup post-auth redirects | Clean — relative paths, always correct |
+| Session collision on shared browser | Clean — layered protection already in place |
+| Stale refresh token clearing | Clean — both server and client |
+| Auth link error detection (query + hash) | Clean — comprehensive |
+| Local project / cloud sync copy | Missing — must be added in Phase 2 |
+
+### Minor issues found but not changed
+
+- `app/api/auth/callback/route.ts:61` — `console.log('Code exchange attempt. Error:', error)` in production code
+- `app/(auth)/forgot-password/page.tsx` — multiple debug `console.log` statements
+
+### Still required (user action)
+
+Set `NEXT_PUBLIC_SITE_URL` in Netlify dashboard to the production domain (e.g. `https://yourdomain.app`). The code fix uses the request origin as primary, but this env var is the correct long-term anchor.
+
+### Next recommended step
+
+Phase 2 — add Google OAuth buttons to login and signup pages. The `/api/auth/callback` route already handles OAuth code exchange. Awaiting user approval before implementing.
+
+### Files changed
+
+- `app/api/auth/signup/route.ts` — `getURL()` → `getURL(new URL(request.url).origin)`
+- `TROUBLESHOOTING.md` — new entry for localhost redirect bug
+
+---
 ## 2026-05-09 (session 2) — OpenRouter BYOK bug fixes: key validation, model IDs, usage logging, error copy
 
 ### What was completed

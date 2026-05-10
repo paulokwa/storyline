@@ -17,23 +17,19 @@ export default function ForgotPasswordPage() {
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
-        console.log('Forgot password submit triggered for:', email)
         setLoading(true)
         setError('')
 
         try {
             const supabase = createClient()
-            console.log('Supabase client created, calling reset API...')
             const { error } = await supabase.auth.resetPasswordForEmail(email, {
                 redirectTo: `${getURL(window.location.origin)}reset-password`,
             })
-            console.log('Reset API responded. Error:', error)
 
             if (error) {
                 setError(error.message)
                 setLoading(false)
             } else {
-                console.log('Success, updating UI state...')
                 setSubmitted(true)
                 setLoading(false)
             }

@@ -917,3 +917,33 @@ The real production test is a GitHub push to main triggering a Netlify deploy â€
 - Confirmed pre-existing on main before OpenRouter changes (stash-tested 2026-05-08).
 - Do not let this error block commits when the Next.js compilation is clean.
 
+---
+
+## Issue: Signup verification emails point to localhost instead of production
+
+### Symptoms
+
+- New users receive an email verification link containing `http://localhost:3000/api/auth/callback?intent=signup&...`.
+- Clicking the link in production opens localhost instead of the live app.
+
+### Cause
+
+- `app/api/auth/signup/route.ts` called `getURL()` with no argument.
+- `getURL()` without an origin argument falls back to `http://localhost:3000/` when `NEXT_PUBLIC_SITE_URL` is not set.
+- Netlify does not automatically set `NEXT_PUBLIC_SITE_URL`, so the fallback fires on production.
+
+### Fix
+
+- Pass the actual request origin: `getURL(new URL(request.url).origin)` in the `emailRedirectTo` option.
+- Also set `NEXT_PUBLIC_SITE_URL` in the Netlify dashboard to the production domain (e.g. `https://yourdomain.app`) as a permanent anchor.
+
+### Verification
+
+- `npx tsc --noEmit --pretty false` passes.
+- Sign up a new account on production and confirm the verification email link contains the production domain, not localhost.
+
+### Notes
+
+- The forgot-password page already used the correct pattern (`getURL(window.location.origin)`) â€” only the signup server route was affected.
+- The auth callback route uses `new URL(request.url)` for post-verification redirects and was not affected.
+
