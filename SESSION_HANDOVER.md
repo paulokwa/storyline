@@ -5,11 +5,40 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
-## 2026-05-10 (session 2) — Phase 1 auth verification testing: callback routing bug under investigation
+## 2026-05-10 (session 3) — Phase 1 auth verification: COMPLETE
 
-### Current status: BLOCKED — active bug, do not start Phase 2
+### Current status: READY — Phase 1 fully verified. Phase 2 (Google OAuth) has not started.
 
-The signup verification email now contains the correct production URL and redirect_to. However a new routing bug was observed during live testing. Session ended mid-audit.
+All three commits from Phase 1 are live on production (`559abc9` is the latest). Live signup verification test passed end-to-end on 2026-05-10. Phase 2 requires explicit user approval before starting.
+
+### What was fixed across Phase 1 (all commits on `main`)
+
+| Commit | Fix |
+|---|---|
+| `d9bb667` | `app/api/auth/signup/route.ts` — `getURL()` called with no arg → fell back to localhost. Fixed to `getURL(new URL(request.url).origin)`. |
+| `d9bb667` | `app/api/auth/callback/route.ts` — removed debug `console.log` |
+| `d9bb667` | `app/(auth)/forgot-password/page.tsx` — removed 4 debug `console.log` statements |
+| `559abc9` | `app/api/auth/callback/route.ts` — `origin` from raw `new URL(request.url).origin` replaced with `getURL(...).replace(/\/$/, '')` to correct Netlify deploy-specific Lambda URLs |
+
+### Supabase dashboard cleaned (manual, 2026-05-10)
+
+- Site URL: `https://storyline-paulokwa-v2.netlify.app` ✓
+- Redirect URLs cleaned to exactly: `http://localhost:3000/**` and `https://storyline-paulokwa-v2.netlify.app/**`
+- One corrupted concatenated entry deleted; one redundant entry deleted
+
+### Live test result (2026-05-10)
+
+- New email, fresh signup → verification email contained correct production URL ✓
+- Clicked verification link → browser landed on `https://storyline-paulokwa-v2.netlify.app/welcome` ✓
+- `/welcome` is correct: `/library` redirects new users to `/welcome` when `profile.onboarding_completed` is false ✓
+- No localhost, no deploy-specific URL, no visible `?code=` in final URL ✓
+
+### Phase 2 (Google OAuth) — NOT STARTED
+
+Do not begin Phase 2 until user explicitly requests it in a new session. Starting point when approved: add Google OAuth buttons to login and signup pages using the existing Supabase Google provider.
+
+---
+## 2026-05-10 (session 2) — Phase 1 auth verification testing: callback routing bug — RESOLVED
 
 ### Observed bug
 

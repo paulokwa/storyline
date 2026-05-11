@@ -945,5 +945,36 @@ The real production test is a GitHub push to main triggering a Netlify deploy �
 ### Notes
 
 - The forgot-password page already used the correct pattern (`getURL(window.location.origin)`) — only the signup server route was affected.
-- The auth callback route uses `new URL(request.url)` for post-verification redirects and was not affected.
+- The auth callback route had a related but separate bug (see: **Callback route redirects to Netlify deploy-specific URL after email verification**) — it was fixed in the same audit.
+
+---
+
+## Issue: Callback route redirects to Netlify deploy-specific URL after email verification
+
+### Symptoms
+
+- Email verification link contains the correct production URL (`https://your-site.netlify.app/api/auth/callback?code=...`).
+- After clicking, the browser is redirected to a deploy-specific Netlify URL (`https://[deploy-id]--your-site.netlify.app/library`) instead of the production URL.
+
+### Cause
+
+- `app/api/auth/callback/route.ts` extracted `origin` directly from `new URL(request.url).origin`.
+- On Netlify, `trustHostHeader: false` (set in the generated Lambda `run-config.json`) causes Next.js to ignore the `x-forwarded-host` header. The Lambda's internal `request.url` contains the deploy-specific hostname, not the production hostname.
+- All redirects from the callback (`/library` on success, `/login?verification=...` on error) therefore used the deploy-specific URL as the base.
+
+### Fix
+
+- In `app/api/auth/callback/route.ts`, replace `new URL(request.url).origin` with `getURL(new URL(request.url).origin).replace(/\/$/, '')`.
+- `getURL()` already contains a guard: if the raw origin is a Netlify hostname that differs from `NEXT_PUBLIC_SITE_URL`, it returns the configured site URL instead.
+- This is the same pattern already used in `app/api/auth/signup/route.ts`.
+
+### Verification
+
+- `npx tsc --noEmit --skipLibCheck` passes.
+- Sign up with a new email on production, click the verification link, confirm the browser lands on `https://your-site.netlify.app/library` (or `/welcome` for new users who haven't completed onboarding) — no deploy-specific URL, no visible `?code=` in the final URL.
+
+### Notes
+
+- `NEXT_PUBLIC_SITE_URL` must be set correctly in Netlify environment variables for `getURL()` to resolve the correct production URL.
+- Also clean up the Supabase Dashboard → Authentication → Redirect URLs allowlist if any entry is a concatenated/corrupted multi-URL blob. The correct minimal set is `http://localhost:3000/**` and `https://your-site.netlify.app/**`.
 
