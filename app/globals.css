@@ -1905,6 +1905,31 @@ body {
   color: #f4b4c4 !important;
 }
 
+[data-theme='midnight'] .export-modal [class*="text-amber-600"],
+[data-theme='midnight'] .export-modal [class*="text-amber-700"],
+[data-theme='midnight'] .export-modal [class*="text-amber-800"],
+[data-theme='midnight'] .export-modal [class*="text-amber-900"] {
+  color: #f7c873 !important;
+}
+
+[data-theme='midnight'] .export-modal [class*="text-[#31332f]"] {
+  color: #eff4ff !important;
+}
+
+[data-theme='midnight'] .export-modal [class*="bg-amber-100"] {
+  background-color: rgba(180, 120, 30, 0.22) !important;
+}
+
+[data-theme='midnight'] .export-modal [class*="bg-white/40"],
+[data-theme='midnight'] .export-modal [class*="bg-slate-900/5"] {
+  background-color: rgba(24, 34, 57, 0.58) !important;
+}
+
+[data-theme='midnight'] .export-modal [class*="hover:bg-white/70"]:hover,
+[data-theme='midnight'] .export-modal [class*="focus-visible:bg-white/70"]:focus-visible {
+  background-color: rgba(42, 56, 87, 0.88) !important;
+}
+
 [data-theme='midnight'] .project-stats-page {
   background:
     radial-gradient(circle at top, rgba(56, 78, 129, 0.16), transparent 38%),
@@ -1966,6 +1991,10 @@ body {
     linear-gradient(180deg, #0b1120 0%, #111a2f 52%, #0b1120 100%) !important;
 }
 
+[data-theme='midnight'] .settings-view--midnight {
+  color-scheme: dark;
+}
+
 [data-theme='midnight'] .settings-view [class*="bg-white"],
 [data-theme='midnight'] .settings-view [class*="bg-slate-50"],
 [data-theme='midnight'] .admin-page-shell [class*="bg-white"],
@@ -2016,6 +2045,7 @@ body {
 
 [data-theme='midnight'] .settings-view input,
 [data-theme='midnight'] .settings-view textarea,
+[data-theme='midnight'] .settings-view select,
 [data-theme='midnight'] .admin-page-shell input {
   background: rgba(14, 20, 38, 0.92) !important;
   color: #eff4ff !important;
@@ -2032,6 +2062,20 @@ body {
 [data-theme='midnight'] .settings-view [class*="hover:bg-slate-50"]:hover,
 [data-theme='midnight'] .settings-view [class*="hover:bg-indigo-50"]:hover {
   background: rgba(42, 56, 87, 0.88) !important;
+}
+
+[data-theme='midnight'] .settings-view--midnight code {
+  background: rgba(14, 20, 38, 0.82) !important;
+  color: #dbe5ff !important;
+}
+
+[data-theme='midnight'] .settings-view--midnight [class*="text-[#546354]"] {
+  color: #b8c7e4 !important;
+}
+
+[data-theme='midnight'] .settings-view--midnight [class*="bg-[#546354]"] {
+  background-color: #9fb0cf !important;
+  color: #0b1120 !important;
 }
 
 [data-theme='midnight'] .help-center-view {

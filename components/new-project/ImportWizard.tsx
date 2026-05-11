@@ -40,6 +40,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
     const [showSanityModal, setShowSanityModal] = useState(false)
     const [sanityInput, setSanityInput] = useState('')
     const [aiStatus, setAiStatus] = useState('')
+    const [aiProgress, setAiProgress] = useState(0)
 
     const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -122,12 +123,15 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
         
         setAiDetecting(true)
         setShowSanityModal(false)
-        setAiStatus('Identifying structural anchors...')
+        setAiStatus('Preparing manuscript text...')
+        setAiProgress(12)
         setSanityInput('')
         setError('')
 
         try {
             const deviceFingerprint = await getDeviceFingerprint()
+            setAiStatus('Identifying structural anchors...')
+            setAiProgress(35)
             const res = await fetch('/api/import/ai-detect', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -143,6 +147,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
 
             const detected = data.chapters as { title: string, markerSnippet: string }[]
             setAiStatus(`Mapping ${detected.length} chapters...`)
+            setAiProgress(68)
 
             // Robust Mapping Slicer
             const mappedAnchors: { index: number; detection: { title: string; markerSnippet: string } }[] = []
@@ -177,6 +182,8 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
 
             const newChunks: { title: string, content: string }[] = []
             let start = 0
+            setAiStatus('Building import preview...')
+            setAiProgress(88)
             for (let i = 0; i < mappedAnchors.length; i++) {
                 const end = mappedAnchors[i].index
                 newChunks.push({
@@ -193,11 +200,13 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
             setChunks(newChunks.filter(c => c.content.length > 10))
             setSplitStrategy('custom')
             setAiStatus('')
+            setAiProgress(100)
 
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'AI Detection failed')
         } finally {
             setAiDetecting(false)
+            setAiProgress(0)
         }
     }
 
@@ -263,7 +272,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                                 <div className="min-w-0">
                                     <div className="truncate font-semibold text-slate-800">{file?.name}</div>
                                     <div className="text-xs text-slate-500 font-medium">
-                                    {(rawText.length / 5).toFixed(0).toLocaleString()} estimated words
+                                        ~{rawText.length.toLocaleString()} characters extracted
                                     </div>
                                 </div>
                             </div>
@@ -420,8 +429,17 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                     </div>
                     <h3 className="text-2xl font-serif text-slate-800 mb-2">Analyzing your soul&apos;s work…</h3>
                     <p className="text-slate-500 font-medium mb-6 animate-pulse">{aiStatus}</p>
-                    <div className="w-64 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-indigo-500" style={{width: '60%'}} />
+                    <div
+                        className="w-64 h-1.5 bg-slate-100 rounded-full overflow-hidden"
+                        role="progressbar"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={aiProgress}
+                    >
+                        <div
+                            className="h-full bg-indigo-500 transition-all duration-500 ease-out"
+                            style={{ width: `${Math.max(aiProgress, 8)}%` }}
+                        />
                     </div>
                 </div>
             )}
@@ -454,7 +472,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                                     <div className="flex items-start gap-3">
                                         <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
                                         <p className="text-sm text-amber-900 font-medium leading-relaxed">
-                                            Your manuscript (~<span className="font-bold">{Math.round(rawText.length / 5).toLocaleString()} words</span>) will be sent to AI across one or more requests.
+                                            About <span className="font-bold">{rawText.length.toLocaleString()} characters</span> of extracted manuscript text will be sent to AI across one or more requests.
                                         </p>
                                     </div>
                                     <div className="flex items-start gap-3">

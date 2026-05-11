@@ -298,6 +298,35 @@ Add a short entry using this format:
 
 - Browser QA is still recommended for real EPUB fixtures, Magic Detect with missing markers, Free Trial AI safeguards, OpenRouter settings copy, and 320px/768px/1024px viewport panel behavior.
 
+## Issue: Import UX Copy, Magic Detect Progress, and Midnight Modal/Settings Coverage
+
+### Symptoms
+
+- Import preview labels rough character-based estimates as words.
+- Magic Detect overlay shows a static progress bar while status text changes.
+- Midnight theme leaves some Settings controls and Export modal header/option accents using light-theme or low-contrast colors.
+
+### Cause
+
+- Import UI used `rawText.length / 5` as a word estimate and displayed it as words.
+- Magic Detect overlay hard-coded the progress width.
+- Existing midnight overrides did not cover Settings selects/code/accent colors or Export modal arbitrary text colors and amber/white translucent surfaces.
+
+### Fix
+
+- Label extracted manuscript size by character count instead of inferred word count.
+- Track staged Magic Detect progress through preparation, request, mapping, and preview-building states.
+- Add narrow midnight overrides for Settings controls and Export modal arbitrary colors/surfaces instead of redesigning either component.
+
+### Verification
+
+- Static search should show no `estimated words`, `Math.round(rawText.length / 5)`, or static `width: '60%'` in the import UI.
+- Run TypeScript, focused ESLint, and build checks after the UI change.
+
+### Notes
+
+- This is targeted launch polish, not a full dark-mode redesign. Keep the full dark-mode polish pass as future work until the broader UI is stable.
+
 ## Issue: Settings save fails because `ai_context_mode` is missing from Supabase schema cache
 
 ### Symptoms

@@ -5,6 +5,29 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-11 - Import UX cleanup and targeted midnight coverage
+
+### What was completed
+
+- Replaced the rough import "estimated words" label with extracted character count wording.
+- Made the Magic Detect import overlay show staged progress instead of a static 60% bar.
+- Added focused midnight overrides for Settings selects/code/accent colors and Export modal header, amber accents, option surfaces, and hover/focus rows.
+- Verified the PDF import route already uses a static `pdf-parse` import and no longer has a runtime `require()`.
+- Verified auth recovery email/status logging is gone or gated from production.
+
+### Current status
+
+TypeScript, focused ESLint, static pattern checks, `git diff --check`, and `npm run build` passed. `netlify build --context production` completed the Next.js build and function bundling, then hit the documented local Windows `Failed publishing static content` postbuild limitation. Manual dark-mode and Magic Detect browser QA are still recommended because these are user-facing UI states.
+
+### Next recommended step
+
+Open Settings and Export modal in midnight theme, then run Magic Detect on a small import fixture to confirm the staged progress and character-count copy feel clear.
+
+### Risks or warnings
+
+- The dark-mode changes are narrow overrides, not a full theme redesign; the future full dark-mode polish pass remains open.
+
+---
 ## 2026-05-11 - Audit follow-up fixes for import, AI copy, local messaging, and tablet panels
 
 ### What was completed
