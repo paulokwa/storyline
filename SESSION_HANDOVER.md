@@ -5,6 +5,28 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-11 - Google OAuth browser validation passed
+
+### What was completed
+
+- User verified Google OAuth on localhost and production.
+- Existing Google account login loaded the correct Storyline account and projects.
+- User reported the remaining local checks passed, including signup/login entry points, logout/login persistence, email/password regression, and local-first safety checks.
+- Updated `TESTING.md` to mark Google OAuth login/signup as passed.
+
+### Current status
+
+Google OAuth Phase 2 is implemented, committed in the working tree already, and browser-validated locally and in production.
+
+### Next recommended step
+
+Continue with the next launch QA item in `TESTING.md`.
+
+### Risks or warnings
+
+- No additional build check was run for this documentation-only update per user instruction.
+
+---
 ## 2026-05-11 - Google OAuth Phase 2 rebased onto latest main
 
 ### What was completed
