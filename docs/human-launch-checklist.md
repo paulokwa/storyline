@@ -117,6 +117,23 @@ Do this after the final app name is chosen so the wording, sender identity, supp
 - Set the sender name, reply-to/support email, subjects, and call-to-action button wording.
 - Keep live email rendering and redirect validation in `TESTING.md`, not this planning doc.
 
+### Social login provider branding
+
+After the final app name is chosen, review the public-facing branding shown by external social login providers.
+
+During Google OAuth testing, the Google account chooser displayed the Supabase project host (`spzlrzqbpxewuyebbdly.supabase.co`) instead of a polished final app name. Do not fix this until the final public app name is chosen, otherwise the provider branding may need to be redone later.
+
+Check this for every social login provider that is enabled:
+
+- Google OAuth consent screen and OAuth client branding
+- Apple Sign in with Apple service/app name and domain association
+- Facebook/Meta app display name, app domains, privacy policy URL, and OAuth redirect settings
+- X/Twitter app name, callback URL, website URL, privacy policy URL, and app description
+
+Before launch, confirm users see a trustworthy final product name and not a raw Supabase project URL, temporary Netlify URL, personal email, test project name, or placeholder app name during any social login flow.
+
+AI agents can help list the provider dashboards and required fields, but Kwame must approve the final app name and branding before those external provider settings are finalized.
+
 ### Supabase auth redirect allowlist decision
 
 After production signup is confirmed working, decide whether to remove `http://localhost:3000/**` from the Supabase Auth redirect allowlist.
@@ -249,6 +266,7 @@ Before public launch, review:
 - Branding direction stable
 - Icons/favicons created
 - Verification, invite, password reset, magic link, and welcome email branding updated
+- Social login provider branding reviewed for Google, Apple, Facebook/Meta, and X/Twitter if enabled
 - Supabase auth redirect allowlist decision made after production email links are confirmed
 - Auth verification edge-case launch check completed using `TESTING.md` Auth / Sessions entries
 - Trial/cloud pricing model decided
