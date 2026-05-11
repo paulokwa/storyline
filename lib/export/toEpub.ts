@@ -2,10 +2,15 @@ import JSZip from 'jszip'
 import type { ExportPayload, ExportOptions } from './buildExportPayload'
 import { generateHTML } from '@tiptap/html'
 import { exportExtensionsNoComments } from './normalize'
+import { escapeMarkupAttribute, escapeMarkupText } from './escape'
 
 export async function toEpub(payload: ExportPayload, options: ExportOptions): Promise<Blob> {
     const { nodes, projectTitle, metadata } = payload
     const zip = new JSZip()
+    const safeProjectTitle = escapeMarkupText(projectTitle || 'Storyline Export')
+    const safeLanguage = escapeMarkupAttribute(metadata?.language || 'en')
+    const safeCreator = escapeMarkupText(metadata?.penName || metadata?.authorName || 'Storyline')
+    const safeIdentifier = escapeMarkupText(metadata?.isbn || `storyline-${Date.now()}`)
 
     // 1. mimetype (first file, uncompressed)
     zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' })
@@ -18,30 +23,27 @@ export async function toEpub(payload: ExportPayload, options: ExportOptions): Pr
     </rootfiles>
 </container>`)
 
-    // 3. content.opf (manifest and spine)
-    let manifestItems = ''
-    let spineItems = ''
     let contentHtml = ''
 
     if (options.includeProjectTitle) {
-        contentHtml += `<h1>${projectTitle}</h1>`
+        contentHtml += `<h1>${safeProjectTitle}</h1>`
     }
 
-    nodes.forEach((node, index) => {
+    nodes.forEach((node) => {
         if (node.type === 'chapter' || node.type === 'episode') {
             if (options.includeChapterTitles) {
-                contentHtml += `<h2>${node.title}</h2>`
+                contentHtml += `<h2>${escapeMarkupText(node.title)}</h2>`
             }
         } else if (node.type === 'act') {
             if (options.includeChapterTitles) {
-                contentHtml += `<h3>${node.title}</h3>`
+                contentHtml += `<h3>${escapeMarkupText(node.title)}</h3>`
             }
         } else if (node.type === 'scene') {
             if (options.includeSceneSubtitles) {
-                contentHtml += `<h3>${node.title}</h3>`
+                contentHtml += `<h3>${escapeMarkupText(node.title)}</h3>`
             }
             if (node.summary && (options.contentMode === 'summaries_only' || options.contentMode === 'both')) {
-                contentHtml += `<p><i>Summary: ${node.summary}</i></p>`
+                contentHtml += `<p><i>Summary: ${escapeMarkupText(node.summary)}</i></p>`
             }
             if (node.content && (options.contentMode === 'prose_only' || options.contentMode === 'both')) {
                 contentHtml += generateHTML(node.content, exportExtensionsNoComments)
@@ -52,9 +54,9 @@ export async function toEpub(payload: ExportPayload, options: ExportOptions): Pr
     // For simplicity, we bundle everything into one single content.xhtml for V1
     zip.file('OEBPS/content.xhtml', `<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${metadata?.language || 'en'}" lang="${metadata?.language || 'en'}">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${safeLanguage}" lang="${safeLanguage}">
 <head>
-    <title>${projectTitle}</title>
+    <title>${safeProjectTitle}</title>
     <style>
         body { font-family: serif; line-height: 1.5; margin: 5%; }
         h1 { text-align: center; }
@@ -82,25 +84,25 @@ export async function toEpub(payload: ExportPayload, options: ExportOptions): Pr
     </style>
 </head>
 <body>
-    ${options.includeProjectTitle ? `<h1>${projectTitle}</h1>` : ''}
-    ${(metadata?.penName || metadata?.authorName) ? `<div class="byline">by ${metadata.penName || metadata.authorName}</div>` : ''}
+    ${options.includeProjectTitle ? `<h1>${safeProjectTitle}</h1>` : ''}
+    ${(metadata?.penName || metadata?.authorName) ? `<div class="byline">by ${escapeMarkupText(metadata.penName || metadata.authorName)}</div>` : ''}
     
     ${contentHtml}
 
-    ${metadata?.copyrightHolder ? `<div class="copyright">© ${metadata.copyrightYear || ''} ${metadata.copyrightHolder}</div>` : ''}
+    ${metadata?.copyrightHolder ? `<div class="copyright">&#169; ${escapeMarkupText(metadata.copyrightYear || '')} ${escapeMarkupText(metadata.copyrightHolder)}</div>` : ''}
 </body>
 </html>`)
 
     zip.file('OEBPS/content.opf', `<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="pub-id" version="3.0">
     <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-        <dc:title>${projectTitle}</dc:title>
-        <dc:language>${metadata?.language || 'en'}</dc:language>
-        <dc:creator>${metadata?.penName || metadata?.authorName || 'Storyline'}</dc:creator>
-        ${metadata?.description ? `<dc:description>${metadata.description}</dc:description>` : ''}
-        ${metadata?.publisher ? `<dc:publisher>${metadata.publisher}</dc:publisher>` : ''}
-        ${metadata?.copyrightHolder ? `<dc:rights>© ${metadata.copyrightYear || ''} ${metadata.copyrightHolder}</dc:rights>` : ''}
-        <dc:identifier id="pub-id">${metadata?.isbn || `storyline-${Date.now()}`}</dc:identifier>
+        <dc:title>${safeProjectTitle}</dc:title>
+        <dc:language>${safeLanguage}</dc:language>
+        <dc:creator>${safeCreator}</dc:creator>
+        ${metadata?.description ? `<dc:description>${escapeMarkupText(metadata.description)}</dc:description>` : ''}
+        ${metadata?.publisher ? `<dc:publisher>${escapeMarkupText(metadata.publisher)}</dc:publisher>` : ''}
+        ${metadata?.copyrightHolder ? `<dc:rights>&#169; ${escapeMarkupText(metadata.copyrightYear || '')} ${escapeMarkupText(metadata.copyrightHolder)}</dc:rights>` : ''}
+        <dc:identifier id="pub-id">${safeIdentifier}</dc:identifier>
     </metadata>
     <manifest>
         <item id="content" href="content.xhtml" media-type="application/xhtml+xml"/>
@@ -118,7 +120,7 @@ export async function toEpub(payload: ExportPayload, options: ExportOptions): Pr
         <meta name="dtb:uid" content="storyline-${Date.now()}"/>
         <meta name="dtb:depth" content="1"/>
     </head>
-    <docTitle><text>${projectTitle}</text></docTitle>
+    <docTitle><text>${safeProjectTitle}</text></docTitle>
     <navMap>
         <navPoint id="navpoint-1" playOrder="1">
             <navLabel><text>Start</text></navLabel>

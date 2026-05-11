@@ -76,11 +76,11 @@ Before writing code, state:
 
 These came from the app audit and should stay in `Now` because they can affect data safety, user trust, security/resource abuse, auth clarity, import/export correctness, or AI cost clarity.
 
-- Fix scene title-only autosave risk.
-- Fix Local -> Cloud migration orphan-project risk.
-- Escape user-controlled fields in HTML/EPUB exports.
-- Fix password reset duplicate submit and remove email/status console logs.
-- Decide/protect `/api/import` if it should not be publicly callable.
+- ~~Fix scene title-only autosave risk.~~ Done 2026-05-11; title-only renames now schedule autosave.
+- ~~Fix Local -> Cloud migration orphan-project risk.~~ Done 2026-05-11; asset upload and later insertion failures now clean up the cloud project row and uploaded files before leaving the local project retryable.
+- ~~Escape user-controlled fields in HTML/EPUB exports.~~ Done 2026-05-11; project titles, node titles, summaries, language, author/publisher/description/copyright/ISBN-style metadata are escaped in HTML/EPUB/XML markup.
+- ~~Fix password reset duplicate submit and remove email/status console logs.~~ Done 2026-05-11; recovery forms are single-submit guarded and reset exception logging is development-only.
+- ~~Decide/protect `/api/import` if it should not be publicly callable.~~ Done 2026-05-11; route now requires an authenticated user.
 
 
 ### 0. OpenRouter BYOK — apply migration + browser validation required

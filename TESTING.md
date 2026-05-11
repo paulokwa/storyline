@@ -402,6 +402,7 @@ Future agents: treat this workflow as established. Before asking the user about 
 
 Newest confirmations go at the top.
 
+| 2026-05-11 | AI agent | Pre-launch audit blocker static verification | Passed | `npx tsc --noEmit --pretty false`, focused ESLint for touched non-SceneEditor files, `npm run build`, and an HTML/EPUB escaping smoke check passed after fixing title-only autosave scheduling, migration cleanup, export escaping, auth recovery submit guards, and `/api/import` auth. SceneEditor still has pre-existing lint debt unrelated to the title-only autosave change. |
 | 2026-05-08 | User | Smart Context Phase 4/4.5 browser validation | Passed | Manual Context, Smart Context UI, Smart Context content, mode switching with manual link preservation, and Scene Analysis isolation all passed. Follow-up logged for making entity include/exclude controls more visible. |
 | 2026-05-08 | AI agent | Smart Context Phase 5 static verification | Passed | TypeScript passed after adding Smart Context size analysis, warning UI, extreme-context preflight integration, and AI Partner `context_mode` metadata. Focused ESLint passed with existing `no-explicit-any` debt disabled, leaving only pre-existing unused-variable warnings. |
 | 2026-05-08 | AI agent | Smart Context Phase 4.5 static verification | Passed | AI Partner Smart mode now renders a read-only Smart Context summary instead of the interactive Scene Context selector; `npx tsc --noEmit --pretty false`, `npm run build`, and `git diff --check` passed. |

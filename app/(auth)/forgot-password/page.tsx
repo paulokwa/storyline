@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getURL } from '@/lib/utils/url'
@@ -14,9 +14,12 @@ export default function ForgotPasswordPage() {
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
     const [submitted, setSubmitted] = useState(false)
+    const submittingRef = useRef(false)
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
+        if (submittingRef.current) return
+        submittingRef.current = true
         setLoading(true)
         setError('')
 
@@ -29,14 +32,19 @@ export default function ForgotPasswordPage() {
             if (error) {
                 setError(error.message)
                 setLoading(false)
+                submittingRef.current = false
             } else {
                 setSubmitted(true)
                 setLoading(false)
+                submittingRef.current = false
             }
         } catch (err: unknown) {
-            console.error('Caught exception during reset:', err)
+            if (process.env.NODE_ENV !== 'production') {
+                console.error('Caught exception during reset:', err)
+            }
             setError(err instanceof Error ? err.message : 'An unexpected error occurred')
             setLoading(false)
+            submittingRef.current = false
         }
     }
 
@@ -95,7 +103,7 @@ export default function ForgotPasswordPage() {
                                     </div>
                                 )}
 
-                                <Button onClick={handleSubmit} type="submit" className="w-full h-12 bg-[#546354] hover:bg-[#3d4a3d] text-white rounded-full font-serif italic text-lg shadow-lg hover:shadow-xl transition-all duration-300" disabled={loading}>
+                                <Button type="submit" className="w-full h-12 bg-[#546354] hover:bg-[#3d4a3d] text-white rounded-full font-serif italic text-lg shadow-lg hover:shadow-xl transition-all duration-300" disabled={loading}>
                                     {loading ? 'Sending link…' : 'Send Recovery Link'}
                                 </Button>
                             </form>

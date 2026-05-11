@@ -2,23 +2,26 @@ import { generateHTML } from '@tiptap/html'
 import type { ExportPayload, ExportOptions } from './buildExportPayload'
 
 import { exportExtensionsNoComments } from './normalize'
+import { escapeMarkupAttribute, escapeMarkupText } from './escape'
 
 export function toHtml(payload: ExportPayload, options: ExportOptions): string {
     const { nodes, projectTitle, metadata } = payload
+    const safeProjectTitle = escapeMarkupText(projectTitle || 'Storyline Export')
+    const safeLanguage = escapeMarkupAttribute(metadata?.language || 'en')
     
     let metaTags = ''
     if (metadata) {
-        if (metadata.description) metaTags += `<meta name="description" content="${metadata.description.replace(/"/g, '&quot;')}">\n    `
-        if (metadata.authorName || metadata.penName) metaTags += `<meta name="author" content="${(metadata.penName || metadata.authorName || '').replace(/"/g, '&quot;')}">\n    `
-        if (metadata.keywords) metaTags += `<meta name="keywords" content="${metadata.keywords.replace(/"/g, '&quot;')}">\n    `
+        if (metadata.description) metaTags += `<meta name="description" content="${escapeMarkupAttribute(metadata.description)}">\n    `
+        if (metadata.authorName || metadata.penName) metaTags += `<meta name="author" content="${escapeMarkupAttribute(metadata.penName || metadata.authorName)}">\n    `
+        if (metadata.keywords) metaTags += `<meta name="keywords" content="${escapeMarkupAttribute(metadata.keywords)}">\n    `
     }
 
     let html = `<!DOCTYPE html>
-<html lang="${metadata?.language || 'en'}">
+<html lang="${safeLanguage}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${projectTitle || 'Storyline Export'}</title>
+    <title>${safeProjectTitle}</title>
     ${metaTags}
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 20px; color: #333; }
@@ -54,28 +57,28 @@ export function toHtml(payload: ExportPayload, options: ExportOptions): string {
 `
 
     if (options.includeProjectTitle) {
-        html += `    <h1>${projectTitle}</h1>\n`
+        html += `    <h1>${safeProjectTitle}</h1>\n`
         if (metadata?.penName || metadata?.authorName) {
-            html += `    <div class="byline">by ${metadata.penName || metadata.authorName}</div>\n`
+            html += `    <div class="byline">by ${escapeMarkupText(metadata.penName || metadata.authorName)}</div>\n`
         }
     }
 
     nodes.forEach(node => {
         if (node.type === 'chapter' || node.type === 'episode') {
             if (options.includeChapterTitles) {
-                html += `    <h2>${node.title}</h2>\n`
+                html += `    <h2>${escapeMarkupText(node.title)}</h2>\n`
             }
         } else if (node.type === 'act') {
             if (options.includeChapterTitles) {
-                html += `    <h3>${node.title}</h3>\n`
+                html += `    <h3>${escapeMarkupText(node.title)}</h3>\n`
             }
         } else if (node.type === 'scene') {
             html += `    <div class="scene">\n`
             if (options.includeSceneSubtitles) {
-                html += `        <h3>${node.title}</h3>\n`
+                html += `        <h3>${escapeMarkupText(node.title)}</h3>\n`
             }
             if (node.summary && (options.contentMode === 'summaries_only' || options.contentMode === 'both')) {
-                html += `        <div class="summary">${node.summary}</div>\n`
+                html += `        <div class="summary">${escapeMarkupText(node.summary)}</div>\n`
             }
             if (node.content && (options.contentMode === 'prose_only' || options.contentMode === 'both')) {
                 const proseHtml = generateHTML(node.content, exportExtensionsNoComments)

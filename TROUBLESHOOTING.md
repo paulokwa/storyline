@@ -221,6 +221,44 @@ Add a short entry using this format:
 - Risks, warnings, or follow-up
 ```
 
+## Issue: Pre-launch Audit Blockers - Autosave, Migration Cleanup, Export Escaping, Auth Recovery, Import Auth
+
+### Symptoms
+
+- Scene title-only edits may not persist unless body text also changes.
+- Local -> Cloud migration can leave a visible partial cloud project if asset upload fails after the project row is created.
+- HTML/EPUB exports can break markup or include injected markup when titles, summaries, or metadata contain HTML/XML characters.
+- Forgot-password/reset flows can submit duplicate requests or log reset exceptions in production.
+- `/api/import` can be called directly without an authenticated app session.
+
+### Cause
+
+- Autosave scheduling was gated only by body-content dirty state.
+- Migration cleanup only covered later database insertions, not the asset-upload phase after project creation.
+- HTML/EPUB/XML exporters interpolated user-controlled strings directly.
+- Forgot-password had both form submit and button click handlers, and recovery exception logging was not production-gated.
+- Import parsing route did not perform its own auth check.
+
+### Fix
+
+- Schedule autosave when either body content is dirty or the scene title differs from the last saved title.
+- Wrap asset uploads and later migration inserts in one cleanup path that deletes the new cloud project row and uploaded files on failure.
+- Escape user-controlled export strings before writing HTML, XHTML, OPF, and NCX markup.
+- Use one submit path plus a single-submit guard for auth recovery forms; gate reset exception logging to development.
+- Require an authenticated Supabase user in `/api/import`.
+
+### Verification
+
+- `npx tsc --noEmit --pretty false`
+- Focused ESLint for touched non-SceneEditor files
+- HTML/EPUB escaping smoke check
+- `npm run build`
+
+### Notes
+
+- Browser QA is still recommended for title-only rename persistence, forced migration failure retry behavior, forgot/reset password click behavior, and authenticated import UX.
+- `SceneEditor.tsx` has pre-existing lint debt unrelated to the title-only autosave scheduling fix.
+
 ## Issue: Settings save fails because `ai_context_mode` is missing from Supabase schema cache
 
 ### Symptoms

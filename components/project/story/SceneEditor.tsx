@@ -1853,10 +1853,11 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
 
     // Effect for autosave
     useEffect(() => {
-        if (saveStatus !== 'idle' || !isDirty) return
+        const hasPendingTitleChange = title !== initialTitle
+        if (saveStatus !== 'idle' || (!isDirty && !hasPendingTitleChange)) return
         const timeout = setTimeout(saveContent, 1500)
         return () => clearTimeout(timeout)
-    }, [title, isDirty, saveStatus, saveContent])
+    }, [title, initialTitle, isDirty, saveStatus, saveContent])
 
     // Keep editor in sync when scene changes (ID or content)
     useEffect(() => {

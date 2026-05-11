@@ -1,12 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as mammoth from 'mammoth'
 import JSZip from 'jszip'
+import { PDFParse } from 'pdf-parse'
+import { createClient } from '@/lib/supabase/server'
 
 const MAX_FILE_BYTES = 50 * 1024 * 1024 // 50 MB
 const PDF_TIMEOUT_MS = 30_000 // 30 seconds
 
+function getErrorMessage(error: unknown) {
+    return error instanceof Error ? error.message : 'Failed to parse document'
+}
+
 export async function POST(req: NextRequest) {
     try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
         const formData = await req.formData()
         const file = formData.get('file') as File | null
 
@@ -29,15 +39,19 @@ export async function POST(req: NextRequest) {
         } else if (filename.endsWith('.txt') || filename.endsWith('.md')) {
             text = buffer.toString('utf-8')
         } else if (filename.endsWith('.pdf')) {
-            const pdfParse = require('pdf-parse')
+            const parser = new PDFParse({ data: buffer })
             const timeoutPromise = new Promise<never>((_, reject) =>
                 setTimeout(
                     () => reject(new Error('PDF import took too long. Please try a smaller PDF or export your manuscript as DOCX or TXT.')),
                     PDF_TIMEOUT_MS
                 )
             )
-            const result = await Promise.race([pdfParse(buffer) as Promise<{ text: string }>, timeoutPromise])
-            text = result.text
+            try {
+                const result = await Promise.race([parser.getText(), timeoutPromise])
+                text = result.text
+            } finally {
+                await parser.destroy()
+            }
         } else if (filename.endsWith('.epub')) {
             const zip = await JSZip.loadAsync(buffer)
             let content = ''
@@ -66,8 +80,8 @@ export async function POST(req: NextRequest) {
         text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
 
         return NextResponse.json({ text })
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Import expansion error:', error)
-        return NextResponse.json({ error: error.message || 'Failed to parse document' }, { status: 500 })
+        return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
     }
 }

@@ -5,6 +5,31 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-11 - Pre-launch audit blocker fixes
+
+### What was completed
+
+- Fixed title-only scene autosave scheduling so a scene rename persists even if body content is unchanged.
+- Hardened Local -> Cloud migration cleanup so failures during asset upload or later cloud inserts delete the newly created cloud project row and uploaded files, leaving the local project intact and retryable.
+- Escaped user-controlled titles, summaries, language, and export metadata in HTML/EPUB/XML output.
+- Fixed forgot/reset password duplicate-submit risk with single-submit guards; forgot-password reset exception logging is development-only.
+- Protected `/api/import` with authenticated-user checking.
+- Crossed off the completed pre-launch audit blocker bullets in `TASK_BOARD.md`.
+
+### Current status
+
+The requested urgent audit blockers are implemented and statically verified. Browser/manual QA is still recommended before public beta.
+
+### Next recommended step
+
+Run the manual launch checks already listed in `docs/human-launch-checklist.md`: import/export confidence pass, auth recovery QA, AI cost warning review, and mobile/tablet smoke test.
+
+### Risks or warnings
+
+- Migration cleanup was verified by code review, TypeScript, lint, and build, but not by forcing a live asset-upload failure in the browser.
+- `components/project/story/SceneEditor.tsx` still has pre-existing lint debt unrelated to the title-only autosave change.
+
+---
 ## 2026-05-10 (session 3) — Phase 1 auth verification: COMPLETE
 
 ### Current status: READY — Phase 1 fully verified. Phase 2 (Google OAuth) has not started.

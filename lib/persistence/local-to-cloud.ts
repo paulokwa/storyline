@@ -300,50 +300,57 @@ export async function migrateLocalProjectToCloud(localProjectId: string, onProgr
     // Track uploaded storage paths for cleanup on failure
     const uploadedPaths: string[] = []
 
-    onProgress?.('Uploading assets...')
-    
-    for (let i = 0; i < projectAssets.length; i++) {
-        const localAsset = projectAssets[i]
-        const cloudAsset = cloudProjectAssets.find(a => a.id === getNewId(localAsset.id))!
-        
-        if (localAsset.storage_path.startsWith('data:')) {
-            try {
-                const ext = localAsset.file_name.split('.').pop() || 'bin'
-                
-                // Upload via server-side API route to bypass storage RLS during migration
-                const res = await fetch('/api/migration/upload-asset', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        projectId: newProjectId,
-                        assetId: cloudAsset.id,
-                        base64: localAsset.storage_path,
-                        mimeType: localAsset.mime_type,
-                        fileName: localAsset.file_name,
-                        extension: ext,
-                    }),
-                })
-
-                if (!res.ok) {
-                    const body = await res.json().catch(() => ({})) as { error?: string }
-                    throw new Error(body.error ?? `HTTP ${res.status}`)
-                }
-
-                const { storagePath } = await res.json()
-                uploadedPaths.push(storagePath)
-                cloudAsset.storage_path = storagePath
-            } catch (err: unknown) {
-                throw new Error(`Failed to upload asset '${localAsset.file_name}': ${getErrorMessage(err)}`)
-            }
-        } else {
-            cloudAsset.storage_path = localAsset.storage_path
+    const cleanupCloudProject = async () => {
+        if (uploadedPaths.length > 0) {
+            await supabase.storage.from('project-assets').remove(uploadedPaths)
         }
+        await supabase.from('projects').delete().eq('id', newProjectId)
     }
 
-    // 5. Cloud Insertion (remaining tables)
-    onProgress?.('Finalizing migration...')
-
     try {
+        onProgress?.('Uploading assets...')
+
+        for (let i = 0; i < projectAssets.length; i++) {
+            const localAsset = projectAssets[i]
+            const cloudAsset = cloudProjectAssets.find(a => a.id === getNewId(localAsset.id))!
+
+            if (localAsset.storage_path.startsWith('data:')) {
+                try {
+                    const ext = localAsset.file_name.split('.').pop() || 'bin'
+
+                    // Upload via server-side API route to bypass storage RLS during migration
+                    const res = await fetch('/api/migration/upload-asset', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            projectId: newProjectId,
+                            assetId: cloudAsset.id,
+                            base64: localAsset.storage_path,
+                            mimeType: localAsset.mime_type,
+                            fileName: localAsset.file_name,
+                            extension: ext,
+                        }),
+                    })
+
+                    if (!res.ok) {
+                        const body = await res.json().catch(() => ({})) as { error?: string }
+                        throw new Error(body.error ?? `HTTP ${res.status}`)
+                    }
+
+                    const { storagePath } = await res.json()
+                    uploadedPaths.push(storagePath)
+                    cloudAsset.storage_path = storagePath
+                } catch (err: unknown) {
+                    throw new Error(`Failed to upload asset '${localAsset.file_name}': ${getErrorMessage(err)}`)
+                }
+            } else {
+                cloudAsset.storage_path = localAsset.storage_path
+            }
+        }
+
+        // 5. Cloud Insertion (remaining tables)
+        onProgress?.('Finalizing migration...')
+
         // Note: project_members for owner is created automatically by DB trigger 'on_project_created'
         await insertOrThrow('structure_nodes', cloudNodes)
         await insertOrThrow('scenes', cloudScenes)
@@ -360,14 +367,14 @@ export async function migrateLocalProjectToCloud(localProjectId: string, onProgr
         await insertOrThrow('entity_assets', cloudEntityAssets)
         await insertOrThrow('ai_responses', cloudAiResponses)
 
-    } catch (dbErr: unknown) {
-        // Clean up: delete the project (cascades or we rely on the caller to retry)
-        await supabase.from('projects').delete().eq('id', newProjectId)
-        // Also remove any uploaded storage files
-        if (uploadedPaths.length > 0) {
-            await supabase.storage.from('project-assets').remove(uploadedPaths)
+    } catch (migrationErr: unknown) {
+        let cleanupMessage = ''
+        try {
+            await cleanupCloudProject()
+        } catch (cleanupErr: unknown) {
+            cleanupMessage = ` Cleanup also failed: ${getErrorMessage(cleanupErr)}`
         }
-        throw new Error(`Migration Atomicity Error: ${getErrorMessage(dbErr)}`)
+        throw new Error(`Migration Atomicity Error: ${getErrorMessage(migrationErr)}${cleanupMessage}`)
     }
 
     // 6. Mark local project as migrated

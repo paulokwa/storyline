@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -16,17 +16,20 @@ export default function ResetPasswordPage() {
     const [confirmPassword, setConfirmPassword] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
+    const submittingRef = useRef(false)
 
     // Initialize exactly once on mount so PKCE ?code= exchange happens immediately in the background
     const [supabase] = useState(() => createClient())
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
+        if (submittingRef.current) return
         if (password !== confirmPassword) {
             setError('Passwords do not match')
             return
         }
 
+        submittingRef.current = true
         setLoading(true)
         setError('')
 
@@ -36,18 +39,21 @@ export default function ResetPasswordPage() {
             if (error) {
                 setError(error.message)
                 setLoading(false)
+                submittingRef.current = false
             } else {
                 startGuardedAuthRedirect({
                     router,
                     onStalled: () => {
                         setError('Your password was updated, but your library did not open yet. Please try signing in again.')
                         setLoading(false)
+                        submittingRef.current = false
                     },
                 })
             }
         } catch (err: unknown) {
             setError(getErrorMessage(err, 'An unexpected error occurred'))
             setLoading(false)
+            submittingRef.current = false
         }
     }
 
