@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { type CookieOptions, createServerClient } from '@supabase/ssr'
+import { getURL } from '@/lib/utils/url'
 
 const INVALID_REFRESH_TOKEN_MESSAGES = ['Invalid Refresh Token', 'Refresh Token Not Found']
 
@@ -23,7 +24,8 @@ function getVerificationStatus(errorMessage: string) {
 }
 
 export async function GET(request: Request) {
-    const { searchParams, origin } = new URL(request.url)
+    const { searchParams } = new URL(request.url)
+    const origin = getURL(new URL(request.url).origin).replace(/\/$/, '')
     const code = searchParams.get('code')
     const next = getSafeNext(searchParams.get('next'))
     const intent = searchParams.get('intent')
