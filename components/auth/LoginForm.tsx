@@ -174,7 +174,7 @@ export default function LoginForm({ verificationStatus = '' }: LoginFormProps) {
                     </form>
                 </div>
 
-                <p className="text-center text-sm text-slate-400 mt-8">
+                <p className="text-center text-sm text-slate-400 mt-12">
                     New to the sanctuary?{' '}
                     <Link href="/signup" className="text-[#546354] font-semibold hover:underline">
                         Create an account
