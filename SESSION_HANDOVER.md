@@ -5,6 +5,47 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-11 - Google OAuth Phase 2 rebased onto latest main
+
+### What was completed
+
+- Synced local `main` with `origin/main` after discovering the workspace was 23 commits behind.
+- Reviewed the 2026-05-10 Phase 1 auth commits and kept their callback-origin fixes intact.
+- Re-applied the Google-only OAuth work on top of the latest code.
+- Added `Continue with Google` to login and signup using Supabase `signInWithOAuth({ provider: 'google' })`.
+- Confirmed the existing `app/api/auth/callback/route.ts` still handles OAuth code exchange with `exchangeCodeForSession(code)`, so no new callback route is needed.
+- Kept email/password auth, onboarding, library routing, and cloud sync logic unchanged.
+
+### Files changed
+
+- `components/auth/LoginForm.tsx`
+- `app/(auth)/signup/page.tsx`
+- `lib/auth/oauth.ts`
+- `SESSION_HANDOVER.md`
+- `TESTING.md`
+
+### Current status
+
+Google OAuth implementation is applied on top of the latest remote `main`. Static verification passed after the rebase. Browser validation still needs Supabase and Google Cloud OAuth dashboard setup.
+
+### Verification
+
+- `npx tsc --noEmit --pretty false` passed.
+- `npx eslint components/auth/LoginForm.tsx "app/(auth)/signup/page.tsx" lib/auth/oauth.ts` passed.
+- `git diff --check --cached` passed.
+- `npm run build` passed.
+- `npm run lint` still fails on existing repo-wide lint debt in unrelated files; focused lint for the touched auth files passed.
+
+### Next recommended step
+
+Run static verification and browser-test Google login/signup after provider configuration. Do not commit or push until the user approves after testing.
+
+### Risks or warnings
+
+- The remote 2026-05-11 continuity cleanup moved QA-only checklists out of `TASK_BOARD.md`; Google OAuth validation is tracked in `TESTING.md` instead.
+- No Apple, Facebook, or X OAuth was added.
+
+---
 ## 2026-05-11 - Continuity cleanup after audit fixes
 
 ### What was completed

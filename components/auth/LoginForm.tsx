@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getErrorMessage, startGuardedAuthRedirect } from '@/lib/auth/client-navigation'
+import { getGoogleOAuthCallbackUrl, LOCAL_FIRST_AUTH_REASSURANCE } from '@/lib/auth/oauth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,6 +21,7 @@ export default function LoginForm({ verificationStatus = '' }: LoginFormProps) {
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
+    const [googleLoading, setGoogleLoading] = useState(false)
 
     const verificationMessage = verificationStatus === 'already-used'
         ? "That verification link was already used or has expired. If you've already verified your email, sign in below."
@@ -54,6 +56,31 @@ export default function LoginForm({ verificationStatus = '' }: LoginFormProps) {
         }
     }
 
+    async function handleGoogleSignIn() {
+        setGoogleLoading(true)
+        setError('')
+
+        try {
+            const supabase = createClient()
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: getGoogleOAuthCallbackUrl(),
+                },
+            })
+
+            if (error) {
+                setError(error.message)
+                setGoogleLoading(false)
+            }
+        } catch (err: unknown) {
+            setError(getErrorMessage(err, 'Unable to start Google sign-in right now.'))
+            setGoogleLoading(false)
+        }
+    }
+
+    const authBusy = loading || googleLoading
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-[#fbf9f5] relative overflow-hidden">
             <div className="absolute inset-0 opacity-20 -z-10">
@@ -79,6 +106,25 @@ export default function LoginForm({ verificationStatus = '' }: LoginFormProps) {
                                 <span className="font-medium">{verificationMessage}</span>
                             </div>
                         )}
+
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleGoogleSignIn}
+                            className="w-full h-12 rounded-full border-slate-200 bg-white text-slate-700 hover:bg-stone-50 hover:text-slate-900 font-semibold transition-all"
+                            disabled={authBusy}
+                        >
+                            <span className="mr-2 flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-700" aria-hidden="true">
+                                G
+                            </span>
+                            {googleLoading ? 'Opening Google...' : 'Continue with Google'}
+                        </Button>
+
+                        <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-300">
+                            <span className="h-px flex-1 bg-slate-100" />
+                            <span>Email</span>
+                            <span className="h-px flex-1 bg-slate-100" />
+                        </div>
 
                         <div className="space-y-2">
                             <Label htmlFor="email" className="text-[11px] font-sans tracking-widest uppercase text-slate-400 ml-1">Email</Label>
@@ -118,9 +164,13 @@ export default function LoginForm({ verificationStatus = '' }: LoginFormProps) {
                             </div>
                         )}
 
-                        <Button type="submit" className="w-full h-12 bg-[#546354] hover:bg-[#3d4a3d] text-white rounded-full font-serif italic text-lg shadow-lg hover:shadow-xl transition-all duration-300" disabled={loading}>
+                        <Button type="submit" className="w-full h-12 bg-[#546354] hover:bg-[#3d4a3d] text-white rounded-full font-serif italic text-lg shadow-lg hover:shadow-xl transition-all duration-300" disabled={authBusy}>
                             {loading ? 'Opening the gates...' : 'Step Inside'}
                         </Button>
+
+                        <p className="text-sm leading-6 text-slate-500">
+                            {LOCAL_FIRST_AUTH_REASSURANCE}
+                        </p>
                     </form>
                 </div>
 
