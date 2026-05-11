@@ -267,6 +267,17 @@ For now, Markdown files are easier for AI agents to read, easier to review in Gi
 
 ---
 
+## Manual public beta QA
+
+Complete these human confidence passes before public beta. These are not polish tasks; they are the manual checks most likely to catch trust-breaking launch issues.
+
+- Manual import/export confidence pass.
+- Signup/login/verification/password reset QA.
+- AI cost warning copy review.
+- Mobile/tablet smoke test.
+
+---
+
 ## Launch readiness reminders
 
 Before public launch, review:

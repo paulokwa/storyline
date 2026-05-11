@@ -236,6 +236,24 @@ Admin reports for local AI can become noisy, misleading, duplicated, or malforme
 
 ---
 
+### 5. Audit Follow-Ups From 2026-05-11
+
+These came from the app audit but are not immediate lone-coder launch blockers unless a later test proves they are breaking real user flows.
+
+**Future hardening:**
+
+- Add automated tests for import, export, auth, editor save behavior, local/cloud handling, AI settings, dark mode, and mobile/tablet flows.
+- Clean up lint debt gradually, prioritizing touched files and high-risk import/export/auth/persistence areas.
+- Harden EPUB import so chapter ordering follows EPUB spine order instead of lexicographic zip paths.
+- Improve AI-assisted import marker mapping so missed markers do not shift later chapter titles.
+- Unify mobile/tablet breakpoint logic across project shell and editor surfaces.
+- Replace fixed-width mobile slide-out panels with responsive widths.
+- Improve dark mode coverage where it is not launch blocking.
+
+**Priority:** Medium, except dark mode coverage is Low unless readability blocks a launch flow.
+
+---
+
 ## Lower Priority Technical Improvements
 
 ### 1. Advanced Offline / Pending Sync

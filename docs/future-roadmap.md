@@ -23,6 +23,17 @@ Use this file when an idea is real enough to remember, but not ready to become a
 
 ---
 
+## Polish ideas from the 2026-05-11 audit
+
+These are useful user-experience improvements, but they should not outrank launch blockers or reliability work for a lone part-time builder.
+
+- Better import progress feedback.
+- Better import word-count estimate.
+- Clearer local-project message when signed into a different account.
+- Full dark mode polish pass.
+
+---
+
 ## Launch feedback, survey, and future community
 
 ### Current recommendation

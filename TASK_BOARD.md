@@ -72,6 +72,16 @@ Before writing code, state:
 
 ## Now
 
+### Pre-launch audit blockers - added 2026-05-11
+
+These came from the app audit and should stay in `Now` because they can affect data safety, user trust, security/resource abuse, auth clarity, import/export correctness, or AI cost clarity.
+
+- Fix scene title-only autosave risk.
+- Fix Local -> Cloud migration orphan-project risk.
+- Escape user-controlled fields in HTML/EPUB exports.
+- Fix password reset duplicate submit and remove email/status console logs.
+- Decide/protect `/api/import` if it should not be publicly callable.
+
 
 ### 0. OpenRouter BYOK — apply migration + browser validation required
 
