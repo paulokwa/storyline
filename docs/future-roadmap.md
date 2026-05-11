@@ -29,7 +29,7 @@ These are useful user-experience improvements, but they should not outrank launc
 
 - Better import progress feedback.
 - Better import word-count estimate.
-- Clearer local-project message when signed into a different account.
+- ~~Clearer local-project message when signed into a different account.~~ Done 2026-05-11; the blocked state now explains the local draft belongs to another signed-in account and remains stored on this device.
 - Full dark mode polish pass.
 
 ---

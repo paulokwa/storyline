@@ -3472,6 +3472,7 @@ export default function AiHelperPanel({
                 setProjectContextMode={setProjectContextMode}
                 allScenes={allScenes}
                 provider={isOllamaMode ? 'ollama' : (aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider)}
+                billingMode={aiSettings.billing_mode}
                 onConfirm={() => {
                     setIsConfirmingCost(false);
                     setIsExtremeContext(false);

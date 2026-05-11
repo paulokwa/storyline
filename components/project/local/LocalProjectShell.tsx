@@ -71,9 +71,9 @@ export default function LocalProjectShell({
         return (
             <div className="flex min-h-0 flex-1 items-center justify-center bg-[#fbf9f5] px-6 py-12">
                 <div className="max-w-md text-center">
-                    <h2 className="font-serif text-2xl text-slate-800">Project not found</h2>
+                    <h2 className="font-serif text-2xl text-slate-800">Local project belongs to another account</h2>
                     <p className="mt-3 text-sm text-slate-500">
-                        This local project does not belong to your account.
+                        This draft is still stored on this device, but Storyline will not open it while you are signed into a different account. Sign into the account that created it, or open a .storyline backup if you have one.
                     </p>
                 </div>
             </div>

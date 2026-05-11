@@ -238,8 +238,8 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
 
         hasInitializedSelectionRef.current = true
 
-        // On small mobile, if we do not have a restorable scene, show the structure tree first.
-        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        // On mobile/tablet, if we do not have a restorable scene, show the structure tree first.
+        if (typeof window !== 'undefined' && window.innerWidth <= 1024) {
             setActiveNodeId(null)
             return
         }
@@ -778,7 +778,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             {!isFocusModeActive && (sidebarOpen || aiPanelOpen || commentsPanelOpen || sceneAssetsOpen) && (
                 <div 
                     className={cn(
-                        "md:hidden absolute inset-0 bg-black/20 backdrop-blur-sm z-30 transition-all duration-500",
+                        "lg:hidden absolute inset-0 bg-black/20 backdrop-blur-sm z-30 transition-all duration-500",
                         (sidebarOpen || aiPanelOpen || commentsPanelOpen || sceneAssetsOpen) ? "opacity-100" : "opacity-0 pointer-events-none"
                     )}
                     onClick={() => {
@@ -792,19 +792,19 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             <div 
                 data-tour="structure-panel"
                 className={cn(
-                    'flex flex-col transition-all duration-500 ease-in-out overflow-hidden z-40 md:z-20',
-                    'absolute top-0 bottom-0 left-0 md:relative md:inset-auto md:h-full',
+                    'flex flex-col transition-all duration-500 ease-in-out overflow-hidden z-40 lg:z-20',
+                    'absolute top-0 bottom-0 left-0 lg:relative lg:inset-auto lg:h-full',
                     isFocusModeActive
                         ? 'w-0 border-none opacity-0 -translate-x-full pointer-events-none'
                         : sidebarOpen
-                        ? 'w-[280px] lg:w-[320px] border-r border-slate-200 opacity-100 translate-x-0 bg-[#f5f4ef]'
+                        ? 'w-[calc(100vw-1rem)] max-w-[280px] lg:w-[320px] lg:max-w-none border-r border-slate-200 opacity-100 translate-x-0 bg-[#f5f4ef]'
                         : theme === 'midnight'
-                            ? 'w-0 border-none opacity-0 -translate-x-full md:w-14 md:translate-x-0 md:opacity-100 md:border-r md:border-slate-500/20 md:bg-[linear-gradient(180deg,rgba(19,28,45,0.96)_0%,rgba(16,24,38,0.98)_100%)] md:shadow-[inset_-1px_0_0_rgba(148,163,184,0.08),10px_0_30px_rgba(2,6,23,0.18)]'
-                            : 'structure-collapsed-rail w-0 border-none opacity-0 -translate-x-full md:w-14 md:translate-x-0 md:opacity-100 md:border-r md:border-[#d8ddcf] md:bg-[#eef1e8] md:shadow-[inset_-1px_0_0_rgba(84,99,84,0.06)]'
+                            ? 'w-0 border-none opacity-0 -translate-x-full lg:w-14 lg:translate-x-0 lg:opacity-100 lg:border-r lg:border-slate-500/20 lg:bg-[linear-gradient(180deg,rgba(19,28,45,0.96)_0%,rgba(16,24,38,0.98)_100%)] lg:shadow-[inset_-1px_0_0_rgba(148,163,184,0.08),10px_0_30px_rgba(2,6,23,0.18)]'
+                            : 'structure-collapsed-rail w-0 border-none opacity-0 -translate-x-full lg:w-14 lg:translate-x-0 lg:opacity-100 lg:border-r lg:border-[#d8ddcf] lg:bg-[#eef1e8] lg:shadow-[inset_-1px_0_0_rgba(84,99,84,0.06)]'
                 )}
             >
                 {!isFocusModeActive && sidebarOpen ? (
-                    <div className="w-[280px] lg:w-[320px] h-full min-h-0 flex flex-col overflow-hidden">
+                    <div className="h-full min-h-0 w-[calc(100vw-1rem)] max-w-[280px] flex flex-col overflow-hidden lg:w-[320px] lg:max-w-none">
                         <StructureTree
                             project={project}
                             nodes={nodes}
@@ -812,7 +812,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                             selectedNodeIds={effectiveSelectedNodeIds}
                             onNodeSelect={(id) => {
                                 handleSceneSelect(id)
-                                if (window.innerWidth < 768) setSidebarOpen(false)
+                                if (window.innerWidth <= 1024) setSidebarOpen(false)
                             }}
                             onNodeToggleSelection={handleNodeToggleSelection}
                             onNodesChange={handleNodesChange}
@@ -821,7 +821,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                         />
                     </div>
                 ) : (
-                    <div className="hidden md:flex h-full w-full items-center justify-center px-2 py-6">
+                    <div className="hidden lg:flex h-full w-full items-center justify-center px-2 py-6">
                         <button
                             type="button"
                             onClick={() => setSidebarOpen(true)}
@@ -991,7 +991,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                                         <h3 className="text-2xl font-serif italic text-slate-400">Your story awaits...</h3>
                                         <p className="text-sm text-slate-300 font-medium uppercase tracking-[0.2em]">Select a scene to begin writing</p>
                                     </div>
-                                    <div className="md:hidden pt-4 flex justify-center">
+                                    <div className="lg:hidden pt-4 flex justify-center">
                                         <button 
                                             onClick={() => {
                                                 setSidebarOpen(true)
@@ -1019,10 +1019,10 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
 
             {/* Mobile slide-out panels */}
             <div className={cn(
-                'story-ai-sidebar bg-white flex flex-col transition-all duration-300 ease-in-out overflow-hidden z-40 absolute top-0 bottom-0 right-0 md:hidden',
-                !isFocusModeActive && aiPanelOpen ? 'w-[320px] opacity-100 translate-x-0 border-l border-slate-200' : 'w-0 border-none opacity-0 translate-x-full'
+                'story-ai-sidebar bg-white flex flex-col transition-all duration-300 ease-in-out overflow-hidden z-40 absolute top-0 bottom-0 right-0 lg:hidden',
+                !isFocusModeActive && aiPanelOpen ? 'w-[calc(100vw-1rem)] max-w-[320px] opacity-100 translate-x-0 border-l border-slate-200' : 'w-0 border-none opacity-0 translate-x-full'
             )}>
-                <div className="w-[320px] h-full flex flex-col">
+                <div className="h-full w-[calc(100vw-1rem)] max-w-[320px] flex flex-col">
                     <AiHelperPanel
                         projectId={project.id}
                         projectTitle={project.title}
@@ -1063,10 +1063,10 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
             </div>
 
             <div className={cn(
-                'bg-white flex flex-col border-l border-slate-200 transition-all duration-300 ease-in-out overflow-hidden z-40 absolute top-0 bottom-0 right-0 md:hidden',
-                !isFocusModeActive && commentsPanelOpen ? 'w-[320px] opacity-100 translate-x-0' : 'w-0 border-none opacity-0 translate-x-full'
+                'bg-white flex flex-col border-l border-slate-200 transition-all duration-300 ease-in-out overflow-hidden z-40 absolute top-0 bottom-0 right-0 lg:hidden',
+                !isFocusModeActive && commentsPanelOpen ? 'w-[calc(100vw-1rem)] max-w-[320px] opacity-100 translate-x-0' : 'w-0 border-none opacity-0 translate-x-full'
             )}>
-                <div className="w-[320px] h-full flex flex-col">
+                <div className="h-full w-[calc(100vw-1rem)] max-w-[320px] flex flex-col">
                     <CommentsPanel 
                         projectId={project.id}
                         projectOwnerId={project.user_id}
@@ -1082,10 +1082,10 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
 
             {activeNodeId && activeScene && (
                 <div className={cn(
-                    'bg-white flex flex-col border-l border-slate-200 transition-all duration-300 ease-in-out overflow-hidden z-40 absolute top-0 bottom-0 right-0 md:hidden',
-                    !isFocusModeActive && sceneAssetsOpen ? 'w-[320px] opacity-100 translate-x-0' : 'w-0 border-none opacity-0 translate-x-full'
+                    'bg-white flex flex-col border-l border-slate-200 transition-all duration-300 ease-in-out overflow-hidden z-40 absolute top-0 bottom-0 right-0 lg:hidden',
+                    !isFocusModeActive && sceneAssetsOpen ? 'w-[calc(100vw-1rem)] max-w-[320px] opacity-100 translate-x-0' : 'w-0 border-none opacity-0 translate-x-full'
                 )}>
-                    <div className="w-[320px] h-full flex flex-col">
+                    <div className="h-full w-[calc(100vw-1rem)] max-w-[320px] flex flex-col">
                         <SceneAssetsPanel 
                             projectId={project.id}
                             sceneId={activeScene.id}
@@ -1096,8 +1096,8 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 </div>
             )}
 
-            {/* Desktop / tablet utility rail */}
-            <div className="hidden md:flex h-full shrink-0">
+            {/* Desktop utility rail */}
+            <div className="hidden lg:flex h-full shrink-0">
                 <div className={cn(
                     "h-full shrink-0 overflow-hidden transition-[width,opacity,transform,border-color] duration-500 ease-in-out",
                     desktopOpenPanel
@@ -1431,6 +1431,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                 isExtremeContext={isExtremeContext}
                 setIsExtremeContext={setIsExtremeContext}
                 provider={aiSettings.billing_mode === 'ollama' ? 'ollama' : aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider}
+                billingMode={aiSettings.billing_mode}
                 onConfirm={() => {
                     setIsConfirmingCost(false)
                     setIsExtremeContext(false)

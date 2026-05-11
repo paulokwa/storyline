@@ -21,13 +21,13 @@ export type OpenRouterCuratedModel = {
 export const OPENROUTER_CURATED_MODELS: OpenRouterCuratedModel[] = [
     {
         id: 'meta-llama/llama-3.3-70b-instruct:free',
-        label: 'Llama 3.3 70B (Meta) — Free',
+        label: 'Llama 3.3 70B (Meta) - OpenRouter free tier',
         pricing: 'free',
-        note: 'Free model — no billing required, but shared capacity means it is often busy or rate-limited. Best for occasional use.',
+        note: 'OpenRouter free-tier model. It may work without credits when free quota is available, but OpenRouter can rate-limit, require account setup, or change availability.',
     },
     {
         id: 'openai/gpt-4o-mini',
-        label: 'GPT-4o mini (OpenAI) — Paid',
+        label: 'GPT-4o mini (OpenAI) - Paid',
         pricing: 'paid',
         note: 'Requires OpenRouter credits or billing.',
     },

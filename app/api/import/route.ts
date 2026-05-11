@@ -11,6 +11,154 @@ function getErrorMessage(error: unknown) {
     return error instanceof Error ? error.message : 'Failed to parse document'
 }
 
+function decodeXmlAttribute(value: string) {
+    return value
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'")
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+}
+
+function getTagAttribute(tag: string, attribute: string) {
+    const match = tag.match(new RegExp(`${attribute}\\s*=\\s*["']([^"']*)["']`, 'i'))
+    return match ? decodeXmlAttribute(match[1]) : null
+}
+
+function stripHrefFragment(href: string) {
+    return href.split('#')[0].split('?')[0]
+}
+
+function tryDecodeUri(value: string) {
+    try {
+        return decodeURIComponent(value)
+    } catch {
+        return value
+    }
+}
+
+function normalizeEpubPath(pathValue: string) {
+    const normalized = stripHrefFragment(pathValue)
+        .replace(/\\/g, '/')
+        .replace(/^\/+/, '')
+    const parts: string[] = []
+
+    for (const part of normalized.split('/')) {
+        if (!part || part === '.') continue
+        if (part === '..') {
+            parts.pop()
+            continue
+        }
+        parts.push(part)
+    }
+
+    return parts.join('/')
+}
+
+function resolveEpubHref(baseDir: string, href: string) {
+    const cleanHref = stripHrefFragment(href)
+    return normalizeEpubPath(baseDir ? `${baseDir}/${cleanHref}` : cleanHref)
+}
+
+function getZipEntry(zip: JSZip, targetPath: string) {
+    const normalizedTarget = normalizeEpubPath(targetPath)
+    const decodedTarget = normalizeEpubPath(tryDecodeUri(normalizedTarget))
+    const direct = zip.file(normalizedTarget) ?? zip.file(decodedTarget)
+    if (direct) return direct
+
+    const lowerTargets = new Set([normalizedTarget.toLowerCase(), decodedTarget.toLowerCase()])
+    const match = Object.keys(zip.files).find((path) => lowerTargets.has(normalizeEpubPath(path).toLowerCase()))
+    return match ? zip.file(match) : null
+}
+
+function isHtmlishEpubPath(pathValue: string) {
+    const lower = normalizeEpubPath(pathValue).toLowerCase()
+    return lower.endsWith('.html') || lower.endsWith('.htm') || lower.endsWith('.xhtml')
+}
+
+function htmlToPlainText(html: string) {
+    return html
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/ig, '')
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/ig, '')
+        .replace(/<\/p>|<br\s*\/?>/ig, '\n')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;|&apos;/g, "'")
+}
+
+async function getEpubSpinePaths(zip: JSZip) {
+    const containerEntry = getZipEntry(zip, 'META-INF/container.xml')
+    if (!containerEntry) return []
+
+    const containerXml = await containerEntry.async('string')
+    const rootfileTags = containerXml.match(/<rootfile\b[^>]*>/gi) ?? []
+    const rootfilePath = rootfileTags
+        .map((tag) => getTagAttribute(tag, 'full-path'))
+        .find(Boolean)
+
+    if (!rootfilePath) return []
+
+    const opfPath = normalizeEpubPath(rootfilePath)
+    const opfEntry = getZipEntry(zip, opfPath)
+    if (!opfEntry) return []
+
+    const opfXml = await opfEntry.async('string')
+    const opfBaseDir = opfPath.includes('/') ? opfPath.split('/').slice(0, -1).join('/') : ''
+    const manifest = new Map<string, string>()
+
+    for (const tag of opfXml.match(/<item\b[^>]*>/gi) ?? []) {
+        const id = getTagAttribute(tag, 'id')
+        const href = getTagAttribute(tag, 'href')
+        const mediaType = getTagAttribute(tag, 'media-type')?.toLowerCase() ?? ''
+        if (!id || !href) continue
+
+        const resolvedPath = resolveEpubHref(opfBaseDir, href)
+        if (mediaType.includes('html') || isHtmlishEpubPath(resolvedPath)) {
+            manifest.set(id, resolvedPath)
+        }
+    }
+
+    const orderedPaths: string[] = []
+    const seen = new Set<string>()
+    for (const tag of opfXml.match(/<itemref\b[^>]*>/gi) ?? []) {
+        const idref = getTagAttribute(tag, 'idref')
+        if (!idref) continue
+
+        const path = manifest.get(idref)
+        const entry = path ? getZipEntry(zip, path) : null
+        if (!path || !entry || seen.has(path)) continue
+
+        seen.add(path)
+        orderedPaths.push(path)
+    }
+
+    return orderedPaths
+}
+
+async function extractEpubText(buffer: Buffer) {
+    const zip = await JSZip.loadAsync(buffer)
+    const spinePaths = await getEpubSpinePaths(zip)
+    const fallbackPaths = Object.keys(zip.files)
+        .filter((path) => !zip.files[path].dir && isHtmlishEpubPath(path))
+        .sort()
+    const files = spinePaths.length > 0 ? spinePaths : fallbackPaths
+    let content = ''
+
+    for (const path of files) {
+        const entry = getZipEntry(zip, path)
+        if (!entry) continue
+
+        const html = await entry.async('string')
+        content += `${htmlToPlainText(html)}\n\n***\n\n`
+    }
+
+    return content
+}
+
 export async function POST(req: NextRequest) {
     try {
         const supabase = await createClient()
@@ -53,25 +201,7 @@ export async function POST(req: NextRequest) {
                 await parser.destroy()
             }
         } else if (filename.endsWith('.epub')) {
-            const zip = await JSZip.loadAsync(buffer)
-            let content = ''
-            
-            // To ensure chapters stay roughly ordered, we'll try sorting the keys
-            const files = Object.keys(zip.files).sort()
-            for (const path of files) {
-                if (path.endsWith('.html') || path.endsWith('.htm') || path.endsWith('.xhtml')) {
-                    const html = await zip.files[path].async("string")
-                    // Basic HTML to plaintext conversion
-                    const plain = html
-                        .replace(/<style[^>]*>[\s\S]*?<\/style>/ig, '')
-                        .replace(/<script[^>]*>[\s\S]*?<\/script>/ig, '')
-                        .replace(/<\/p>|<br\s*\/?>/ig, '\n')
-                        .replace(/<[^>]+>/g, ' ')
-                        .replace(/&nbsp;/g, ' ')
-                    content += plain + '\n\n***\n\n'
-                }
-            }
-            text = content
+            text = await extractEpubText(buffer)
         } else {
             return NextResponse.json({ error: 'Unsupported file format. Please upload .docx, .txt, .md, .pdf, or .epub' }, { status: 400 })
         }

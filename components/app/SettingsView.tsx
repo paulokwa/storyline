@@ -982,7 +982,7 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                                     ? 'Storyline sponsors a limited OpenAI trial for this setup.'
                                                     : billingMode === 'byok'
                                                         ? aiProvider === 'openrouter'
-                                                            ? `Requests use OpenRouter (${OPENROUTER_CURATED_MODELS.find(m => m.id === openrouterModel)?.label ?? openrouterModel}). ${OPENROUTER_CURATED_MODELS.find(m => m.id === openrouterModel)?.pricing === 'free' ? 'Free model — rate limits may apply.' : 'Requires OpenRouter credits.'}`
+                                                            ? `Requests use OpenRouter (${OPENROUTER_CURATED_MODELS.find(m => m.id === openrouterModel)?.label ?? openrouterModel}). ${OPENROUTER_CURATED_MODELS.find(m => m.id === openrouterModel)?.pricing === 'free' ? 'Provider-limited free tier; quotas may apply.' : 'Requires OpenRouter credits.'}`
                                                             : `Requests use ${getAiProviderLabel(aiProvider)} with your own API key.`
                                                         : 'Requests go directly to your local Ollama server.'}
                                             </p>
@@ -1089,7 +1089,7 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                                             {(() => {
                                                                 const selected = OPENROUTER_CURATED_MODELS.find(m => m.id === openrouterModel)
                                                                 return selected?.pricing === 'free'
-                                                                    ? 'This free OpenRouter model may work without credits, but large requests can still hit rate limits or daily quotas.'
+                                                                    ? 'This OpenRouter free-tier model may work without credits when free quota is available. OpenRouter controls quotas, rate limits, and payment-method requirements.'
                                                                     : 'This model requires OpenRouter credits or billing. Add credits at '
                                                             })()}
                                                             {(() => {

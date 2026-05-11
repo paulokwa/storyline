@@ -145,7 +145,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
             setAiStatus(`Mapping ${detected.length} chapters...`)
 
             // Robust Mapping Slicer
-            const indices: number[] = []
+            const mappedAnchors: { index: number; detection: { title: string; markerSnippet: string } }[] = []
             let lastIdx = 0
 
             for (let i = 0; i < detected.length; i++) {
@@ -166,27 +166,27 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                 }
 
                 if (idx !== -1 && idx >= lastIdx) {
-                    indices.push(idx)
-                    lastIdx = idx + 1
+                    mappedAnchors.push({ index: idx, detection: ch })
+                    lastIdx = idx + Math.max(ch.markerSnippet.length, 1)
                 }
             }
 
-            if (indices.length === 0) {
+            if (mappedAnchors.length === 0) {
                 throw new Error('AI found structure, but it could not be mapped to your file. Try using manual markers.')
             }
 
             const newChunks: { title: string, content: string }[] = []
             let start = 0
-            for (let i = 0; i < indices.length; i++) {
-                const end = indices[i]
+            for (let i = 0; i < mappedAnchors.length; i++) {
+                const end = mappedAnchors[i].index
                 newChunks.push({
-                    title: detected[i-1]?.title || 'Prologue / Start',
+                    title: i === 0 ? 'Prologue / Start' : mappedAnchors[i - 1].detection.title,
                     content: rawText.substring(start, end).trim()
                 })
                 start = end
             }
             newChunks.push({
-                title: detected[indices.length - 1]?.title || 'Chapter ' + (indices.length + 1),
+                title: mappedAnchors[mappedAnchors.length - 1].detection.title || 'Chapter ' + (mappedAnchors.length + 1),
                 content: rawText.substring(start).trim()
             })
 
@@ -460,7 +460,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                                     <div className="flex items-start gap-3">
                                         <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
                                         <p className="text-sm text-amber-900 font-medium leading-relaxed">
-                                            Estimated cost: usually under $0.10 for most manuscripts, depending on your provider and manuscript length. This will use your AI trial credits or connected provider.
+                                            Cost and limits depend on your AI setup. Trial AI uses trial allowance, BYOK providers may charge your account, and OpenRouter pricing or free-tier quotas depend on the selected model. Very large manuscripts can use more credits or hit provider limits.
                                         </p>
                                     </div>
                                     <div className="flex items-start gap-3">

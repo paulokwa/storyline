@@ -244,10 +244,10 @@ These came from the app audit but are not immediate lone-coder launch blockers u
 
 - Add automated tests for import, export, auth, editor save behavior, local/cloud handling, AI settings, dark mode, and mobile/tablet flows.
 - Clean up lint debt gradually, prioritizing touched files and high-risk import/export/auth/persistence areas.
-- Harden EPUB import so chapter ordering follows EPUB spine order instead of lexicographic zip paths.
-- Improve AI-assisted import marker mapping so missed markers do not shift later chapter titles.
-- Unify mobile/tablet breakpoint logic across project shell and editor surfaces.
-- Replace fixed-width mobile slide-out panels with responsive widths.
+- ~~Harden EPUB import so chapter ordering follows EPUB spine order instead of lexicographic zip paths.~~ Done 2026-05-11; EPUB import now follows OPF spine order when available and falls back to sorted HTML files only when spine data cannot be read.
+- ~~Improve AI-assisted import marker mapping so missed markers do not shift later chapter titles.~~ Done 2026-05-11; mapped anchors now keep their matched detection title.
+- ~~Unify mobile/tablet breakpoint logic across project shell and editor surfaces.~~ Done 2026-05-11; story shell/panel behavior now treats tablet widths consistently with the editor's mobile/tablet threshold.
+- ~~Replace fixed-width mobile slide-out panels with responsive widths.~~ Done 2026-05-11; mobile AI, comments, and scene asset panels now cap at 320px but shrink on narrow viewports.
 - Improve dark mode coverage where it is not launch blocking.
 
 **Priority:** Medium, except dark mode coverage is Low unless readability blocks a launch flow.
@@ -425,7 +425,7 @@ Only fix if this becomes noticeable in manual testing. A possible fix is to reap
 ### 8. Orphaned Local Project Recovery
 
 **Why it matters:**
-The 2026-05-06 IndexedDB privacy fix scoped `listLocalProjects()` to the authenticated user by filtering on `project.user_id === currentUserId`. Projects whose stored `user_id` does not match the current user are silently excluded from the library list, and direct URL access to those projects is blocked at `LocalProjectShell` with a "Project not found" screen.
+The 2026-05-06 IndexedDB privacy fix scoped `listLocalProjects()` to the authenticated user by filtering on `project.user_id === currentUserId`. Projects whose stored `user_id` does not match the current user are silently excluded from the library list, and direct URL access to those projects is blocked at `LocalProjectShell` with a clear "Local project belongs to another account" screen.
 
 This is the correct privacy behaviour, but it creates an edge case: a user whose local Supabase account was deleted and then re-created with the same email address receives a new Supabase UUID. Their previously stored local projects still carry the old UUID in IndexedDB. After re-registration, those projects become invisible because the stored `user_id` no longer matches. The user's writing is not lost — it is still in IndexedDB on that device — but there is no UI path to find or recover it.
 

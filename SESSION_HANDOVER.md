@@ -5,6 +5,33 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-11 - Audit follow-up fixes for import, AI copy, local messaging, and tablet panels
+
+### What was completed
+
+- Hardened EPUB import to follow OPF spine order when available, with sorted HTML/XHTML fallback for malformed EPUBs.
+- Fixed Magic Detect import mapping so successfully mapped markers keep their matching AI-detected title even when another marker is missed.
+- Reworded Magic Detect cost copy for trial, BYOK, OpenRouter, and very large manuscripts.
+- Updated AI safeguard dialogs so Free Trial AI shows trial-allowance impact instead of dollar estimates.
+- Reworded OpenRouter free-tier model copy to describe provider-controlled quotas, rate limits, account setup, and availability.
+- Clarified the local-project forbidden state so it no longer looks like the project disappeared.
+- Made story slide-out panels responsive on narrow screens and aligned story shell/tablet panel behavior with the editor's 1024px mobile/tablet threshold.
+- Marked the now-fixed technical debt and future-roadmap audit bullets as done.
+
+### Current status
+
+Static checks, production build, and Netlify production build passed. Browser/device QA is still recommended for real EPUB fixtures, AI import detection with missing markers, Free Trial AI safeguards, OpenRouter settings copy, local account-switch messaging, and 320px/768px/1024px panel behavior.
+
+### Next recommended step
+
+Run a short manual launch QA pass over import/export, AI warning copy, and mobile/tablet story panels.
+
+### Risks or warnings
+
+- EPUB spine parsing is intentionally lightweight and dependency-free; malformed EPUBs fall back to the previous sorted-file behavior.
+- Focused ProjectShell lint has pre-existing hook-rule issues outside this patch; they were not fixed as part of this scoped pass.
+
+---
 ## 2026-05-11 - Pre-launch audit blocker fixes
 
 ### What was completed

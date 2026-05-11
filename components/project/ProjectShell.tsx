@@ -525,7 +525,7 @@ function ProjectShellInner({
     const { commentsPanelOpen, setCommentsPanelOpen } = useComments()
     
     // Responsive checks
-    const isMobile = useMediaQuery('(max-width: 768px)')
+    const isMobile = useMediaQuery('(max-width: 1024px)')
 
 
 
@@ -826,7 +826,7 @@ function ProjectShellInner({
                                         <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-[0.14em]">Structure</span>
                                     </Button>
                                     {showStructureHint && (
-                                        <div className="absolute left-1/2 top-full mt-2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 duration-500 bg-[#546354] text-white text-[11px] leading-relaxed font-medium py-2.5 pl-4 pr-3 rounded-2xl shadow-xl shadow-black/10 flex items-center gap-3 whitespace-normal w-[240px] md:hidden">
+                                        <div className="absolute left-1/2 top-full mt-2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 duration-500 bg-[#546354] text-white text-[11px] leading-relaxed font-medium py-2.5 pl-4 pr-3 rounded-2xl shadow-xl shadow-black/10 flex items-center gap-3 whitespace-normal w-[240px] lg:hidden">
                                             <div className="absolute -top-1 left-1/2 -ml-1 border-4 border-transparent border-b-[#546354] border-t-0" />
                                             <p>You can reopen your story structure any time from the Structure button next to Home.</p>
                                             <button onClick={handleDismissStructureHint} className="bg-white/20 hover:bg-white/30 rounded-full p-1 shrink-0 transition-colors">
@@ -980,7 +980,7 @@ function ProjectShellInner({
                                         size="sm"
                                         onClick={() => router.push(`/project/${project.id}/help`)}
                                         data-tour="help-icon"
-                                        className="h-9 w-9 p-0 rounded-xl bg-black/5 text-slate-500 hover:text-primary hover:bg-primary/5 transition-all md:hidden"
+                                        className="h-9 w-9 p-0 rounded-xl bg-black/5 text-slate-500 hover:text-primary hover:bg-primary/5 transition-all lg:hidden"
                                     >
                                         <HelpCircle className="w-5 h-5" />
                                     </Button>
@@ -1058,7 +1058,7 @@ function ProjectShellInner({
                                     </div>
                                     )}
 
-                                    <div className="contents md:hidden">
+                                    <div className="contents lg:hidden">
                                         {/* Reading/Interaction */}
                                         <ReaderControls 
                                             getSelection={() => currentSelectionText}

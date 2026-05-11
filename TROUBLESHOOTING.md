@@ -259,6 +259,45 @@ Add a short entry using this format:
 - Browser QA is still recommended for title-only rename persistence, forced migration failure retry behavior, forgot/reset password click behavior, and authenticated import UX.
 - `SceneEditor.tsx` has pre-existing lint debt unrelated to the title-only autosave scheduling fix.
 
+## Issue: Import Ordering, AI Import Mapping, Trial Cost Copy, and Tablet Panels
+
+### Symptoms
+
+- EPUB imports can produce chapters out of reading order when zip file paths do not match the book spine.
+- Magic Detect can assign the wrong title to later chunks if an earlier AI-detected marker cannot be mapped back to the manuscript.
+- Free Trial AI users can see dollar-cost copy in safeguard dialogs.
+- OpenRouter free-model copy can sound like guaranteed no-cost usage.
+- Local projects tied to another signed-in account can look like missing data.
+- Mobile/tablet AI, comments, and scene asset panels can clip on narrow viewports or change behavior at different breakpoints.
+
+### Cause
+
+- EPUB parsing used sorted HTML/XHTML zip paths instead of the OPF spine.
+- AI import slicing stored mapped indices separately from their detection objects.
+- Shared AI safeguard copy only knew the provider, not the billing mode.
+- OpenRouter copy used "free model" language without enough provider-quota context.
+- The local-project forbidden state reused a generic "Project not found" message.
+- Project shell and story panels used a 768px breakpoint while the editor used a 1024px mobile/tablet threshold, and mobile panels had fixed 320px widths.
+
+### Fix
+
+- Read `META-INF/container.xml`, load the OPF package, and follow `<spine><itemref>` manifest order for EPUB HTML/XHTML files, with sorted HTML fallback when spine data is unavailable.
+- Store mapped AI import anchors as `{ index, detection }` pairs so skipped markers do not shift later titles.
+- Pass AI billing mode into `AiSafeguardDialogs` and show trial-allowance impact instead of dollar estimates for `app_managed_trial`.
+- Reword OpenRouter free-tier copy as provider-limited and quota-dependent.
+- Make the local-project forbidden copy state that the draft is still on-device but belongs to another account.
+- Align project shell/story panels to the tablet threshold and cap slide-out panel width with responsive viewport-based sizing.
+
+### Verification
+
+- `npx tsc --noEmit --pretty false`
+- Focused ESLint on touched files with unrelated existing lint debt disabled where needed
+- `npm run build`
+
+### Notes
+
+- Browser QA is still recommended for real EPUB fixtures, Magic Detect with missing markers, Free Trial AI safeguards, OpenRouter settings copy, and 320px/768px/1024px viewport panel behavior.
+
 ## Issue: Settings save fails because `ai_context_mode` is missing from Supabase schema cache
 
 ### Symptoms

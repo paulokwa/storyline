@@ -41,6 +41,7 @@ interface AiSafeguardDialogsProps {
     projectContextMode?: 'default' | 'expanded' | 'full'
     setProjectContextMode?: (val: 'default' | 'expanded' | 'full') => void
     allScenes?: any[]
+    billingMode?: string
 }
 
 export function AiSafeguardDialogs({ 
@@ -56,7 +57,8 @@ export function AiSafeguardDialogs({
     setIsOverridingProjectContext,
     projectContextMode,
     setProjectContextMode,
-    allScenes
+    allScenes,
+    billingMode
 }: AiSafeguardDialogsProps) {
     const fullStats = React.useMemo(() => {
         if (!allScenes) return { chars: 0, words: 0, tokens: 0 }
@@ -68,6 +70,29 @@ export function AiSafeguardDialogs({
             tokens: estimateTokensApprox(text)
         }
     }, [allScenes])
+    const isTrialMode = billingMode === 'app_managed_trial'
+    const isLocalProvider = provider === 'ollama'
+    const shouldShowDollarCost = !isTrialMode && !isLocalProvider
+    const estimatedCost = preflight?.estimatedCost ?? null
+    const impactLabel = isTrialMode
+        ? 'Trial Allowance Impact'
+        : isLocalProvider
+            ? 'Local Processing Impact'
+            : 'Estimated Input Cost'
+    const impactValue = isTrialMode
+        ? `${preflight?.estimatedTokens.toLocaleString() ?? 0} est. tokens`
+        : isLocalProvider
+            ? 'No cloud cost'
+            : estimatedCost !== null
+                ? `$${estimatedCost.toFixed(3)}`
+                : 'Unavailable'
+    const costExplainer = isTrialMode
+        ? 'Free Trial AI uses your trial allowance, not a dollar charge shown in Storyline.'
+        : isLocalProvider
+            ? 'Local Ollama requests run on your device. Large requests may still be slow.'
+            : estimatedCost !== null
+                ? `Rates are based on current ${provider} pricing for the selected model.`
+                : 'Specific pricing for this model variant is unknown. Standard provider rates may apply.'
 
 
     return (
@@ -79,10 +104,13 @@ export function AiSafeguardDialogs({
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
                                 <AlertCircle className="w-5 h-5 text-indigo-500" />
-                                Confirm AI Request Cost
+                                {isTrialMode ? 'Confirm Large AI Request' : 'Confirm AI Request Cost'}
                             </DialogTitle>
                             <DialogDescription className="font-serif italic text-slate-500">
-                                This request uses a large amount of context and may incur significant costs on your paid AI plan.
+                                {isTrialMode
+                                    ? 'This request uses a large amount of context and may use a noticeable share of your Free Trial AI allowance.'
+                                    : 'This request uses a large amount of context and may incur significant costs on your paid AI plan.'
+                                }
                             </DialogDescription>
                         </DialogHeader>
                         
@@ -100,9 +128,9 @@ export function AiSafeguardDialogs({
                             
                             <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100 flex items-center justify-between">
                                 <div>
-                                    <p className="text-[10px] uppercase tracking-wider text-indigo-400 font-bold mb-1">Estimated Input Cost</p>
+                                    <p className="text-[10px] uppercase tracking-wider text-indigo-400 font-bold mb-1">{impactLabel}</p>
                                     <p className="text-xl font-bold text-indigo-600">
-                                        {preflight.estimatedCost !== null ? `$${preflight.estimatedCost.toFixed(3)}` : "Unavailable"}
+                                        {impactValue}
                                     </p>
                                 </div>
                                 <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
@@ -111,10 +139,7 @@ export function AiSafeguardDialogs({
                             </div>
                             
                             <p className="text-[10px] text-slate-400 leading-relaxed italic text-center px-4">
-                                {preflight.estimatedCost !== null 
-                                    ? `Rates are based on current ${provider} pricing for the selected model.`
-                                    : `Specific pricing for this model variant is unknown. Standard rates may apply.`
-                                }
+                                {costExplainer}
                             </p>
                         </div>
 
@@ -143,7 +168,7 @@ export function AiSafeguardDialogs({
                                 Extreme Context Size
                             </DialogTitle>
                             <DialogDescription className="font-serif italic text-slate-500">
-                                The text you're sending is exceptionally large ({preflight.charCount.toLocaleString()} chars). How would you like to proceed?
+                                The text you&apos;re sending is exceptionally large ({preflight.charCount.toLocaleString()} chars). How would you like to proceed?
                             </DialogDescription>
                         </DialogHeader>
                         
@@ -157,8 +182,17 @@ export function AiSafeguardDialogs({
                                     <span className="text-sm font-bold text-slate-700 group-hover:text-indigo-600">Proceed with Full Context</span>
                                 </div>
                                 <p className="text-[10px] text-slate-400 italic pl-7">
-                                    Send everything to the AI. May be slow and expensive
-                                    {preflight.estimatedCost !== null ? ` (Est. $${preflight.estimatedCost.toFixed(2)}+)` : ""}.
+                                    {isTrialMode
+                                        ? 'Send everything to the AI. May be slow and use a large share of your trial allowance.'
+                                        : isLocalProvider
+                                            ? 'Send everything to the local model. May be slow on this device.'
+                                            : (
+                                                <>
+                                                    Send everything to the AI. May be slow and expensive
+                                                    {shouldShowDollarCost && estimatedCost !== null ? ` (Est. $${estimatedCost.toFixed(2)}+)` : ""}.
+                                                </>
+                                            )
+                                    }
                                 </p>
                             </button>
 
