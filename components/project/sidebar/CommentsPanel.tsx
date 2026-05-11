@@ -55,7 +55,11 @@ function buildFeedbackIdeaContent({
     const referenceText = rootComment.anchor_data?.text
 
     if (mode === 'single') {
-        return rootComment.content
+        const parts: string[] = []
+        if (referenceText) parts.push(referenceText)
+        const hasActualFeedback = rootComment.content && rootComment.content !== 'Add your feedback...'
+        if (hasActualFeedback) parts.push(rootComment.content)
+        return parts.length > 0 ? parts.join('\n\n') : (rootComment.content ?? '')
     }
 
     const transcript = threadComments
@@ -1679,7 +1683,7 @@ function CommentItem({
                                                     AI
                                                 </Button>
                                             </TooltipTrigger>
-                                            <TooltipContent side="top">Remove from AI Assistant</TooltipContent>
+                                            <TooltipContent side="top">Remove from AI Partner</TooltipContent>
                                         </Tooltip>
                                     ) : (
                                         <Tooltip>
@@ -1698,7 +1702,7 @@ function CommentItem({
                                                     )}
                                                 </Button>
                                             </TooltipTrigger>
-                                            <TooltipContent side="top">Add to AI Assistant</TooltipContent>
+                                            <TooltipContent side="top">Add to AI Partner</TooltipContent>
                                         </Tooltip>
                                     )}
                                     {!isReply && replies.length > 0 && (
@@ -1723,7 +1727,7 @@ function CommentItem({
                                                         Thread
                                                     </Button>
                                                 </TooltipTrigger>
-                                                <TooltipContent side="top">Remove thread from AI Assistant</TooltipContent>
+                                                <TooltipContent side="top">Remove thread from AI Partner</TooltipContent>
                                             </Tooltip>
                                         ) : (
                                             <Tooltip>
@@ -1746,7 +1750,7 @@ function CommentItem({
                                                         Thread
                                                     </Button>
                                                 </TooltipTrigger>
-                                                <TooltipContent side="top">Add thread to AI Assistant</TooltipContent>
+                                                <TooltipContent side="top">Add thread to AI Partner</TooltipContent>
                                             </Tooltip>
                                         )
                                     )}

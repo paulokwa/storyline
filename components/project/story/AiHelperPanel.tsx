@@ -913,13 +913,38 @@ export default function AiHelperPanel({
             return depth
         }
 
-        return allNodes
-            .filter((node) => !node.deleted_at && ['chapter', 'episode', 'act', 'arc', 'scene'].includes(node.type))
-            .map((node) => ({
-                node,
-                depth: getDepth(node),
-                sceneCount: getUncappedDescendantSceneCount(node.id, allNodes, allScenes),
-            }))
+        // Build a children map for ALL non-deleted nodes, each group sorted by order_index.
+        // We traverse all node types (not just displayed ones) so the DFS path is complete
+        // even when intermediate nodes (e.g. a root wrapper) are not shown in the list.
+        const childrenByParentId = new Map<string | null, any[]>()
+        for (const node of allNodes) {
+            if (node.deleted_at) continue
+            const key = node.parent_id ?? null
+            if (!childrenByParentId.has(key)) childrenByParentId.set(key, [])
+            childrenByParentId.get(key)!.push(node)
+        }
+        for (const children of childrenByParentId.values()) {
+            children.sort((a: any, b: any) => a.order_index - b.order_index)
+        }
+
+        const includedTypes = new Set(['chapter', 'episode', 'act', 'arc', 'scene'])
+        const result: Array<{ node: any; depth: number; sceneCount: number }> = []
+
+        function visit(parentId: string | null) {
+            for (const node of childrenByParentId.get(parentId) ?? []) {
+                if (includedTypes.has(node.type)) {
+                    result.push({
+                        node,
+                        depth: getDepth(node),
+                        sceneCount: getUncappedDescendantSceneCount(node.id, allNodes, allScenes),
+                    })
+                }
+                visit(node.id)
+            }
+        }
+        visit(null)
+
+        return result
     }, [allNodes, allScenes])
 
     const storyScopeLabel = useMemo(() => {
