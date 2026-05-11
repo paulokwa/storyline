@@ -5,6 +5,28 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-11 - Continuity cleanup after audit fixes
+
+### What was completed
+
+- Removed completed urgent audit blocker work from `TASK_BOARD.md` so the active board no longer invites agents to redo fixed items.
+- Removed QA-only OpenRouter, Story Scope, Smart Context, and public beta validation blocks from planning docs; remaining validation now lives in `TESTING.md`.
+- Pruned completed 2026-05-11 audit follow-ups from the technical debt and future roadmap files.
+- Updated `TESTING.md` with public beta QA rows and marked OpenRouter items that were already manually verified as passed.
+
+### Current status
+
+The four requested continuity/planning files now separate implementation work from testing work more cleanly. `TASK_BOARD.md` is back to implementation tasks; `TESTING.md` carries browser/manual validation.
+
+### Next recommended step
+
+Use `TESTING.md` for any launch QA or browser validation pass. Do not re-add QA-only checklists to `TASK_BOARD.md`, `docs/human-launch-checklist.md`, `docs/technical-debt-roadmap.md`, or `docs/future-roadmap.md`.
+
+### Risks or warnings
+
+- This was documentation cleanup only; no app code changed.
+
+---
 ## 2026-05-11 - Import UX cleanup and targeted midnight coverage
 
 ### What was completed

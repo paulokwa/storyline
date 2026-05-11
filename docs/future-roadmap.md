@@ -27,10 +27,7 @@ Use this file when an idea is real enough to remember, but not ready to become a
 
 These are useful user-experience improvements, but they should not outrank launch blockers or reliability work for a lone part-time builder.
 
-- ~~Better import progress feedback.~~ Done 2026-05-11; Magic Detect now advances through request/mapping/preview progress states instead of showing a static bar.
-- ~~Better import word-count estimate.~~ Done 2026-05-11; import now labels extracted text by character count instead of presenting a rough character heuristic as words.
-- ~~Clearer local-project message when signed into a different account.~~ Done 2026-05-11; the blocked state now explains the local draft belongs to another signed-in account and remains stored on this device.
-- Full dark mode polish pass.
+- Full dark mode polish pass. Settings and Export modal received targeted midnight coverage on 2026-05-11, but this item stays open for a broader app-wide polish pass.
 
 ---
 

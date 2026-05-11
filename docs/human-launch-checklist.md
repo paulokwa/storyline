@@ -89,11 +89,6 @@ This matters because mixed terms can make the app feel unfinished. It also affec
 
 Once Kwame chooses the terminology, AI can audit the app and update copy consistently.
 
-### AI Partner Story Scope cleanup
-
-After the new AI Partner `Story Scope` selector is browser-tested, decide whether to remove or de-emphasize the old Structure-panel scene checkboxes. They are intentionally still present for now as a safe fallback. Cross-reference: `TASK_BOARD.md` / `TESTING.md` Phase 6 Story Scope validation.
-
-
 ### Branding and design help
 
 Consider whether to pay a designer, Fiverr freelancer, or other outside helper for branding, logo assets, landing/showcase polish, or visual identity.
@@ -118,12 +113,9 @@ The current emails may still look generic or Supabase-branded unless the Supabas
 
 Do this after the final app name is chosen so the wording, sender identity, support address, and visual branding do not need to be redone.
 
-Checks to complete:
-
 - Replace any Supabase-branded or generic template wording with final app branding.
-- Confirm the sender name, reply-to/support email, subjects, and call-to-action buttons feel trustworthy.
-- Confirm verification links, password reset links, magic links, and invite links redirect to the correct production app URLs.
-- Send test emails to a real account and check desktop/mobile rendering before public launch.
+- Set the sender name, reply-to/support email, subjects, and call-to-action button wording.
+- Keep live email rendering and redirect validation in `TESTING.md`, not this planning doc.
 
 ### Supabase auth redirect allowlist decision
 
@@ -131,26 +123,8 @@ After production signup is confirmed working, decide whether to remove `http://l
 
 Context: a live verification email previously opened `localhost` because the production `NEXT_PUBLIC_SITE_URL` value was missing, so generated auth links fell back to the local dev URL. Keeping localhost in the Supabase allowlist is useful during active local development, but production code must never generate localhost auth links.
 
-Pre-launch checks:
-
-- Confirm Netlify production has `NEXT_PUBLIC_SITE_URL` set to the live app domain.
-- Confirm Supabase Site URL is the live app domain.
-- Confirm new production verification and password reset emails open the live app, not localhost.
 - Keep localhost allowed only if it is still needed for local auth testing.
 - If removing localhost, remember that local signup/reset auth testing may stop working until it is temporarily re-added.
-
-### Auth verification edge-case launch check
-
-Before launch, confirm the remaining signup verification edge case is fixed and retested.
-
-Context: manual testing confirmed new signup emails now use the clean production redirect and normal first-time verification works. However, reused/expired signup verification links still landed on `/library?error=Invalid_Or_Expired_Token` instead of the intended friendly login guidance. Keep the detailed record in `TESTING.md` under `Auth / Sessions` before deciding this is launch-ready.
-
-Minimum launch checks:
-
-- Reused/expired signup verification links show clear login guidance, not a confusing library URL with raw auth error text.
-- Opening another account's fresh signup verification link while already signed in does not silently land in the wrong account.
-- Password reset emails use the clean production URL.
-- Supabase email rate limits are avoided during final testing by using only the minimum required email-link checks.
 
 ### Full naming consistency pass
 
@@ -267,17 +241,6 @@ For now, Markdown files are easier for AI agents to read, easier to review in Gi
 
 ---
 
-## Manual public beta QA
-
-Complete these human confidence passes before public beta. These are not polish tasks; they are the manual checks most likely to catch trust-breaking launch issues.
-
-- Manual import/export confidence pass.
-- Signup/login/verification/password reset QA.
-- AI cost warning copy review.
-- Mobile/tablet smoke test.
-
----
-
 ## Launch readiness reminders
 
 Before public launch, review:
@@ -291,7 +254,6 @@ Before public launch, review:
 - Trial/cloud pricing model decided
 - Subscription readiness/early-access grandfathering decision made before any billing implementation
 - AI terminology chosen
-- AI Partner Story Scope validated; old Structure-panel scene checkboxes removed or intentionally kept as a fallback
 - Privacy/legal documentation updated for OpenRouter and current AI provider options
 - Help Center audit/rewrite completed or intentionally deferred
 - Showcase page updated with final screenshots

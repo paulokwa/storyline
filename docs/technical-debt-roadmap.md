@@ -244,13 +244,10 @@ These came from the app audit but are not immediate lone-coder launch blockers u
 
 - Add automated tests for import, export, auth, editor save behavior, local/cloud handling, AI settings, dark mode, and mobile/tablet flows.
 - Clean up lint debt gradually, prioritizing touched files and high-risk import/export/auth/persistence areas.
-- ~~Harden EPUB import so chapter ordering follows EPUB spine order instead of lexicographic zip paths.~~ Done 2026-05-11; EPUB import now follows OPF spine order when available and falls back to sorted HTML files only when spine data cannot be read.
-- ~~Improve AI-assisted import marker mapping so missed markers do not shift later chapter titles.~~ Done 2026-05-11; mapped anchors now keep their matched detection title.
-- ~~Unify mobile/tablet breakpoint logic across project shell and editor surfaces.~~ Done 2026-05-11; story shell/panel behavior now treats tablet widths consistently with the editor's mobile/tablet threshold.
-- ~~Replace fixed-width mobile slide-out panels with responsive widths.~~ Done 2026-05-11; mobile AI, comments, and scene asset panels now cap at 320px but shrink on narrow viewports.
-- Improve dark mode coverage where it is not launch blocking.
 
-**Priority:** Medium, except dark mode coverage is Low unless readability blocks a launch flow.
+Completed audit follow-ups from this section are recorded in `SESSION_HANDOVER.md`, `TESTING.md`, `TROUBLESHOOTING.md`, and commits `204ef13` / `db57549`; do not re-implement EPUB spine ordering, AI import marker mapping, tablet breakpoint unification, or responsive slide-out panel widths.
+
+**Priority:** Medium.
 
 ---
 

@@ -72,43 +72,11 @@ Before writing code, state:
 
 ## Now
 
-### Pre-launch audit blockers - added 2026-05-11
-
-These came from the app audit and should stay in `Now` because they can affect data safety, user trust, security/resource abuse, auth clarity, import/export correctness, or AI cost clarity.
-
-- ~~Fix scene title-only autosave risk.~~ Done 2026-05-11; title-only renames now schedule autosave.
-- ~~Fix Local -> Cloud migration orphan-project risk.~~ Done 2026-05-11; asset upload and later insertion failures now clean up the cloud project row and uploaded files before leaving the local project retryable.
-- ~~Escape user-controlled fields in HTML/EPUB exports.~~ Done 2026-05-11; project titles, node titles, summaries, language, author/publisher/description/copyright/ISBN-style metadata are escaped in HTML/EPUB/XML markup.
-- ~~Fix password reset duplicate submit and remove email/status console logs.~~ Done 2026-05-11; recovery forms are single-submit guarded and reset exception logging is development-only.
-- ~~Decide/protect `/api/import` if it should not be publicly callable.~~ Done 2026-05-11; route now requires an authenticated user.
-
-
-### 0. OpenRouter BYOK — apply migration + browser validation required
-
-Two steps remain before OpenRouter is launch-ready:
-
-**Step A — ~~Apply DB migration~~** — Done 2026-05-09 via `supabase db push`.
-
-**Step B — Browser acceptance checklist** (full list in `TESTING.md`):
-
-1. ✅ Apply migration. Confirm Settings shows the OpenRouter model selector dropdown.
-2. ✅ Confirm default is "Llama 3.3 70B (Free)" — not GPT-4o mini. *(Note: default changed to Llama 3.3 70B after Llama 3.1 8B was retired — see session 2 handover.)*
-3. ✅ Save a valid OpenRouter key → confirm "Connected" success.
-4. ✅ Enter an invalid key → confirm friendly error, no crash.
-5. ✅ Send a basic AI Partner message → confirm streaming response with correct OPENROUTER badge.
-6. Run Analyze Scene → confirm structured JSON result, no hang. *(Not retested in session 2.)*
-7. Run Import AI Detect → confirm headings detected (free model JSON fix now in place). *(Not retested.)*
-8. ✅ Change model to GPT-4o mini → confirm paid model works; free model may rate-limit (expected).
-9. Confirm no misleading `$0.00` pricing anywhere. *(Copy pass — task #1 — still pending.)*
-10. ✅ Confirm usage logged with `provider = 'openrouter'` and the correct model. *(Verified via clean terminal after constraint fix.)*
-11. Switch back to Gemini or OpenAI → confirm switch works. *(Not retested in session 2.)*
-12. Confirm Ollama and trial mode unaffected. *(Not retested in session 2.)*
-
----
-
 ### 1. OpenRouter copy pass — AI pricing, setup, onboarding, and showcase copy
 
 OpenRouter support changes how AI-provider copy should be worded. Existing copy may assume only OpenAI, Gemini, Ollama, or app-managed trial AI, and some cost-warning copy may imply exact dollar estimates even when OpenRouter pricing is unknown, variable, or free-model-limited.
+
+2026-05-11 note: urgent OpenRouter warning fixes are already done for Magic Detect, AI safeguard dialogs, and Settings free-tier model copy. Keep this task only for the broader provider-copy audit across setup, onboarding, showcase, legal/help-adjacent UI, and any remaining copy not covered by those fixes. Browser acceptance/retest items live in `TESTING.md`, not here.
 
 Goal:
 
@@ -184,67 +152,7 @@ Suggested output after completion:
 
 ---
 
-### 2. Phase 6 Story Scope selector - browser validation required
-
-Phase 6 code is implemented and statically verified. Browser validation is still needed before signing off the corrected Story Scope behavior.
-
-Retest:
-
-1. Smart mode: confirm AI Partner shows `Story Scope` plus read-only `Smart Context`.
-2. Manual mode: confirm AI Partner shows `Story Scope` plus separate interactive `Story Elements`.
-3. Entire Project: confirm the selector shows the first-10 scene state and the existing inline notice still says the first 10 scenes are loaded.
-4. Entire Project: click `Use more context` and confirm the existing Default / Expanded / Full Project Manuscript modal still offers 10 / 50 / all scenes.
-5. Chapter/act/episode selection: select a scope with more than 10 descendant scenes and confirm a friendly inline warning appears.
-6. Full-screen AI: confirm the same Story Scope UI appears and updates the same selected writing scope.
-7. Scene Analysis: confirm behavior is unchanged.
-
----
-
-
-### 3. Smart Context Phase 5 - browser validation required
-
-Phase 5 code is implemented and statically verified. Browser validation is still needed before signing off Smart Context safeguards.
-
-Retest:
-
-1. Smart mode: confirm AI Partner shows the read-only Smart Context summary with no interactive `Scene Context` selector and no manual-looking entity count strip such as `Characters 2 | Ideas 1 | Locations 2`.
-2. Smart mode with large eligible entity context: confirm the Smart Context size warning appears.
-3. Manual mode: confirm the interactive `Scene Context` selector still appears and selected/deselected linked items affect AI context.
-4. Scene Analysis: run in Smart and Manual modes and confirm behavior is unchanged.
-5. Smart mode: ask AI Partner whether it received full scene/chapter/manuscript text outside the current scene; it should not claim all scenes, chapters, or full manuscript text.
-
-Seeded warning fixtures for later browser testing:
-
-- Medium warning project: `[Smart Context Warning Test] Medium 2026-05-08T04-33-12`
-  - Project ID: `5cad62c8-eb36-4cd9-a263-9f3d02c343a1`
-  - Open: `/project/5cad62c8-eb36-4cd9-a263-9f3d02c343a1/story`
-  - Expected: Smart Context summary should show the medium note because eligible entity context is about `12,012` estimated tokens.
-- High warning project: `[Smart Context Warning Test] High 2026-05-08T04-33-12`
-  - Project ID: `e896c90e-2a47-4a15-92a4-08f440516fde`
-  - Open: `/project/e896c90e-2a47-4a15-92a4-08f440516fde/story`
-  - Expected: Smart Context summary should show the high warning because eligible entity context is about `31,051` estimated tokens.
-
-Cross-reference: `TESTING.md` has the same fixture details under `Smart Context Phase 5 safeguards and clarity`.
-
----
-
-### 4. Smart Context entity include/exclude control - browser retest required
-
-Phase 4/4.5 browser validation passed on 2026-05-08.
-
-Follow-up UI polish was added because the entity-level Include/Exclude control existed but was not visually obvious enough in browser testing.
-
-Retest:
-
-1. Open a character detail page and confirm `Include in Smart Context` is clearly visible and obviously interactive.
-2. Toggle it off and confirm status changes to `Excluded from Smart Context`.
-3. Refresh and confirm the setting persists.
-4. Toggle it back on and confirm status changes to `Included in Smart Context`.
-5. Spot-check the same control on idea, location, and object detail pages.
-
----
-
-### 5. Check and fix export issues, starting with PDF
+### 2. Check and fix export issues, starting with PDF
 
 Audit and fix export problems, starting with PDF output and then verifying other export formats.
 
@@ -289,7 +197,7 @@ Current status after the 2026-05-07 Phase 3–6 audit:
 - Phase 2 collaborator reply notifications are now implemented for thread authors and prior participants, with per-recipient reply event keys and linked-Supabase validation complete.
 - Phase 3 Local → Cloud migration notifications are now implemented: `cloud_migration_completed` and `cloud_migration_failed` added to the enum (SQL migration `20260507190000`), applied to linked Supabase, TypeScript types updated, `lib/notifications.ts` updated with icons/routing/labels, and `ProjectSettingsModal.tsx` updated to fire bell notifications on success and non-trivial failure.
 - Phase 4 import/export audit complete — **no bell notifications warranted**. All import flows are synchronous and blocking (errors shown inline). All export flows run inside a blocking modal (user cannot navigate away; download triggers immediately on success; toast shows on failure while modal stays open). No background pipeline exists. Adding notifications here would be noise without benefit.
-- Broader trigger expansion is still deferred pending manual browser validation and later scoped passes.
+- Broader trigger expansion is still deferred to later scoped implementation passes.
 
 Candidate areas to scope later:
 
