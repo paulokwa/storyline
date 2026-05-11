@@ -5,6 +5,7 @@ import RouteLoadingScreen from '@/components/app/RouteLoadingScreen'
 import ProjectShell from '@/components/project/ProjectShell'
 import BackupBanner from '@/components/project/local/BackupBanner'
 import MigratedBanner from '@/components/project/local/MigratedBanner'
+import LocalTransferGuidance from '@/components/project/local/LocalTransferGuidance'
 import { getLocalProject, touchLocalProject, type LocalProjectRow } from '@/lib/persistence/local-projects'
 
 export default function LocalProjectShell({
@@ -22,6 +23,7 @@ export default function LocalProjectShell({
 }) {
     const [project, setProject] = useState<LocalProjectRow | null>(null)
     const [status, setStatus] = useState<'loading' | 'ready' | 'missing' | 'forbidden'>('loading')
+    const [showTransferGuidance, setShowTransferGuidance] = useState(false)
 
     useEffect(() => {
         let cancelled = false
@@ -44,6 +46,10 @@ export default function LocalProjectShell({
                 if (!cancelled) {
                     setProject(localProject)
                     setStatus('ready')
+                    const dismissKey = `storyline-transfer-guidance-dismissed-${projectId}`
+                    if (!localStorage.getItem(dismissKey)) {
+                        setShowTransferGuidance(true)
+                    }
                 }
             } catch (error) {
                 console.error('Failed to load local project shell:', error)
@@ -113,6 +119,18 @@ export default function LocalProjectShell({
                 />
             ) : (
                 <BackupBanner projectId={projectId} />
+            )}
+            {showTransferGuidance && !project.migrated_to_cloud_project_id && (
+                <div className="px-4 pt-3 pb-1">
+                    <LocalTransferGuidance
+                        compact
+                        cloudSyncHref="/help?q=cloud%20sync"
+                        onDismiss={() => {
+                            setShowTransferGuidance(false)
+                            localStorage.setItem(`storyline-transfer-guidance-dismissed-${projectId}`, 'true')
+                        }}
+                    />
+                </div>
             )}
             {children}
         </ProjectShell>

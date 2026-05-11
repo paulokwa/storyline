@@ -63,7 +63,7 @@ export default function LocalTransferGuidance({
                 <div className="min-w-0">
                     <h3 className={cn('text-lg font-semibold', isMidnight ? 'text-slate-100' : 'text-slate-900')}>Need this project on another device?</h3>
                     <p className={cn('mt-2 text-sm leading-6', isMidnight ? 'text-slate-300' : 'text-slate-600')}>
-                        If you want to keep this project local, save a `.storyline` file on one device and open it on the other. If you want it available across devices, turn on cloud sync from Project Settings.
+                        If you want to keep this project local, save a `.storyline` file on this device. On your other device, log in to Storyline and open the saved file. If you want this project available across all your devices automatically, turn on cloud sync from Project Settings.
                     </p>
                 </div>
             </div>

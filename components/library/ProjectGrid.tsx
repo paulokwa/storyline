@@ -47,7 +47,6 @@ import { useTheme } from '@/components/providers/ThemeProvider'
 import { destroyLocalProject, listLocalProjects, restoreLocalProject, softDeleteLocalProject, updateLocalProject } from '@/lib/persistence/local-projects'
 import { isLocalProjectId } from '@/lib/persistence/project-mode'
 import OpenProjectButton from '@/components/library/OpenProjectButton'
-import LocalTransferGuidance from '@/components/project/local/LocalTransferGuidance'
 
 // Explicitly extend the Project type with fields added via recent migrations
 type Project = Database['public']['Tables']['projects']['Row'] & {
@@ -108,7 +107,6 @@ function getSavedLibrarySort(): 'custom' | 'recent' | 'az' {
 }
 
 export default function ProjectGrid({ projects, deletedProjects, currentUserId }: { projects: Project[], deletedProjects: Project[], currentUserId: string }) {
-    const transferGuidanceDismissKey = 'storyline-library-transfer-guidance-dismissed'
     const router = useRouter()
     const { theme } = useTheme()
     const isMidnight = theme === 'midnight'
@@ -118,15 +116,10 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
     const [confirmDeleteDraft, setConfirmDeleteDraft] = useState(false)
     const [view, setView] = useState<'active' | 'trash'>('active')
     const [sortFilter, setSortFilter] = useState<'custom' | 'recent' | 'az'>(getSavedLibrarySort)
-    const [showTransferGuidance, setShowTransferGuidance] = useState(true)
     const initialMount = useRef(true)
 
     // Load sort preference on mount
     useEffect(() => {
-        if (localStorage.getItem(transferGuidanceDismissKey) === 'true') {
-            setShowTransferGuidance(false)
-        }
-
         if (sessionStorage.getItem(LIBRARY_REFRESH_ON_RETURN_KEY) === 'true') {
             sessionStorage.removeItem(LIBRARY_REFRESH_ON_RETURN_KEY)
             router.refresh()
@@ -288,16 +281,6 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                             <Plus className="w-5 h-5" /> Start New Project
                         </Button>
                     </Link>
-                    {showTransferGuidance && (
-                        <LocalTransferGuidance
-                            className="w-full text-left"
-                            cloudSyncHref="/help?q=cloud%20sync"
-                            onDismiss={() => {
-                                setShowTransferGuidance(false)
-                                localStorage.setItem(transferGuidanceDismissKey, 'true')
-                            }}
-                        />
-                    )}
                     <OpenProjectButton currentUserId={currentUserId} className="w-full md:w-auto" center />
                 </div>
             </div>
