@@ -5,6 +5,35 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-11 — Apple OAuth (Phase 3) — feature-flagged, awaiting provider setup
+
+### What was completed
+
+- Added `getOAuthCallbackUrl` to `lib/auth/oauth.ts` (non-breaking refactor; `getGoogleOAuthCallbackUrl` kept as alias).
+- Added `lib/feature-flags.ts` with `featureFlags.appleOAuth` (`NEXT_PUBLIC_ENABLE_APPLE_OAUTH === 'true'`, defaults OFF).
+- Added inline Apple OAuth to `LoginForm.tsx` and `signup/page.tsx` matching the Google pattern exactly: `appleLoading` state, `handleAppleSign{In,Up}` function, `authBusy` updated to include `appleLoading`, `AppleIcon` SVG, button wrapped in `{featureFlags.appleOAuth && (...)}`.
+- Apple button sits between the Google button and the "Email" divider when the flag is ON.
+- TypeScript and ESLint passed on all changed files.
+
+### Current status
+
+**Apple OAuth code is complete but invisible in production.** The flag defaults to OFF. Google OAuth and email/password are unaffected.
+
+### Next recommended step
+
+1. Complete Apple Developer setup (Services ID, `.p8` Key, Team ID).
+2. Configure the Supabase Apple provider in the Dashboard.
+3. Add `http://localhost:3000/api/auth/callback` to Supabase redirect allow-list and Apple Developer Service ID return URLs.
+4. Set `NEXT_PUBLIC_ENABLE_APPLE_OAUTH=true` in `.env.local` and test locally.
+5. Run a full browser QA pass including a "Hide My Email" private-relay test.
+6. When validated, set the env var in the Netlify/production environment and deploy.
+
+### Risks or warnings
+
+- **Do not enable in production** until Apple Developer credentials, the Supabase Apple provider, and end-to-end browser testing (including private relay email) are complete.
+- Apple sends the user's display name only on the first OAuth consent; subsequent sign-ins omit it.
+
+---
 ## 2026-05-11 - Google OAuth browser validation passed
 
 ### What was completed

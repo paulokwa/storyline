@@ -9,7 +9,7 @@ function isLocalOrigin(origin: string) {
   }
 }
 
-export function getGoogleOAuthCallbackUrl(currentOrigin?: string) {
+export function getOAuthCallbackUrl(currentOrigin?: string) {
   const origin = currentOrigin ?? (typeof window !== 'undefined' ? window.location.origin : '')
 
   if (origin && isLocalOrigin(origin)) {
@@ -17,6 +17,11 @@ export function getGoogleOAuthCallbackUrl(currentOrigin?: string) {
   }
 
   return PRODUCTION_AUTH_CALLBACK_URL
+}
+
+// Backward-compatible alias kept for existing Google OAuth callers.
+export function getGoogleOAuthCallbackUrl(currentOrigin?: string) {
+  return getOAuthCallbackUrl(currentOrigin)
 }
 
 export const LOCAL_FIRST_AUTH_REASSURANCE =
