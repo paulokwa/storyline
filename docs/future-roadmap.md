@@ -23,6 +23,18 @@ Use this file when an idea is real enough to remember, but not ready to become a
 
 ---
 
+## Future authentication and social login
+
+### Apple OAuth / Sign in with Apple
+
+Apple OAuth is partially implemented but intentionally parked for later. Some login/signup code exists and is hidden behind `NEXT_PUBLIC_ENABLE_APPLE_OAUTH`, which defaults OFF. Do not enable the Apple button in production until Apple Developer setup, Supabase Apple provider configuration, and browser testing are complete.
+
+Future setup requires an Apple Developer account, Services ID, Team ID, Key ID, private `.p8` key, Supabase provider configuration, callback/return URL validation, and testing for private relay email behavior.
+
+Google OAuth is already implemented separately and should not be changed as part of this future Apple setup. Facebook/Meta and X/Twitter remain future social-login candidates and should not be bundled into Apple work.
+
+---
+
 ## Polish ideas from the 2026-05-11 audit
 
 These are useful user-experience improvements, but they should not outrank launch blockers or reliability work for a lone part-time builder.
