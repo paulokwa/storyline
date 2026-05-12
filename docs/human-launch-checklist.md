@@ -134,6 +134,27 @@ Before launch, confirm users see a trustworthy final product name and not a raw 
 
 AI agents can help list the provider dashboards and required fields, but Kwame must approve the final app name and branding before those external provider settings are finalized.
 
+### Supabase custom auth domain for polished social login
+
+During Google OAuth investigation, the Google account chooser showed the raw Supabase project host (`spzlrzqbpxewuyebbdly.supabase.co`) because Supabase acts as the auth broker and the OAuth callback currently uses the Supabase Auth URL. This is not an app-code bug and must not be fixed by changing the login button code.
+
+The correct launch-quality fix is to configure a branded Supabase custom auth domain (for example `auth.<final-domain>`) so the callback URL shown in social login flows reflects the actual product rather than the raw Supabase project host.
+
+Decision note: this is a trust/polish improvement, not a core functionality blocker if OAuth works correctly. If launch pressure is high, it is acceptable to launch with OAuth functioning correctly but showing the raw Supabase callback domain, then add the custom auth domain post-launch.
+
+Human/Supabase setup checklist (do this after the final public domain is decided):
+
+1. Decide the final public domain first. Do not configure this against a temporary Netlify URL unless that URL is final.
+2. In Supabase, check whether the project/plan supports a custom domain or custom Auth hostname.
+3. Create the DNS record Supabase asks for, using a branded auth subdomain such as `auth.<final-domain>`.
+4. Complete Supabase domain verification and wait for DNS/SSL provisioning.
+5. Update Supabase Auth URL configuration so auth links and callback handling use the branded auth domain where supported.
+6. Update the Google OAuth client's Authorized redirect URI to use the branded Supabase Auth callback instead of the raw Supabase project host, using the exact callback URL Supabase provides.
+7. Update Apple, Facebook/Meta, and X/Twitter callback URLs and app-domain settings too if those providers are enabled.
+8. Test signup, login, logout, email verification, password reset, and every social provider in incognito after the change.
+
+See GitHub issue #6 for the original investigation notes.
+
 ### Supabase auth redirect allowlist decision
 
 After production signup is confirmed working, decide whether to remove `http://localhost:3000/**` from the Supabase Auth redirect allowlist.
@@ -267,6 +288,7 @@ Before public launch, review:
 - Icons/favicons created
 - Verification, invite, password reset, magic link, and welcome email branding updated
 - Social login provider branding reviewed for Google, Apple, Facebook/Meta, and X/Twitter if enabled
+- Supabase custom auth domain decision made if raw Supabase project host still appears during social login
 - Supabase auth redirect allowlist decision made after production email links are confirmed
 - Auth verification edge-case launch check completed using `TESTING.md` Auth / Sessions entries
 - Trial/cloud pricing model decided
