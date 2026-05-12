@@ -746,7 +746,7 @@ function OpenRouterGuide({ onBack, onSelect }: { onBack: () => void, onSelect: (
             </DialogHeader>
             <div className="rounded-xl border border-violet-100 bg-violet-50/40 p-4 text-sm leading-6 text-slate-600">
                 <p className="font-semibold text-slate-800 mb-1">What is OpenRouter?</p>
-                OpenRouter is a service that gives you access to models from many providers (Anthropic, Google, Meta, Mistral, and more) with a single API key. Storyline uses <code className="rounded bg-white px-1 text-xs font-bold">gpt-4o-mini via OpenRouter</code> by default.
+                OpenRouter is a service that gives you access to models from many providers (Anthropic, Google, Meta, Mistral, and more) with a single API key. Storyline uses <code className="rounded bg-white px-1 text-xs font-bold">Llama 3.3 70B via OpenRouter</code> by default (a free-tier model). You can switch models in Settings once connected.
             </div>
             <div className="rounded-xl border border-amber-100 bg-amber-50/40 px-4 py-3 text-sm leading-6 text-slate-600">
                 <span className="font-semibold text-amber-800">Pricing note: </span>OpenRouter pricing depends on the model selected. Large requests may use more OpenRouter credits. Check your usage at openrouter.ai.

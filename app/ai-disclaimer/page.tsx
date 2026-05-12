@@ -74,7 +74,7 @@ export default function AiDisclaimerPage() {
                             </div>
                             <div>
                                 <h2 className="text-xl font-bold text-slate-800 mb-1">Third-Party AI Providers</h2>
-                                <p>Storyline uses third-party AI services (such as Google Gemini and OpenAI) to generate responses. Your use of these features is also subject to the terms and policies of those providers.</p>
+                                <p>Storyline uses third-party AI services (such as Google Gemini, OpenAI, and OpenRouter) to generate responses. Your use of these features is also subject to the terms and policies of those providers.</p>
                             </div>
                         </div>
 

@@ -947,7 +947,7 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                                 }} className="mt-0.5 shrink-0" />
                                                 <span className="font-medium text-slate-900">Free Trial AI</span>
                                             </div>
-                                            <p className="ml-5 mt-2 text-sm leading-6 text-slate-500">A small app-managed OpenAI trial for getting started.</p>
+                                            <p className="ml-5 mt-2 text-sm leading-6 text-slate-500">A small app-managed AI trial for getting started.</p>
                                         </label>
                                         <label className={`cursor-pointer rounded-xl border p-4 transition-all ${billingMode === 'byok' ? 'border-primary bg-slate-50 ring-1 ring-primary/30' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'}`}>
                                             <div className="flex items-start gap-2">

@@ -196,10 +196,10 @@ export default function FirstRunAiSetup({ displayName, initialAiSettings, trialS
                         </div>
                         <div className="space-y-3 text-sm text-slate-600">
                             <div className="rounded-2xl bg-[#f5f4ef] px-4 py-3">
-                                Free trial gives you sponsored OpenAI access with a capped budget.
+                                Free trial gives you Storyline-managed AI access with a capped budget.
                             </div>
                             <div className="rounded-2xl bg-[#f5f4ef] px-4 py-3">
-                                Use your own AI account by pasting an API key from OpenAI or Gemini.
+                                Use your own AI account by pasting an API key from OpenAI, Gemini, or OpenRouter.
                             </div>
                             <div className="rounded-2xl bg-[#f5f4ef] px-4 py-3">
                                 Ollama keeps generation local on your machine.
@@ -241,7 +241,7 @@ export default function FirstRunAiSetup({ displayName, initialAiSettings, trialS
                     <OptionCard
                         title="Free Trial AI"
                         copy={trialAvailable
-                            ? 'Start with sponsored OpenAI usage managed by Storyline.'
+                            ? 'Start with Storyline-managed AI access for free.'
                             : 'Sponsored trial is unavailable for this account right now.'}
                         icon={<Sparkles className="h-5 w-5" />}
                         active={mode === 'trial'}
@@ -313,8 +313,8 @@ export default function FirstRunAiSetup({ displayName, initialAiSettings, trialS
                         {mode === 'none' && 'Continue Without AI'}
                     </CardTitle>
                     <CardDescription className="text-slate-500">
-                        {mode === 'trial' && 'Storyline will use the sponsored app-managed OpenAI trial until the budget is exhausted.'}
-                        {mode === 'byok' && 'Paste a key from your own OpenAI or Gemini account so Storyline uses your billing instead of the built-in trial.'}
+                        {mode === 'trial' && 'Storyline will use the app-managed AI trial until the budget is exhausted.'}
+                        {mode === 'byok' && 'Paste a key from your own OpenAI, Gemini, or OpenRouter account so Storyline uses your billing instead of the built-in trial.'}
                         {mode === 'ollama' && 'Point Storyline at your local Ollama server and preferred model.'}
                         {mode === 'none' && 'AI will stay off. You can enable it later from Settings whenever you are ready.'}
                     </CardDescription>

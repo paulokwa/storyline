@@ -185,15 +185,16 @@ export const HELP_TOPICS: HelpTopic[] = [
   {
     id: 'ai-byok',
     title: 'How do I use my own API key?',
-    summary: 'Connect your own OpenAI or Gemini account so you pay your provider directly.',
+    summary: 'Connect your own OpenAI, Gemini, or OpenRouter account so you pay your provider directly.',
     answer:
-      'BYOK (Bring Your Own Key) means you create a free API key with OpenAI or Google and paste it into Storyline. Storyline uses that key to make AI requests on your behalf. You pay your provider based on your usage — Storyline does not charge you for AI.\n\nHow to get an OpenAI key:\n1. Go to platform.openai.com and sign in or create an account.\n2. Open API keys and create a new secret key.\n3. Copy the key immediately — it will not be shown again.\n\nHow to get a Gemini key:\n1. Go to aistudio.google.com and sign in.\n2. Click Get API Key.\n3. Copy the key.\n\nHow to add your key to Storyline:\n1. Go to Settings → AI Partner Settings.\n2. Select Use Your Own API Key.\n3. Choose OpenAI or Gemini.\n4. Paste your key and click Test & Save.\n\nYour key is stored only on your account and is never shared or logged by Storyline.',
-    keywords: ['api key', 'byok', 'bring your own key', 'openai key', 'gemini key', 'own key', 'openai', 'gemini', 'connect ai', 'paste key'],
+      'BYOK (Bring Your Own Key) means you create an API key with a provider of your choice and paste it into Storyline. Storyline uses that key to make AI requests on your behalf. You pay your provider based on your usage — Storyline does not charge you for AI.\n\nHow to get an OpenAI key:\n1. Go to platform.openai.com and sign in or create an account.\n2. Open API keys and create a new secret key.\n3. Copy the key immediately — it will not be shown again.\n\nHow to get a Gemini key:\n1. Go to aistudio.google.com and sign in.\n2. Click Get API Key.\n3. Copy the key.\n\nHow to get an OpenRouter key:\n1. Go to openrouter.ai and sign in or create an account.\n2. Open Keys and create a new key.\n3. Copy the key immediately — it will not be shown again.\nOpenRouter gives access to many models (including free-tier options) through a single key.\n\nHow to add your key to Storyline:\n1. Go to Settings → AI Partner Settings.\n2. Select Use Your Own API Key.\n3. Choose OpenAI, Gemini, or OpenRouter.\n4. Paste your key and click Test & Save.\n\nYour key is stored only on your account and is never shared or logged by Storyline.',
+    keywords: ['api key', 'byok', 'bring your own key', 'openai key', 'gemini key', 'openrouter key', 'own key', 'openai', 'gemini', 'openrouter', 'connect ai', 'paste key'],
     relatedRoutes: ['/settings'],
     sampleQuestions: [
       'How do I use my own API key?',
       'How do I connect OpenAI to Storyline?',
       'How do I add a Gemini key?',
+      'How do I connect OpenRouter to Storyline?',
       'What is BYOK?',
       'Where do I paste my API key?'
     ]
