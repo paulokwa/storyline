@@ -22,7 +22,7 @@ import { toast } from 'sonner'
 import { useTheme } from '@/components/providers/ThemeProvider'
 
 type StartMode = 'quick' | 'guided' | 'import'
-type Step = 'title' | 'type' | 'start_mode' | 'identity' | 'guided' | 'import'
+type Step = 'title' | 'type' | 'storage' | 'start_mode' | 'identity' | 'guided' | 'import'
 const LOCAL_MODE_EDUCATION_PENDING_KEY = 'storyline-local-mode-education-pending'
 const LOCAL_MODE_EDUCATION_SHOWN_KEY = 'storyline-local-mode-education-shown'
 
@@ -205,7 +205,7 @@ export default function NewProjectPage() {
     }
 
     const steps: Step[] = (() => {
-        const base: Step[] = ['title', 'type', 'start_mode']
+        const base: Step[] = ['title', 'type', 'storage', 'start_mode']
         if (state.startMode === 'guided') base.push('guided')
         else if (state.startMode === 'import') base.push('import')
         else if (state.startMode === 'quick') base.push('identity')
@@ -229,6 +229,7 @@ export default function NewProjectPage() {
                             Step {currentStepIndex + 1} of {steps.length} — {
                                 step === 'title' ? 'Project' :
                                 step === 'type' ? 'Format' :
+                                step === 'storage' ? 'Storage' :
                                 step === 'start_mode' ? 'Setup' :
                                 step === 'identity' ? 'Identity' :
                                 step === 'guided' ? 'Details' :
@@ -259,9 +260,19 @@ export default function NewProjectPage() {
                                 value={state.type}
                                 onSelect={(type) => {
                                     setState(s => ({ ...s, type }))
-                                    setStep('start_mode')
+                                    setStep('storage')
                                 }}
                                 onBack={() => setStep('title')}
+                            />
+                        )}
+
+                        {step === 'storage' && (
+                            <StepStorage
+                                value={selectedStorageMode}
+                                preferredStorageMode={preferredStorageMode}
+                                onChange={handleStorageModeChange}
+                                onContinue={() => setStep('start_mode')}
+                                onBack={() => setStep('type')}
                             />
                         )}
 
@@ -269,9 +280,6 @@ export default function NewProjectPage() {
                             <StepStartMode
                                 value={state.startMode}
                                 projectType={state.type!}
-                                storageMode={selectedStorageMode}
-                                preferredStorageMode={preferredStorageMode}
-                                onStorageModeChange={handleStorageModeChange}
                                 onSelect={(startMode) => {
                                     setState(s => ({ ...s, startMode }))
                                     if (startMode === 'guided') {
@@ -282,7 +290,7 @@ export default function NewProjectPage() {
                                         setStep('identity')
                                     }
                                 }}
-                                onBack={() => setStep('type')}
+                                onBack={() => setStep('storage')}
                                 creating={creating}
                             />
                         )}
@@ -300,7 +308,7 @@ export default function NewProjectPage() {
                         )}
 
                         {step === 'import' && state.type && (
-                            <ImportWizard 
+                            <ImportWizard
                                 projectType={state.type}
                                 onComplete={(chunks) => createProject({ chunks })}
                                 onBack={() => setStep('start_mode')}
@@ -310,7 +318,7 @@ export default function NewProjectPage() {
                         )}
 
                         {step === 'identity' && (
-                            <StepIdentity 
+                            <StepIdentity
                                 value={state.coverUrl}
                                 onChange={(url) => setState(s => ({ ...s, coverUrl: url }))}
                                 onFileChange={setPendingCoverFile}
@@ -398,7 +406,7 @@ function StepTypeSelect({ value, onSelect, onBack }: {
                     onClick={() => onSelect('tv_script')}
                 />
             </div>
-            
+
             <button onClick={onBack} className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-primary transition-colors">
                 <ChevronLeft className="w-4 h-4" /> Go Back
             </button>
@@ -406,12 +414,64 @@ function StepTypeSelect({ value, onSelect, onBack }: {
     )
 }
 
-function StepStartMode({ value, projectType, storageMode, preferredStorageMode, onStorageModeChange, onSelect, onBack, creating }: {
+function StepStorage({ value, preferredStorageMode, onChange, onContinue, onBack }: {
+    value: PreferredStorageMode
+    preferredStorageMode: PreferredStorageMode
+    onChange: (mode: PreferredStorageMode) => void
+    onContinue: () => void
+    onBack: () => void
+}) {
+    const { theme } = useTheme()
+    const isMidnight = theme === 'midnight'
+    return (
+        <div className="fade-in space-y-10">
+            <div className="space-y-4">
+                <h1 className={cn('text-4xl md:text-5xl font-serif leading-tight', isMidnight ? 'text-slate-100' : 'text-slate-800')}>
+                    Where will this<br /><span className={cn('italic', isMidnight ? 'text-slate-400' : 'text-slate-400')}>live?</span>
+                </h1>
+                <p className={cn('font-medium', isMidnight ? 'text-slate-300' : 'text-slate-500')}>Choose where this project will be stored. You can change this later.</p>
+            </div>
+
+            <div className="space-y-3">
+                <div className="text-xs text-slate-400 font-semibold">
+                    Default: {preferredStorageMode === 'cloud' ? 'Cloud & collaboration' : 'Private on this device'}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <StorageModeOption
+                        icon={<LockKeyhole className="w-5 h-5" />}
+                        title="Private on this device"
+                        description="Stored locally. Works offline. You can enable cloud later."
+                        selected={value === 'local'}
+                        onClick={() => onChange('local')}
+                    />
+                    <StorageModeOption
+                        icon={<Cloud className="w-5 h-5" />}
+                        title="Cloud & collaboration"
+                        description="Stored in the cloud. Supports collaboration and access across devices."
+                        selected={value === 'cloud'}
+                        onClick={() => onChange('cloud')}
+                    />
+                </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-6 border-t border-slate-100">
+                <button onClick={onBack} className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-primary transition-colors">
+                    <ChevronLeft className="w-4 h-4" /> Go Back
+                </button>
+                <Button
+                    onClick={onContinue}
+                    className="sanctuary-btn-primary h-14 px-10 rounded-full text-base font-semibold gap-3"
+                >
+                    Continue <ChevronRight className="w-5 h-5" />
+                </Button>
+            </div>
+        </div>
+    )
+}
+
+function StepStartMode({ value, projectType, onSelect, onBack, creating }: {
     value: StartMode | null
     projectType: ProjectType
-    storageMode: PreferredStorageMode
-    preferredStorageMode: PreferredStorageMode
-    onStorageModeChange: (mode: PreferredStorageMode) => void
     onSelect: (m: StartMode) => void
     onBack: () => void
     creating: boolean
@@ -426,13 +486,6 @@ function StepStartMode({ value, projectType, storageMode, preferredStorageMode, 
                 </h1>
                 <p className={cn('font-medium', isMidnight ? 'text-slate-300' : 'text-slate-500')}>Choose how you want to start.</p>
             </div>
-
-            <StorageModeSelector
-                value={storageMode}
-                preferredStorageMode={preferredStorageMode}
-                onChange={onStorageModeChange}
-                disabled={creating}
-            />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <TypeCard
@@ -471,46 +524,6 @@ function StepStartMode({ value, projectType, storageMode, preferredStorageMode, 
                     <ChevronLeft className="w-4 h-4" /> Go Back
                 </button>
             )}
-        </div>
-    )
-}
-
-function StorageModeSelector({ value, preferredStorageMode, onChange, disabled }: {
-    value: PreferredStorageMode
-    preferredStorageMode: PreferredStorageMode
-    onChange: (mode: PreferredStorageMode) => void
-    disabled?: boolean
-}) {
-    return (
-        <div className="space-y-3">
-            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                    <div className="text-xs font-bold uppercase tracking-[0.24em] text-[#546354]/70">Storage</div>
-                    <p className="text-sm text-slate-500 font-medium">Choose where this project will be stored.</p>
-                </div>
-                <div className="text-xs text-slate-400 font-semibold">
-                    Default: {preferredStorageMode === 'cloud' ? 'Cloud & collaboration' : 'Private on this device'}
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <StorageModeOption
-                    icon={<LockKeyhole className="w-5 h-5" />}
-                    title="Private on this device"
-                    description="Stored locally. Works offline. You can enable cloud later."
-                    selected={value === 'local'}
-                    disabled={disabled}
-                    onClick={() => onChange('local')}
-                />
-                <StorageModeOption
-                    icon={<Cloud className="w-5 h-5" />}
-                    title="Cloud & collaboration"
-                    description="Stored in the cloud. Supports collaboration and access across devices."
-                    selected={value === 'cloud'}
-                    disabled={disabled}
-                    onClick={() => onChange('cloud')}
-                />
-            </div>
         </div>
     )
 }
