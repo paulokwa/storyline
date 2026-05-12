@@ -130,7 +130,7 @@ export default function LoginForm({ verificationStatus = '' }: LoginFormProps) {
 
                 <div className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 p-10">
                     <h1 className="text-3xl font-serif text-slate-800 mb-2 leading-tight">Welcome back</h1>
-                    <p className="text-slate-400 font-medium mb-8">Sign in to your creative sanctuary</p>
+                    <p className="text-slate-400 font-medium mb-8">Step back into your creative workspace.</p>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {verificationMessage && (
