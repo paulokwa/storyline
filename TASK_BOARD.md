@@ -91,7 +91,43 @@ Before changing export code, check `TESTING.md`, `SESSION_HANDOVER.md`, and `doc
 
 ## Next
 
+### 1. Cover art optimization — library performance and upload safety
 
+**Problem:**  
+Library/project cover art can take too long to load if uploaded images are large. This may make the library feel slow or broken, especially when users upload high-resolution images directly from phones, AI art tools, or stock image downloads.
+
+**Goal:**  
+Automatically optimize cover images at upload time and ensure the library uses lightweight thumbnails instead of full-size originals.
+
+**Scope:**
+- Audit current cover upload flow and storage path.
+- Add upload-time validation for cover art:
+  - supported formats
+  - maximum file size
+  - graceful error message for unsupported/oversized files
+- Add automatic image processing after user upload:
+  - resize large images to app-safe cover dimensions
+  - compress image to a reasonable quality
+  - generate a small library thumbnail
+- Ensure the library/project grid uses the optimized thumbnail, not the full-size cover image.
+- Add lazy loading, placeholder/skeleton state, and fallback cover styling if the image is missing or slow.
+- Decide whether originals should be discarded or stored separately only if needed.
+- Ensure this works for both default/generated covers and user-uploaded covers.
+- Confirm behaviour for local projects vs cloud projects if cover storage differs.
+
+**Acceptance criteria:**
+- Uploading a very large cover image does not make the library slow.
+- Library cards load using small optimized images.
+- Oversized or unsupported uploads show a friendly warning instead of failing silently.
+- Existing covers still display correctly.
+- Missing/broken cover URLs fall back to a clean default cover/card state.
+- No user project data is lost during cover replacement.
+- Add/update tests where practical for upload validation and cover URL selection.
+
+**Priority:** Medium-high before public beta  
+**Reason:** First-impression performance issue. A slow library makes the app feel heavier and more “vibe-coded” than it actually is.
+
+---
 
 ## Later
 
