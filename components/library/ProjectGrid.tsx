@@ -267,21 +267,31 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
 
     if (localProjectsLoaded && orderedActive.length === 0 && !draft) {
         return (
-            <div className="library-grid-shell w-full px-6 py-24 text-center fade-in">
-                <div className={cn("w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8", isMidnight ? "bg-slate-800/80 border border-slate-700/60" : "bg-stone-100")}>
-                    <BookOpen className="w-10 h-10 text-stone-400" />
+            <div className="library-grid-shell flex min-h-full flex-col w-full px-6 fade-in">
+                <div className="flex flex-1 flex-col items-center justify-center py-24 text-center">
+                    <div className={cn("w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8", isMidnight ? "bg-slate-800/80 border border-slate-700/60" : "bg-stone-100")}>
+                        <BookOpen className="w-10 h-10 text-stone-400" />
+                    </div>
+                    <h2 className={cn("text-3xl font-serif mb-4", isMidnight ? "text-slate-100" : "text-slate-800")}>Start your first project</h2>
+                    <p className={cn("text-lg mb-10 max-w-md mx-auto font-medium leading-relaxed", isMidnight ? "text-slate-400" : "text-slate-500")}>
+                        Create a Book or Screenplay and begin writing your next masterpiece.
+                    </p>
+                    <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-4">
+                        <Link href="/new">
+                            <Button className="sanctuary-btn-primary h-14 px-10 rounded-full text-base font-semibold gap-3 shadow-xl hover:shadow-primary/20 transition-all active:scale-[0.98]">
+                                <Plus className="w-5 h-5" /> Start New Project
+                            </Button>
+                        </Link>
+                        <OpenProjectButton currentUserId={currentUserId} className="w-full md:w-auto" center />
+                    </div>
                 </div>
-                <h2 className={cn("text-3xl font-serif mb-4", isMidnight ? "text-slate-100" : "text-slate-800")}>Start your first project</h2>
-                <p className={cn("text-lg mb-10 max-w-md mx-auto font-medium leading-relaxed", isMidnight ? "text-slate-400" : "text-slate-500")}>
-                    Create a Book or Screenplay and begin writing your next masterpiece.
-                </p>
-                <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-4">
-                    <Link href="/new">
-                        <Button className="sanctuary-btn-primary h-14 px-10 rounded-full text-base font-semibold gap-3 shadow-xl hover:shadow-primary/20 transition-all active:scale-[0.98]">
-                            <Plus className="w-5 h-5" /> Start New Project
-                        </Button>
-                    </Link>
-                    <OpenProjectButton currentUserId={currentUserId} className="w-full md:w-auto" center />
+                <div className={cn("pt-8 pb-10 flex flex-col md:flex-row justify-between items-center gap-6 opacity-40 hover:opacity-100 transition-opacity", isMidnight ? "border-t border-slate-700/50" : "border-t border-slate-100")}>
+                    <p className="text-[10px] font-bold tracking-widest uppercase text-slate-400">© 2026 Storyline — Built for Authors</p>
+                    <div className="flex gap-8">
+                        <Link href="/terms" className="text-[10px] font-bold tracking-widest uppercase text-slate-400 hover:text-[#546354] transition-colors">Terms</Link>
+                        <Link href="/privacy" className="text-[10px] font-bold tracking-widest uppercase text-slate-400 hover:text-[#546354] transition-colors">Privacy</Link>
+                        <Link href="/ai-disclaimer" className="text-[10px] font-bold tracking-widest uppercase text-slate-400 hover:text-[#546354] transition-colors">AI Disclaimer</Link>
+                    </div>
                 </div>
             </div>
         )
@@ -291,7 +301,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
 
     return (
         <TooltipProvider>
-            <div className="library-grid-shell w-full px-5 py-12 sm:px-6 sm:py-16 lg:py-24">
+            <div className="library-grid-shell flex min-h-full flex-col w-full px-5 py-12 sm:px-6 sm:py-16 lg:py-24">
                 <div className={cn("flex flex-col gap-8 mb-14 pb-10 lg:flex-row lg:items-end lg:justify-between lg:gap-12 lg:mb-20 lg:pb-12", isMidnight ? "border-b border-slate-700/50" : "border-b border-slate-100")}>
                     <div className="max-w-2xl space-y-4">
                         <motion.h1 
@@ -540,7 +550,8 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                     )}
                 </AnimatePresence>
                 
-                <div className={cn("mt-24 pt-8 flex flex-col md:flex-row justify-between items-center gap-6 opacity-40 hover:opacity-100 transition-opacity", isMidnight ? "border-t border-slate-700/50" : "border-t border-slate-100")}>
+                <div className="flex-1 min-h-24" />
+                <div className={cn("pt-8 pb-10 flex flex-col md:flex-row justify-between items-center gap-6 opacity-40 hover:opacity-100 transition-opacity", isMidnight ? "border-t border-slate-700/50" : "border-t border-slate-100")}>
                     <p className="text-[10px] font-bold tracking-widest uppercase text-slate-400">© 2026 Storyline — Built for Authors</p>
                     <div className="flex gap-8">
                         <Link href="/terms" className="text-[10px] font-bold tracking-widest uppercase text-slate-400 hover:text-[#546354] transition-colors">Terms</Link>
