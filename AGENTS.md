@@ -121,15 +121,17 @@ Before planning or changing the project, read these files in this order:
 
 1. `MASTER_BRIEF.md`
 2. `AGENTS.md`
-3. `TROUBLESHOOTING.md`
+3. `docs/troubleshooting/TROUBLESHOOTING.md`
 4. `DECISION_LOG.md`
 5. `SESSION_HANDOVER.md`
 6. `TASK_BOARD.md`
 7. `TESTING.md`
 
+Also scan `docs/troubleshooting/` for focused troubleshooting notes relevant to the current symptom. The root-level `TROUBLESHOOTING.md` path is intentionally not used; troubleshooting docs live under `docs/troubleshooting/`.
+
 For small, isolated implementation tasks, still read `MASTER_BRIEF.md` first, then inspect only the additional files needed for the task.
 
-If debugging a failure, always check `TROUBLESHOOTING.md` before inventing a new fix.
+If debugging a failure, always check `docs/troubleshooting/TROUBLESHOOTING.md` and any relevant focused note in `docs/troubleshooting/` before inventing a new fix.
 
 ---
 
@@ -137,11 +139,11 @@ If debugging a failure, always check `TROUBLESHOOTING.md` before inventing a new
 
 When investigating any bug, broken dev server, build failure, runtime error, Supabase issue, export/import issue, local/cloud sync issue, or unexplained behaviour:
 
-1. Search `TROUBLESHOOTING.md` for a matching symptom or category.
+1. Search `docs/troubleshooting/TROUBLESHOOTING.md` and the rest of `docs/troubleshooting/` for a matching symptom or category.
 2. State whether a matching known issue was found.
 3. If a match exists, apply the documented safe fix first unless evidence clearly rules it out.
 4. If no match exists, continue normal diagnosis and avoid speculative commands.
-5. If a new fix is confirmed, add a concise entry to `TROUBLESHOOTING.md` before ending the session.
+5. If a new fix is confirmed, add a concise entry to `docs/troubleshooting/TROUBLESHOOTING.md` or create a focused note in `docs/troubleshooting/` before ending the session.
 
 Do not skip this lookup just because the likely fix seems obvious.
 
@@ -179,7 +181,7 @@ For bugs, broken dev server, build failures, or unexpected runtime behaviour:
 
 1. Reproduce or inspect the failure.
 2. Capture the exact error message.
-3. Check `TROUBLESHOOTING.md` for known matching symptoms or safe fixes.
+3. Check `docs/troubleshooting/TROUBLESHOOTING.md` and relevant focused notes in `docs/troubleshooting/` for known matching symptoms or safe fixes.
 4. Identify the category:
    - Next.js cache/build artifact issue
    - dependency/install issue
@@ -194,7 +196,7 @@ For bugs, broken dev server, build failures, or unexpected runtime behaviour:
 5. Inspect the relevant files.
 6. Apply the smallest safe fix.
 7. Verify the result.
-8. If the fix is new and reusable, update `TROUBLESHOOTING.md`.
+8. If the fix is new and reusable, update `docs/troubleshooting/TROUBLESHOOTING.md` or add a focused note under `docs/troubleshooting/`.
 9. Report clearly.
 
 ---
@@ -207,7 +209,7 @@ Check in this order:
 
 1. Confirm the project root contains `package.json`.
 2. Inspect available scripts.
-3. Check `TROUBLESHOOTING.md` for known Next.js/dev-server symptoms.
+3. Check `docs/troubleshooting/TROUBLESHOOTING.md` and `docs/troubleshooting/` for known Next.js/dev-server symptoms.
 4. Check whether another dev server is already running.
 5. Run the dev command if allowed.
 6. Capture the terminal error.
@@ -239,7 +241,7 @@ Bad:
 “Try these ten commands.”
 
 Good:
-“I found evidence that `.next` is stale. I checked TROUBLESHOOTING.md, cleared `.next`, restarted the dev server, and verified the app loads.”
+“I found evidence that `.next` is stale. I checked docs/troubleshooting, cleared `.next`, restarted the dev server, and verified the app loads.”
 
 When commands are needed, run them yourself if available.
 
