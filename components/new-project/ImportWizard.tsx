@@ -213,7 +213,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
     const label = getProjectTypeLabel(projectType)
 
     return (
-        <div className="space-y-10 animate-in fade-in duration-500">
+        <div className="import-wizard-shell space-y-10 animate-in fade-in duration-500">
             <div className="space-y-4">
                 <h2 className="text-4xl md:text-5xl font-serif text-slate-800 leading-tight">
                     Import your<br /><span className="text-slate-400 italic">manuscript</span>

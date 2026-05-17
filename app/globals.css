@@ -2146,6 +2146,73 @@ body {
   box-shadow: 0 28px 90px rgba(2, 6, 23, 0.46) !important;
 }
 
+[data-theme='midnight'] .import-wizard-shell {
+  color: #eff4ff !important;
+}
+
+[data-theme='midnight'] .import-wizard-shell [class*="text-slate-900"],
+[data-theme='midnight'] .import-wizard-shell [class*="text-slate-800"],
+[data-theme='midnight'] .import-wizard-shell [class*="text-slate-700"],
+[data-theme='midnight'] .import-wizard-shell [class*="text-slate-600"] {
+  color: #eff4ff !important;
+}
+
+[data-theme='midnight'] .import-wizard-shell [class*="text-slate-500"],
+[data-theme='midnight'] .import-wizard-shell [class*="text-slate-400"],
+[data-theme='midnight'] .import-wizard-shell [class*="text-slate-300"] {
+  color: #aebbd3 !important;
+  opacity: 1 !important;
+}
+
+[data-theme='midnight'] .import-wizard-shell [class*="bg-white"],
+[data-theme='midnight'] .import-wizard-shell [class*="bg-stone-50"],
+[data-theme='midnight'] .import-wizard-shell [class*="bg-slate-50"],
+[data-theme='midnight'] .import-wizard-shell [class*="bg-slate-100"],
+[data-theme='midnight'] .import-wizard-shell [class*="bg-primary/5"],
+[data-theme='midnight'] .import-wizard-shell [class*="bg-indigo-50"] {
+  background-color: rgba(24, 34, 57, 0.9) !important;
+}
+
+[data-theme='midnight'] .import-wizard-shell [class*="hover:bg-stone-50"]:hover,
+[data-theme='midnight'] .import-wizard-shell [class*="hover:bg-slate-50"]:hover,
+[data-theme='midnight'] .import-wizard-shell [class*="hover:bg-white"]:hover {
+  background-color: rgba(37, 49, 77, 0.92) !important;
+}
+
+[data-theme='midnight'] .import-wizard-shell [class*="border-slate-"],
+[data-theme='midnight'] .import-wizard-shell [class*="border-stone-"],
+[data-theme='midnight'] .import-wizard-shell [class*="border-primary/10"],
+[data-theme='midnight'] .import-wizard-shell [class*="border-indigo-"] {
+  border-color: rgba(96, 115, 151, 0.32) !important;
+}
+
+[data-theme='midnight'] .import-wizard-shell [class*="bg-amber-50"] {
+  background-color: rgba(146, 96, 28, 0.18) !important;
+}
+
+[data-theme='midnight'] .import-wizard-shell [class*="bg-amber-100"] {
+  background-color: rgba(180, 120, 30, 0.24) !important;
+}
+
+[data-theme='midnight'] .import-wizard-shell [class*="border-amber-"] {
+  border-color: rgba(247, 200, 115, 0.28) !important;
+}
+
+[data-theme='midnight'] .import-wizard-shell [class*="text-amber-900"],
+[data-theme='midnight'] .import-wizard-shell [class*="text-amber-800"],
+[data-theme='midnight'] .import-wizard-shell [class*="text-amber-700"],
+[data-theme='midnight'] .import-wizard-shell [class*="text-amber-600"] {
+  color: #f7c873 !important;
+}
+
+[data-theme='midnight'] .import-wizard-shell [class*="bg-red-50"] {
+  background-color: rgba(127, 29, 29, 0.22) !important;
+}
+
+[data-theme='midnight'] .import-wizard-shell [class*="text-red-600"] {
+  color: #fca5a5 !important;
+}
+
 [data-theme='midnight'] .guided-flow-shell,
 [data-theme='midnight'] .guided-flow-step,
 [data-theme='midnight'] .guided-flow-copy {

@@ -327,6 +327,29 @@ Add a short entry using this format:
 
 - This is targeted launch polish, not a full dark-mode redesign. Keep the full dark-mode polish pass as future work until the broader UI is stable.
 
+## Issue: Import wizard headings are low contrast in Midnight theme
+
+### Symptoms
+
+- In the New Project import flow, the main import heading, selected file title, split section heading, and inactive split-card titles are nearly invisible in Midnight theme.
+- The same flow remains readable in Sanctuary/light theme.
+
+### Cause
+
+- `ImportWizard` used hard-coded light-theme Tailwind classes such as `text-slate-800`, `text-slate-700`, `bg-white`, and `bg-stone-50`.
+- Existing Midnight overrides covered the New Project card and guided flow, but did not have a dedicated import-wizard scope.
+
+### Fix
+
+- Add a narrow wrapper class to the import wizard.
+- Add `[data-theme='midnight']` overrides scoped to that wrapper for slate text, light surfaces, borders, warning surfaces, and error surfaces.
+- Do not change import parsing, project creation, or Sanctuary/light theme behavior.
+
+### Verification
+
+- Check computed contrast for the import title, selected file title, split heading, inactive strategy title, and helper text. Primary text should be at least WCAG AA `4.5:1`; the current scoped Midnight colors measure above `10:1` on the New Project card.
+- Run TypeScript, focused ESLint for `components/new-project/ImportWizard.tsx`, and `npm run build`.
+
 ## Issue: Settings save fails because `ai_context_mode` is missing from Supabase schema cache
 
 ### Symptoms
