@@ -51,7 +51,7 @@ If `CHANGE DETECTED`, include:
 
 Run this check once at the start of a new chat/session only. Do not repeat it before every prompt inside the same session unless the user explicitly asks, the session context is reset, or a later task newly requires a service that was not checked.
 
-After reading `MASTER_BRIEF.md`, and before doing the requested work, perform a read-only access check for the external services relevant to this project:
+After reading `MASTER_BRIEF.md`, and before doing the requested work, perform a read-only access check for the external services and local tools relevant to this project:
 
 1. GitHub access
    - Confirm the repository is accessible.
@@ -72,30 +72,38 @@ After reading `MASTER_BRIEF.md`, and before doing the requested work, perform a 
    - Use read-only checks first.
    - Do not trigger deploys, change environment variables, promote deploys, or roll back deploys unless explicitly instructed.
 
+4. Impeccable access
+   - Confirm whether the Impeccable skill/tooling is present and usable in this workspace.
+   - Check expected local paths such as `.agents/skills/impeccable/` and/or `impeccable/` when relevant.
+   - If an Impeccable load/context script is documented in the repo, run the read-only/load command only when appropriate for the task.
+   - Do not install, update, delete, or commit Impeccable tooling unless explicitly instructed.
+   - If Impeccable is missing, partial, or not usable, report that immediately and explain whether the task can continue without it.
+
 Report the result before the main task using this format:
 
 ```md
 ### Startup Access Check
 
-| Service | Status | Notes |
+| Service / Tool | Status | Notes |
 |---|---|---|
 | GitHub | Available / Partial / Not Available | ... |
 | Supabase | Available / Partial / Not Available | ... |
 | Netlify | Available / Partial / Not Available | ... |
+| Impeccable | Available / Partial / Not Available | ... |
 
 ### Access Impact
 
 - Can the requested task continue safely with current access?
 - What cannot be verified, if anything?
-- Can the agent safely self-fix the missing access?
-- If not, what exact command, login, token, MCP setup, dashboard step, or manual action does Paul/Kwame need to do?
-- Should the task continue in read-only mode or pause?
+- Can the agent safely self-fix the missing access/tooling?
+- If not, what exact command, login, token, MCP setup, dashboard step, local install step, or manual action does Paul/Kwame need to do?
+- Should the task continue in read-only mode, continue without the missing tool, or pause?
 ```
 
 Do not silently assume access exists.
 Do not fake verification.
-Do not continue into risky changes when required access is missing or unclear.
-If access is missing, partial, expired, or unclear, tell Paul/Kwame in the next response so he can decide whether to allow a self-fix or follow manual setup steps.
+Do not continue into risky changes when required access/tooling is missing or unclear.
+If access/tooling is missing, partial, expired, or unclear, tell Paul/Kwame in the next response so he can decide whether to allow a self-fix or follow manual setup steps.
 
 ---
 
