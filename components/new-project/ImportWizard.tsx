@@ -22,6 +22,9 @@ interface ImportWizardProps {
     creatingLabel?: string
 }
 
+type ImportChunk = { title: string; content: string }
+type SplitStrategy = 'single' | 'chapter_keyword' | 'custom' | 'ai_detect'
+
 export default function ImportWizard({ projectType, onComplete, onBack, creating, creatingLabel = 'Building Project...' }: ImportWizardProps) {
     const [file, setFile] = useState<File | null>(null)
     const [rawText, setRawText] = useState('')
@@ -29,11 +32,12 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
     const [error, setError] = useState('')
     
     // Split settings
-    const [splitStrategy, setSplitStrategy] = useState<'single' | 'chapter_keyword' | 'custom'>('chapter_keyword')
+    const [splitStrategy, setSplitStrategy] = useState<SplitStrategy>('chapter_keyword')
     const [customDelimiter, setCustomDelimiter] = useState('***')
     
     // Chunk Preview
-    const [chunks, setChunks] = useState<{ title: string; content: string }[]>([])
+    const [chunks, setChunks] = useState<ImportChunk[]>([])
+    const [aiChunks, setAiChunks] = useState<ImportChunk[] | null>(null)
     
     // AI Detection State
     const [aiDetecting, setAiDetecting] = useState(false)
@@ -74,10 +78,10 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
         }
     }
 
-    const processChunks = (text: string, strategy: typeof splitStrategy, delimiter: string = '***') => {
-        if (!text) return
+    const buildChunks = (text: string, strategy: Exclude<SplitStrategy, 'ai_detect'>, delimiter: string = '***') => {
+        if (!text) return []
 
-        let outputChunks: { title: string; content: string }[] = []
+        let outputChunks: ImportChunk[] = []
 
         if (strategy === 'single') {
             outputChunks = [{ title: 'Full Document', content: text }]
@@ -99,16 +103,25 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
             })
         }
 
-        setChunks(outputChunks.filter(c => c.content.length > 0))
+        return outputChunks.filter(c => c.content.length > 0)
     }
 
-    const updateStrategy = (strat: typeof splitStrategy) => {
+    const processChunks = (text: string, strategy: Exclude<SplitStrategy, 'ai_detect'>, delimiter: string = '***') => {
+        setChunks(buildChunks(text, strategy, delimiter))
+    }
+
+    const updateStrategy = (strat: SplitStrategy) => {
         setSplitStrategy(strat)
+        if (strat === 'ai_detect') {
+            if (aiChunks) setChunks(aiChunks)
+            return
+        }
         processChunks(rawText, strat, customDelimiter)
     }
 
     const updateDelimiter = (val: string) => {
         setCustomDelimiter(val)
+        setSplitStrategy('custom')
         processChunks(rawText, 'custom', val)
     }
 
@@ -116,6 +129,17 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
         const updated = [...chunks]
         updated[index].title = newTitle
         setChunks(updated)
+        if (splitStrategy === 'ai_detect') {
+            setAiChunks(updated)
+        }
+    }
+
+    const resetSelectedFile = () => {
+        setRawText('')
+        setChunks([])
+        setAiChunks(null)
+        setSplitStrategy('chapter_keyword')
+        setCustomDelimiter('***')
     }
 
     const triggerAiDetection = async () => {
@@ -180,7 +204,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                 throw new Error('AI found structure, but it could not be mapped to your file. Try using manual markers.')
             }
 
-            const newChunks: { title: string, content: string }[] = []
+            const newChunks: ImportChunk[] = []
             let start = 0
             setAiStatus('Building import preview...')
             setAiProgress(88)
@@ -197,8 +221,10 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                 content: rawText.substring(start).trim()
             })
 
-            setChunks(newChunks.filter(c => c.content.length > 10))
-            setSplitStrategy('custom')
+            const aiPreviewChunks = newChunks.filter(c => c.content.length > 10)
+            setAiChunks(aiPreviewChunks)
+            setChunks(aiPreviewChunks)
+            setSplitStrategy('ai_detect')
             setAiStatus('')
             setAiProgress(100)
 
@@ -279,7 +305,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setRawText('')}
+                                onClick={resetSelectedFile}
                                 disabled={creating}
                                 className="w-full sm:w-auto"
                             >
@@ -299,9 +325,12 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
 
                     <div className="pt-2">
                         <button 
-                            onClick={() => setShowSanityModal(true)}
+                            onClick={() => aiChunks ? updateStrategy('ai_detect') : setShowSanityModal(true)}
                             disabled={aiDetecting}
-                            className="w-full relative group overflow-hidden bg-slate-900 text-white rounded-2xl p-5 hover:bg-slate-800 transition-all active:scale-[0.99] border border-slate-700 shadow-xl shadow-slate-900/10"
+                            className={cn(
+                                "w-full relative group overflow-hidden bg-slate-900 text-white rounded-2xl p-5 hover:bg-slate-800 transition-all active:scale-[0.99] border shadow-xl shadow-slate-900/10",
+                                splitStrategy === 'ai_detect' ? "border-indigo-300 ring-2 ring-indigo-400/30" : "border-slate-700"
+                            )}
                         >
                             <div className="flex items-center justify-between relative z-10">
                                 <div className="flex items-center gap-4">
@@ -312,9 +341,16 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                                         <div className="flex items-center gap-2">
                                             <div className="font-serif text-lg font-medium tracking-tight">✨ Magic Detect</div>
                                             <span className="text-[10px] font-bold uppercase tracking-widest bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/30">Beta</span>
+                                            {aiChunks && (
+                                                <span className="text-[10px] font-bold uppercase tracking-widest bg-emerald-500/15 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-400/25">Saved</span>
+                                            )}
                                         </div>
                                         <div className="text-xs text-slate-400 font-medium leading-relaxed max-w-sm mt-1">
-                                            Experimental. Use AI to suggest chapters. <span className="text-slate-300 font-semibold underline decoration-slate-600 underline-offset-2 italic">Manual import is typically more reliable</span> for complex formatting.
+                                            {aiChunks ? (
+                                                <>View the saved AI structure without sending another request.</>
+                                            ) : (
+                                                <>Experimental. Use AI to suggest chapters. <span className="text-slate-300 font-semibold underline decoration-slate-600 underline-offset-2 italic">Manual import is typically more reliable</span> for complex formatting.</>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -446,8 +482,8 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
 
             {/* Sanity Check Modal */}
             {showSanityModal && (
-                <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
-                    <div className="bg-white rounded-[2rem] md:rounded-[2.5rem] p-8 md:p-14 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl relative animate-in zoom-in-95 duration-500 border border-slate-100">
+                <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[100] flex items-start justify-center overflow-y-auto p-4 md:p-6 animate-in fade-in duration-300 sm:items-center">
+                    <div className="import-wizard-sanity-modal bg-white rounded-[2rem] md:rounded-[2.5rem] p-8 md:p-14 max-w-lg w-full max-h-[calc(100dvh-2rem)] md:max-h-[calc(100dvh-3rem)] overflow-y-auto overscroll-contain shadow-2xl relative animate-in zoom-in-95 duration-500 border border-slate-100">
                         <button 
                             onClick={() => setShowSanityModal(false)}
                             className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-50 text-slate-400 transition-colors"

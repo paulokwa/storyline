@@ -5,6 +5,30 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-17 - Import wizard AI preview cache and modal scroll containment
+
+### What was completed
+
+- Fixed the New Project import wizard so Magic Detect output is cached separately from manual split previews.
+- Added an `ai_detect` preview state so users can compare By Heading, Custom Marker, Single Scene, and the saved AI structure without sending repeated AI organizer requests.
+- Kept file extraction, manual split logic, and `/api/import/ai-detect` request behavior unchanged.
+- Constrained the Magic Detect confirmation modal with `100dvh` max height and overlay scrolling so the scrollbar stays within the usable viewport.
+- Documented the reusable failure mode in `docs/troubleshooting/TROUBLESHOOTING.md`.
+
+### Current status
+
+TypeScript, focused ESLint for `ImportWizard.tsx`, `git diff --check`, `npm run build`, and `netlify build --context production` passed. Manual signed-in browser verification is still recommended for the exact import flow.
+
+### Next recommended step
+
+In the browser, import a real manuscript, run Magic Detect once, switch to By Heading or Single Scene, then click Magic Detect again and confirm the saved AI preview returns without another `/api/import/ai-detect` request.
+
+### Risks or warnings
+
+- The AI preview cache is intentionally temporary component state. It clears when the selected file is changed or the import flow is left.
+- This does not persist AI organizer results across page refreshes.
+
+---
 ## 2026-05-17 - Production EPUB import 500 narrowed and fixed
 
 ### What was completed

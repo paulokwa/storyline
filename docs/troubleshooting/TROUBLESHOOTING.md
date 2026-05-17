@@ -350,6 +350,32 @@ Add a short entry using this format:
 - Check computed contrast for the import title, selected file title, split heading, inactive strategy title, and helper text. Primary text should be at least WCAG AA `4.5:1`; the current scoped Midnight colors measure above `10:1` on the New Project card.
 - Run TypeScript, focused ESLint for `components/new-project/ImportWizard.tsx`, and `npm run build`.
 
+## Issue: Magic Detect preview is lost after comparing manual import options
+
+### Symptoms
+
+- After running Magic Detect, clicking another split option such as By Heading or Single Scene replaces the AI-generated preview.
+- Returning to Magic Detect asks the user to run the AI organizer again instead of showing the previous AI result.
+- The Magic Detect confirmation modal can exceed the visible viewport, making the scrollbar appear outside the usable window on smaller screens.
+
+### Cause
+
+- Manual split previews and Magic Detect previews shared the same `chunks` state.
+- Magic Detect also marked the active strategy as `custom`, so the UI had no durable "AI preview" state to restore.
+- The confirmation modal used a `90vh` max height inside a padded centered overlay, which can overflow the viewport once overlay padding is included.
+
+### Fix
+
+- Keep the current displayed preview in `chunks`, but store Magic Detect output separately in an `aiChunks` cache until the file is changed or the project is finalized.
+- Add an `ai_detect` strategy state so clicking Magic Detect after a successful run restores the saved AI preview without another request.
+- Keep manual import logic and AI detection calls unchanged.
+- Constrain the confirmation modal with `100dvh`-based max height and let the overlay scroll safely.
+
+### Verification
+
+- Run Magic Detect once, switch to By Heading or Single Scene, then click Magic Detect again. The preview should return immediately and no new `/api/import/ai-detect` request should be sent.
+- Run TypeScript, focused ESLint for `components/new-project/ImportWizard.tsx`, and a production build.
+
 ## Issue: Settings save fails because `ai_context_mode` is missing from Supabase schema cache
 
 ### Symptoms
