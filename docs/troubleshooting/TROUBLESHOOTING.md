@@ -369,7 +369,8 @@ Add a short entry using this format:
 - Keep the current displayed preview in `chunks`, but store Magic Detect output separately in an `aiChunks` cache until the file is changed or the project is finalized.
 - Add an `ai_detect` strategy state so clicking Magic Detect after a successful run restores the saved AI preview without another request.
 - Keep manual import logic and AI detection calls unchanged.
-- Constrain the confirmation modal with `100dvh`-based max height and let the overlay scroll safely.
+- Constrain the confirmation modal with `100dvh`-based max height.
+- Keep the rounded outer modal shell `overflow-hidden` and put `overflow-y-auto` on an inner content panel so the scrollbar does not protrude past the rounded corner.
 
 ### Verification
 

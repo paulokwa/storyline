@@ -482,16 +482,17 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
 
             {/* Sanity Check Modal */}
             {showSanityModal && (
-                <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[100] flex items-start justify-center overflow-y-auto p-4 md:p-6 animate-in fade-in duration-300 sm:items-center">
-                    <div className="import-wizard-sanity-modal bg-white rounded-[2rem] md:rounded-[2.5rem] p-8 md:p-14 max-w-lg w-full max-h-[calc(100dvh-2rem)] md:max-h-[calc(100dvh-3rem)] overflow-y-auto overscroll-contain shadow-2xl relative animate-in zoom-in-95 duration-500 border border-slate-100">
+                <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[100] flex items-start justify-center overflow-hidden p-4 md:p-6 animate-in fade-in duration-300 sm:items-center">
+                    <div className="import-wizard-sanity-modal bg-white rounded-[2rem] md:rounded-[2.5rem] max-w-lg w-full max-h-[calc(100dvh-2rem)] md:max-h-[calc(100dvh-3rem)] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-500 border border-slate-100">
                         <button 
                             onClick={() => setShowSanityModal(false)}
-                            className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-50 text-slate-400 transition-colors"
+                            className="absolute top-6 right-6 z-10 p-2 rounded-full hover:bg-slate-50 text-slate-400 transition-colors"
                         >
                             <X className="w-5 h-5" />
                         </button>
 
-                        <div className="space-y-8">
+                        <div className="max-h-[calc(100dvh-2rem)] md:max-h-[calc(100dvh-3rem)] overflow-y-auto overscroll-contain p-8 pr-10 md:p-14 md:pr-16">
+                            <div className="space-y-8">
                             <div className="space-y-4">
                                 <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 mb-6">
                                     <AlertCircle className="w-8 h-8" />
@@ -550,6 +551,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                                 >
                                     Proceed with AI Detection
                                 </Button>
+                            </div>
                             </div>
                         </div>
                     </div>

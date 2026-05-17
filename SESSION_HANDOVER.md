@@ -13,11 +13,12 @@ Agents should update this file before ending a session.
 - Added an `ai_detect` preview state so users can compare By Heading, Custom Marker, Single Scene, and the saved AI structure without sending repeated AI organizer requests.
 - Kept file extraction, manual split logic, and `/api/import/ai-detect` request behavior unchanged.
 - Constrained the Magic Detect confirmation modal with `100dvh` max height and overlay scrolling so the scrollbar stays within the usable viewport.
+- Follow-up: moved the Magic Detect confirmation modal scrollbar to an inner content panel so it no longer protrudes past the rounded modal corner.
 - Documented the reusable failure mode in `docs/troubleshooting/TROUBLESHOOTING.md`.
 
 ### Current status
 
-TypeScript, focused ESLint for `ImportWizard.tsx`, `git diff --check`, `npm run build`, and `netlify build --context production` passed. Manual signed-in browser verification is still recommended for the exact import flow.
+TypeScript, focused ESLint for `ImportWizard.tsx`, `git diff --check`, and `npm run build` passed. The follow-up `netlify build --context production` completed the Next.js build and function bundling, then hit the documented local Windows `Failed publishing static content` postbuild limitation. Manual signed-in browser verification is still recommended for the exact import flow.
 
 ### Next recommended step
 
