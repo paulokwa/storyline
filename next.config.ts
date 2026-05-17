@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   images: {
     qualities: [100, 75],
   },
+  outputFileTracingIncludes: {
+    '/api/import': ['./node_modules/@napi-rs/canvas*/**/*'],
+  },
 }
 
 export default nextConfig;

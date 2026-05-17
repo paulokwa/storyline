@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as mammoth from 'mammoth'
 import JSZip from 'jszip'
-import { PDFParse } from 'pdf-parse'
 import { createClient } from '@/lib/supabase/server'
 
 const MAX_FILE_BYTES = 50 * 1024 * 1024 // 50 MB
@@ -187,6 +186,7 @@ export async function POST(req: NextRequest) {
         } else if (filename.endsWith('.txt') || filename.endsWith('.md')) {
             text = buffer.toString('utf-8')
         } else if (filename.endsWith('.pdf')) {
+            const { PDFParse } = await import('pdf-parse')
             const parser = new PDFParse({ data: buffer })
             const timeoutPromise = new Promise<never>((_, reject) =>
                 setTimeout(

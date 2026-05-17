@@ -5,6 +5,29 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-17 - Production EPUB import 500 narrowed and fixed
+
+### What was completed
+
+- Diagnosed live `/api/import` 500s on Netlify for a small EPUB that imported locally.
+- Confirmed Netlify function logs showed `ReferenceError: DOMMatrix is not defined` while loading `pdfjs-dist` through the top-level `pdf-parse` import.
+- Moved `pdf-parse` behind a dynamic import inside the PDF-only branch so EPUB/DOCX/TXT/MD imports no longer load PDF parser code at route startup.
+- Added a narrow `outputFileTracingIncludes` entry for `/api/import` to include `@napi-rs/canvas` runtime files in the production server trace.
+- Documented the production failure pattern in `TROUBLESHOOTING.md`.
+
+### Current status
+
+TypeScript, focused ESLint, local unauthorized route smoke test, and `npm run build` passed. Production deployment/browser verification is still needed after push.
+
+### Next recommended step
+
+Deploy the fix, then test the exact `Darkness  Within- First Draft.epub` on the live site. Also smoke-test one PDF import to confirm PDF parsing still works.
+
+### Risks or warnings
+
+- The Windows local trace includes Windows `@napi-rs/canvas` files; Netlify should install and trace the Linux variant during its Linux build. Production verification is required to confirm that path.
+
+---
 ## 2026-05-11 — Apple OAuth (Phase 3) — feature-flagged, awaiting provider setup
 
 ### What was completed

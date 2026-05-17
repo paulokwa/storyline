@@ -327,6 +327,38 @@ Add a short entry using this format:
 
 - This is targeted launch polish, not a full dark-mode redesign. Keep the full dark-mode polish pass as future work until the broader UI is stable.
 
+## Issue: Production import route returns plain `Internal Server Error` because PDF parser crashes on `DOMMatrix`
+
+### Symptoms
+
+- EPUB import works locally but fails on the live Netlify site with `POST /api/import 500`.
+- Browser UI may show `Unexpected token 'I', "Internal S"... is not valid JSON`.
+- Netlify function logs show `ReferenceError: DOMMatrix is not defined` while loading `.next/server/app/api/import/route.js`.
+
+### Cause
+
+- `/api/import` imported `pdf-parse` at module startup.
+- `pdf-parse` loads `pdfjs-dist`, which tries to polyfill DOM canvas classes through `@napi-rs/canvas`.
+- If the native canvas package is missing from the Netlify function trace, `pdfjs-dist` cannot polyfill `DOMMatrix` and crashes before the route can return JSON.
+- Because the crash happens at route load time, non-PDF imports such as EPUB can fail even though they do not need the PDF parser.
+
+### Fix
+
+- Dynamically import `pdf-parse` only inside the `.pdf` branch of `/api/import`.
+- Add a narrow `outputFileTracingIncludes` entry for `/api/import` so `@napi-rs/canvas` native runtime files are included in the production server trace.
+
+### Verification
+
+- `npx tsc --noEmit --pretty false`
+- `npx eslint app\api\import\route.ts next.config.ts`
+- `npm run build`
+- Confirm the built `/api/import` route uses an async chunk for `pdf-parse` instead of a top-level route import.
+
+### Notes
+
+- This keeps EPUB/DOCX/TXT/MD imports independent from PDF parser startup failures.
+- If PDF parsing still fails in production, it should fail inside the route `try/catch` and return JSON instead of taking down the whole import endpoint.
+
 ## Issue: Settings save fails because `ai_context_mode` is missing from Supabase schema cache
 
 ### Symptoms
