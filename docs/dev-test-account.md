@@ -88,6 +88,21 @@ What it does:
 
 If the required env vars are missing, the script fails safely with a clear error.
 
+## Browser testing and login-required flows
+
+When an AI agent opens Chrome, Playwright, or any browser automation for a page that requires authentication, it must check this workflow before concluding that the feature is broken or untestable.
+
+Expected agent behaviour:
+
+1. Read this file before authenticated browser testing.
+2. Check whether `.local/test-account.env` or `.env.test.local` exists locally.
+3. If credentials are present, use the local test account to sign in through the normal login UI.
+4. If the account may not exist yet, run `npm run create:test-account` first.
+5. If credentials are missing, do not guess or ask for the password in chat. Report that the local test-account env file is missing and tell Paul/Kwame to create it using the setup above.
+6. Never print the password in terminal output, chat, screenshots, logs, commits, or tracked docs.
+
+A browser test that stops at the login screen is incomplete unless the task is specifically testing unauthenticated/auth pages.
+
 ## Verified behavior
 
 This workflow has already been verified in the repo:
@@ -106,5 +121,6 @@ When a local dev test account is needed:
 1. Read this file.
 2. Assume the current machine may already have a local test account configured.
 3. Prefer running `npm run create:test-account` to verify/create the account instead of asking the user to remember the setup steps.
-4. Never ask the user to commit credentials.
-5. Never print or store the password in tracked files.
+4. For login-required browser tests, sign in with the local test account before testing the protected feature.
+5. Never ask the user to commit credentials.
+6. Never print or store the password in tracked files.
