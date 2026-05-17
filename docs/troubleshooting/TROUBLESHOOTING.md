@@ -327,6 +327,29 @@ Add a short entry using this format:
 
 - This is targeted launch polish, not a full dark-mode redesign. Keep the full dark-mode polish pass as future work until the broader UI is stable.
 
+## Issue: Magic Detect feels stalled during long AI import requests
+
+### Symptoms
+
+- During larger Magic Detect imports, the progress overlay can sit on a single message such as `Identifying structural anchors...`.
+- Users cannot tell whether the AI organizer is still working or stuck.
+
+### Cause
+
+- The overlay only showed coarse internal stages and did not have elapsed-time waiting feedback while the network request was still pending.
+
+### Fix
+
+- Track elapsed seconds while Magic Detect is running.
+- Show a secondary waiting message that changes over time for longer requests.
+- Let the progress bar advance slowly to a capped waiting point while the request is still pending, then resume the real mapping/building progress after the response returns.
+- Do not change the AI request, import parsing, or Magic Detect result mapping logic.
+
+### Verification
+
+- Run TypeScript and focused ESLint for `components/new-project/ImportWizard.tsx`.
+- Browser-test Magic Detect on a larger manuscript and confirm the secondary waiting text changes at longer durations without sending additional requests.
+
 ## Issue: Import wizard headings are low contrast in Midnight theme
 
 ### Symptoms

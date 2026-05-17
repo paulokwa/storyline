@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { UploadCloud, FileText, CheckCircle2, AlertCircle, Loader2, Info, Sparkles, Wand2, X, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,6 +25,20 @@ interface ImportWizardProps {
 type ImportChunk = { title: string; content: string }
 type SplitStrategy = 'single' | 'chapter_keyword' | 'custom' | 'ai_detect'
 
+const AI_WAITING_MESSAGES = [
+    { seconds: 0, text: 'Identifying structural anchors...' },
+    { seconds: 8, text: 'Reading for chapter breaks and scene boundaries...' },
+    { seconds: 18, text: 'Checking the structure against the manuscript text...' },
+    { seconds: 35, text: 'Still working. Larger manuscripts can take a little longer.' },
+    { seconds: 60, text: 'Almost there. Keeping the request open while the structure is prepared.' },
+]
+
+function getAiWaitingMessage(elapsedSeconds: number) {
+    return AI_WAITING_MESSAGES.reduce((current, message) => (
+        elapsedSeconds >= message.seconds ? message : current
+    ), AI_WAITING_MESSAGES[0]).text
+}
+
 export default function ImportWizard({ projectType, onComplete, onBack, creating, creatingLabel = 'Building Project...' }: ImportWizardProps) {
     const [file, setFile] = useState<File | null>(null)
     const [rawText, setRawText] = useState('')
@@ -45,8 +59,27 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
     const [sanityInput, setSanityInput] = useState('')
     const [aiStatus, setAiStatus] = useState('')
     const [aiProgress, setAiProgress] = useState(0)
+    const [aiElapsedSeconds, setAiElapsedSeconds] = useState(0)
 
     const fileInputRef = useRef<HTMLInputElement>(null)
+    const displayedAiProgress = aiDetecting
+        ? Math.max(aiProgress, Math.min(64, 35 + Math.floor(aiElapsedSeconds / 2)))
+        : aiProgress
+    const aiWaitingMessage = getAiWaitingMessage(aiElapsedSeconds)
+
+    useEffect(() => {
+        if (!aiDetecting) {
+            setAiElapsedSeconds(0)
+            return
+        }
+
+        const startedAt = Date.now()
+        const interval = window.setInterval(() => {
+            setAiElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000))
+        }, 1000)
+
+        return () => window.clearInterval(interval)
+    }, [aiDetecting])
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const selected = e.target.files?.[0]
@@ -149,6 +182,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
         setShowSanityModal(false)
         setAiStatus('Preparing manuscript text...')
         setAiProgress(12)
+        setAiElapsedSeconds(0)
         setSanityInput('')
         setError('')
 
@@ -464,17 +498,27 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                         <Sparkles className="w-10 h-10" />
                     </div>
                     <h3 className="text-2xl font-serif text-slate-800 mb-2">Analyzing your soul&apos;s work…</h3>
-                    <p className="text-slate-500 font-medium mb-6 animate-pulse">{aiStatus}</p>
+                    <div className="mb-6 space-y-2">
+                        <p className="text-slate-500 font-medium animate-pulse">{aiStatus}</p>
+                        <p className="min-h-5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                            {aiElapsedSeconds >= 3 ? aiWaitingMessage : 'Starting the organizer...'}
+                            <span className="ml-1 inline-flex w-5 justify-between align-middle">
+                                <span className="h-1 w-1 rounded-full bg-slate-300 animate-pulse" />
+                                <span className="h-1 w-1 rounded-full bg-slate-300 animate-pulse [animation-delay:160ms]" />
+                                <span className="h-1 w-1 rounded-full bg-slate-300 animate-pulse [animation-delay:320ms]" />
+                            </span>
+                        </p>
+                    </div>
                     <div
                         className="w-64 h-1.5 bg-slate-100 rounded-full overflow-hidden"
                         role="progressbar"
                         aria-valuemin={0}
                         aria-valuemax={100}
-                        aria-valuenow={aiProgress}
+                        aria-valuenow={displayedAiProgress}
                     >
                         <div
                             className="h-full bg-indigo-500 transition-all duration-500 ease-out"
-                            style={{ width: `${Math.max(aiProgress, 8)}%` }}
+                            style={{ width: `${Math.max(displayedAiProgress, 8)}%` }}
                         />
                     </div>
                 </div>

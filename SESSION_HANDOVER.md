@@ -9,6 +9,7 @@ Agents should update this file before ending a session.
 
 ### What was completed
 
+- Added dynamic Magic Detect waiting feedback for long AI import requests: timed secondary messages and a slowly advancing capped progress bar while the request is pending.
 - Fixed the New Project import wizard so Magic Detect output is cached separately from manual split previews.
 - Added an `ai_detect` preview state so users can compare By Heading, Custom Marker, Single Scene, and the saved AI structure without sending repeated AI organizer requests.
 - Kept file extraction, manual split logic, and `/api/import/ai-detect` request behavior unchanged.
@@ -18,7 +19,7 @@ Agents should update this file before ending a session.
 
 ### Current status
 
-TypeScript, focused ESLint for `ImportWizard.tsx`, `git diff --check`, and `npm run build` passed. The follow-up `netlify build --context production` completed the Next.js build and function bundling, then hit the documented local Windows `Failed publishing static content` postbuild limitation. Manual signed-in browser verification is still recommended for the exact import flow.
+TypeScript, focused ESLint for `ImportWizard.tsx`, `git diff --check`, and `npm run build` passed after the dynamic waiting feedback. The follow-up `netlify build --context production` completed the Next.js build and function bundling, then hit the documented local Windows `Failed publishing static content` postbuild limitation. Manual signed-in browser verification is still recommended for the exact import flow.
 
 ### Next recommended step
 
