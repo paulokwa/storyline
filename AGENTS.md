@@ -47,6 +47,58 @@ If `CHANGE DETECTED`, include:
 
 ---
 
+## Session-Start Access Check
+
+Run this check once at the start of a new chat/session only. Do not repeat it before every prompt inside the same session unless the user explicitly asks, the session context is reset, or a later task newly requires a service that was not checked.
+
+After reading `MASTER_BRIEF.md`, and before doing the requested work, perform a read-only access check for the external services relevant to this project:
+
+1. GitHub access
+   - Confirm the repository is accessible.
+   - Confirm the current branch.
+   - Confirm whether the working tree is clean or has uncommitted changes when local shell access is available.
+   - Confirm the latest commit available locally or remotely.
+   - Do not push, pull, merge, reset, create branches, or change PRs unless explicitly instructed.
+
+2. Supabase access
+   - Confirm whether Supabase project access is available.
+   - Confirm whether schema, RLS policies, functions, storage, and auth-related settings can be inspected if needed.
+   - Use read-only checks first.
+   - Do not run migrations, alter policies, alter tables, delete data, write test data, or change storage/auth settings unless explicitly instructed.
+
+3. Netlify access
+   - Confirm whether Netlify access is available.
+   - Confirm whether deploys, environment variables, build settings, and function logs can be inspected if needed.
+   - Use read-only checks first.
+   - Do not trigger deploys, change environment variables, promote deploys, or roll back deploys unless explicitly instructed.
+
+Report the result before the main task using this format:
+
+```md
+### Startup Access Check
+
+| Service | Status | Notes |
+|---|---|---|
+| GitHub | Available / Partial / Not Available | ... |
+| Supabase | Available / Partial / Not Available | ... |
+| Netlify | Available / Partial / Not Available | ... |
+
+### Access Impact
+
+- Can the requested task continue safely with current access?
+- What cannot be verified, if anything?
+- Can the agent safely self-fix the missing access?
+- If not, what exact command, login, token, MCP setup, dashboard step, or manual action does Paul/Kwame need to do?
+- Should the task continue in read-only mode or pause?
+```
+
+Do not silently assume access exists.
+Do not fake verification.
+Do not continue into risky changes when required access is missing or unclear.
+If access is missing, partial, expired, or unclear, tell Paul/Kwame in the next response so he can decide whether to allow a self-fix or follow manual setup steps.
+
+---
+
 ## Core Rule
 
 Do not make guesses. Diagnose first.
