@@ -79,6 +79,14 @@ After reading `MASTER_BRIEF.md`, and before doing the requested work, perform a 
    - Do not install, update, delete, or commit Impeccable tooling unless explicitly instructed.
    - If Impeccable is missing, partial, or not usable, report that immediately and explain whether the task can continue without it.
 
+5. Local dev test account access
+   - Read `docs/dev-test-account.md` before any browser/Playwright/Chrome test that needs authentication.
+   - Confirm whether a local credential file exists at `.local/test-account.env` or `.env.test.local` when local shell access is available.
+   - Confirm the repo has the `npm run create:test-account` script before relying on it.
+   - If credentials are present and the account may not exist yet, run `npm run create:test-account` to verify/create it.
+   - Do not print, expose, commit, screenshot, or log the test account password.
+   - If credentials are missing, report the missing local env file and point Paul/Kwame to `docs/dev-test-account.md`; do not ask him to paste the password into chat.
+
 Report the result before the main task using this format:
 
 ```md
@@ -90,14 +98,15 @@ Report the result before the main task using this format:
 | Supabase | Available / Partial / Not Available | ... |
 | Netlify | Available / Partial / Not Available | ... |
 | Impeccable | Available / Partial / Not Available | ... |
+| Dev Test Account | Available / Partial / Not Available | ... |
 
 ### Access Impact
 
 - Can the requested task continue safely with current access?
 - What cannot be verified, if anything?
 - Can the agent safely self-fix the missing access/tooling?
-- If not, what exact command, login, token, MCP setup, dashboard step, local install step, or manual action does Paul/Kwame need to do?
-- Should the task continue in read-only mode, continue without the missing tool, or pause?
+- If not, what exact command, login, token, MCP setup, dashboard step, local install step, credential-file setup, or manual action does Paul/Kwame need to do?
+- Should the task continue in read-only mode, continue without the missing tool, continue unauthenticated only, or pause?
 ```
 
 Do not silently assume access exists.
@@ -255,6 +264,22 @@ When commands are needed, run them yourself if available.
 
 ---
 
+## Browser Testing and Authenticated Flows
+
+If a task uses Chrome, Playwright, or another browser automation tool and the target page requires sign-in, do not stop at the login screen unless the task is specifically about unauthenticated/auth behaviour.
+
+Before testing protected app features:
+
+1. Read `docs/dev-test-account.md`.
+2. Check whether `.local/test-account.env` or `.env.test.local` exists locally.
+3. Run `npm run create:test-account` when credentials exist and the account needs verification/creation.
+4. Sign in through the normal login UI using the local dev test account.
+5. Then continue the browser test on the protected feature.
+
+If the test-account credential file is missing, report that clearly and explain the required local file setup from `docs/dev-test-account.md`. Do not ask Paul/Kwame to paste the password into chat, and never expose the password in logs, screenshots, tracked files, or final reports.
+
+---
+
 ## File Editing Rules
 
 Before editing:
@@ -369,6 +394,8 @@ npm run dev
 Only run what is appropriate. Do not waste time running everything if the bug is isolated.
 
 For UI changes, include a manual smoke-test checklist.
+
+For authenticated UI/browser tests, use the local dev test account workflow in `docs/dev-test-account.md` before deciding a protected page cannot be tested.
 
 ---
 
