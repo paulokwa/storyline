@@ -562,9 +562,9 @@ export default function ProjectSettingsModal({
                                         <div className="rounded-2xl border border-border bg-muted/30 p-4">
                                             <div className="flex items-start gap-4">
                                                 <div className="space-y-1 flex-1 min-w-0">
-                                                    <div className="flex items-center justify-between gap-4">
-                                                        <Label 
-                                                            htmlFor="allowViewerFeedback" 
+                                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                                                        <Label
+                                                            htmlFor="allowViewerFeedback"
                                                             className={cn(
                                                                 "flex items-center gap-2 text-sm font-semibold text-foreground",
                                                                 isLocalOnly && "cursor-pointer"
@@ -574,7 +574,7 @@ export default function ProjectSettingsModal({
                                                             <MessageSquare className="h-4 w-4 text-primary" />
                                                             Allow Viewer Feedback
                                                         </Label>
-                                                        <div className="flex items-center gap-3 shrink-0">
+                                                        <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
                                                             <ToggleStatePill checked={allowViewerFeedback} isLocalOnly={isLocalOnly} />
                                                             <div onClick={isLocalOnly ? handleLockedSettingClick : undefined} className="flex">
                                                                 <Switch
@@ -606,9 +606,9 @@ export default function ProjectSettingsModal({
                                             <div className="space-y-3">
                                                 <div className="flex items-start gap-4">
                                                     <div className="space-y-1 flex-1 min-w-0">
-                                                        <div className="flex items-center justify-between gap-4">
-                                                            <Label 
-                                                                htmlFor="shareOwnerFeedback" 
+                                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                                                            <Label
+                                                                htmlFor="shareOwnerFeedback"
                                                                 className={cn(
                                                                     "flex items-center gap-2 text-sm font-semibold text-foreground",
                                                                     isLocalOnly && "cursor-pointer"
@@ -618,7 +618,7 @@ export default function ProjectSettingsModal({
                                                                 <Globe className="h-4 w-4 text-primary" />
                                                                 Share Owner Feedback Broadly
                                                             </Label>
-                                                            <div className="flex items-center gap-3 shrink-0">
+                                                            <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
                                                                 <ToggleStatePill checked={shareOwnerFeedback} isLocalOnly={isLocalOnly} />
                                                                 <div onClick={isLocalOnly ? handleLockedSettingClick : undefined} className="flex">
                                                                     <Switch
@@ -675,9 +675,9 @@ export default function ProjectSettingsModal({
                                         <div className="rounded-2xl border border-border bg-muted/30 p-4">
                                             <div className="flex items-start gap-4">
                                                 <div className="space-y-1 flex-1 min-w-0">
-                                                    <div className="flex items-center justify-between gap-4">
-                                                        <Label 
-                                                            htmlFor="allowCollaboratorExports" 
+                                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                                                        <Label
+                                                            htmlFor="allowCollaboratorExports"
                                                             className={cn(
                                                                 "flex items-center gap-2 text-sm font-semibold text-foreground",
                                                                 isLocalOnly && "cursor-pointer"
@@ -687,7 +687,7 @@ export default function ProjectSettingsModal({
                                                             <Globe className="h-4 w-4 text-primary" />
                                                             Allow Collaborator Exports
                                                         </Label>
-                                                        <div className="flex items-center gap-3 shrink-0">
+                                                        <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
                                                             <ToggleStatePill checked={allowCollaboratorExports} isLocalOnly={isLocalOnly} />
                                                             <div onClick={isLocalOnly ? handleLockedSettingClick : undefined} className="flex">
                                                                 <Switch
