@@ -5,6 +5,9 @@ import {
     getCloudProviderErrorMessage,
     isAbortLikeError,
     testCloudProviderKey,
+    DEFAULT_GEMINI_MODEL,
+    DEFAULT_OPENROUTER_MODEL,
+    OPENROUTER_CURATED_MODEL_IDS,
 } from '@/lib/ai/providers'
 import { getAiRuntimeState } from '@/lib/ai/runtime'
 import {
@@ -139,6 +142,38 @@ export async function POST(req: Request) {
             }), { status: 200 })
         }
 
+        // When a specific cloud provider is requested, look up its stored key directly.
+        // This handles billing_mode mismatches — e.g. user last saved under Ollama so
+        // ai_provider='ollama' in the DB, but they've switched back to BYOK in the UI
+        // without saving. Without this, runtime.provider='ollama' triggers UNSUPPORTED_PROVIDER
+        // before we ever get to test the actual cloud key.
+        if (provider === 'gemini' || provider === 'openai' || provider === 'openrouter') {
+            const keyForTest =
+                provider === 'gemini'
+                    ? (runtime.aiSettings?.gemini_api_key ?? runtime.aiSettings?.api_key ?? null)
+                    : provider === 'openrouter'
+                        ? (runtime.aiSettings?.openrouter_api_key ?? runtime.aiSettings?.api_key ?? null)
+                        : (runtime.aiSettings?.openai_api_key ?? runtime.aiSettings?.api_key ?? null)
+
+            if (!keyForTest) {
+                return new Response(JSON.stringify({ ok: false, error: 'NO_API_KEY', billingMode: runtime.billingMode }), { status: 200 })
+            }
+
+            try {
+                const data = await testCloudProviderKey(provider, keyForTest)
+                return new Response(JSON.stringify({
+                    ok: data.ok,
+                    status: data.status,
+                    error: data.error,
+                    billingMode: runtime.billingMode,
+                    provider,
+                }), { status: 200 })
+            } catch {
+                return new Response(JSON.stringify({ ok: false, error: 'FETCH_FAILED', billingMode: runtime.billingMode }), { status: 200 })
+            }
+        }
+
+        // Fallback: no specific provider requested — test the runtime's active provider
         if (!runtime.apiKey) {
             return new Response(JSON.stringify({ ok: false, error: 'NO_API_KEY', billingMode: runtime.billingMode }), { status: 200 })
         }
@@ -147,22 +182,14 @@ export async function POST(req: Request) {
             return new Response(JSON.stringify({ ok: false, error: 'UNSUPPORTED_PROVIDER', billingMode: runtime.billingMode }), { status: 200 })
         }
 
-        // Test the stored key against the provider the user currently has selected in the UI.
-        // If they changed the provider radio without entering a new key, this will correctly
-        // fail (e.g. an OpenAI key tested against OpenRouter returns 401), surfacing the
-        // mismatch before they save rather than silently passing with the wrong provider.
-        const providerToTest = (provider === 'gemini' || provider === 'openai' || provider === 'openrouter')
-            ? provider
-            : runtime.provider
-
         try {
-            const data = await testCloudProviderKey(providerToTest, runtime.apiKey)
+            const data = await testCloudProviderKey(runtime.provider, runtime.apiKey)
             return new Response(JSON.stringify({
                 ok: data.ok,
                 status: data.status,
                 error: data.error,
                 billingMode: runtime.billingMode,
-                provider: providerToTest,
+                provider: runtime.provider,
             }), { status: 200 })
         } catch {
             return new Response(JSON.stringify({ ok: false, error: 'FETCH_FAILED', billingMode: runtime.billingMode }), { status: 200 })
@@ -301,22 +328,52 @@ export async function POST(req: Request) {
     }
 
     const requestKey = requestId || crypto.randomUUID()
-    const providerName = runtime.provider
+
+    // Resolve effective provider, key, model — Ollama can fall back to a cloud provider
+    let providerName: 'gemini' | 'openai' | 'openrouter'
+    let apiKey: string | null
+    let model: string
 
     if (runtime.billingMode === 'ollama') {
-        return new Response('UNSUPPORTED_PROVIDER', { status: 400 })
+        const fallbackProv = runtime.aiSettings?.ai_fallback_enabled
+            ? (runtime.aiSettings?.ai_fallback_provider as 'gemini' | 'openai' | 'openrouter' | null)
+            : null
+
+        if (!fallbackProv) {
+            return new Response('UNSUPPORTED_PROVIDER', { status: 400 })
+        }
+
+        const fallbackKey =
+            fallbackProv === 'gemini' ? (runtime.aiSettings?.gemini_api_key ?? null)
+            : fallbackProv === 'openrouter' ? (runtime.aiSettings?.openrouter_api_key ?? null)
+            : (runtime.aiSettings?.openai_api_key ?? null)
+
+        if (!fallbackKey) {
+            return new Response('NO_API_KEY', { status: 403 })
+        }
+
+        providerName = fallbackProv
+        apiKey = fallbackKey
+        const storedOrModel = runtime.aiSettings?.openrouter_model ?? null
+        model = fallbackProv === 'gemini'
+            ? DEFAULT_GEMINI_MODEL
+            : fallbackProv === 'openrouter'
+                ? (storedOrModel && OPENROUTER_CURATED_MODEL_IDS.has(storedOrModel) ? storedOrModel : DEFAULT_OPENROUTER_MODEL)
+                : APP_MANAGED_OPENAI_MODEL
+    } else {
+        if (runtime.provider !== 'gemini' && runtime.provider !== 'openai' && runtime.provider !== 'openrouter') {
+            return new Response('UNSUPPORTED_PROVIDER', { status: 400 })
+        }
+        providerName = runtime.provider
+        apiKey = runtime.apiKey
+        model = runtime.model
     }
 
-    const apiKey = runtime.apiKey
     if (!apiKey) {
         return new Response(
             runtime.billingMode === 'app_managed_trial' ? 'APP_MANAGED_AI_UNAVAILABLE' : 'NO_API_KEY',
             { status: 403 }
         )
-    }
-
-    if (providerName !== 'gemini' && providerName !== 'openai' && providerName !== 'openrouter') {
-        return new Response('UNSUPPORTED_PROVIDER', { status: 400 })
     }
 
     const metadata = {
@@ -341,7 +398,7 @@ export async function POST(req: Request) {
             endpoint: 'ai_helper',
             billingMode: runtime.billingMode,
             provider: providerName,
-            model: runtime.model,
+            model: model,
             inputChars: userMessage.length,
             normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
             ipAddress: requestContext.ipAddress,
@@ -393,14 +450,17 @@ export async function POST(req: Request) {
                 { status: reserveData?.status === 'exhausted' ? 402 : 403 }
             )
         }
-    } else {
+    } else if (runtime.billingMode !== 'ollama') {
+        // Ollama fallback requests bypass the rate limiter — the Ollama failure itself
+        // logs a usage event which would trigger a false rate-limit on the immediate fallback.
+        // BYOK users are on their own keys so abuse risk is low; the automatic retry is legitimate.
         const rateLimit = await enforceAiRateLimit({
             userId: user.id,
             requestKey,
             endpoint: 'ai_helper',
             billingMode: runtime.billingMode,
             provider: providerName,
-            model: runtime.model,
+            model: model,
             inputChars: userMessage.length,
             normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
             ipAddress: requestContext.ipAddress,
@@ -429,7 +489,7 @@ export async function POST(req: Request) {
             systemPrompt: systemPrompt + projectContext,
             userMessage,
             maxOutputTokens: 1000,
-            model: runtime.model,
+            model: model,
             abortSignal: req.signal,
         })
     } catch (error) {
@@ -449,7 +509,7 @@ export async function POST(req: Request) {
                     endpoint: 'ai_helper',
                     billingMode: runtime.billingMode,
                     provider: providerName,
-                    model: runtime.model,
+                    model: model,
                     status: 'failed',
                     inputChars: userMessage.length,
                     errorCode: 'cancelled',
@@ -484,7 +544,7 @@ export async function POST(req: Request) {
                 endpoint: 'ai_helper',
                 billingMode: runtime.billingMode,
                 provider: providerName,
-                model: runtime.model,
+                model: model,
                 status: 'failed',
                 inputChars: userMessage.length,
                 errorCode: `provider_${providerResponse.status}`,
@@ -536,7 +596,7 @@ export async function POST(req: Request) {
                 endpoint: 'ai_helper',
                 billingMode: runtime.billingMode,
                 provider: providerName,
-                model: runtime.model,
+                model: model,
                 status: 'completed',
                 inputChars: userMessage.length,
                 outputChars: fullText.length,
@@ -566,7 +626,7 @@ export async function POST(req: Request) {
                 endpoint: 'ai_helper',
                 billingMode: runtime.billingMode,
                 provider: providerName,
-                model: runtime.model,
+                model: model,
                 status: 'failed',
                 inputChars: userMessage.length,
                 errorCode: 'cancelled',
@@ -596,7 +656,7 @@ export async function POST(req: Request) {
                 endpoint: 'ai_helper',
                 billingMode: runtime.billingMode,
                 provider: providerName,
-                model: runtime.model,
+                model: model,
                 status: 'failed',
                 inputChars: userMessage.length,
                 errorCode: 'stream_error',

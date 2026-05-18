@@ -67,6 +67,7 @@ interface AiHelperPanelProps {
         billing_mode: string
         ai_provider: string
         ai_fallback_enabled: boolean
+        ai_fallback_provider: string | null
         ollama_model: string
         ollama_url: string
         api_key: string | null
@@ -449,17 +450,14 @@ export function getAiAccessIssue(
         return null
     }
 
-    if (aiSettings.ai_provider === 'gemini' && !aiSettings.api_key) {
+    if (!aiSettings.api_key) {
+        const providerLabel =
+            aiSettings.ai_provider === 'gemini' ? 'Gemini'
+            : aiSettings.ai_provider === 'openrouter' ? 'OpenRouter'
+            : 'OpenAI'
         return {
-            title: `Gemini needs an API key for ${featureLabel}`,
-            description: `Add your Gemini API key in Account Settings before trying to ${actionLabel}.`,
-        }
-    }
-
-    if (aiSettings.ai_provider === 'openai' && !aiSettings.api_key) {
-        return {
-            title: `OpenAI needs an API key for ${featureLabel}`,
-            description: `Add your OpenAI API key in Account Settings before trying to ${actionLabel}.`,
+            title: `${providerLabel} needs an API key for ${featureLabel}`,
+            description: `Add your ${providerLabel} API key in Account Settings before trying to ${actionLabel}.`,
         }
     }
 
@@ -2045,6 +2043,10 @@ export default function AiHelperPanel({
                 return
             }
 
+            // Network errors (Failed to fetch) bypass the !response.ok block so we
+            // must mark Ollama offline here too, which also triggers the fallback label.
+            setOllamaStatus('offline')
+
             await fetch('/api/ai/local-usage', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2060,8 +2062,8 @@ export default function AiHelperPanel({
                 }),
             }).catch(() => {})
 
-            if (aiSettings.ai_fallback_enabled && aiSettings.api_key) {
-                console.warn('Ollama failed, falling back to Gemini:', err.message)
+            if (aiSettings.ai_fallback_enabled && aiSettings.ai_fallback_provider) {
+                console.warn('Ollama offline, falling back to', aiSettings.ai_fallback_provider)
                 await runCloudProvider(finalPrompt, contextText, strategy, requestToken)
             } else {
                 throw err
@@ -2394,19 +2396,28 @@ export default function AiHelperPanel({
         }
     }, [promptMode, hint])
 
-    const activeProviderStatus = isOllamaMode ? ollamaStatus : cloudStatus
+    const ollamaFallbackProvider = (isOllamaMode && aiSettings.ai_fallback_enabled)
+        ? (aiSettings.ai_fallback_provider as 'gemini' | 'openai' | 'openrouter' | null)
+        : null
+    const isUsingOllamaFallback = isOllamaMode && ollamaStatus === 'offline' && !!ollamaFallbackProvider
+
+    const activeProviderStatus = isOllamaMode ? (isUsingOllamaFallback ? 'online' : ollamaStatus) : cloudStatus
     const headerStatus = !aiSettings.ai_enabled ? 'disabled' : activeProviderStatus
-    const headerStatusDotClass = headerStatus === 'online'
-        ? 'bg-green-400'
-        : headerStatus === 'checking'
-            ? 'bg-slate-300 animate-pulse'
-            : 'bg-red-400'
-    const headerStatusTextClass = headerStatus === 'online'
-        ? 'text-green-600'
-        : headerStatus === 'checking'
-            ? 'text-slate-400'
-            : 'text-red-500'
-    const headerStatusLabel = !aiSettings.ai_enabled ? 'disabled' : headerStatus
+    const headerStatusDotClass = isUsingOllamaFallback
+        ? 'bg-amber-400'
+        : headerStatus === 'online'
+            ? 'bg-green-400'
+            : headerStatus === 'checking'
+                ? 'bg-slate-300 animate-pulse'
+                : 'bg-red-400'
+    const headerStatusTextClass = isUsingOllamaFallback
+        ? 'text-amber-500'
+        : headerStatus === 'online'
+            ? 'text-green-600'
+            : headerStatus === 'checking'
+                ? 'text-slate-400'
+                : 'text-red-500'
+    const headerStatusLabel = !aiSettings.ai_enabled ? 'disabled' : isUsingOllamaFallback ? 'backup' : headerStatus
     const modeOptions = isNovel
         ? ['Review / Chat', 'Continue Writing', 'What happens next?', 'Improve Scene', 'More tense', 'More natural', 'Add Conflict', 'Rewrite with Emotion', 'Dialogue idea', 'How to end it?']
         : ['Review / Chat', 'Write as Script Scene', 'Continue Writing', 'What happens next?', 'Improve Scene', 'More tense', 'More natural', 'Add Conflict', 'Rewrite with Emotion', 'Dialogue idea', 'How to end it?']
@@ -2416,7 +2427,9 @@ export default function AiHelperPanel({
             <div className="min-w-0 flex items-center gap-2">
                 {aiSettings.ai_enabled && (
                     <p className="truncate text-[9px] font-bold uppercase tracking-[0.22em] text-[#8fa0c0]">
-                        {modeLabel} &middot; {isOllamaMode ? 'Ollama' : getAiProviderLabel(aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider)}
+                        {modeLabel} &middot; {isOllamaMode
+                            ? (isUsingOllamaFallback ? `${getAiProviderLabel(ollamaFallbackProvider!)} Backup` : 'Ollama')
+                            : getAiProviderLabel(aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider)}
                     </p>
                 )}
                 {showTrialNudge && (
@@ -2474,7 +2487,9 @@ export default function AiHelperPanel({
                             <div className="hidden">
                                 {aiSettings.ai_enabled && (
                                     <p className="truncate text-[9px] font-bold uppercase tracking-[0.22em] text-[#8fa0c0]">
-                                        {modeLabel} · {isOllamaMode ? 'Ollama' : getAiProviderLabel(aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider)}
+                                        {modeLabel} · {isOllamaMode
+                                            ? (isUsingOllamaFallback ? `${getAiProviderLabel(ollamaFallbackProvider!)} Backup` : 'Ollama')
+                                            : getAiProviderLabel(aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider)}
                                     </p>
                                 )}
                                 {showTrialNudge && (
@@ -3405,7 +3420,11 @@ export default function AiHelperPanel({
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></span>
                                 </span>
-                                {isOllamaMode ? "Thinking with Ollama..." : `Generating with ${getAiProviderLabel(aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider)}...`}
+                                {isOllamaMode
+                                    ? isUsingOllamaFallback
+                                        ? `Musing with ${getAiProviderLabel(ollamaFallbackProvider!)}...`
+                                        : "Musing with Ollama..."
+                                    : `Musing with ${getAiProviderLabel(aiSettings.billing_mode === 'app_managed_trial' ? 'openai' : aiSettings.ai_provider)}...`}
                             </div>
                         )}
                         {showAiAccessNotice && aiAccessIssue && (

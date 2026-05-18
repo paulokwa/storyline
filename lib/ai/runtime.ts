@@ -69,7 +69,11 @@ export async function getAiRuntimeState(
     const apiKey =
         billingMode === 'app_managed_trial'
             ? getAppManagedOpenAiApiKey()
-            : aiSettings?.api_key ?? null
+            : provider === 'gemini'
+                ? (aiSettings?.gemini_api_key ?? aiSettings?.api_key ?? null)
+                : provider === 'openrouter'
+                    ? (aiSettings?.openrouter_api_key ?? aiSettings?.api_key ?? null)
+                    : (aiSettings?.openai_api_key ?? aiSettings?.api_key ?? null)
 
     const storedOpenrouterModel = aiSettings?.openrouter_model ?? null
     const model =

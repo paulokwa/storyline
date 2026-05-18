@@ -5,6 +5,79 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-17 - AI settings overhaul: per-provider keys, Ollama fallback, test-and-save
+
+### What was completed
+
+**Per-provider API key storage (schema + runtime)**
+- Added three Supabase migration files: `gemini_api_key`, `openai_api_key`, `openrouter_api_key`, and `fallback_api_key` columns on `user_api_keys`. Legacy `api_key` column retained for backwards compatibility, kept in sync as secondary.
+- Updated `lib/supabase/types.ts` with the new columns.
+- Updated `lib/ai/runtime.ts` so `apiKey` resolves from the correct per-provider column first, then falls back to legacy `api_key`.
+- Updated `app/api/ai/preferences/route.ts` to store/retrieve each provider's key in its own column; BYOK validation now requires at least one per-provider key (not the legacy column).
+
+**Test & Save combined flow**
+- `components/app/SettingsView.tsx`: "Test & Save API Key" button now auto-saves on a passing test. After success, the input is cleared and masked key indicators update without a full settings reload. Button text switches to "Test Saved Connection" when no new key is entered.
+
+**BYOK fallback provider exposure**
+- When a BYOK key is saved for any cloud provider, a fallback section appears listing the other providers with their masked keys (no separate key input needed — keys already saved). User can pick a fallback or "No backup."
+
+**Ollama cloud fallback exposure**
+- Ollama mode now shows a fallback section if any BYOK cloud key is saved. User can select Gemini, OpenAI, or OpenRouter as backup. No separate key input required.
+
+**Ollama fallback runtime fixes**
+- `app/api/ai/route.ts`: resolved `UNSUPPORTED_PROVIDER` error — main AI call now resolves fallback provider/key/model instead of hard-returning 400 for Ollama billing mode.
+- Rate limiter now bypasses for Ollama billing mode (`billingMode !== 'ollama'`) to prevent false `RATE_LIMITED` from Ollama failure events.
+- Heartbeat test now looks up per-provider key directly when `provider` param is a cloud provider, bypassing stale `runtime.provider` for the test path.
+
+**Ollama fallback client fixes (`AiHelperPanel.tsx`)**
+- Network errors in `runLocalOllama` catch block now call `setOllamaStatus('offline')` before attempting fallback (previously only `!response.ok` triggered offline status).
+- Fallback condition corrected from `aiSettings.api_key` (raw legacy, now null) to `aiSettings.ai_fallback_provider`.
+
+**AI Partner status label for Ollama fallback**
+- Added `ollamaFallbackProvider` and `isUsingOllamaFallback` derived state.
+- When fallback is active: amber status dot, "backup" label badge, provider-specific name shown (e.g. "Gemini Backup"), and heartbeat text reads "Musing with Gemini..." (or whichever backup provider).
+
+**"Musing with..." heartbeat copy**
+- Replaced "Generating with..." with "Musing with [Provider]..." across all providers for a warmer creative-writing tone.
+
+**Gemini false API-key error fix**
+- Both story and AI page files now pass `api_key: runtime.apiKey` (resolved per-provider key) instead of `runtime.aiSettings?.api_key` (raw legacy null).
+
+**aiSettings prop types**
+- Added `ai_fallback_provider: string | null` to `AiHelperPanel`, `StoryTab`, and both page files.
+
+### Files changed
+
+- `supabase/migrations/20260517120000_add_ai_fallback_provider.sql` (new)
+- `supabase/migrations/20260517130000_add_fallback_api_key.sql` (new)
+- `supabase/migrations/20260517140000_per_provider_api_keys.sql` (new)
+- `lib/supabase/types.ts`
+- `lib/ai/runtime.ts`
+- `app/api/ai/route.ts`
+- `app/api/ai/preferences/route.ts`
+- `app/(app)/project/[id]/story/page.tsx`
+- `app/(app)/project/[id]/ai/page.tsx`
+- `components/app/SettingsView.tsx`
+- `components/project/story/AiHelperPanel.tsx`
+- `components/project/story/StoryTab.tsx`
+
+### Current status
+
+All changes staged. Netlify build check should be run before production push. Three new migration files need to be applied in the Supabase dashboard (or via `supabase db push`) before the columns are live.
+
+### Next recommended step
+
+1. Apply the three migration files in Supabase (run in order by timestamp).
+2. Run `netlify build --context production` to confirm no bundling regressions.
+3. Browser QA: (a) enter BYOK keys, confirm test-and-save works per provider; (b) set Ollama + Gemini backup, take Ollama offline, confirm AI Partner uses Gemini and shows amber "Gemini Backup" label and "Musing with Gemini..." heartbeat.
+
+### Risks or warnings
+
+- Legacy `api_key` column is kept in sync but is no longer the source of truth. Any code that still reads it directly will see the last-set key, not necessarily the active provider's key.
+- Migrations must be applied in timestamp order. The third migration (`per_provider_api_keys`) runs a data backfill that copies `api_key` into the relevant per-provider column; if applied out of order, existing users may need to re-enter keys.
+- Ollama fallback bypasses the rate limiter entirely — appropriate since the fallback is BYOK, but worth revisiting if abuse patterns emerge.
+
+---
 ## 2026-05-17 - Import wizard AI preview cache and modal scroll containment
 
 ### What was completed

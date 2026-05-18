@@ -1462,6 +1462,11 @@ export type Database = {
         Row: {
           ai_enabled: boolean | null
           ai_fallback_enabled: boolean | null
+          ai_fallback_provider: string | null
+          fallback_api_key: string | null
+          gemini_api_key: string | null
+          openai_api_key: string | null
+          openrouter_api_key: string | null
           ai_context_mode: "smart" | "manual"
           billing_mode: string | null
           ai_provider: string | null
@@ -1477,6 +1482,11 @@ export type Database = {
         Insert: {
           ai_enabled?: boolean | null
           ai_fallback_enabled?: boolean | null
+          ai_fallback_provider?: string | null
+          fallback_api_key?: string | null
+          gemini_api_key?: string | null
+          openai_api_key?: string | null
+          openrouter_api_key?: string | null
           ai_context_mode?: "smart" | "manual"
           billing_mode?: string | null
           ai_provider?: string | null
@@ -1492,6 +1502,11 @@ export type Database = {
         Update: {
           ai_enabled?: boolean | null
           ai_fallback_enabled?: boolean | null
+          ai_fallback_provider?: string | null
+          fallback_api_key?: string | null
+          gemini_api_key?: string | null
+          openai_api_key?: string | null
+          openrouter_api_key?: string | null
           ai_context_mode?: "smart" | "manual"
           billing_mode?: string | null
           ai_provider?: string | null

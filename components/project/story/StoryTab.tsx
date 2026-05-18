@@ -77,6 +77,7 @@ interface StoryTabProps {
         ai_provider: string
         ai_context_mode: 'smart' | 'manual'
         ai_fallback_enabled: boolean
+        ai_fallback_provider: string | null
         ollama_model: string
         ollama_url: string
         api_key: string | null

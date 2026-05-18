@@ -6,6 +6,27 @@ Keep entries concise. Do not rewrite old decisions unless explicitly instructed.
 
 ---
 
+## 2026-05-17 - Per-provider API key storage replaces single shared column
+
+Decision:
+Store each cloud provider's API key in its own column (`gemini_api_key`, `openai_api_key`, `openrouter_api_key`) on `user_api_keys`, rather than a single `api_key` column shared across providers. A separate `fallback_api_key` column holds the Ollama cloud-fallback key if needed. The legacy `api_key` column is retained and kept in sync for any older code paths, but is no longer the source of truth.
+
+Reason:
+The single `api_key` column was overwritten each time the user entered a key for a different provider. Switching from OpenAI to Gemini destroyed the OpenAI key. This caused test failures, broken fallback chains, and confusing UX (keys apparently "disappearing"). Per-provider columns eliminate all cross-provider interference.
+
+Impact:
+- `lib/ai/runtime.ts` `apiKey` resolves from the correct per-provider column based on `ai_provider`, then falls back to `api_key`.
+- `app/api/ai/preferences/route.ts` stores/retrieves per-provider; BYOK validation requires at least one per-provider key, not the legacy column.
+- Both AI pages pass `api_key: runtime.apiKey` (resolved) to client, not the raw legacy column.
+- Three migration files added: `20260517120000_add_ai_fallback_provider.sql`, `20260517130000_add_fallback_api_key.sql`, `20260517140000_per_provider_api_keys.sql`.
+- All BYOK and Ollama fallback UI now reads masked keys from per-provider columns.
+- Ollama fallback in `app/api/ai/route.ts` resolves the fallback provider's per-provider key directly (not legacy `api_key`).
+
+Status:
+Approved.
+
+---
+
 ## 2026-05-08 - Add OpenRouter as a BYOK-only AI provider option
 
 Decision:

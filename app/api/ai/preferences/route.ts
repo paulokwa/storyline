@@ -4,19 +4,24 @@ import { getBillingModeLabel, type AiContextMode, type BillingMode } from '@/lib
 import { logAiModeChange } from '@/lib/ai/trial-server'
 import { getRequestContext } from '@/lib/server/request-context'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { DEFAULT_OPENROUTER_MODEL, OPENROUTER_CURATED_MODEL_IDS } from '@/lib/ai/providers'
+import { DEFAULT_OPENROUTER_MODEL, OPENROUTER_CURATED_MODEL_IDS, maskApiKey } from '@/lib/ai/providers'
 
 type PreferencesBody = {
     aiEnabled?: boolean
     billingMode?: BillingMode
     aiProvider?: 'openai' | 'gemini' | 'openrouter' | 'ollama'
     aiFallbackEnabled?: boolean
+    aiFallbackProvider?: 'gemini' | 'openai' | 'openrouter' | null
     aiContextMode?: AiContextMode
     ollamaModel?: string
     ollamaUrl?: string
     openrouterModel?: string
     apiKey?: string
     removeApiKey?: boolean
+    fallbackApiKey?: string
+    removeFallbackApiKey?: boolean
+    // Which provider the apiKey belongs to (for per-provider storage)
+    apiKeyProvider?: 'gemini' | 'openai' | 'openrouter'
 }
 
 export async function POST(request: Request) {
@@ -60,17 +65,47 @@ export async function POST(request: Request) {
     if (nextBillingMode === 'app_managed_trial') nextProvider = 'openai'
     if (nextBillingMode === 'ollama') nextProvider = 'ollama'
 
+    // Per-provider key storage — each cloud provider keeps its own key
+    const keyProvider = body.apiKeyProvider ?? (nextProvider as 'gemini' | 'openai' | 'openrouter')
+    const newKey = body.apiKey?.trim() || null
+
+    const nextGeminiKey = keyProvider === 'gemini'
+        ? (body.removeApiKey ? null : (newKey ?? currentSettings?.gemini_api_key ?? null))
+        : (currentSettings?.gemini_api_key ?? null)
+
+    const nextOpenaiKey = keyProvider === 'openai'
+        ? (body.removeApiKey ? null : (newKey ?? currentSettings?.openai_api_key ?? null))
+        : (currentSettings?.openai_api_key ?? null)
+
+    const nextOpenrouterKey = keyProvider === 'openrouter'
+        ? (body.removeApiKey ? null : (newKey ?? currentSettings?.openrouter_api_key ?? null))
+        : (currentSettings?.openrouter_api_key ?? null)
+
+    // Keep legacy api_key in sync with the active provider's key for any older code paths
     const currentApiKey = currentSettings?.api_key ?? null
     let nextApiKey = currentApiKey
-
     if (body.removeApiKey) {
         nextApiKey = null
-    } else if (body.apiKey?.trim()) {
-        nextApiKey = body.apiKey.trim()
+    } else if (newKey) {
+        nextApiKey = newKey
     }
 
-    if (nextBillingMode === 'byok' && !nextApiKey) {
-        return NextResponse.json({ error: 'Please save an API key before switching to BYOK mode.' }, { status: 400 })
+    const currentFallbackApiKey = currentSettings?.fallback_api_key ?? null
+    let nextFallbackApiKey = currentFallbackApiKey
+
+    if (body.removeFallbackApiKey) {
+        nextFallbackApiKey = null
+    } else if (body.fallbackApiKey?.trim()) {
+        nextFallbackApiKey = body.fallbackApiKey.trim()
+    }
+
+    // If the fallback is turned off, clear the stored fallback key too
+    if (!body.aiFallbackEnabled && body.aiFallbackEnabled !== undefined) {
+        nextFallbackApiKey = null
+    }
+
+    if (nextBillingMode === 'byok' && !nextGeminiKey && !nextOpenaiKey && !nextOpenrouterKey) {
+        return NextResponse.json({ error: 'Please save at least one API key before switching to BYOK mode.' }, { status: 400 })
     }
 
     if (nextBillingMode === 'app_managed_trial') {
@@ -125,10 +160,15 @@ export async function POST(request: Request) {
         ai_provider: nextProvider,
         ai_context_mode: nextContextMode,
         ai_fallback_enabled: body.aiFallbackEnabled ?? currentSettings?.ai_fallback_enabled ?? false,
+        ai_fallback_provider: body.aiFallbackProvider ?? currentSettings?.ai_fallback_provider ?? null,
         ollama_model: body.ollamaModel?.trim() || currentSettings?.ollama_model || 'llama3',
         ollama_url: body.ollamaUrl?.trim() || currentSettings?.ollama_url || 'http://127.0.0.1:11434',
         openrouter_model: nextOpenrouterModel,
         api_key: nextApiKey,
+        gemini_api_key: nextGeminiKey,
+        openai_api_key: nextOpenaiKey,
+        openrouter_api_key: nextOpenrouterKey,
+        fallback_api_key: nextFallbackApiKey,
     }
 
     const { error } = await supabase
@@ -161,12 +201,17 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
         ok: true,
+        maskedGeminiKey: maskApiKey(nextGeminiKey),
+        maskedOpenaiKey: maskApiKey(nextOpenaiKey),
+        maskedOpenrouterKey: maskApiKey(nextOpenrouterKey),
+        maskedFallbackApiKey: maskApiKey(nextFallbackApiKey),
         settings: {
             ai_enabled: payload.ai_enabled,
             billing_mode: payload.billing_mode,
             ai_provider: payload.ai_provider,
             ai_context_mode: payload.ai_context_mode,
             ai_fallback_enabled: payload.ai_fallback_enabled,
+            ai_fallback_provider: payload.ai_fallback_provider,
             ollama_model: payload.ollama_model,
             ollama_url: payload.ollama_url,
         },

@@ -30,20 +30,25 @@ type OllamaModelInfo = {
     model?: string
 }
 
-export default function SettingsView({ user, profile, maskedApiKey, aiSettings }: { 
-    user: User, 
+export default function SettingsView({ user, profile, maskedApiKey, maskedGeminiKey, maskedOpenaiKey, maskedOpenrouterKey, maskedFallbackApiKey, aiSettings }: {
+    user: User,
     profile: {
         display_name: string | null
         avatar_url: string | null
         bio: string | null
     },
     maskedApiKey: string | null,
+    maskedGeminiKey: string | null,
+    maskedOpenaiKey: string | null,
+    maskedOpenrouterKey: string | null,
+    maskedFallbackApiKey: string | null,
     aiSettings: {
         ai_enabled: boolean,
         billing_mode: string,
         ai_provider: string,
         ai_context_mode: AiContextMode,
         ai_fallback_enabled: boolean,
+        ai_fallback_provider: string | null,
         ollama_model: string,
         ollama_url: string,
         openrouter_model: string,
@@ -73,16 +78,36 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
     const [password, setPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
     const [apiKey, setApiKey] = useState('')
-    
+    const [fallbackApiKey, setFallbackApiKey] = useState('')
+
+    // Local masked key state — updated after a successful save so the display refreshes
+    // without requiring a full page reload
+    const [localMaskedApiKey, setLocalMaskedApiKey] = useState(maskedApiKey)
+    const [localMaskedGeminiKey, setLocalMaskedGeminiKey] = useState(maskedGeminiKey)
+    const [localMaskedOpenaiKey, setLocalMaskedOpenaiKey] = useState(maskedOpenaiKey)
+    const [localMaskedOpenrouterKey, setLocalMaskedOpenrouterKey] = useState(maskedOpenrouterKey)
+    const [localMaskedFallbackApiKey, setLocalMaskedFallbackApiKey] = useState(maskedFallbackApiKey)
+
     // AI Settings State
     const [aiEnabled, setAiEnabled] = useState(aiSettings.ai_enabled)
     const [billingMode, setBillingMode] = useState(aiSettings.billing_mode)
     const [aiProvider, setAiProvider] = useState(aiSettings.ai_provider)
     const [aiContextMode, setAiContextMode] = useState<AiContextMode>(aiSettings.ai_context_mode)
-    const [aiFallback, setAiFallback] = useState(aiSettings.ai_fallback_enabled)
+    const [fallbackProvider, setFallbackProvider] = useState<null | 'gemini' | 'openai' | 'openrouter'>(
+        aiSettings.ai_fallback_enabled
+            ? ((aiSettings.ai_fallback_provider as 'gemini' | 'openai' | 'openrouter' | null) ?? 'gemini')
+            : null
+    )
     const [ollamaModel, setOllamaModel] = useState(aiSettings.ollama_model)
     const [ollamaUrl, setOllamaUrl] = useState(aiSettings.ollama_url)
     const [openrouterModel, setOpenrouterModel] = useState(aiSettings.openrouter_model)
+
+    // Clear success/error messages whenever any AI setting field changes so the
+    // "saved successfully" banner doesn't linger and obscure the Save button
+    useEffect(() => {
+        setSuccessMessage(null)
+        setErrorMessage(null)
+    }, [aiEnabled, billingMode, aiProvider, aiContextMode, fallbackProvider, apiKey, fallbackApiKey, ollamaModel, ollamaUrl, openrouterModel])
 
     // AI Setup Guide
     const [showAiGuide, setShowAiGuide] = useState(false)
@@ -100,8 +125,14 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
     const [cloudStatus, setCloudStatus] = useState<StatusMessage | null>(null)
     const [testingCloud, setTestingCloud] = useState(false)
 
-    // Existing data
-    const existingApiKey = maskedApiKey
+    // Existing data — use local state so display updates after save without a page reload.
+    // existingApiKey reflects the key for the currently selected provider, not a shared key.
+    const existingApiKey = aiProvider === 'gemini'
+        ? localMaskedGeminiKey
+        : aiProvider === 'openrouter'
+            ? localMaskedOpenrouterKey
+            : localMaskedOpenaiKey
+    const existingFallbackApiKey = localMaskedFallbackApiKey
     const trial = aiSettings.trial
     const trialStatusMessage = getTrialStatusMessage(trial)
     const trialUsedMicros = Math.max(trial?.consumed_micros ?? 0, 0)
@@ -286,11 +317,14 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                 billingMode,
                 aiProvider,
                 aiContextMode,
-                aiFallbackEnabled: aiFallback,
+                aiFallbackEnabled: fallbackProvider !== null,
+                aiFallbackProvider: fallbackProvider ?? null,
                 ollamaModel,
                 ollamaUrl,
                 openrouterModel,
                 apiKey: apiKey || undefined,
+                apiKeyProvider: (aiProvider === 'gemini' || aiProvider === 'openai' || aiProvider === 'openrouter') ? aiProvider : undefined,
+                fallbackApiKey: fallbackApiKey || undefined,
             }),
         })
 
@@ -308,8 +342,15 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
             })
         }
 
+        // Refresh per-provider masked key displays from save response
+        if (data?.maskedGeminiKey !== undefined) setLocalMaskedGeminiKey(data.maskedGeminiKey)
+        if (data?.maskedOpenaiKey !== undefined) setLocalMaskedOpenaiKey(data.maskedOpenaiKey)
+        if (data?.maskedOpenrouterKey !== undefined) setLocalMaskedOpenrouterKey(data.maskedOpenrouterKey)
+        if (data?.maskedFallbackApiKey !== undefined) setLocalMaskedFallbackApiKey(data.maskedFallbackApiKey)
+
         setSuccessMessage('AI Settings saved successfully.')
         setApiKey('')
+        setFallbackApiKey('')
         router.refresh()
         setLoading(false)
     }
@@ -325,9 +366,11 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
             body: JSON.stringify({
                 billingMode: billingMode === 'byok' ? 'app_managed_trial' : billingMode,
                 aiProvider: billingMode === 'ollama' ? 'ollama' : 'openai',
+                apiKeyProvider: (aiProvider === 'gemini' || aiProvider === 'openai' || aiProvider === 'openrouter') ? aiProvider : undefined,
                 aiContextMode,
                 aiEnabled,
-                aiFallbackEnabled: aiFallback,
+                aiFallbackEnabled: fallbackProvider !== null,
+                aiFallbackProvider: fallbackProvider ?? null,
                 ollamaModel,
                 ollamaUrl,
                 removeApiKey: true,
@@ -340,6 +383,11 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
             setLoading(false)
             return
         }
+
+        // Clear the local masked key for the removed provider
+        if (aiProvider === 'gemini') setLocalMaskedGeminiKey(null)
+        else if (aiProvider === 'openrouter') setLocalMaskedOpenrouterKey(null)
+        else setLocalMaskedOpenaiKey(null)
 
         // Clean up old metadata as well
         if (user.user_metadata?.ai_api_key) {
@@ -401,12 +449,45 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
 
             if (!data.ok) {
                 throw new Error(data.error || 'Stored API Key failed connection test.')
+            }
+
+            // Auto-save the new key when test succeeds — only when a key was typed
+            if (apiKey) {
+                const saveResponse = await fetch('/api/ai/preferences', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        aiEnabled,
+                        billingMode,
+                        aiProvider,
+                        aiContextMode,
+                        aiFallbackEnabled: fallbackProvider !== null,
+                        aiFallbackProvider: fallbackProvider ?? null,
+                        ollamaModel,
+                        ollamaUrl,
+                        openrouterModel,
+                        apiKey,
+                        apiKeyProvider: provider,
+                    }),
+                })
+                const saveData = await saveResponse.json().catch(() => null)
+                if (saveResponse.ok) {
+                    if (saveData?.maskedGeminiKey !== undefined) setLocalMaskedGeminiKey(saveData.maskedGeminiKey)
+                    if (saveData?.maskedOpenaiKey !== undefined) setLocalMaskedOpenaiKey(saveData.maskedOpenaiKey)
+                    if (saveData?.maskedOpenrouterKey !== undefined) setLocalMaskedOpenrouterKey(saveData.maskedOpenrouterKey)
+                    setApiKey('')
+                    router.refresh()
+                }
+                setCloudStatus({
+                    success: true,
+                    message: saveResponse.ok
+                        ? `${providerLabel} API key verified and saved!`
+                        : `${providerLabel} key is valid but could not be saved — please use the Save button.`,
+                })
             } else {
                 setCloudStatus({
                     success: true,
-                    message: apiKey
-                        ? `New ${providerLabel} API key is valid!`
-                        : `Saved ${providerLabel} API key is connected and working!`,
+                    message: `Saved ${providerLabel} API key is connected and working!`,
                 })
             }
         } catch (err: unknown) {
@@ -1158,9 +1239,9 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                                     {testingCloud ? (
                                                         <>
                                                             <span className="h-3 w-3 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
-                                                            Testing Cloud Connection...
+                                                            {apiKey ? 'Testing & Saving...' : 'Testing Connection...'}
                                                         </>
-                                                    ) : 'Test Cloud Connection'}
+                                                    ) : apiKey ? 'Test & Save API Key' : 'Test Saved Connection'}
                                                 </Button>
 
                                                 {cloudStatus && (
@@ -1179,6 +1260,55 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                                     </div>
                                                 )}
                                             </div>
+
+                                            {existingApiKey && (() => {
+                                                const byokFallbackOptions: Array<{ value: 'gemini' | 'openai' | 'openrouter' | null, label: string, maskedKey: string | null }> = [
+                                                    { value: null,          label: 'No backup',   maskedKey: null },
+                                                    { value: 'gemini',      label: 'Gemini',      maskedKey: localMaskedGeminiKey },
+                                                    { value: 'openai',      label: 'OpenAI',      maskedKey: localMaskedOpenaiKey },
+                                                    { value: 'openrouter',  label: 'OpenRouter',  maskedKey: localMaskedOpenrouterKey },
+                                                ]
+                                                const filteredOptions = byokFallbackOptions.filter(o => o.value !== aiProvider)
+                                                const selectedFallbackKey = fallbackProvider
+                                                    ? (fallbackProvider === 'gemini' ? localMaskedGeminiKey : fallbackProvider === 'openrouter' ? localMaskedOpenrouterKey : localMaskedOpenaiKey)
+                                                    : null
+
+                                                return (
+                                                    <div className="border-t border-slate-200 pt-4 space-y-3">
+                                                        <div>
+                                                            <Label className="text-sm font-medium text-slate-700">Backup provider</Label>
+                                                            <p className="text-xs text-slate-500 mt-0.5">If your primary provider fails, automatically fall back to another saved key.</p>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            {filteredOptions.map(({ value, label, maskedKey }) => (
+                                                                <label key={value ?? 'off'} className="flex items-center gap-3 cursor-pointer select-none">
+                                                                    <input
+                                                                        type="radio"
+                                                                        name="byokFallbackProvider"
+                                                                        checked={fallbackProvider === value}
+                                                                        onChange={() => setFallbackProvider(value)}
+                                                                        className="text-primary focus:ring-primary"
+                                                                    />
+                                                                    <span className="text-sm text-slate-700 flex items-center gap-2">
+                                                                        {label}
+                                                                        {value && maskedKey && (
+                                                                            <span className="text-xs text-slate-400 font-mono">{maskedKey}</span>
+                                                                        )}
+                                                                        {value && !maskedKey && (
+                                                                            <span className="text-xs text-amber-600">no key saved yet</span>
+                                                                        )}
+                                                                    </span>
+                                                                </label>
+                                                            ))}
+                                                        </div>
+                                                        {fallbackProvider && !selectedFallbackKey && (
+                                                            <p className="text-xs text-amber-700 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                                                                Save a key for {fallbackProvider === 'gemini' ? 'Gemini' : fallbackProvider === 'openai' ? 'OpenAI' : 'OpenRouter'} above to enable this backup.
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                )
+                                            })()}
                                         </div>
                                     )}
 
@@ -1187,7 +1317,7 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                             <div>
                                                 <h3 className="font-semibold text-slate-800">Local Ollama Configuration</h3>
                                                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                                                    Keep local AI running on your device, with an optional Gemini backup option if your Ollama server is unavailable.
+                                                    Keep local AI running on your device, with an optional cloud backup if your Ollama server is unavailable.
                                                 </p>
                                             </div>
                                             <div className="space-y-2">
@@ -1237,21 +1367,53 @@ export default function SettingsView({ user, profile, maskedApiKey, aiSettings }
                                                 )}
                                             </div>
 
-                                            <div className="flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-start">
-                                                <input type="checkbox" id="aiFallback" checked={aiFallback} onChange={(e) => setAiFallback(e.target.checked)} className="rounded border-slate-300 bg-white text-primary focus:ring-primary" />
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="aiFallback" className="cursor-pointer text-sm font-normal">Use Gemini as a backup option if Local Ollama is unavailable</Label>
-                                                    {aiFallback && !existingApiKey && (
-                                                        <p className="text-sm leading-6 text-amber-600">Backup is on, but no Gemini API key is saved yet.</p>
-                                                    )}
-                                                    {aiFallback && (
-                                                        <div className="space-y-2">
-                                                            <Label htmlFor="apiKeyOllamaFallback" className="text-sm">Provide a Gemini API Key for the backup option</Label>
-                                                            <Input id="apiKeyOllamaFallback" type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder={existingApiKey ? "(Key exists)" : "AIzaSy..."} className="h-9 bg-white text-sm" />
+                                            {(localMaskedGeminiKey || localMaskedOpenaiKey || localMaskedOpenrouterKey || fallbackProvider !== null) && (() => {
+                                                const ollamaFallbackOptions: Array<{ value: 'gemini' | 'openai' | 'openrouter' | null, label: string, maskedKey: string | null }> = [
+                                                    { value: null,          label: 'No backup',   maskedKey: null },
+                                                    { value: 'gemini',      label: 'Gemini',      maskedKey: localMaskedGeminiKey },
+                                                    { value: 'openai',      label: 'OpenAI',      maskedKey: localMaskedOpenaiKey },
+                                                    { value: 'openrouter',  label: 'OpenRouter',  maskedKey: localMaskedOpenrouterKey },
+                                                ]
+                                                const selectedFallbackKey = fallbackProvider
+                                                    ? (fallbackProvider === 'gemini' ? localMaskedGeminiKey : fallbackProvider === 'openrouter' ? localMaskedOpenrouterKey : localMaskedOpenaiKey)
+                                                    : null
+
+                                                return (
+                                                    <div className="border-t border-slate-200 pt-4 space-y-3">
+                                                        <div>
+                                                            <Label className="text-sm font-medium text-slate-700">Cloud backup if Ollama is unavailable</Label>
+                                                            <p className="text-xs text-slate-500 mt-0.5">Uses your saved BYOK key for the selected provider.</p>
                                                         </div>
-                                                    )}
-                                                </div>
-                                            </div>
+                                                        <div className="space-y-2">
+                                                            {ollamaFallbackOptions.map(({ value, label, maskedKey }) => (
+                                                                <label key={value ?? 'off'} className="flex items-center gap-3 cursor-pointer select-none">
+                                                                    <input
+                                                                        type="radio"
+                                                                        name="ollamaFallbackProvider"
+                                                                        checked={fallbackProvider === value}
+                                                                        onChange={() => setFallbackProvider(value)}
+                                                                        className="text-primary focus:ring-primary"
+                                                                    />
+                                                                    <span className="text-sm text-slate-700 flex items-center gap-2">
+                                                                        {label}
+                                                                        {value && maskedKey && (
+                                                                            <span className="text-xs text-slate-400 font-mono">{maskedKey}</span>
+                                                                        )}
+                                                                        {value && !maskedKey && (
+                                                                            <span className="text-xs text-amber-600">no key saved yet</span>
+                                                                        )}
+                                                                    </span>
+                                                                </label>
+                                                            ))}
+                                                        </div>
+                                                        {fallbackProvider && !selectedFallbackKey && (
+                                                            <p className="text-xs text-amber-700 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                                                                Switch to <strong>Use Your Own API Key</strong> and save a {fallbackProvider === 'gemini' ? 'Gemini' : fallbackProvider === 'openai' ? 'OpenAI' : 'OpenRouter'} key first to enable this backup.
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                )
+                                            })()}
                                         </div>
                                     )}
                                 </div>

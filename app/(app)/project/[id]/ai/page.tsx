@@ -20,9 +20,10 @@ export default async function AIPage({ params }: { params: Promise<{ id: string 
         ai_provider: runtime.aiSettings?.ai_provider ?? 'openai',
         ai_context_mode: runtime.contextMode,
         ai_fallback_enabled: runtime.aiSettings?.ai_fallback_enabled ?? false,
+        ai_fallback_provider: runtime.aiSettings?.ai_fallback_provider ?? null,
         ollama_model: runtime.aiSettings?.ollama_model ?? '',
         ollama_url: runtime.aiSettings?.ollama_url ?? '',
-        api_key: runtime.aiSettings?.api_key ?? null,
+        api_key: runtime.apiKey,
         trial: runtime.trialAccount,
     }
 
