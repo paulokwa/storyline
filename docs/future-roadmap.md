@@ -424,19 +424,158 @@ Future idea:
 
 ## Magic Detect and AI import
 
-### Ollama support for Magic Detect
+### Current Ollama behaviour
 
-Magic Detect currently requires a cloud AI provider (Gemini, OpenAI, or OpenRouter) and explicitly rejects Ollama. This is an architectural constraint, not a product decision.
+Magic Detect currently requires a cloud AI provider (Gemini, OpenAI, or OpenRouter) and explicitly blocks plain Ollama. This is an architectural constraint, not an anti-local product decision.
 
-Ollama runs as a local server on the user's machine (`http://127.0.0.1:11434`). The Magic Detect API route runs server-side on Netlify. A server in a data centre cannot reach `http://127.0.0.1` on a user's laptop — that address means "this machine, right here." There is no config or firewall fix for this.
+Ollama runs as a local server on the user's own device, usually at `http://127.0.0.1:11434`. The Magic Detect API route runs server-side on Netlify. A server in a data centre cannot reach `http://127.0.0.1` on a user's laptop — that address means "this machine, right here." There is no simple config or firewall fix for the current server-side route.
 
-The rest of AI Partner (writing assistant, scene analysis) works with Ollama because those calls go from the **user's browser** directly to their local Ollama instance. Magic Detect would need the same approach: move the AI call client-side, so the browser makes the Ollama request and the server only receives the result.
+The current UX should keep the Magic Detect button disabled or blocked when the selected provider is Ollama and no permitted cloud route is available. The copy should avoid making it sound as if Storyline's servers are trying to reach into the user's device. Prefer wording like:
 
-**Why it is low priority:** Ollama users are already technically advanced. The overlap between "Ollama-only user" and "wants to do AI import detection" is probably small. Cloud-provider users can already use Magic Detect today.
+> Magic Detect does not support local Ollama yet. Ollama runs on your device, while Magic Detect currently runs through Storyline's cloud AI route.
 
-**Why it is doable:** The detection logic is a single prompt/response cycle. Moving it to the browser is feasible — the manuscript text, the prompt, and the Ollama URL are all available client-side. The main work is restructuring the route to support a client-driven mode and handling auth/abuse concerns without a server gate.
+### Near-term option: explicit cloud fallback for this import
 
-**Recommendation:** Park this until there is real user demand for it. The error message already explains the limitation clearly. Revisit if Ollama adoption grows or if users raise it specifically.
+If the user has selected Ollama but has already configured a cloud fallback provider, Magic Detect can offer an explicit consent-based fallback path without making Ollama itself work locally.
+
+Recommended product behaviour:
+
+- Do not silently use fallback.
+- Detect whether a cloud fallback provider is configured and usable.
+- If yes, expose a modal/card action such as **Use cloud fallback for this import**.
+- Clearly state that manuscript text will be sent to the configured cloud fallback provider for Magic Detect.
+- Clearly state that Ollama remains the user's default provider afterward.
+- Scope the fallback to this Magic Detect run/import only; do not permanently switch the user's provider.
+- Keep **Open Account Settings** and **Continue without Magic Detect** as alternatives.
+
+This is the best near-term improvement because it avoids a large architecture change while respecting privacy expectations. It is especially important because Magic Detect may process substantial manuscript text, which is more sensitive than a short chat message.
+
+Suggested modal copy when fallback exists:
+
+> Magic Detect cannot run through local Ollama yet. You can use your configured cloud fallback for this import. Your manuscript text will be sent to that cloud provider for detection. Ollama will remain your default AI provider afterward.
+
+Suggested buttons:
+
+- **Use cloud fallback for this import**
+- **Open Account Settings**
+- **Continue without Magic Detect**
+
+### Trial credits handling
+
+If a user has free trial AI credits but no cloud fallback is configured, do not silently choose a cloud provider for them unless Storyline already has an explicit, transparent trial-credit provider selection model.
+
+Recommended product behaviour:
+
+- Mention that trial credits may be available.
+- Offer a clear path to choose/configure a cloud provider.
+- Avoid a one-click "use trial credits" action if the provider choice would be hidden.
+- Do not permanently switch the user's provider without consent.
+
+Suggested modal copy when credits exist but fallback does not:
+
+> Magic Detect requires a cloud AI provider. You may have trial credits available, but you need to choose a cloud provider before using them for Magic Detect.
+
+Suggested buttons:
+
+- **Choose cloud provider** / **Open Account Settings**
+- **Continue without Magic Detect**
+
+### Future option: browser-to-Ollama Magic Detect
+
+A true local Magic Detect path could eventually have the browser call the user's local Ollama instance directly, similar to how other client-side Ollama AI features work.
+
+High-level idea:
+
+- The import wizard keeps manuscript text client-side.
+- The browser sends the Magic Detect prompt/chunks directly to the configured Ollama URL.
+- Ollama returns structured JSON containing proposed chapter/scene boundaries.
+- The client validates and previews the result before import.
+- The server is not involved in the local model request except possibly for auth/session state or saving the final imported structure.
+
+Why this is promising:
+
+- It preserves the local-first trust promise.
+- It avoids sending manuscript text to cloud AI.
+- Ollama supports structured JSON-style responses, making a chapter-boundary schema plausible.
+
+Main blockers:
+
+- Browser CORS friction. Many users would need to configure `OLLAMA_ORIGINS` to allow requests from the deployed Storyline domain.
+- Setup friction is too high for normal writers.
+- Local models vary greatly in quality, context window, and JSON reliability.
+- Large manuscript chunking/retry/error handling would need careful UI.
+
+Verdict: feasible later, but not recommended as the immediate solution unless Storyline adds a guided local setup flow, a desktop wrapper, or a local companion bridge.
+
+### Future option: local quick detect parser
+
+A non-AI parser could detect obvious headings and separators locally without any AI provider.
+
+Examples it could detect:
+
+- `Chapter 1`, `Chapter One`, `CHAPTER TWELVE`
+- `Prologue`, `Epilogue`, `Part II`
+- Markdown headings such as `# Chapter 3`
+- Scene separators such as `***`, `---`, or custom markers
+
+Product warning:
+
+This should not be branded as full Magic Detect because it cannot solve the hard semantic cases: messy manuscripts without clear headings, time jumps, POV shifts, or subtle scene/chapter boundaries. It overlaps with existing heading/custom-marker split strategies.
+
+If built, call it something like **Local quick detect** or **Detect obvious headings**, not **Magic Detect with Ollama**.
+
+### Future option: desktop wrapper or local companion bridge
+
+The cleanest long-term local-first solution is a desktop wrapper or small local companion process that can reliably talk to Ollama and the web app without browser CORS headaches.
+
+Possible forms:
+
+- Tauri/Electron desktop app wrapper.
+- Local companion service that brokers requests between Storyline and Ollama.
+- Self-hosted Storyline mode where both the app and Ollama run on the same device/network.
+
+Why this is strong:
+
+- Better local AI reliability.
+- Better file-system and backup possibilities.
+- Better privacy story for local-first users.
+
+Why it should stay future-only:
+
+- It is a real architecture/product investment.
+- It adds install/update/support burden.
+- It should not be mixed into launch polish.
+
+### Future option: shared AI client abstraction
+
+A later architecture pass could unify cloud and local AI request handling through a shared provider interface so features do not have to special-case Ollama as often.
+
+Possible goal:
+
+- Shared provider capability checks, e.g. `supportsServerSide`, `supportsClientSide`, `supportsStructuredOutput`, `supportsLargeContext`, `requiresUserConsentForCloudFallback`.
+- Feature-level capability gates for Magic Detect, AI Partner, Scene Analysis, summarization, extraction, and future AI tools.
+- Cleaner fallback logic that is explicit and auditable.
+
+This is useful future architecture work, but it should not be started just to fix the current Magic Detect modal.
+
+### Current recommendation
+
+Near term:
+
+1. Keep Magic Detect blocked for plain Ollama.
+2. Improve modal copy so it explains that local Ollama is not supported yet without sounding invasive.
+3. If a cloud fallback exists, offer **Use cloud fallback for this import** with clear consent.
+4. If trial credits exist but no fallback/provider is configured, guide the user to Account Settings rather than silently selecting a provider.
+5. Keep manual split options visible and easy.
+
+Long term:
+
+1. Revisit browser-to-Ollama Magic Detect only after demand is proven or local setup becomes easier.
+2. Consider a local quick-detect parser as a modest non-AI improvement, but do not oversell it.
+3. Consider a desktop/local companion path only if Storyline deliberately moves further into local-first power-user territory.
+4. Consider a shared AI provider capability layer after launch if AI feature routing becomes messy.
+
+Related context: this came from a 2026-05-18 ChatGPT planning discussion about whether Gemini's suggestions changed the Magic Detect/Ollama recommendation. Chat link for Kwame's reference: https://chatgpt.com/g/g-p-69c7f39a24148191910ed755d079daab-creative-ai-app/c/6a0b434c-3054-83ea-bb7c-939d1841c5b1
 
 ---
 
