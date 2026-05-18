@@ -1,5 +1,37 @@
 # TROUBLESHOOTING
 
+## Issue: Google OAuth signup creates default AI settings but no free trial grant
+
+### Symptoms
+
+- A new Google OAuth user has a `user_api_keys` row with `ai_enabled = true`, `billing_mode = app_managed_trial`, and `ai_provider = openai`.
+- The same user has an `ai_trial_accounts` row with `status = disabled`, `grant_count = 0`, and no trial balance.
+- Admin trial views can make this look like an admin-reporting issue, but the trial grant itself was not applied.
+
+### Cause
+
+- Email/password signup calls `evaluate_and_grant_ai_trial` in `/api/auth/signup`.
+- Google OAuth signup goes through `/api/auth/callback`, which exchanged the OAuth code and redirected without running the same trial evaluation.
+- The database auth-user trigger only creates the default disabled trial row; it does not grant the trial balance.
+
+### Fix
+
+- After a successful `exchangeCodeForSession(code)` in `app/api/auth/callback/route.ts`, call `supabase.auth.getUser()`.
+- For the verified user, call the idempotent `evaluate_and_grant_ai_trial` RPC using the callback request context.
+- Do not block login if the trial-evaluation RPC fails; log the server error and let the user finish signing in.
+
+### Verification
+
+- `npx tsc --noEmit --pretty false`
+- `npx eslint "app/api/auth/callback/route.ts"`
+- Browser-test a fresh Google OAuth signup, then confirm the user has `ai_trial_accounts.grant_count > 0`, `status = active`, and nonzero `remaining_micros`.
+
+### Notes
+
+- Existing OAuth users with `grant_count = 0` should be repaired by signing in through Google again after this fix is deployed, because the callback runs on each OAuth code exchange.
+
+---
+
 ## Purpose
 
 This file is the project playbook for known failures, proven fixes, and safe diagnostic steps.
@@ -453,6 +485,40 @@ Add a short entry using this format:
 ### Notes
 
 - Browser validation is still needed for a real incomplete guided draft, especially resuming from later steps like `World & Locations`, `Vision`, and `Identity`.
+
+## Issue: Incomplete local setup draft appears for another signed-in user on the same browser
+
+### Symptoms
+
+- On the live site or local dev, user A starts a local project setup and leaves it incomplete.
+- User A logs out.
+- User B signs in on the same browser/profile.
+- The Library shows user A's `Resume your setup` incomplete draft to user B.
+- Fully created local projects remain correctly ringfenced and do not appear across users.
+
+### Cause
+
+- Completed local projects are stored in IndexedDB with `user_id` and loaded through `listLocalProjects(currentUserId)`.
+- Incomplete setup drafts were stored in origin-wide `localStorage` keys:
+  - `storyline-new-project-draft`
+  - `storyline-guided-data-draft`
+- Those keys were not scoped to the signed-in user, so any account on the same browser profile could see the unfinished setup card.
+
+### Fix
+
+- Store incomplete setup drafts under user-scoped keys using the current authenticated user ID.
+- Update `/new`, `GuidedFlow`, and the Library `Resume your setup` card to read/write only the current user's scoped draft.
+- Ignore and clear legacy unscoped draft keys so old origin-wide drafts are not exposed after deploy.
+
+### Verification
+
+- `npx tsc --noEmit --pretty false`
+- Focused ESLint on changed files; `ProjectGrid.tsx` still has pre-existing lint debt unrelated to this fix.
+
+### Notes
+
+- This intentionally affects incomplete setup drafts only. Existing completed local projects were already user-scoped.
+- Browser retest should use two accounts on the same browser/profile: create an incomplete local setup as account A, log out, sign in as account B, and confirm the draft card is absent.
 
 ## Issue: Next.js dev server listens but auth pages hang or never finish loading
 

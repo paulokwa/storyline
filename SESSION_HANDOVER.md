@@ -5,6 +5,55 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-18 - Same-browser incomplete local setup privacy fix
+
+### What was completed
+
+- Confirmed the reported live-site issue affects incomplete setup drafts, not fully created local projects.
+- Completed local projects were already filtered by `user_id` through IndexedDB.
+- Found the leak path in the incomplete setup flow: `/new`, `GuidedFlow`, and the Library resume card used unscoped localStorage keys.
+- Added user-scoped draft storage helpers in `lib/persistence/new-project-drafts.ts`.
+- Updated incomplete setup draft read/write/clear behavior to use the authenticated user ID.
+- Updated troubleshooting and testing notes.
+
+### Current status
+
+Static TypeScript verification passed. Browser validation with two signed-in accounts on the same browser/profile is still needed after deploy.
+
+### Next recommended step
+
+On production after deploy: account A starts a local project setup and leaves before final creation; account B signs in on the same browser/profile and should not see account A's `Resume your setup` card. Sign back into account A and confirm their draft still resumes.
+
+### Risks or warnings
+
+- Legacy unscoped incomplete drafts are intentionally ignored/cleared after the fix so they cannot be exposed to another account. Users with old incomplete drafts may need to restart that setup.
+- Focused ESLint still reports pre-existing `ProjectGrid.tsx` lint debt unrelated to this fix.
+
+---
+## 2026-05-18 - Google OAuth free trial grant fix
+
+### What was completed
+
+- Confirmed backend state for Google OAuth signup `paulotenguk@gmail.com`: default `user_api_keys` existed with `billing_mode = app_managed_trial`, but `ai_trial_accounts` remained `status = disabled`, `grant_count = 0`, and had no trial balance.
+- Updated `app/api/auth/callback/route.ts` so successful OAuth/email callback code exchange verifies the user and calls the idempotent `evaluate_and_grant_ai_trial` RPC with request context.
+- Kept login non-blocking if trial evaluation fails, logging the server error while still redirecting the authenticated user.
+- Documented the failure pattern in `docs/troubleshooting/TROUBLESHOOTING.md`.
+- Added a focused retest row to `TESTING.md`.
+
+### Current status
+
+Static verification passed. Browser/backend validation is still needed after deploy with a fresh Google OAuth signup or by signing `paulotenguk@gmail.com` in through Google again.
+
+### Next recommended step
+
+Deploy the fix, sign in through Google with the affected account or a fresh test account, then confirm `ai_trial_accounts.grant_count > 0`, `status = active`, and nonzero `remaining_micros`.
+
+### Risks or warnings
+
+- Existing OAuth users with disabled trial rows are not repaired until they hit the OAuth callback again or an admin runs the trial-evaluation RPC manually.
+- The callback intentionally does not block login on trial-grant RPC failure.
+
+---
 ## 2026-05-17 - AI settings overhaul: per-provider keys, Ollama fallback, test-and-save
 
 ### What was completed

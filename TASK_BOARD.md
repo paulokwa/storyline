@@ -131,6 +131,36 @@ Automatically optimize cover images at upload time and ensure the library uses l
 
 ## Later
 
+### 1. AI settings autosave UX
+
+Replace the single manual `Save AI Settings` action with autosave behavior for actionable AI account settings.
+
+**Goal:**
+Changing an AI setting should be the save action. Users should not need to make a choice and then remember to press a separate save button.
+
+**Scope:**
+- Remove or retire the bottom `Save AI Settings` button in Account Settings.
+- Add a shared patch-based AI preference save helper so each control saves only the changed setting.
+- Autosave:
+  - Enable / disable AI Partner
+  - Free Trial AI / BYOK / Ollama mode
+  - Smart Context / Manual Context
+  - Cloud provider selection
+  - Backup provider selection
+  - OpenRouter model selection
+- Save text-like settings such as Ollama URL/model on blur or with a short debounce, not on every keystroke.
+- Keep API key storage behind the explicit `Test & Save API Key` flow so keys are verified before being stored.
+- Add clear inline save states such as `Saving...`, `Saved`, and `Could not save`.
+
+**Risks / guardrails:**
+- Do not silently save a typed API key when the user changes an unrelated option.
+- Switching to BYOK should still require at least one saved provider key; if none exists, show a clear message instead of pretending the switch completed.
+- Avoid race conditions when users click settings quickly; latest choice should win.
+- Preserve trial enrollment checks, BYOK validation, Ollama fallback behavior, and per-provider key storage.
+
+**Priority:** Medium
+**Reason:** Reduces settings friction and prevents users from assuming a visible choice has applied when it is still waiting on a separate save action.
+
 
 ---
 

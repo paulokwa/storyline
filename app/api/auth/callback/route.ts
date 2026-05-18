@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { type CookieOptions, createServerClient } from '@supabase/ssr'
+import { getRequestContext } from '@/lib/server/request-context'
 import { getURL } from '@/lib/utils/url'
 
 const INVALID_REFRESH_TOKEN_MESSAGES = ['Invalid Refresh Token', 'Refresh Token Not Found']
@@ -61,6 +62,27 @@ export async function GET(request: Request) {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
 
         if (!error) {
+            const { data: verifiedUserData, error: verifiedUserError } = await supabase.auth.getUser()
+            const verifiedUser = verifiedUserData.user
+
+            if (verifiedUserError) {
+                console.error('[auth callback] Unable to verify user after code exchange:', verifiedUserError.message)
+            } else if (verifiedUser?.id) {
+                const context = getRequestContext(request)
+                const { error: trialGrantError } = await supabase.rpc('evaluate_and_grant_ai_trial', {
+                    p_user_id: verifiedUser.id,
+                    p_raw_email: verifiedUser.email ?? '',
+                    p_ip_address: context.ipAddress,
+                    p_device_fingerprint: context.deviceFingerprint,
+                    p_user_agent: context.userAgent,
+                    p_accept_language: context.acceptLanguage,
+                })
+
+                if (trialGrantError) {
+                    console.error('[auth callback] Unable to evaluate AI trial grant:', trialGrantError.message)
+                }
+            }
+
             return NextResponse.redirect(`${origin}${next}`)
         }
 

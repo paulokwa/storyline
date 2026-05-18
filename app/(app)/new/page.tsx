@@ -20,9 +20,16 @@ import {
 import { DEFAULT_WRITING_MODE_BY_TYPE, getProjectTypeLabel } from '@/lib/constants'
 import { toast } from 'sonner'
 import { useTheme } from '@/components/providers/ThemeProvider'
+import {
+    clearLegacyProjectSetupDrafts,
+    clearProjectSetupDrafts,
+    readNewProjectDraft,
+    writeNewProjectDraft,
+} from '@/lib/persistence/new-project-drafts'
 
 type StartMode = 'quick' | 'guided' | 'import'
 type Step = 'title' | 'type' | 'storage' | 'start_mode' | 'identity' | 'guided' | 'import'
+type StoredDraftStep = Step | 'writing_mode'
 const LOCAL_MODE_EDUCATION_PENDING_KEY = 'storyline-local-mode-education-pending'
 const LOCAL_MODE_EDUCATION_SHOWN_KEY = 'storyline-local-mode-education-shown'
 
@@ -33,17 +40,31 @@ interface NewProjectState {
     coverUrl: string
 }
 
+const DEFAULT_NEW_PROJECT_STATE: NewProjectState = {
+    title: '',
+    type: null,
+    startMode: null,
+    coverUrl: '',
+}
+
+function isNewProjectStep(value: unknown): value is Step {
+    return value === 'title'
+        || value === 'type'
+        || value === 'storage'
+        || value === 'start_mode'
+        || value === 'identity'
+        || value === 'guided'
+        || value === 'import'
+}
+
 export default function NewProjectPage() {
     const router = useRouter()
     const [step, setStep] = useState<Step>('title')
-    const [state, setState] = useState<NewProjectState>({
-        title: '',
-        type: null,
-        startMode: null,
-        coverUrl: '',
-    })
+    const [state, setState] = useState<NewProjectState>(DEFAULT_NEW_PROJECT_STATE)
     const [pendingCoverFile, setPendingCoverFile] = useState<File | null>(null)
     const [creating, setCreating] = useState(false)
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+    const [draftLoaded, setDraftLoaded] = useState(false)
     const [preferredStorageMode, setPreferredStorageMode] = useState<PreferredStorageMode>('local')
     const [selectedStorageMode, setSelectedStorageMode] = useState<PreferredStorageMode>('local')
     const [isAiEnabled, setIsAiEnabled] = useState(false)
@@ -53,26 +74,13 @@ export default function NewProjectPage() {
     // Draft Persistence
     useEffect(() => {
         if (typeof window === 'undefined') return
-        const saved = localStorage.getItem('storyline-new-project-draft')
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved)
-                if (parsed.state) setState(parsed.state)
-                if (parsed.step && parsed.step !== 'writing_mode') setStep(parsed.step)
-                else if (parsed.step === 'writing_mode') setStep('start_mode') // Handle legacy drafts
-            } catch (e) {
-                console.error("Failed to load draft", e)
-            }
-        }
-    }, [])
+        if (!currentUserId || !draftLoaded) return
 
-    useEffect(() => {
-        if (typeof window === 'undefined') return
         // Only save if we have some progress
         if (state.type || state.title || step !== 'title') {
-            localStorage.setItem('storyline-new-project-draft', JSON.stringify({ state, step }))
+            writeNewProjectDraft(currentUserId, { state, step })
         }
-    }, [state, step])
+    }, [currentUserId, draftLoaded, state, step])
 
     useEffect(() => {
         let cancelled = false
@@ -80,7 +88,12 @@ export default function NewProjectPage() {
 
         void (async () => {
             const { data: { user } } = await supabase.auth.getUser()
-            if (!user || cancelled) return
+            if (!user || cancelled) {
+                if (!cancelled) setDraftLoaded(true)
+                return
+            }
+
+            const savedDraft = readNewProjectDraft<NewProjectState, StoredDraftStep>(user.id)
 
             const [{ data: profile }, { data: aiSettings }] = await Promise.all([
                 supabase
@@ -96,6 +109,19 @@ export default function NewProjectPage() {
             ])
 
             if (!cancelled) {
+                setCurrentUserId(user.id)
+                clearLegacyProjectSetupDrafts()
+
+                if (savedDraft?.state) {
+                    setState(savedDraft.state)
+                }
+
+                if (savedDraft?.step === 'writing_mode') {
+                    setStep('start_mode')
+                } else if (isNewProjectStep(savedDraft?.step)) {
+                    setStep(savedDraft.step)
+                }
+
                 const profileStorageMode: PreferredStorageMode = profile?.preferred_storage_mode === 'cloud' ? 'cloud' : 'local'
                 setPreferredStorageMode(profileStorageMode)
 
@@ -115,6 +141,8 @@ export default function NewProjectPage() {
                 if (!storageSelectionTouchedRef.current) {
                     setSelectedStorageMode(profileStorageMode)
                 }
+
+                setDraftLoaded(true)
             }
         })()
 
@@ -189,8 +217,7 @@ export default function NewProjectPage() {
                 chunks: extras?.chunks,
             })
 
-            localStorage.removeItem('storyline-new-project-draft')
-            localStorage.removeItem('storyline-guided-data-draft')
+            clearProjectSetupDrafts(user.id)
             setPendingCoverFile(null)
 
             if (
@@ -309,13 +336,14 @@ export default function NewProjectPage() {
                             />
                         )}
 
-                        {step === 'guided' && state.type && (
+                        {step === 'guided' && state.type && currentUserId && (
                             <GuidedFlow
                                 projectType={state.type}
                                 initialTitle={state.title}
                                 onComplete={createProject}
                                 onBack={() => setStep('start_mode')}
                                 creating={creating}
+                                currentUserId={currentUserId}
                                 creatingLabel={creatingLabel}
                                 isAiEnabled={isAiEnabled}
                             />

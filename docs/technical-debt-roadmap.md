@@ -236,7 +236,30 @@ Admin reports for local AI can become noisy, misleading, duplicated, or malforme
 
 ---
 
-### 5. Audit Follow-Ups From 2026-05-11
+### 5. Admin AI Settings and Trial Entitlement Visibility
+
+**Why it matters:**
+The admin dashboard is currently useful for broad AI/trial monitoring, but it does not expose every account-state detail now supported by AI settings. That can make real entitlement bugs harder to spot, especially around OAuth-created accounts, BYOK/Ollama users, fallback provider usage, and OpenRouter configuration.
+
+**Risk if ignored:**
+Admin may report incomplete or confusing AI state. A user can have valid AI settings but still be hard to reason about from admin if trial entitlement, current billing mode, context mode, fallback provider, OpenRouter model, and provider key presence are not shown together.
+
+**Current state:**
+The Google OAuth free-trial grant path has been fixed in `app/api/auth/callback/route.ts`, with a retest row added to `TESTING.md`. The remaining admin concerns are visibility gaps, not confirmed user-facing crashes.
+
+**Future hardening:**
+
+- Show `ai_context_mode`, fallback provider, OpenRouter model, and per-provider API-key presence in admin without exposing key values.
+- Separate "trial entitlement/account health" from "current AI mode/provider" so BYOK/Ollama users with valid trial accounts are not misread.
+- Consider an admin view built from all users/profiles with left joins to `user_api_keys` and `ai_trial_accounts`, so missing, disabled, or ungranted trial rows are visible instead of silently absent.
+- Label fallback usage clearly when the saved billing mode is local/BYOK but a cloud backup provider handled a request.
+- Keep the known OpenRouter usage-event constraint issue documented in troubleshooting and only escalate it if admin usage rows go missing in a real test.
+
+**Priority:** Medium.
+
+---
+
+### 6. Audit Follow-Ups From 2026-05-11
 
 These came from the app audit but are not immediate lone-coder launch blockers unless a later test proves they are breaking real user flows.
 

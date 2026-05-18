@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
 import type { ProjectType } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
 import CoverPicker from '@/components/project/CoverPicker'
+import { readGuidedProjectDraft, writeGuidedProjectDraft } from '@/lib/persistence/new-project-drafts'
 
 interface GuidedData {
     title: string
@@ -25,14 +26,10 @@ interface GuidedFlowProps {
     onComplete: (data: GuidedData & { coverFile?: File | null }) => void
     onBack: () => void
     creating: boolean
+    currentUserId: string
     creatingLabel?: string
     onDataChange?: (data: GuidedData) => void
     isAiEnabled?: boolean
-}
-
-interface GuidedDraftPayload {
-    data: GuidedData
-    stepIndex?: number
 }
 
 type GuidedStep = 'title' | 'premise' | 'tone' | 'character' | 'setting' | 'first_idea' | 'identity'
@@ -72,6 +69,7 @@ export default function GuidedFlow({
     onComplete,
     onBack,
     creating,
+    currentUserId,
     creatingLabel = 'Creating Sanctuary...',
     onDataChange,
     isAiEnabled = false,
@@ -79,13 +77,11 @@ export default function GuidedFlow({
     const [stepIndex, setStepIndex] = useState(() => {
         if (typeof window === 'undefined') return 0
 
-        const saved = localStorage.getItem('storyline-guided-data-draft')
+        const saved = readGuidedProjectDraft<GuidedData>(currentUserId)
         if (!saved) return 0
 
         try {
-            const parsed = JSON.parse(saved) as GuidedDraftPayload | GuidedData
-            if (!parsed || typeof parsed !== 'object') return 0
-            const savedStepIndex = (parsed as GuidedDraftPayload).stepIndex ?? 0
+            const savedStepIndex = saved.stepIndex ?? 0
 
             return Math.min(Math.max(savedStepIndex, 0), STEPS.length - 1)
         } catch (e) {
@@ -96,14 +92,10 @@ export default function GuidedFlow({
     const [coverFile, setCoverFile] = useState<File | null>(null)
     const [data, setData] = useState<GuidedData>(() => {
         if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('storyline-guided-data-draft')
+            const saved = readGuidedProjectDraft<GuidedData>(currentUserId)
             if (saved) {
                 try {
-                    const parsed = JSON.parse(saved) as GuidedDraftPayload | GuidedData
-                    if (parsed && typeof parsed === 'object' && 'data' in parsed && parsed.data) {
-                        return parsed.data
-                    }
-                    return parsed as GuidedData
+                    return saved.data
                 } catch (e) {
                     console.error("Failed to load guided draft", e)
                 }
@@ -121,9 +113,9 @@ export default function GuidedFlow({
     })
 
     useEffect(() => {
-        localStorage.setItem('storyline-guided-data-draft', JSON.stringify({ data, stepIndex }))
+        writeGuidedProjectDraft(currentUserId, { data, stepIndex })
         onDataChange?.(data)
-    }, [data, onDataChange, stepIndex])
+    }, [currentUserId, data, onDataChange, stepIndex])
 
     const step = STEPS[stepIndex]
     const isScriptProject = projectType === 'tv_script'

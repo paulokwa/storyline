@@ -47,6 +47,11 @@ import { useTheme } from '@/components/providers/ThemeProvider'
 import { destroyLocalProject, listLocalProjects, restoreLocalProject, softDeleteLocalProject, updateLocalProject } from '@/lib/persistence/local-projects'
 import { isLocalProjectId } from '@/lib/persistence/project-mode'
 import OpenProjectButton from '@/components/library/OpenProjectButton'
+import {
+    clearLegacyProjectSetupDrafts,
+    clearProjectSetupDrafts,
+    readNewProjectDraft,
+} from '@/lib/persistence/new-project-drafts'
 
 // Explicitly extend the Project type with fields added via recent migrations
 type Project = Database['public']['Tables']['projects']['Row'] & {
@@ -64,6 +69,15 @@ type Project = Database['public']['Tables']['projects']['Row'] & {
         display_name: string | null
         avatar_url: string | null
     }>
+}
+
+type LibraryProjectDraftState = {
+    type: Project['type'] | null
+}
+
+type LibraryProjectDraft = {
+    state: LibraryProjectDraftState
+    step: string
 }
 
 function getAvatarInitials(name: string | null | undefined, fallback = 'U') {
@@ -112,7 +126,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
     const isMidnight = theme === 'midnight'
     const [localProjects, setLocalProjects] = useState<Project[]>([])
     const [localProjectsLoaded, setLocalProjectsLoaded] = useState(false)
-    const [draft, setDraft] = useState<{ state: any; step: any } | null>(null)
+    const [draft, setDraft] = useState<LibraryProjectDraft | null>(null)
     const [confirmDeleteDraft, setConfirmDeleteDraft] = useState(false)
     const [view, setView] = useState<'active' | 'trash'>('active')
     const [sortFilter, setSortFilter] = useState<'custom' | 'recent' | 'az'>(getSavedLibrarySort)
@@ -155,7 +169,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
         } finally {
             setLocalProjectsLoaded(true)
         }
-    }, [])
+    }, [currentUserId])
 
     useEffect(() => {
         void refreshLocalProjects()
@@ -170,15 +184,14 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
     }, [deletedProjects, localProjects])
 
     useEffect(() => {
-        const saved = localStorage.getItem('storyline-new-project-draft')
+        clearLegacyProjectSetupDrafts()
+        const saved = readNewProjectDraft<LibraryProjectDraftState, string>(currentUserId)
         if (saved) {
-            try {
-                setDraft(JSON.parse(saved))
-            } catch (e) {
-                console.error("Failed to parse draft", e)
-            }
+            setDraft(saved)
+            return
         }
-    }, [])
+        setDraft(null)
+    }, [currentUserId])
 
     useEffect(() => {
         const supabase = createClient()
@@ -199,8 +212,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
     }, [router])
 
     function clearDraft() {
-        localStorage.removeItem('storyline-new-project-draft')
-        localStorage.removeItem('storyline-guided-data-draft')
+        clearProjectSetupDrafts(currentUserId)
         setDraft(null)
         setConfirmDeleteDraft(false)
     }
@@ -489,7 +501,7 @@ export default function ProjectGrid({ projects, deletedProjects, currentUserId }
                                                                 Resume your setup
                                                             </h3>
                                                             <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                                                                You have an unfinished {getProjectTypeLabel(draft.state.type).toLowerCase()}. Pick up where you left off.
+                                                                You have an unfinished {draft.state.type ? getProjectTypeLabel(draft.state.type).toLowerCase() : 'project'}. Pick up where you left off.
                                                             </p>
                                                         </div>
                                                         <div className="mt-4 flex items-center justify-between gap-4 pt-6 border-t border-primary/10">
