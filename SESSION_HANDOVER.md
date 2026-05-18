@@ -5,6 +5,41 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-18 - Import Wizard leave warning (Option A)
+
+### What was completed
+
+- Audited all import wizard state: fully in React component state, nothing persisted. No `beforeunload` or nav guard existed anywhere.
+- Added `onDirtyChange?: (dirty: boolean) => void` prop to `ImportWizard`.
+- Added stable `onDirtyChangeRef` pattern to avoid re-running effects when parent re-renders.
+- One `useEffect` watches `rawText`: signals dirty to parent, registers `beforeunload` handler when dirty (covers tab close and browser refresh), removes it when clean.
+- One `useEffect` cleanup calls `onDirtyChange(false)` on unmount, so the `importDirtyRef` in the parent is always reset when ImportWizard unmounts.
+- Added `importDirtyRef`, `showImportLeaveWarning`, `pendingNavRef` to `new/page.tsx`.
+- Added `handleImportDirtyChange` and `guardedImportNav` helper.
+- Converted Archive `<Link>` to a `<button>` that calls `guardedImportNav(() => router.push('/library'))`.
+- Threaded guarded `onBack` and `onDirtyChange` into the `<ImportWizard>` render.
+- Added `ImportLeaveWarning` modal: title "Unsaved import progress", body explains file/detection/edits will be lost, "Stay here" cancels, "Leave anyway" executes the deferred action and resets dirty state.
+- Removed now-unused `Link` import from `new/page.tsx`.
+
+### Current status
+
+TypeScript clean, ESLint clean, build clean. Browser validation needed.
+
+### Next recommended step
+
+Browser test the four navigation cases:
+1. Upload file → click "Go Back" → warning appears; "Stay here" keeps wizard; "Leave anyway" returns to start_mode.
+2. Upload file → click "Archive" → warning appears; "Leave anyway" navigates to `/library`.
+3. Upload file → refresh tab → browser shows native leave prompt.
+4. Upload file → click "Finalize Import" → project created, no warning on subsequent navigation.
+5. No file selected → click "Go Back" → warning does NOT appear.
+
+### Risks or warnings
+
+- Browser back button (popstate) is not guarded — documented limitation. `beforeunload` covers refresh/close. In-app navigation (Back, Archive) is guarded.
+- `guardedImportNav` is a ref check, not reactive. If something outside this pattern navigates away (e.g., a toast with a link), the warning won't fire — acceptable for now.
+
+---
 ## 2026-05-18 - Magic Detect Ollama fallback modal (State A + explicit consent)
 
 ### What was completed

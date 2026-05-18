@@ -10,7 +10,6 @@ import type { ProjectType, WritingMode } from '@/lib/supabase/types'
 import GuidedFlow from '@/components/new-project/GuidedFlow'
 import ImportWizard from '@/components/new-project/ImportWizard'
 import CoverPicker from '@/components/project/CoverPicker'
-import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { isTemporaryCoverUrl } from '@/lib/supabase/project-covers'
 import { createProject as createStoredProject, type PreferredStorageMode } from '@/lib/persistence/projects'
@@ -70,7 +69,10 @@ export default function NewProjectPage() {
     const [isAiEnabled, setIsAiEnabled] = useState(false)
     const [magicDetectBlockReason, setMagicDetectBlockReason] = useState<null | 'ai_disabled' | 'ollama_unsupported' | 'ollama_fallback_available'>(null)
     const [ollamaFallbackProvider, setOllamaFallbackProvider] = useState<string | null>(null)
+    const [showImportLeaveWarning, setShowImportLeaveWarning] = useState(false)
     const storageSelectionTouchedRef = useRef(false)
+    const importDirtyRef = useRef(false)
+    const pendingNavRef = useRef<(() => void) | null>(null)
 
     // Draft Persistence
     useEffect(() => {
@@ -255,6 +257,19 @@ export default function NewProjectPage() {
         setSelectedStorageMode(storageMode)
     }
 
+    const handleImportDirtyChange = (dirty: boolean) => {
+        importDirtyRef.current = dirty
+    }
+
+    const guardedImportNav = (action: () => void) => {
+        if (importDirtyRef.current) {
+            pendingNavRef.current = action
+            setShowImportLeaveWarning(true)
+        } else {
+            action()
+        }
+    }
+
     const steps: Step[] = (() => {
         const base: Step[] = ['title', 'type', 'storage', 'start_mode']
         if (state.startMode === 'guided') base.push('guided')
@@ -269,12 +284,15 @@ export default function NewProjectPage() {
         <TooltipProvider>
             <div className="new-project-page flex-1 w-full overflow-y-auto bg-background flex flex-col items-center py-16 md:py-24 fade-in">
                 <div className="w-full max-w-2xl px-6 flex items-center justify-between mb-20 animate-in fade-in slide-in-from-top-4 duration-700">
-                    <Link href="/library" className="group flex items-center gap-2 text-slate-400 hover:text-primary transition-all font-medium">
+                    <button
+                        onClick={() => guardedImportNav(() => router.push('/library'))}
+                        className="group flex items-center gap-2 text-slate-400 hover:text-primary transition-all font-medium"
+                    >
                         <div className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center group-hover:bg-white group-hover:shadow-sm">
                             <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
                         </div>
                         <span className="text-sm">Archive</span>
-                    </Link>
+                    </button>
                     <div className="flex flex-col items-end gap-2">
                         <span className="text-[10px] font-extrabold uppercase tracking-[0.3em] text-[#546354]/60">
                             Step {currentStepIndex + 1} of {steps.length} — {
@@ -363,11 +381,12 @@ export default function NewProjectPage() {
                             <ImportWizard
                                 projectType={state.type}
                                 onComplete={(chunks) => createProject({ chunks })}
-                                onBack={() => setStep('start_mode')}
+                                onBack={() => guardedImportNav(() => setStep('start_mode'))}
                                 creating={creating}
                                 creatingLabel={creatingLabel}
                                 magicDetectBlockReason={magicDetectBlockReason}
                                 ollamaFallbackProvider={ollamaFallbackProvider}
+                                onDirtyChange={handleImportDirtyChange}
                             />
                         )}
 
@@ -387,6 +406,46 @@ export default function NewProjectPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Import leave warning */}
+            {showImportLeaveWarning && (
+                <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[2rem] max-w-md w-full shadow-2xl border border-slate-100 p-8 md:p-10 space-y-6 animate-in zoom-in-95 duration-300">
+                        <div className="space-y-3">
+                            <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
+                                <FileText className="w-6 h-6" />
+                            </div>
+                            <h3 className="text-2xl font-serif text-slate-800 leading-tight">Unsaved import progress</h3>
+                            <p className="text-sm text-slate-500 leading-relaxed font-medium">
+                                You have selected a file and started reviewing the import. If you leave now, your file, detection results, and any chapter edits will need to be redone.
+                            </p>
+                        </div>
+                        <div className="flex flex-col gap-3">
+                            <Button
+                                onClick={() => {
+                                    setShowImportLeaveWarning(false)
+                                    pendingNavRef.current = null
+                                }}
+                                className="sanctuary-btn-primary h-12 rounded-full text-sm font-semibold w-full"
+                            >
+                                Stay here
+                            </Button>
+                            <button
+                                onClick={() => {
+                                    const action = pendingNavRef.current
+                                    pendingNavRef.current = null
+                                    importDirtyRef.current = false
+                                    setShowImportLeaveWarning(false)
+                                    action?.()
+                                }}
+                                className="h-12 rounded-full text-sm font-semibold text-slate-400 hover:text-slate-700 transition-colors w-full"
+                            >
+                                Leave anyway
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </TooltipProvider>
     )
 }

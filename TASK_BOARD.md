@@ -167,6 +167,12 @@ Changing an AI setting should be the save action. Users should not need to make 
 
 ## Done / Archived
 
+### Import Wizard leave warning — COMPLETE (2026-05-18)
+
+`rawText !== ''` is the dirty signal. `beforeunload` covers refresh/tab close. Archive button and "Go Back" are guarded in-app. Browser back is not intercepted (documented limitation — acceptable). Files: `app/(app)/new/page.tsx`, `components/new-project/ImportWizard.tsx`.
+
+---
+
 ### Magic Detect Ollama fallback modal — COMPLETE (2026-05-18)
 
 Ollama users with a cloud fallback provider configured now see an interactive "Magic Detect" button instead of a hard-blocked amber box. Clicking it opens an explicit consent modal (State A) explaining that text will be sent to the cloud fallback provider and that Ollama remains the default afterward. "Use cloud fallback for this import" sends `useFallback: true` to `/api/import/ai-detect`, which resolves the fallback provider/key/model and proceeds. Ollama users without a fallback still see the static `ollama_unsupported` copy. Files: `app/(app)/new/page.tsx`, `components/new-project/ImportWizard.tsx`, `app/api/import/ai-detect/route.ts`.

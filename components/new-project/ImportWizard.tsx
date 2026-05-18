@@ -23,6 +23,7 @@ interface ImportWizardProps {
     creatingLabel?: string
     magicDetectBlockReason?: null | 'ai_disabled' | 'ollama_unsupported' | 'ollama_fallback_available'
     ollamaFallbackProvider?: string | null
+    onDirtyChange?: (dirty: boolean) => void
 }
 
 type ImportChunk = { title: string; content: string }
@@ -42,7 +43,7 @@ function getAiWaitingMessage(elapsedSeconds: number) {
     ), AI_WAITING_MESSAGES[0]).text
 }
 
-export default function ImportWizard({ projectType, onComplete, onBack, creating, creatingLabel = 'Building Project...', magicDetectBlockReason = null, ollamaFallbackProvider = null }: ImportWizardProps) {
+export default function ImportWizard({ projectType, onComplete, onBack, creating, creatingLabel = 'Building Project...', magicDetectBlockReason = null, ollamaFallbackProvider = null, onDirtyChange }: ImportWizardProps) {
     const [file, setFile] = useState<File | null>(null)
     const [rawText, setRawText] = useState('')
     const [uploading, setUploading] = useState(false)
@@ -66,6 +67,27 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
     const [aiElapsedSeconds, setAiElapsedSeconds] = useState(0)
 
     const fileInputRef = useRef<HTMLInputElement>(null)
+
+    // Keep a stable ref to onDirtyChange so the cleanup effect doesn't need it as a dep
+    const onDirtyChangeRef = useRef(onDirtyChange)
+    useEffect(() => { onDirtyChangeRef.current = onDirtyChange })
+
+    // Signal dirty state to parent and register beforeunload when a file has been parsed
+    useEffect(() => {
+        const dirty = rawText !== ''
+        onDirtyChangeRef.current?.(dirty)
+        if (!dirty) return
+        const guard = (e: BeforeUnloadEvent) => {
+            e.preventDefault()
+            e.returnValue = ''
+        }
+        window.addEventListener('beforeunload', guard)
+        return () => window.removeEventListener('beforeunload', guard)
+    }, [rawText])
+
+    // Always clear dirty on unmount (covers navigation away without explicit Back/Leave)
+    useEffect(() => () => { onDirtyChangeRef.current?.(false) }, [])
+
     const displayedAiProgress = aiDetecting
         ? Math.max(aiProgress, Math.min(64, 35 + Math.floor(aiElapsedSeconds / 2)))
         : aiProgress
