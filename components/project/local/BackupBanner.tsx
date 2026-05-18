@@ -27,7 +27,7 @@ import { cn } from '@/lib/utils'
 
 type SceneRow = Database['public']['Tables']['scenes']['Row']
 
-export default function BackupBanner({ projectId }: { projectId: string }) {
+export default function BackupBanner({ projectId, projectCreatedAt }: { projectId: string; projectCreatedAt?: string | null }) {
     const [reminder, setReminder] = useState<BackupReminderCheckResult>({ shouldRemind: false })
     const [isExporting, setIsExporting] = useState(false)
     const [justExported, setJustExported] = useState(false)
@@ -37,7 +37,7 @@ export default function BackupBanner({ projectId }: { projectId: string }) {
             const scenes = await getLocalRecordsByProjectId<SceneRow>(LOCAL_STORE_NAMES.scenes, projectId)
             const activeScenes = scenes.filter((s) => s.deleted_at == null)
             const wordCount = estimateProjectWordCount(activeScenes.map((s) => s.content))
-            const result = checkBackupReminder(projectId, wordCount)
+            const result = checkBackupReminder(projectId, wordCount, projectCreatedAt)
             setReminder(result)
         } catch {
             // Non-critical — silently fail

@@ -26,6 +26,9 @@ export const BACKUP_REMINDER_WORD_DELTA = 500
 /** Number of hours to snooze a dismissed reminder. */
 export const BACKUP_SNOOZE_HOURS = 24
 
+/** Grace period after project creation during which no backup reminder is shown (ms). */
+export const BACKUP_NEW_PROJECT_GRACE_MS = 60 * 60 * 1000 // 1 hour
+
 // ── Storage key ──────────────────────────────────────────────────────────────
 
 function backupMetaKey(projectId: string): string {
@@ -105,12 +108,22 @@ export type BackupReminderCheckResult =
  *
  * @param projectId  The local project ID.
  * @param currentWordCount  Approximate word count of the current project content.
+ * @param projectCreatedAt  ISO timestamp of project creation. When provided, suppresses
+ *   all reminders within BACKUP_NEW_PROJECT_GRACE_MS of creation so a freshly
+ *   imported project doesn't immediately trigger the banner.
  */
 export function checkBackupReminder(
     projectId: string,
-    currentWordCount: number
+    currentWordCount: number,
+    projectCreatedAt?: string | null
 ): BackupReminderCheckResult {
     if (typeof window === 'undefined') return { shouldRemind: false }
+
+    // Suppress reminders for newly created/imported projects
+    if (projectCreatedAt) {
+        const ageMs = Date.now() - new Date(projectCreatedAt).getTime()
+        if (ageMs < BACKUP_NEW_PROJECT_GRACE_MS) return { shouldRemind: false }
+    }
 
     const meta = readMeta(projectId)
 

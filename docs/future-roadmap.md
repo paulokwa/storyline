@@ -422,6 +422,24 @@ Future idea:
 
 ---
 
+## Magic Detect and AI import
+
+### Ollama support for Magic Detect
+
+Magic Detect currently requires a cloud AI provider (Gemini, OpenAI, or OpenRouter) and explicitly rejects Ollama. This is an architectural constraint, not a product decision.
+
+Ollama runs as a local server on the user's machine (`http://127.0.0.1:11434`). The Magic Detect API route runs server-side on Netlify. A server in a data centre cannot reach `http://127.0.0.1` on a user's laptop — that address means "this machine, right here." There is no config or firewall fix for this.
+
+The rest of AI Partner (writing assistant, scene analysis) works with Ollama because those calls go from the **user's browser** directly to their local Ollama instance. Magic Detect would need the same approach: move the AI call client-side, so the browser makes the Ollama request and the server only receives the result.
+
+**Why it is low priority:** Ollama users are already technically advanced. The overlap between "Ollama-only user" and "wants to do AI import detection" is probably small. Cloud-provider users can already use Magic Detect today.
+
+**Why it is doable:** The detection logic is a single prompt/response cycle. Moving it to the browser is feasible — the manuscript text, the prompt, and the Ollama URL are all available client-side. The main work is restructuring the route to support a client-driven mode and handling auth/abuse concerns without a server gate.
+
+**Recommendation:** Park this until there is real user demand for it. The error message already explains the limitation clearly. Revisit if Ollama adoption grows or if users raise it specifically.
+
+---
+
 ## Workflow and planning ideas
 
 ### GitHub Project board

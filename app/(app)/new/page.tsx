@@ -47,6 +47,7 @@ export default function NewProjectPage() {
     const [preferredStorageMode, setPreferredStorageMode] = useState<PreferredStorageMode>('local')
     const [selectedStorageMode, setSelectedStorageMode] = useState<PreferredStorageMode>('local')
     const [isAiEnabled, setIsAiEnabled] = useState(false)
+    const [magicDetectBlockReason, setMagicDetectBlockReason] = useState<null | 'ai_disabled' | 'ollama_unsupported'>(null)
     const storageSelectionTouchedRef = useRef(false)
 
     // Draft Persistence
@@ -89,7 +90,7 @@ export default function NewProjectPage() {
                     .maybeSingle(),
                 supabase
                     .from('user_api_keys')
-                    .select('ai_enabled')
+                    .select('ai_enabled, ai_provider, billing_mode')
                     .eq('user_id', user.id)
                     .maybeSingle(),
             ])
@@ -97,7 +98,20 @@ export default function NewProjectPage() {
             if (!cancelled) {
                 const profileStorageMode: PreferredStorageMode = profile?.preferred_storage_mode === 'cloud' ? 'cloud' : 'local'
                 setPreferredStorageMode(profileStorageMode)
-                setIsAiEnabled(!!aiSettings?.ai_enabled)
+
+                // No row = trial user or first-run. Trial users always get AI access regardless
+                // of the ai_enabled toggle, so treat them as enabled and let the server decide.
+                const isTrial = !aiSettings || aiSettings.billing_mode === 'app_managed_trial'
+                setIsAiEnabled(isTrial || !!aiSettings?.ai_enabled)
+
+                // Compute why Magic Detect might be blocked for this user
+                let blockReason: null | 'ai_disabled' | 'ollama_unsupported' = null
+                if (!isTrial) {
+                    if (!aiSettings?.ai_enabled) blockReason = 'ai_disabled'
+                    else if (aiSettings?.ai_provider === 'ollama') blockReason = 'ollama_unsupported'
+                }
+                setMagicDetectBlockReason(blockReason)
+
                 if (!storageSelectionTouchedRef.current) {
                     setSelectedStorageMode(profileStorageMode)
                 }
@@ -314,6 +328,7 @@ export default function NewProjectPage() {
                                 onBack={() => setStep('start_mode')}
                                 creating={creating}
                                 creatingLabel={creatingLabel}
+                                magicDetectBlockReason={magicDetectBlockReason}
                             />
                         )}
 

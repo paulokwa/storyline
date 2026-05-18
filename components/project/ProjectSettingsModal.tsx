@@ -796,7 +796,7 @@ export default function ProjectSettingsModal({
                                                     <AdvancedInfoRow
                                                         icon={isLocalOnly ? HardDrive : DatabaseIcon}
                                                         label="Storage backend"
-                                                        value={isLocalOnly ? 'IndexedDB on this device' : 'Supabase cloud storage'}
+                                                        value={isLocalOnly ? 'Local (this device only)' : 'Cloud backup'}
                                                     />
                                                     <AdvancedInfoRow
                                                         label="Created"

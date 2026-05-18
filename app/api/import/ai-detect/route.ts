@@ -55,6 +55,13 @@ export async function POST(req: NextRequest) {
         const runtime = await getAiRuntimeState(supabase, user.id)
         const metadata = { endpoint: 'import_ai_detect', textLength: text.length }
 
+        // --- AI Partner enabled gate ---
+        // Trial users always have access regardless of the ai_enabled toggle — their credits are
+        // the gate. Only block BYOK users who have explicitly turned AI Partner off.
+        if (runtime.aiSettings && !runtime.aiSettings.ai_enabled && runtime.billingMode !== 'app_managed_trial') {
+            return NextResponse.json({ error: 'AI_PARTNER_DISABLED' }, { status: 403 })
+        }
+
         // --- API key check (billing-mode-aware message) ---
         const apiKey = runtime.apiKey
         if (!apiKey) {
@@ -66,7 +73,7 @@ export async function POST(req: NextRequest) {
         }
 
         if (runtime.provider !== 'gemini' && runtime.provider !== 'openai' && runtime.provider !== 'openrouter') {
-            return NextResponse.json({ error: 'AI import detection requires a cloud AI provider (Gemini, OpenAI, or OpenRouter). Please check your AI settings.' }, { status: 400 })
+            return NextResponse.json({ error: 'Magic Detect requires a cloud AI provider (Gemini, OpenAI, or OpenRouter). Ollama runs locally and cannot be reached from our servers — please add a cloud API key in Account Settings.' }, { status: 400 })
         }
 
         // --- Partitioning (runs before billing gate so trial reservation uses actual chunk sizes) ---

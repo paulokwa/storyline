@@ -123,7 +123,7 @@ function getStorageBadgeConfig(project: HeaderProject, storageMode: ProjectStora
         return {
             label: 'Local',
             shortLabel: 'Local',
-            tooltip: 'Local project. Changes stay on this device unless saved/exported.',
+            tooltip: `${project.title} is stored privately on this device. You can adjust this and enable Cloud Sync in Project Settings — it saves your work automatically and keeps it across all your devices.`,
             icon: HardDrive,
             className:
                 'border-[#d9e1d5] bg-[#f5f4ef] text-[#546354] shadow-[inset_0_0_0_1px_rgba(84,99,84,0.04)]',
@@ -855,7 +855,7 @@ function ProjectShellInner({
                             )}
                         </div>
 
-                        <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden border-l border-black/5 pl-3 lg:gap-3 lg:pl-4">
+                        <div className="flex min-w-0 flex-1 items-center gap-2 border-l border-black/5 pl-3 lg:gap-3 lg:pl-4">
                             {!editingTitle ? (
                                 <>
                                     <div className={cn(
@@ -870,7 +870,26 @@ function ProjectShellInner({
                                     )}>
                                         {project.type === 'novel' ? <BookOpen className="w-4 h-4" /> : <Tv className="w-4 h-4" />}
                                     </div>
-                                    <button 
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Badge
+                                                variant="outline"
+                                                className={cn(
+                                                    'h-6 max-w-full rounded-full px-2.5 text-[10px] font-semibold tracking-[0.08em] uppercase',
+                                                    'gap-1.5 whitespace-nowrap sm:text-[11px]',
+                                                    storageBadge.className
+                                                )}
+                                            >
+                                                <storageBadge.icon className="h-3 w-3 shrink-0" />
+                                                <span className="sm:hidden">{storageBadge.shortLabel}</span>
+                                                <span className="hidden sm:inline">{storageBadge.label}</span>
+                                            </Badge>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="bottom" sideOffset={8} className="max-w-64 rounded-xl border-[#e8e3da] bg-white px-3 py-2 text-xs leading-5 text-slate-700 shadow-xl">
+                                            {storageBadge.tooltip}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                    <button
                                         onClick={() => {
                                             if (role === 'owner') {
                                                 setTitleDraft(project.title)
@@ -879,31 +898,9 @@ function ProjectShellInner({
                                         }}
                                         className="min-w-0 text-left"
                                     >
-                                        <div className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
-                                            <span className="truncate text-sm font-serif italic text-slate-800 transition-colors hover:text-indigo-600 sm:text-lg">
-                                                {project.title}
-                                            </span>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Badge
-                                                        variant="outline"
-                                                        title={storageBadge.tooltip}
-                                                        className={cn(
-                                                            'h-6 max-w-full rounded-full px-2.5 text-[10px] font-semibold tracking-[0.08em] uppercase',
-                                                            'gap-1.5 whitespace-nowrap sm:text-[11px]',
-                                                            storageBadge.className
-                                                        )}
-                                                    >
-                                                        <storageBadge.icon className="h-3 w-3 shrink-0" />
-                                                        <span className="sm:hidden">{storageBadge.shortLabel}</span>
-                                                        <span className="hidden sm:inline">{storageBadge.label}</span>
-                                                    </Badge>
-                                                </TooltipTrigger>
-                                                <TooltipContent side="bottom" sideOffset={8} className="max-w-64 rounded-xl border-[#e8e3da] bg-white px-3 py-2 text-xs leading-5 text-slate-700 shadow-xl">
-                                                    {storageBadge.tooltip}
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </div>
+                                        <span className="truncate text-sm font-serif italic text-slate-800 transition-colors hover:text-indigo-600 sm:text-lg">
+                                            {project.title}
+                                        </span>
                                     </button>
                                 </>
                             ) : (

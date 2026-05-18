@@ -138,6 +138,68 @@ async function getEpubSpinePaths(zip: JSZip) {
     return orderedPaths
 }
 
+function sanitizePandocPlainText(text: string): string {
+    // Guard: only process if pandoc image placeholders are present
+    if (!/^\[\]$|^\[image\]$/m.test(text)) return text
+
+    let out = text
+    out = out.replace(/^\[\]\s*$/gm, '')
+    out = out.replace(/^\[image\]\s*$/gm, '')
+    out = out.replace(/\n{3,}/g, '\n\n')
+    return out.trim()
+}
+
+function sanitizeEpubConvertedMarkdown(text: string): string {
+    // Guard: only process files that contain Calibre/EPUB class annotations
+    if (!/\{\.epub-|\{\.calibre/.test(text)) return text
+
+    let out = text
+
+    // Strip SVG blocks (cover art wrappers inserted by Calibre)
+    out = out.replace(/<svg[\s\S]*?<\/svg>/gi, '')
+
+    // Strip raw HTML inline code spans: `<tag>`{=html}
+    out = out.replace(/`[^`\n]*`\{=html\}/g, '')
+
+    // Strip Calibre div fences: ::: {.foo} ... :::
+    out = out.replace(/^:::[ \t]*\{[^\}\n]*\}[ \t]*$/gm, '')
+    out = out.replace(/^:::[ \t]*$/gm, '')
+
+    // Strip empty anchor spans: []{#partXXXX.html}
+    out = out.replace(/\[\]\{#[^\}\n]+\}/g, '')
+
+    // Strip image-only lines (cover images, chapter art): ![alt](src){.calibre1}
+    out = out.replace(/^!\[[^\]]*\]\([^)]*\)(?:\{[^\}\n]*\})?[ \t]*$/gm, '')
+
+    // Strip complex footnote superscripts: [[N](url){...}]{.epub-sup} — may span a line break
+    out = out.replace(/\[\[[^\]]+\]\([^)]+\)\{[\s\S]*?\}\]\{\.epub-sup\}/g, '')
+    // Strip simpler inline superscripts: [N]{.epub-sup}
+    out = out.replace(/\[[^\]\n]+\]\{\.epub-sup\}/g, '')
+
+    // Convert Calibre chapter-number spans to recognisable keyword headings:
+    // [1]{.epub-b1} → Chapter 1  (triggers the existing chapter_keyword splitter)
+    out = out.replace(/^\[(\d+)\]\{\.epub-b1\}[ \t]*$/gm, 'Chapter $1')
+
+    // Unwrap bold spans: [TEXT]{.epub-b} → TEXT
+    out = out.replace(/\[([^\]\n]+)\]\{\.epub-b\}/g, '$1')
+
+    // Unwrap italic spans: [TEXT]{.epub-i} → TEXT
+    out = out.replace(/\[([^\]\n]+)\]\{\.epub-i\}/g, '$1')
+
+    // Strip links with single-line class annotations: [TEXT](url){.calibre2} → TEXT
+    out = out.replace(/\[([^\]\n]+)\]\([^\)\n]*\)\{[^\}\n]*\}/g, '$1')
+    // Strip links with two-line class annotations: [TEXT](url){#id\n.class} → TEXT
+    out = out.replace(/\[([^\]\n]+)\]\([^\)\n]*\)\{[^\}]*\n[^\}]*\}/g, '$1')
+
+    // Strip any remaining lone EPUB/Calibre class annotations
+    out = out.replace(/\{[^\}\n]*(epub|calibre)[^\}\n]*\}/g, '')
+
+    // Collapse 3+ consecutive blank lines to 2
+    out = out.replace(/\n{3,}/g, '\n\n')
+
+    return out.trim()
+}
+
 async function extractEpubText(buffer: Buffer) {
     const zip = await JSZip.loadAsync(buffer)
     const spinePaths = await getEpubSpinePaths(zip)
@@ -185,6 +247,11 @@ export async function POST(req: NextRequest) {
             text = result.value
         } else if (filename.endsWith('.txt') || filename.endsWith('.md')) {
             text = buffer.toString('utf-8')
+            if (filename.endsWith('.md')) {
+                text = sanitizeEpubConvertedMarkdown(text)
+            } else if (filename.endsWith('.txt')) {
+                text = sanitizePandocPlainText(text)
+            }
         } else if (filename.endsWith('.pdf')) {
             const { PDFParse } = await import('pdf-parse')
             const parser = new PDFParse({ data: buffer })

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState, useRef } from 'react'
+import Link from 'next/link'
 import { UploadCloud, FileText, CheckCircle2, AlertCircle, Loader2, Info, Sparkles, Wand2, X, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,6 +21,7 @@ interface ImportWizardProps {
     onBack: () => void
     creating: boolean
     creatingLabel?: string
+    magicDetectBlockReason?: null | 'ai_disabled' | 'ollama_unsupported'
 }
 
 type ImportChunk = { title: string; content: string }
@@ -39,7 +41,7 @@ function getAiWaitingMessage(elapsedSeconds: number) {
     ), AI_WAITING_MESSAGES[0]).text
 }
 
-export default function ImportWizard({ projectType, onComplete, onBack, creating, creatingLabel = 'Building Project...' }: ImportWizardProps) {
+export default function ImportWizard({ projectType, onComplete, onBack, creating, creatingLabel = 'Building Project...', magicDetectBlockReason = null }: ImportWizardProps) {
     const [file, setFile] = useState<File | null>(null)
     const [rawText, setRawText] = useState('')
     const [uploading, setUploading] = useState(false)
@@ -119,8 +121,11 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
         if (strategy === 'single') {
             outputChunks = [{ title: 'Full Document', content: text }]
         } else if (strategy === 'chapter_keyword') {
-            // Split on common structural headings (case-insensitive)
-            const parts = text.split(/\n(?=[ \t]*(?:chapter|prologue|epilogue|part|interlude|book|section|act)\b)/i)
+            // chapter/prologue/epilogue/interlude are safe to split on unconditionally.
+            // part/act/book/section require a structured suffix (number, roman numeral, or colon)
+            // to avoid false splits on prose like "part of the reason" or "section by section".
+            const structured = '(?:part|act|book|section)(?=[ \\t]*[:\\n]|\\s+(?:\\d+|[IVXivxLCDMlcdm]+|one|two|three|four|five|six|seven|eight|nine|ten)\\b)'
+            const parts = text.split(new RegExp(`\\n(?=[ \\t]*(?:(?:chapter|prologue|epilogue|interlude)\\b|${structured}))`, 'i'))
             outputChunks = parts.map((part, i) => {
                 const lines = part.split('\n')
                 const firstLine = lines[0].trim().substring(0, 50) || `Segment ${i + 1}`
@@ -201,7 +206,12 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                 })
             })
             const data = await res.json()
-            if (!res.ok) throw new Error(data.error || 'AI Detection failed')
+            if (!res.ok) {
+                if (data.error === 'AI_PARTNER_DISABLED') {
+                    throw new Error('AI Partner is turned off. Enable it in Account Settings to use Magic Detect.')
+                }
+                throw new Error(data.error || 'AI Detection failed')
+            }
 
             const detected = data.chapters as { title: string, markerSnippet: string }[]
             setAiStatus(`Mapping ${detected.length} chapters...`)
@@ -358,44 +368,77 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                     </div>
 
                     <div className="pt-2">
-                        <button 
-                            onClick={() => aiChunks ? updateStrategy('ai_detect') : setShowSanityModal(true)}
-                            disabled={aiDetecting}
-                            className={cn(
-                                "w-full relative group overflow-hidden bg-slate-900 text-white rounded-2xl p-5 hover:bg-slate-800 transition-all active:scale-[0.99] border shadow-xl shadow-slate-900/10",
-                                splitStrategy === 'ai_detect' ? "border-indigo-300 ring-2 ring-indigo-400/30" : "border-slate-700"
-                            )}
-                        >
-                            <div className="flex items-center justify-between relative z-10">
+                        {magicDetectBlockReason ? (
+                            <div className="w-full rounded-2xl border border-amber-200 bg-amber-50 p-5">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-indigo-500 flex items-center justify-center text-white shadow-[0_0_15px_rgba(99,102,241,0.5)] group-hover:scale-110 transition-transform duration-500">
+                                    <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-500 flex-shrink-0">
                                         <Sparkles className="w-5 h-5" />
                                     </div>
                                     <div className="text-left">
                                         <div className="flex items-center gap-2">
-                                            <div className="font-serif text-lg font-medium tracking-tight">✨ Magic Detect</div>
-                                            <span className="text-[10px] font-bold uppercase tracking-widest bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/30">Beta</span>
-                                            {aiChunks && (
-                                                <span className="text-[10px] font-bold uppercase tracking-widest bg-emerald-500/15 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-400/25">Saved</span>
-                                            )}
+                                            <div className="font-serif text-lg font-medium tracking-tight text-amber-800">✨ Magic Detect</div>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest bg-amber-200/60 text-amber-600 px-2 py-0.5 rounded-full border border-amber-300/50">Beta</span>
                                         </div>
-                                        <div className="text-xs text-slate-400 font-medium leading-relaxed max-w-sm mt-1">
-                                            {aiChunks ? (
-                                                <>View the saved AI structure without sending another request.</>
-                                            ) : (
-                                                <>Experimental. Use AI to suggest chapters. <span className="text-slate-300 font-semibold underline decoration-slate-600 underline-offset-2 italic">Manual import is typically more reliable</span> for complex formatting.</>
-                                            )}
-                                        </div>
+                                        {magicDetectBlockReason === 'ai_disabled' ? (
+                                            <p className="text-xs text-amber-700 mt-1">
+                                                AI Partner is off.{' '}
+                                                <Link href="/settings" className="font-semibold underline underline-offset-2 hover:text-amber-900">
+                                                    Enable it in Account Settings
+                                                </Link>{' '}
+                                                to use AI chapter detection.
+                                            </p>
+                                        ) : (
+                                            <p className="text-xs text-amber-700 mt-1">
+                                                Magic Detect requires a cloud provider — Ollama runs on your device and can&apos;t be reached from our servers.{' '}
+                                                <Link href="/settings" className="font-semibold underline underline-offset-2 hover:text-amber-900">
+                                                    Switch to a cloud provider in Account Settings
+                                                </Link>
+                                                , or use any remaining free trial credits and switch back to Ollama afterwards.
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="p-2 rounded-full border border-slate-700 bg-slate-800 group-hover:bg-indigo-500 group-hover:border-indigo-400 transition-all">
-                                    {aiDetecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-                                </div>
                             </div>
-                            
-                            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none group-hover:bg-indigo-500/30 transition-all duration-700" />
-                        </button>
+                        ) : (
+                            <button
+                                onClick={() => aiChunks ? updateStrategy('ai_detect') : setShowSanityModal(true)}
+                                disabled={aiDetecting}
+                                className={cn(
+                                    "w-full relative group overflow-hidden bg-slate-900 text-white rounded-2xl p-5 hover:bg-slate-800 transition-all active:scale-[0.99] border shadow-xl shadow-slate-900/10",
+                                    splitStrategy === 'ai_detect' ? "border-indigo-300 ring-2 ring-indigo-400/30" : "border-slate-700"
+                                )}
+                            >
+                                <div className="flex items-center justify-between relative z-10">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-indigo-500 flex items-center justify-center text-white shadow-[0_0_15px_rgba(99,102,241,0.5)] group-hover:scale-110 transition-transform duration-500">
+                                            <Sparkles className="w-5 h-5" />
+                                        </div>
+                                        <div className="text-left">
+                                            <div className="flex items-center gap-2">
+                                                <div className="font-serif text-lg font-medium tracking-tight">✨ Magic Detect</div>
+                                                <span className="text-[10px] font-bold uppercase tracking-widest bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/30">Beta</span>
+                                                {aiChunks && (
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest bg-emerald-500/15 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-400/25">Saved</span>
+                                                )}
+                                            </div>
+                                            <div className="text-xs text-slate-400 font-medium leading-relaxed max-w-sm mt-1">
+                                                {aiChunks ? (
+                                                    <>View the saved AI structure without sending another request.</>
+                                                ) : (
+                                                    <>Experimental. Use AI to detect and suggest chapter structure from your manuscript.</>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="p-2 rounded-full border border-slate-700 bg-slate-800 group-hover:bg-indigo-500 group-hover:border-indigo-400 transition-all">
+                                        {aiDetecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                                    </div>
+                                </div>
+
+                                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none group-hover:bg-indigo-500/30 transition-all duration-700" />
+                            </button>
+                        )}
                     </div>
 
                         {splitStrategy === 'custom' && (
@@ -437,7 +480,8 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                             </span>
                         </div>
                         
-                        <div className="max-h-[300px] overflow-y-auto space-y-2 pr-2 custom-scrollbar border rounded-2xl bg-stone-50/50 p-2">
+                        <div className="border rounded-2xl bg-stone-50/50 overflow-hidden">
+                        <div className="max-h-[300px] overflow-y-auto space-y-2 custom-scrollbar p-2">
                             {chunks.length === 0 ? (
                                 <div className="text-center p-8 text-slate-400 text-sm">No segments found</div>
                             ) : chunks.map((chunk, idx) => (
@@ -465,6 +509,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                                     </div>
                                 </div>
                             ))}
+                        </div>
                         </div>
                     </div>
 
@@ -544,7 +589,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                                 <h3 className="text-3xl font-serif text-slate-800 leading-tight">Confirmation <span className="text-slate-400 italic">Required</span></h3>
                                 <p className="text-slate-600 leading-relaxed font-bold bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 text-sm">
                                     <Sparkles className="w-4 h-4 inline-block mr-2 text-indigo-500" />
-                                    ✨ Magic Detect is an experimental feature. We recommend manual import for the highest reliability.
+                                    ✨ Magic Detect is an experimental feature.
                                 </p>
                                 <p className="text-slate-500 text-sm leading-relaxed font-medium px-1">
                                     Your manuscript text will be processed across one or more AI requests to automatically identify chapters.
