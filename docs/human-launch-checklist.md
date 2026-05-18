@@ -250,6 +250,20 @@ Why this is listed here:
 - Kwame needs to decide when the app is stable enough for help content to stop constantly going stale.
 - AI can execute the audit and rewrite later, but the timing is a human launch decision.
 
+### Review and update in-app tours
+
+Before launch, walk through all in-app onboarding and feature tours and confirm they still match the current UI.
+
+Tours go stale quickly when screens, flows, labels, or settings change. A tour that points to a moved button or references a renamed feature will confuse users and undermine first impressions.
+
+What to check:
+- Every tour step still points to the correct element or screen.
+- Copy and labels in each tour step match the current UI wording.
+- Tours cover the features users are most likely to need help finding.
+- Any recently added or changed features (AI setup, import wizard, local save, collaboration) are either covered or intentionally skipped.
+
+AI can help update tour copy or step references once Kwame has walked through each tour manually and noted what is outdated.
+
 ### Tutorial videos and user education
 
 Create tutorial content for users outside normal AI coding work.
@@ -314,5 +328,6 @@ Before public launch, review:
 - In-app launch survey implemented
 - Support email/contact flow still works
 - Key tutorials planned or recorded
+- In-app tours walked through and confirmed up to date with current UI
 
 This checklist is allowed to be imperfect. It is here so Kwame does not have to remember everything in his head while also vibe coding the app. Brains are not Jira boards, thankfully.
