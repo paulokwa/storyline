@@ -152,7 +152,7 @@ Future agents: treat this workflow as established. Before asking the user about 
 | Manual split / rename / reorder during import | Not tested | - | - | Confirm user can clean up chunks before committing import. |
 | Export project/manuscript | Not tested | - | - | Confirm export works and output is usable. |
 | Import with AI disabled | Not tested | - | - | Confirm AI-assisted import is disabled or handled correctly when AI is off. |
-| Large import cost protection | Not tested | - | - | Confirm large books do not abuse free trial or trigger unexpected cost. |
+| Large import cost protection | Passed | User | 2026-05-18 | 491,475 char manuscript (~3–4 chunks). Cost warning modal showed correct copy and character count. Typed IMPORT, ran Magic Detect. Import count incremented in admin `/admin` endpoint usage table, trial balance debited a reasonable multi-chunk amount, no failed/blocked entry. |
 | Import from backup into project | Not tested | - | - | Confirm title check, warning, and update behavior. |
 | Backup vs export wording | Not tested | - | - | Confirm `.storyline` backup is clearly distinct from export formats. |
 | Restore from backup (local) | Not tested | - | - | Confirm restore works and warnings are clear. |
