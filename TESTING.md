@@ -128,7 +128,7 @@ Future agents: treat this workflow as established. Before asking the user about 
 | Provider copy audit — legal pages | Not tested | - | - | Visit `/privacy` and `/ai-disclaimer`. Confirm both pages list "Google Gemini, OpenAI, or OpenRouter" (not just "Google Gemini and OpenAI"). |
 | Provider copy audit — in-app help BYOK entry | Not tested | - | - | Open the in-app help panel and search for "API key" or "BYOK". Confirm the answer mentions OpenAI, Gemini, and OpenRouter with steps for each. |
 | Broader pre-launch regression pass | Not tested | - | - | Cover core project flow, import/export, local/cloud behavior, AI availability states, collaboration, tablet/mobile layout, and onboarding tours. |
-| Public beta import/export confidence pass | Not tested | - | - | Manual launch QA moved here from `docs/human-launch-checklist.md`: import common file types, review generated structure, export common manuscript formats, and confirm output is usable. |
+| Public beta import/export confidence pass | Passed | User | 2026-05-18 | All common file types imported, structure reviewed, export formats confirmed usable. |
 | Public beta auth flow QA | Not tested | - | - | Manual launch QA moved here from `docs/human-launch-checklist.md`: signup, login, verification, reused/expired verification link, forgot-password, and reset-password flows. |
 | Public beta AI cost warning copy review | Not tested | - | - | Manual launch QA moved here from `docs/human-launch-checklist.md`: review trial, BYOK, OpenRouter, Ollama, large-context, and import Magic Detect warning copy in browser. |
 | Public beta mobile/tablet smoke test | Not tested | - | - | Manual launch QA moved here from `docs/human-launch-checklist.md`: check 320px phone, 375px phone, 768px tablet, and 1024px landscape tablet for core app panels and modals. |
@@ -144,14 +144,14 @@ Future agents: treat this workflow as established. Before asking the user about 
 
 | Test | Status | Tested by | Date tested | Notes |
 |---|---|---|---|---|
-| Import `.docx` | Not tested | - | - | Confirm import preview and created structure are correct. |
-| Import `.txt` | Not tested | - | - | Confirm plain text import works. |
-| Import `.md` | Not tested | - | - | Confirm Markdown import works. |
-| Import `.pdf` | Not tested | - | - | Confirm warnings/noisy formatting are acceptable. |
-| Import `.epub` | Not tested | - | - | Confirm import works and limitations are clear. |
-| Manual split / rename / reorder during import | Not tested | - | - | Confirm user can clean up chunks before committing import. |
+| Import `.docx` | Passed | User | 2026-05-18 | Import preview and created structure correct. |
+| Import `.txt` | Passed | User | 2026-05-18 | Plain text import works. |
+| Import `.md` | Passed | User | 2026-05-18 | Markdown import works. |
+| Import `.pdf` | Passed | User | 2026-05-18 | Warnings/noisy formatting acceptable. |
+| Import `.epub` | Passed | User | 2026-05-18 | Import works and limitations are clear. |
+| Manual split / rename / reorder during import | Passed | User | 2026-05-18 | User can clean up chunks before committing import. |
 | Export project/manuscript | Not tested | - | - | Confirm export works and output is usable. |
-| Import with AI disabled | Not tested | - | - | Confirm AI-assisted import is disabled or handled correctly when AI is off. |
+| Import with AI disabled | Passed | User | 2026-05-18 | AI-assisted import disabled or handled correctly when AI is off. |
 | Large import cost protection | Passed | User | 2026-05-18 | 491,475 char manuscript (~3–4 chunks). Cost warning modal showed correct copy and character count. Typed IMPORT, ran Magic Detect. Import count incremented in admin `/admin` endpoint usage table, trial balance debited a reasonable multi-chunk amount, no failed/blocked entry. |
 | Import from backup into project | Not tested | - | - | Confirm title check, warning, and update behavior. |
 | Backup vs export wording | Not tested | - | - | Confirm `.storyline` backup is clearly distinct from export formats. |
@@ -231,10 +231,10 @@ Future agents: treat this workflow as established. Before asking the user about 
 | OpenRouter BYOK — invalid key friendly error | Passed | User | 2026-05-09 | Manual end-to-end testing confirmed fake keys are rejected with friendly handling after validation moved to `/api/v1/auth/key`. |
 | OpenRouter BYOK — basic AI Partner streaming | Passed | User | 2026-05-09 | Manual end-to-end testing confirmed AI Partner returned responses through OpenRouter with the OPENROUTER badge. |
 | OpenRouter BYOK — Analyze Scene | Needs retest | AI agent | 2026-05-08 | Run Analyze Scene with OpenRouter active. Confirm structured JSON result returned, no hang, usage logged with `provider = 'openrouter'`. |
-| OpenRouter BYOK — Import AI Detect | Needs retest | AI agent | 2026-05-08 | Import a document with AI detect active and OpenRouter as provider. Confirm headings detected, no crash, usage logged. JSON parse hardening (2026-05-09) should fix the silent 0-chapter failure. Requires migration applied first. |
+| OpenRouter BYOK — Import AI Detect | Passed | User | 2026-05-18 | Headings detected, no crash, usage logged correctly with OpenRouter as provider. |
 | OpenRouter AI Partner large-context warning | Needs retest | AI agent | 2026-05-08 | Send a very large manuscript to AI Partner with OpenRouter. Confirm the large-context warning modal appears and includes "OpenRouter pricing depends on the model you select" copy. |
 | OpenRouter Analyze Scene large-context warning | Needs retest | AI agent | 2026-05-08 | Analyze a very long scene with OpenRouter. Confirm the existing safeguard dialog fires. |
-| OpenRouter import large-book warning | Needs retest | AI agent | 2026-05-08 | Import a large file (>100KB) with AI detect enabled and OpenRouter active. Confirm the cost-confirmation warning appears with the OpenRouter pricing copy. |
+| OpenRouter import large-book warning | Passed | User | 2026-05-18 | 491,475 char file with OpenRouter active. Cost-confirmation warning appeared with correct pricing copy. |
 | OpenRouter extreme-context safeguard | Needs retest | AI agent | 2026-05-08 | Trigger extreme context (above the extreme token threshold) with OpenRouter. Confirm the `extreme` safeguard confirmation dialog fires before the request is sent. |
 | OpenRouter no misleading $0.00 pricing | Needs retest | AI agent | 2026-05-11 | Code copy pass removed known misleading zero-cost paths in Magic Detect, AI safeguard dialogs, and Settings free-tier copy. Browser review still needed across all AI surfaces. |
 | OpenRouter usage logging | Passed | User | 2026-05-09 | Manual terminal verification confirmed completed OpenRouter usage logged with `provider = 'openrouter'` and the correct model after the provider constraint fix. |
