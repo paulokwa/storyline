@@ -5,6 +5,37 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-18 - Sponsored AI Activity Log (admin dashboard)
+
+### What was completed
+
+- Audited `ai_usage_events`: already fully fetched in `lib/admin-dashboard.ts` with all required fields. No new table needed.
+- Confirmed `billing_mode === 'app_managed_trial'` as the correct sponsored filter (already used by `appManagedEvents` in the file).
+- Confirmed DB schema: `final_micros`, `input_chars`, `output_chars`, `reserved_micros`, `refunded_micros` are non-nullable; `model`, `completed_at`, `error_code`, `http_status`, `normalized_email` are nullable.
+- Added `SponsoredActivityEvent` type to `lib/admin-dashboard.ts`.
+- Added `recentSponsoredActivity: SponsoredActivityEvent[]` to the `AdminDashboardData` type under `trial`.
+- Built `recentSponsoredActivity` from `appManagedEvents`: sorted newest-first, limited to 50, email resolved from `usersById` with `normalized_email` fallback.
+- Added `getUsageStatusBadge` helper to `app/(app)/admin/page.tsx`.
+- Added "Sponsored AI Activity Log" card between Manual Trial Actions and User Segmentation sections.
+- Table columns: Time, User, Endpoint/Task, Provider/Model, Status, Input chars, Output chars, Cost.
+- Cost shows `finalMicros` (non-zero) or `reservedMicros` fallback; refund shown as secondary line when > 0.
+- Empty state: "No sponsored AI activity has been logged yet."
+- TypeScript clean, build clean (`npm run build` passed).
+
+### Current status
+
+Complete. No browser validation required (server-side data + display only, no new interactions).
+
+### Next recommended step
+
+Load `/admin` and verify the Sponsored AI Activity Log card appears with correct rows, or confirm empty state if no sponsored events exist yet.
+
+### Risks or warnings
+
+- Activity log shows all `app_managed_trial` events regardless of whether the AI call succeeded — reserved/in-progress rows will appear as "Reserved" status. This is intentional for admin visibility.
+- BYOK and Ollama usage is not shown unless logged under `app_managed_trial` (by design).
+
+---
 ## 2026-05-18 - Import Wizard leave warning (Option A)
 
 ### What was completed

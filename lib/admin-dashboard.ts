@@ -205,6 +205,26 @@ type ManualActionSummary = {
   status: string | null
 }
 
+type SponsoredActivityEvent = {
+  id: string
+  userId: string
+  email: string | null
+  createdAt: string
+  completedAt: string | null
+  endpoint: string
+  billingMode: string
+  provider: string
+  model: string | null
+  status: string
+  inputChars: number
+  outputChars: number
+  finalMicros: number
+  reservedMicros: number
+  refundedMicros: number
+  errorCode: string | null
+  httpStatus: number | null
+}
+
 function getMisconfiguredReason(): 'missing_supabase_url' | 'missing_service_role_key' {
   const status = getAdminClientConfigStatus()
   return status === 'missing_supabase_url' ? 'missing_supabase_url' : 'missing_service_role_key'
@@ -271,6 +291,7 @@ export type AdminDashboardData =
         deviceClusters: ClusterSummary[]
         normalizedEmailClusters: ClusterSummary[]
         recentManualActions: ManualActionSummary[]
+        recentSponsoredActivity: SponsoredActivityEvent[]
       }
       feedback: {
         tableAvailable: boolean
@@ -690,6 +711,30 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     })
 
   const appManagedEvents = usageEvents.filter((event) => event.billing_mode === 'app_managed_trial')
+
+  const recentSponsoredActivity: SponsoredActivityEvent[] = [...appManagedEvents]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 50)
+    .map((event) => ({
+      id: event.id,
+      userId: event.user_id,
+      email: usersById.get(event.user_id)?.email ?? event.normalized_email ?? null,
+      createdAt: event.created_at,
+      completedAt: event.completed_at,
+      endpoint: event.endpoint,
+      billingMode: event.billing_mode,
+      provider: event.provider,
+      model: event.model,
+      status: event.status,
+      inputChars: event.input_chars,
+      outputChars: event.output_chars,
+      finalMicros: event.final_micros,
+      reservedMicros: event.reserved_micros,
+      refundedMicros: event.refunded_micros,
+      errorCode: event.error_code,
+      httpStatus: event.http_status,
+    }))
+
   const trialOverview = {
     totalTrialGrants: trialAccounts.filter((account) => account.grant_count > 0).length,
     activeTrialUsers: trialAccounts.filter((account) => account.status === 'active').length,
@@ -895,6 +940,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       deviceClusters,
       normalizedEmailClusters,
       recentManualActions,
+      recentSponsoredActivity,
     },
     feedback,
   }

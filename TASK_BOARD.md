@@ -167,6 +167,12 @@ Changing an AI setting should be the save action. Users should not need to make 
 
 ## Done / Archived
 
+### Sponsored AI Activity Log — COMPLETE (2026-05-18)
+
+Reused `ai_usage_events` (no new table). Filtered to `billing_mode === 'app_managed_trial'`, sorted newest-first, limited to 50. Added `SponsoredActivityEvent` type and `recentSponsoredActivity` field to `lib/admin-dashboard.ts`. Added "Sponsored AI Activity Log" card to `/admin` between Manual Trial Actions and User Segmentation. Columns: Time, User, Endpoint/Task, Provider/Model, Status, Input chars, Output chars, Cost. TypeScript clean, build clean. Files: `lib/admin-dashboard.ts`, `app/(app)/admin/page.tsx`.
+
+---
+
 ### Import Wizard leave warning — COMPLETE (2026-05-18)
 
 `rawText !== ''` is the dirty signal. `beforeunload` covers refresh/tab close. Archive button and "Go Back" are guarded in-app. Browser back is not intercepted (documented limitation — acceptable). Files: `app/(app)/new/page.tsx`, `components/new-project/ImportWizard.tsx`.

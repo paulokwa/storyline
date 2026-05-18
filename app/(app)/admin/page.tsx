@@ -68,6 +68,21 @@ function getStatusBadge(status: string) {
   }
 }
 
+function getUsageStatusBadge(status: string) {
+  switch (status) {
+    case 'completed':
+      return <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">Completed</Badge>
+    case 'failed':
+      return <Badge className="border-red-200 bg-red-50 text-red-700 hover:bg-red-50">Failed</Badge>
+    case 'blocked':
+      return <Badge className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50">Blocked</Badge>
+    case 'reserved':
+      return <Badge variant="outline">Reserved</Badge>
+    default:
+      return <Badge variant="outline">{status}</Badge>
+  }
+}
+
 function formatSurveyUseCase(value: string | null | undefined) {
   switch (value) {
     case 'book':
@@ -837,6 +852,51 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                     <span key="note" className="text-xs text-slate-500">{entry.note ?? '-'}</span>,
                   ])
                 : [[<span key="empty" className="text-slate-400">No manual trial actions yet.</span>, '-', '-', '-', '-', '-', '-']]}
+            />
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200/80 bg-white/95 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-slate-900">Sponsored AI Activity Log</CardTitle>
+            <CardDescription>
+              Recent itemized sponsored AI requests, including user, endpoint, provider/model, character counts, status, and cost.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SectionTable
+              headers={['Time', 'User', 'Endpoint / Task', 'Provider / Model', 'Status', 'Input chars', 'Output chars', 'Cost']}
+              rows={dashboard.trial.recentSponsoredActivity.length > 0
+                ? dashboard.trial.recentSponsoredActivity.map((entry) => [
+                    <div key="time" className="flex flex-col gap-1">
+                      <span className="font-medium text-slate-900">{formatDateTime(entry.createdAt)}</span>
+                      {entry.completedAt ? <span className="text-xs text-slate-400">Done {formatDateTime(entry.completedAt)}</span> : null}
+                    </div>,
+                    <div key="user" className="flex min-w-[10rem] flex-col gap-1">
+                      <span className="font-medium text-slate-900">{entry.email ?? compactId(entry.userId)}</span>
+                      {entry.email ? <span className="text-xs text-slate-400">{compactId(entry.userId)}</span> : null}
+                    </div>,
+                    <span key="endpoint" className="font-medium text-slate-900">{entry.endpoint}</span>,
+                    <div key="model" className="flex flex-col gap-1">
+                      <span className="font-medium text-slate-900">{entry.provider}</span>
+                      <span className="text-xs text-slate-400">{entry.model ?? '-'}</span>
+                    </div>,
+                    <div key="status" className="flex flex-col gap-1">
+                      {getUsageStatusBadge(entry.status)}
+                      {entry.errorCode ? <span className="text-xs text-slate-400">{entry.errorCode}</span> : null}
+                      {entry.httpStatus ? <span className="text-xs text-slate-400">HTTP {entry.httpStatus}</span> : null}
+                    </div>,
+                    <span key="input">{entry.inputChars.toLocaleString()}</span>,
+                    <span key="output">{entry.outputChars.toLocaleString()}</span>,
+                    <div key="cost" className="flex flex-col gap-1">
+                      <span className="font-medium text-slate-900">{formatMicrosUsd(entry.finalMicros > 0 ? entry.finalMicros : entry.reservedMicros)}</span>
+                      {entry.refundedMicros > 0 ? <span className="text-xs text-slate-400">Refunded {formatMicrosUsd(entry.refundedMicros)}</span> : null}
+                    </div>,
+                  ])
+                : [[
+                    <span key="empty" className="text-slate-400">No sponsored AI activity has been logged yet.</span>,
+                    '-', '-', '-', '-', '-', '-', '-',
+                  ]]}
             />
           </CardContent>
         </Card>
