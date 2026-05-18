@@ -179,17 +179,25 @@ export default function AppNav({ user }: { user: User }) {
                                             <Save className="w-4 h-4" />
                                             <div className="flex flex-col overflow-hidden">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="font-semibold text-sm">Save Project</span>
+                                                    <span className="font-semibold text-sm">
+                                                        {linkedFileName ? 'Save Project' : 'Save to file…'}
+                                                    </span>
                                                     <span className="text-[9px] opacity-40 font-bold uppercase tracking-widest">Ctrl+S</span>
                                                 </div>
-                                                {linkedFileName && (
-                                                    <span className="text-[10px] opacity-60 truncate max-w-[180px]">
-                                                        Linked: {linkedFileName}
-                                                    </span>
-                                                )}
-                                                {lastFileSaveAt && (
-                                                    <span className="text-[9px] opacity-40 italic">
-                                                        Saved {formatDistanceToNow(lastFileSaveAt)}
+                                                {linkedFileName ? (
+                                                    <>
+                                                        <span className="text-[10px] opacity-60 truncate max-w-[180px]">
+                                                            Linked: {linkedFileName}
+                                                        </span>
+                                                        {lastFileSaveAt && (
+                                                            <span className="text-[9px] opacity-40 italic">
+                                                                Saved {formatDistanceToNow(lastFileSaveAt)}
+                                                            </span>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <span className="text-[10px] opacity-60 whitespace-normal leading-snug mt-0.5">
+                                                        Pick a location on your computer. Future saves will write there automatically.
                                                     </span>
                                                 )}
                                             </div>
