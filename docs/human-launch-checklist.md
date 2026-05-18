@@ -184,12 +184,16 @@ AI can do the codebase pass, but Kwame needs to make the name decision first.
 
 Before publishing final screenshots or marking the UI as launch-ready, open the live site in Chrome and run a visual assessment using the Gemini side panel or Gemini in Google Chrome (via the address bar or the Google Labs integration).
 
+⚠️ **Do this work on a separate branch.** The Gemini review will likely surface UI tweaks, copy changes, and polish items. Those fixes should be made on a dedicated branch (e.g. `visual-qa-pass`) so they can be reviewed, tested, and merged cleanly — not committed directly to `main` mid-session.
+
 Steps:
-1. Open the live production URL in Chrome.
-2. Open Gemini (side panel or new tab → gemini.google.com) and share the screen or paste a screenshot.
-3. Ask Gemini to review the page for: visual polish, layout balance, readability, and anything that looks unfinished or off-brand.
-4. Walk through the key screens: login, signup, library, editor, settings, showcase/landing.
-5. Note any Gemini feedback worth acting on and move those to `TASK_BOARD.md`.
+1. Create a new branch before making any changes based on Gemini feedback.
+2. Open the live production URL in Chrome.
+3. Open Gemini (side panel or new tab → gemini.google.com) and share the screen or paste a screenshot.
+4. Ask Gemini to review the page for: visual polish, layout balance, readability, and anything that looks unfinished or off-brand.
+5. Walk through the key screens: login, signup, library, editor, settings, showcase/landing.
+6. Note any Gemini feedback worth acting on and move those to `TASK_BOARD.md`.
+7. Implement fixes on the branch, then open a PR or merge when satisfied.
 
 This is a lightweight human-led check that catches rough edges AI code agents miss because they cannot see the rendered UI.
 
