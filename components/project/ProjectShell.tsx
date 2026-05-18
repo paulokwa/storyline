@@ -543,7 +543,7 @@ function ProjectShellInner({
             const json = JSON.stringify(backup, null, 2)
             
             const result = await saveProjectContent(json, {
-                fileName: project.linked_file_name || `${project.title || 'untitled'}${BACKUP_FILE_EXTENSION}`,
+                fileName: `${project.title || 'untitled'}${BACKUP_FILE_EXTENSION}`,
                 handle: project.storyline_file_handle
             })
             
@@ -559,7 +559,7 @@ function ProjectShellInner({
 
                 await updateLocalProject(project.id, updatedFields)
                 
-                toast.success(result.savedToHandle 
+                toast.success(result.savedToHandle
                     ? `Project saved to ${result.fileName}`
                     : "Project downloaded as .storyline file"
                 )
@@ -578,7 +578,7 @@ function ProjectShellInner({
         } finally {
             setIsSavingToDisk(false)
         }
-    }, [isLocalOnly, isSavingToDisk, project.id, project.storyline_file_handle])
+    }, [isLocalOnly, isSavingToDisk, project.id, project.storyline_file_handle, project.title])
 
     const handleSaveProjectAs = useCallback(async () => {
         if (!isLocalOnly || isSavingToDisk) return
