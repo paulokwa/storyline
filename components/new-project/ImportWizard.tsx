@@ -400,7 +400,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                         <h3 className="font-serif text-xl font-medium text-slate-800">How should we split it?</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <StrategyCard active={splitStrategy === 'chapter_keyword'} onClick={() => updateStrategy('chapter_keyword')} title="By Heading" desc="Split on Chapter, Prologue, Epilogue, Part, and other common headings" />
-                        <StrategyCard active={splitStrategy === 'custom'} onClick={() => updateStrategy('custom')} title="Custom Marker" desc="Split at a specific character (e.g. ***)" />
+                        <StrategyCard active={splitStrategy === 'custom'} onClick={() => updateStrategy('custom')} title="Custom Marker" desc="Split on an exact marker as it appears in your file (e.g. * * * or ---)" />
                         <StrategyCard active={splitStrategy === 'single'} onClick={() => updateStrategy('single')} title="Single Scene" desc="Don't split. Import as one bulk scene." />
                     </div>
 
