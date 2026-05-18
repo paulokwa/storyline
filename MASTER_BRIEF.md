@@ -38,6 +38,7 @@ Default branch: `main`
 18. After completing session-end updates, commit and push the changes to GitHub unless the user explicitly says not to, there are no changes to commit, or the agent/tool does not have Git/GitHub write access. If unable to commit or push, say so clearly and provide the exact files that still need committing.
 19. Before committing and pushing changes that could affect the production build or deploy, run a Netlify build check when the session has access to do so, preferably `netlify build --context production`. If Netlify CLI/build access is missing, first try to set it up or link the existing Netlify site using the available CLI/MCP tools instead of skipping the check. If the check cannot be run or cannot be configured safely, report the blocker clearly before committing or pushing. If the Netlify build check fails, do not push deployment-affecting changes unless the user explicitly approves pushing despite the known failure.
 20. Do not edit `MASTER_BRIEF.md` unless the user explicitly asks for the Master Brief itself to be changed.
+21. Automatic Netlify production builds are disabled to reduce build costs. After pushing to GitHub at session end, trigger a Netlify production deploy manually. Use the Netlify MCP tool if available in the current session, otherwise use the CLI: `netlify deploy --prod`. If the deploy cannot be triggered, say so clearly and note it in `SESSION_HANDOVER.md` so the next session picks it up.
 
 ## Decision Log Gate
 
@@ -155,6 +156,12 @@ Before ending this session:
    - If unsure, do not update DECISION_LOG.md; mention the possible decision in SESSION_HANDOVER.md instead.
 
 5. Commit and push all session changes to GitHub, unless I explicitly said not to or there are no changes to commit.
+
+6. Trigger a Netlify production deploy after pushing.
+   - Automatic Netlify builds are disabled to reduce build costs, so the live site will not update unless a deploy is triggered manually.
+   - Use the Netlify MCP tool if available in the current session.
+   - If not, use the CLI: `netlify deploy --prod`
+   - If neither is available or the deploy fails, say so clearly and note it in SESSION_HANDOVER.md so the next session picks it up.
 
 Rules:
 - Keep updates concise
