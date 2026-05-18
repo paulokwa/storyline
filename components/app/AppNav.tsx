@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { usePathname, useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { isAdminEmail } from '@/lib/admin'
@@ -97,7 +96,10 @@ export default function AppNav({ user }: { user: User }) {
             <div className={`app-nav-inner max-w-[1440px] mx-auto h-14 flex items-center justify-between gap-6 ${
                 isMidnight ? 'border-b border-white/0' : ''
             }`}>
-                <Link href="/library" className="app-nav-brand flex items-center gap-2 group">
+                <button
+                    onClick={() => guardedNav(() => router.push('/library'))}
+                    className="app-nav-brand flex items-center gap-2 group"
+                >
                     <div className={`app-nav-mark w-8 h-8 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110 ${
                         isMidnight
                             ? 'bg-gradient-to-br from-[#65745f] to-[#556452] shadow-[0_14px_28px_rgba(3,8,20,0.26)]'
@@ -113,7 +115,7 @@ export default function AppNav({ user }: { user: User }) {
                             isMidnight ? 'text-[#abc0ad]/70' : 'text-[#546354]/40'
                         }`}>Beta Sanctuary</span>
                     </div>
-                </Link>
+                </button>
 
                 <div className="flex items-center gap-2 sm:gap-4">
                     <NotificationBell />
