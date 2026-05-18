@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useProjectActionsStore } from '@/lib/store/projectActionsStore'
+import { useNavGuardStore } from '@/lib/store/navGuardStore'
 import { useTheme } from '@/components/providers/ThemeProvider'
 import NotificationBell from '@/components/notifications/NotificationBell'
 import { cn } from '@/lib/utils'
@@ -52,6 +53,17 @@ export default function AppNav({ user }: { user: User }) {
 
         return () => observer.disconnect()
     }, [pathname])
+
+    const { importDirty, setShowImportLeaveWarning, setPendingNavAction } = useNavGuardStore()
+
+    const guardedNav = (action: () => void) => {
+        if (importDirty) {
+            setPendingNavAction(action)
+            setShowImportLeaveWarning(true)
+        } else {
+            action()
+        }
+    }
 
     async function handleSignOut() {
         const supabase = createClient()
@@ -262,8 +274,8 @@ export default function AppNav({ user }: { user: User }) {
                                 </>
                             )}
 
-                            <DropdownMenuItem 
-                                onClick={() => router.push('/help')}
+                            <DropdownMenuItem
+                                onClick={() => guardedNav(() => router.push('/help'))}
                                 className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
                                     isMidnight ? 'text-slate-300 focus:text-[#dbe5ff] focus:bg-white/8' : 'text-slate-600 focus:text-[#546354] focus:bg-[#546354]/5'
                                 }`}
@@ -272,8 +284,8 @@ export default function AppNav({ user }: { user: User }) {
                                 <span className="font-semibold text-sm">Help Center</span>
                             </DropdownMenuItem>
 
-                            <DropdownMenuItem 
-                                onClick={() => router.push('/settings')}
+                            <DropdownMenuItem
+                                onClick={() => guardedNav(() => router.push('/settings'))}
                                 className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
                                     isMidnight ? 'text-slate-300 focus:text-[#dbe5ff] focus:bg-white/8' : 'text-slate-600 focus:text-[#546354] focus:bg-[#546354]/5'
                                 }`}
@@ -283,8 +295,8 @@ export default function AppNav({ user }: { user: User }) {
                             </DropdownMenuItem>
 
                             {canAccessAdmin && (
-                                <DropdownMenuItem 
-                                    onClick={() => router.push('/admin')}
+                                <DropdownMenuItem
+                                    onClick={() => guardedNav(() => router.push('/admin'))}
                                     className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
                                         isMidnight ? 'text-slate-300 focus:text-[#dbe5ff] focus:bg-white/8' : 'text-slate-600 focus:text-[#546354] focus:bg-[#546354]/5'
                                     }`}
@@ -294,10 +306,10 @@ export default function AppNav({ user }: { user: User }) {
                                 </DropdownMenuItem>
                             )}
 
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                                 onClick={() => {
                                     const currentPath = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : '')
-                                    router.push(`/feedback?from=${encodeURIComponent(currentPath)}`)
+                                    guardedNav(() => router.push(`/feedback?from=${encodeURIComponent(currentPath)}`))
                                 }}
                                 className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
                                     isMidnight ? 'text-slate-300 focus:text-[#dbe5ff] focus:bg-white/8' : 'text-slate-600 focus:text-[#546354] focus:bg-[#546354]/5'
@@ -306,12 +318,12 @@ export default function AppNav({ user }: { user: User }) {
                                 <Mail className="w-4 h-4" />
                                 <span className="font-semibold text-sm">Support & Feedback</span>
                             </DropdownMenuItem>
-                            
+
                             <DropdownMenuSeparator className={`my-1.5 ${isMidnight ? 'bg-slate-700/60' : 'bg-slate-100'}`} />
 
-                            
-                            <DropdownMenuItem 
-                                onClick={handleSignOut}
+
+                            <DropdownMenuItem
+                                onClick={() => guardedNav(handleSignOut)}
                                 className={`rounded-xl px-3 py-2.5 cursor-pointer gap-3 transition-all ${
                                     isMidnight ? 'text-red-400 focus:text-red-300 focus:bg-red-500/10' : 'text-red-500 focus:text-red-600 focus:bg-red-50'
                                 }`}

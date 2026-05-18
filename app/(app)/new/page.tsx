@@ -25,6 +25,7 @@ import {
     readNewProjectDraft,
     writeNewProjectDraft,
 } from '@/lib/persistence/new-project-drafts'
+import { useNavGuardStore } from '@/lib/store/navGuardStore'
 
 type StartMode = 'quick' | 'guided' | 'import'
 type Step = 'title' | 'type' | 'storage' | 'start_mode' | 'identity' | 'guided' | 'import'
@@ -69,10 +70,15 @@ export default function NewProjectPage() {
     const [isAiEnabled, setIsAiEnabled] = useState(false)
     const [magicDetectBlockReason, setMagicDetectBlockReason] = useState<null | 'ai_disabled' | 'ollama_unsupported' | 'ollama_fallback_available'>(null)
     const [ollamaFallbackProvider, setOllamaFallbackProvider] = useState<string | null>(null)
-    const [showImportLeaveWarning, setShowImportLeaveWarning] = useState(false)
+    const {
+        showImportLeaveWarning,
+        pendingNavAction,
+        setImportDirty,
+        setShowImportLeaveWarning,
+        setPendingNavAction,
+    } = useNavGuardStore()
     const storageSelectionTouchedRef = useRef(false)
     const importDirtyRef = useRef(false)
-    const pendingNavRef = useRef<(() => void) | null>(null)
 
     // Draft Persistence
     useEffect(() => {
@@ -259,11 +265,12 @@ export default function NewProjectPage() {
 
     const handleImportDirtyChange = (dirty: boolean) => {
         importDirtyRef.current = dirty
+        setImportDirty(dirty)
     }
 
     const guardedImportNav = (action: () => void) => {
         if (importDirtyRef.current) {
-            pendingNavRef.current = action
+            setPendingNavAction(action)
             setShowImportLeaveWarning(true)
         } else {
             action()
@@ -424,7 +431,7 @@ export default function NewProjectPage() {
                             <Button
                                 onClick={() => {
                                     setShowImportLeaveWarning(false)
-                                    pendingNavRef.current = null
+                                    setPendingNavAction(null)
                                 }}
                                 className="sanctuary-btn-primary h-12 rounded-full text-sm font-semibold w-full"
                             >
@@ -432,10 +439,11 @@ export default function NewProjectPage() {
                             </Button>
                             <button
                                 onClick={() => {
-                                    const action = pendingNavRef.current
-                                    pendingNavRef.current = null
+                                    const action = pendingNavAction
                                     importDirtyRef.current = false
+                                    setImportDirty(false)
                                     setShowImportLeaveWarning(false)
+                                    setPendingNavAction(null)
                                     action?.()
                                 }}
                                 className="h-12 rounded-full text-sm font-semibold text-slate-400 hover:text-slate-700 transition-colors w-full"
