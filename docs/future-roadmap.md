@@ -213,7 +213,7 @@ This is a future user-facing product improvement, not current technical debt.
 
 ### Why it matters
 
-The Help Center can easily drift behind the app because Storyline has many features: local/cloud projects, AI setup modes, collaboration, comments, backup/open/save workflows, screenplay mode, prose mode, exports, assets, visual references, settings, and hidden keyboard behavior.
+The Help Center can easily drift behind the app because Storyline has many features: local/cloud projects, AI setup modes, collaboration, comments, backup/open/save/open workflows, screenplay mode, prose mode, exports, assets, visual references, settings, and hidden keyboard behavior.
 
 A quick “make the help page better” prompt is not enough. The safer process is a two-phase audit and rewrite.
 
@@ -306,6 +306,14 @@ Questions to answer before coding:
 - Would this create privacy/trust concerns for users who chose local-only mode?
 
 Do not start coding this until the desired user story is clear.
+
+### Browser back guard for unsaved import progress
+
+The Import Wizard now warns users before losing unsaved import progress through visible in-app navigation such as Back, Archive/Library, Home/logo, avatar menu actions, refresh, and tab close.
+
+One known limitation remains: browser back/popstate navigation is not fully intercepted. This is acceptable for now because the main visible app exits are guarded, and browser/router-level interception can become brittle in Next.js App Router.
+
+Future idea: consider a more complete unsaved-changes/navigation guard system if users still report accidental import loss through browser back. This should be treated as a UX enhancement, not security/performance debt, unless real usage shows it causing repeated data-loss problems.
 
 ---
 
