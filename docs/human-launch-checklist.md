@@ -180,6 +180,19 @@ This includes:
 
 AI can do the codebase pass, but Kwame needs to make the name decision first.
 
+### Visual QA pass using Gemini in Chrome
+
+Before publishing final screenshots or marking the UI as launch-ready, open the live site in Chrome and run a visual assessment using the Gemini side panel or Gemini in Google Chrome (via the address bar or the Google Labs integration).
+
+Steps:
+1. Open the live production URL in Chrome.
+2. Open Gemini (side panel or new tab → gemini.google.com) and share the screen or paste a screenshot.
+3. Ask Gemini to review the page for: visual polish, layout balance, readability, and anything that looks unfinished or off-brand.
+4. Walk through the key screens: login, signup, library, editor, settings, showcase/landing.
+5. Note any Gemini feedback worth acting on and move those to `TASK_BOARD.md`.
+
+This is a lightweight human-led check that catches rough edges AI code agents miss because they cannot see the rendered UI.
+
 ### Final showcase screenshots
 
 Capture final showcase screenshots after the app name, branding, and key UI polish are settled.
@@ -297,6 +310,7 @@ Before public launch, review:
 - Privacy/legal documentation updated for OpenRouter and current AI provider options
 - Help Center audit/rewrite completed or intentionally deferred
 - Showcase page updated with final screenshots
+- Visual QA pass done using Gemini in Chrome across all key screens
 - In-app launch survey implemented
 - Support email/contact flow still works
 - Key tutorials planned or recorded
