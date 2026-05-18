@@ -47,72 +47,22 @@ If `CHANGE DETECTED`, include:
 
 ---
 
-## Session-Start Access Check
+## External Tool Access Rule
 
-Run this check once at the start of a new chat/session only. Do not repeat it before every prompt inside the same session unless the user explicitly asks, the session context is reset, or a later task newly requires a service that was not checked.
+Do **not** run broad startup access checks for external services or optional tools.
 
-After reading `MASTER_BRIEF.md`, and before doing the requested work, perform a read-only access check for the external services and local tools relevant to this project:
+At session start, read the required continuity files and inspect only the repo context needed for the user’s current request.
 
-1. GitHub access
-   - Confirm the repository is accessible.
-   - Confirm the current branch.
-   - Confirm whether the working tree is clean or has uncommitted changes when local shell access is available.
-   - Confirm the latest commit available locally or remotely.
-   - Do not push, pull, merge, reset, create branches, or change PRs unless explicitly instructed.
+Check GitHub, Supabase, Netlify, Impeccable, MCP servers, Playwright/browser tools, or the local dev test account **only when the current task actually requires that specific service or tool**.
 
-2. Supabase access
-   - Confirm whether Supabase project access is available.
-   - Confirm whether schema, RLS policies, functions, storage, and auth-related settings can be inspected if needed.
-   - Use read-only checks first.
-   - Do not run migrations, alter policies, alter tables, delete data, write test data, or change storage/auth settings unless explicitly instructed.
+When a task does require one of those services/tools:
 
-3. Netlify access
-   - Confirm whether Netlify access is available.
-   - Confirm whether deploys, environment variables, build settings, and function logs can be inspected if needed.
-   - Use read-only checks first.
-   - Do not trigger deploys, change environment variables, promote deploys, or roll back deploys unless explicitly instructed.
+- use read-only checks first
+- do not install, configure, trigger, deploy, migrate, write test data, or change external settings unless explicitly asked
+- if missing access blocks the specific task, report the exact blocker and the safest next option
+- continue without the optional tool when the task can still be completed safely
 
-4. Impeccable access
-   - Confirm whether the Impeccable skill/tooling is present and usable in this workspace.
-   - Check expected local paths such as `.agents/skills/impeccable/` and/or `impeccable/` when relevant.
-   - If an Impeccable load/context script is documented in the repo, run the read-only/load command only when appropriate for the task.
-   - Do not install, update, delete, or commit Impeccable tooling unless explicitly instructed.
-   - If Impeccable is missing, partial, or not usable, report that immediately and explain whether the task can continue without it.
-
-5. Local dev test account access
-   - Read `docs/dev-test-account.md` before any browser/Playwright/Chrome test that needs authentication.
-   - Confirm whether a local credential file exists at `.local/test-account.env` or `.env.test.local` when local shell access is available.
-   - Confirm the repo has the `npm run create:test-account` script before relying on it.
-   - If credentials are present and the account may not exist yet, run `npm run create:test-account` to verify/create it.
-   - Do not print, expose, commit, screenshot, or log the test account password.
-   - If credentials are missing, report the missing local env file and point Paul/Kwame to `docs/dev-test-account.md`; do not ask him to paste the password into chat.
-
-Report the result before the main task using this format:
-
-```md
-### Startup Access Check
-
-| Service / Tool | Status | Notes |
-|---|---|---|
-| GitHub | Available / Partial / Not Available | ... |
-| Supabase | Available / Partial / Not Available | ... |
-| Netlify | Available / Partial / Not Available | ... |
-| Impeccable | Available / Partial / Not Available | ... |
-| Dev Test Account | Available / Partial / Not Available | ... |
-
-### Access Impact
-
-- Can the requested task continue safely with current access?
-- What cannot be verified, if anything?
-- Can the agent safely self-fix the missing access/tooling?
-- If not, what exact command, login, token, MCP setup, dashboard step, local install step, credential-file setup, or manual action does Paul/Kwame need to do?
-- Should the task continue in read-only mode, continue without the missing tool, continue unauthenticated only, or pause?
-```
-
-Do not silently assume access exists.
-Do not fake verification.
-Do not continue into risky changes when required access/tooling is missing or unclear.
-If access/tooling is missing, partial, expired, or unclear, tell Paul/Kwame in the next response so he can decide whether to allow a self-fix or follow manual setup steps.
+Do not silently assume access exists, but also do not make every new chat prove every possible integration works.
 
 ---
 
