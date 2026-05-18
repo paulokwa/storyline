@@ -67,6 +67,9 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
     const [aiElapsedSeconds, setAiElapsedSeconds] = useState(0)
 
     const fileInputRef = useRef<HTMLInputElement>(null)
+    const delimiterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+    const MAX_PREVIEW_CHUNKS = 200
 
     // Keep a stable ref to onDirtyChange so the cleanup effect doesn't need it as a dep
     const onDirtyChangeRef = useRef(onDirtyChange)
@@ -156,13 +159,18 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                 return { title: firstLine, content: part.trim() }
             })
         } else if (strategy === 'custom') {
-            // Split by literal delimiter
-            const escapedDelim = delimiter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-            const regex = new RegExp(`\\n*(?:${escapedDelim})\\n*`, 'g')
-            const parts = text.split(regex)
-            outputChunks = parts.map((part, i) => {
-                return { title: `Segment ${i + 1}`, content: part.trim() }
-            })
+            const trimmedDelim = delimiter.trim()
+            if (!trimmedDelim) {
+                // Empty delimiter — treat as single scene to avoid splitting on every character
+                outputChunks = [{ title: 'Full Document', content: text }]
+            } else {
+                const escapedDelim = trimmedDelim.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+                const regex = new RegExp(`\\n*(?:${escapedDelim})\\n*`, 'g')
+                const parts = text.split(regex)
+                outputChunks = parts.map((part, i) => {
+                    return { title: `Segment ${i + 1}`, content: part.trim() }
+                })
+            }
         }
 
         return outputChunks.filter(c => c.content.length > 0)
@@ -184,7 +192,10 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
     const updateDelimiter = (val: string) => {
         setCustomDelimiter(val)
         setSplitStrategy('custom')
-        processChunks(rawText, 'custom', val)
+        if (delimiterDebounceRef.current) clearTimeout(delimiterDebounceRef.current)
+        delimiterDebounceRef.current = setTimeout(() => {
+            processChunks(rawText, 'custom', val)
+        }, 350)
     }
 
     const updateChunkTitle = (index: number, newTitle: string) => {
@@ -563,7 +574,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                         <div className="max-h-[300px] overflow-y-auto space-y-2 custom-scrollbar p-2">
                             {chunks.length === 0 ? (
                                 <div className="text-center p-8 text-slate-400 text-sm">No segments found</div>
-                            ) : chunks.map((chunk, idx) => (
+                            ) : chunks.slice(0, MAX_PREVIEW_CHUNKS).map((chunk, idx) => (
                                 <div key={idx} className="bg-white border rounded-xl p-4 flex gap-4 hover:shadow-md transition-all group">
                                     <Tooltip>
                                         <TooltipTrigger>
@@ -588,6 +599,11 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                                     </div>
                                 </div>
                             ))}
+                            {chunks.length > MAX_PREVIEW_CHUNKS && (
+                                <div className="text-center py-4 px-2 text-xs text-slate-400 font-medium border-t border-stone-200 mt-1">
+                                    Preview limited to {MAX_PREVIEW_CHUNKS} segments. {chunks.length - MAX_PREVIEW_CHUNKS} more will be imported but are not shown here.
+                                </div>
+                            )}
                         </div>
                         </div>
                     </div>
