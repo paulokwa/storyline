@@ -21,7 +21,8 @@ interface ImportWizardProps {
     onBack: () => void
     creating: boolean
     creatingLabel?: string
-    magicDetectBlockReason?: null | 'ai_disabled' | 'ollama_unsupported'
+    magicDetectBlockReason?: null | 'ai_disabled' | 'ollama_unsupported' | 'ollama_fallback_available'
+    ollamaFallbackProvider?: string | null
 }
 
 type ImportChunk = { title: string; content: string }
@@ -41,7 +42,7 @@ function getAiWaitingMessage(elapsedSeconds: number) {
     ), AI_WAITING_MESSAGES[0]).text
 }
 
-export default function ImportWizard({ projectType, onComplete, onBack, creating, creatingLabel = 'Building Project...', magicDetectBlockReason = null }: ImportWizardProps) {
+export default function ImportWizard({ projectType, onComplete, onBack, creating, creatingLabel = 'Building Project...', magicDetectBlockReason = null, ollamaFallbackProvider = null }: ImportWizardProps) {
     const [file, setFile] = useState<File | null>(null)
     const [rawText, setRawText] = useState('')
     const [uploading, setUploading] = useState(false)
@@ -58,6 +59,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
     // AI Detection State
     const [aiDetecting, setAiDetecting] = useState(false)
     const [showSanityModal, setShowSanityModal] = useState(false)
+    const [showOllamaFallbackModal, setShowOllamaFallbackModal] = useState(false)
     const [sanityInput, setSanityInput] = useState('')
     const [aiStatus, setAiStatus] = useState('')
     const [aiProgress, setAiProgress] = useState(0)
@@ -180,11 +182,12 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
         setCustomDelimiter('***')
     }
 
-    const triggerAiDetection = async () => {
-        if (sanityInput !== 'IMPORT') return
-        
+    const triggerAiDetection = async (useFallback = false) => {
+        if (!useFallback && sanityInput !== 'IMPORT') return
+
         setAiDetecting(true)
         setShowSanityModal(false)
+        setShowOllamaFallbackModal(false)
         setAiStatus('Preparing manuscript text...')
         setAiProgress(12)
         setAiElapsedSeconds(0)
@@ -203,6 +206,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                     projectType,
                     requestId: crypto.randomUUID(),
                     deviceFingerprint,
+                    ...(useFallback ? { useFallback: true } : {}),
                 })
             })
             const data = await res.json()
@@ -368,7 +372,7 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                     </div>
 
                     <div className="pt-2">
-                        {magicDetectBlockReason ? (
+                        {magicDetectBlockReason === 'ai_disabled' && (
                             <div className="w-full rounded-2xl border border-amber-200 bg-amber-50 p-5">
                                 <div className="flex items-center gap-4">
                                     <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-500 flex-shrink-0">
@@ -379,27 +383,80 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                                             <div className="font-serif text-lg font-medium tracking-tight text-amber-800">✨ Magic Detect</div>
                                             <span className="text-[10px] font-bold uppercase tracking-widest bg-amber-200/60 text-amber-600 px-2 py-0.5 rounded-full border border-amber-300/50">Beta</span>
                                         </div>
-                                        {magicDetectBlockReason === 'ai_disabled' ? (
-                                            <p className="text-xs text-amber-700 mt-1">
-                                                AI Partner is off.{' '}
-                                                <Link href="/settings" className="font-semibold underline underline-offset-2 hover:text-amber-900">
-                                                    Enable it in Account Settings
-                                                </Link>{' '}
-                                                to use AI chapter detection.
-                                            </p>
-                                        ) : (
-                                            <p className="text-xs text-amber-700 mt-1">
-                                                Magic Detect requires a cloud provider — Ollama runs on your device and can&apos;t be reached from our servers.{' '}
-                                                <Link href="/settings" className="font-semibold underline underline-offset-2 hover:text-amber-900">
-                                                    Switch to a cloud provider in Account Settings
-                                                </Link>
-                                                , or use any remaining free trial credits and switch back to Ollama afterwards.
-                                            </p>
-                                        )}
+                                        <p className="text-xs text-amber-700 mt-1">
+                                            AI Partner is off.{' '}
+                                            <Link href="/settings" className="font-semibold underline underline-offset-2 hover:text-amber-900">
+                                                Enable it in Account Settings
+                                            </Link>{' '}
+                                            to use AI chapter detection.
+                                        </p>
                                     </div>
                                 </div>
                             </div>
-                        ) : (
+                        )}
+
+                        {magicDetectBlockReason === 'ollama_unsupported' && (
+                            <div className="w-full rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-500 flex-shrink-0">
+                                        <Sparkles className="w-5 h-5" />
+                                    </div>
+                                    <div className="text-left">
+                                        <div className="flex items-center gap-2">
+                                            <div className="font-serif text-lg font-medium tracking-tight text-amber-800">✨ Magic Detect</div>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest bg-amber-200/60 text-amber-600 px-2 py-0.5 rounded-full border border-amber-300/50">Beta</span>
+                                        </div>
+                                        <p className="text-xs text-amber-700 mt-1">
+                                            Magic Detect does not support local Ollama yet. Ollama runs on your device, while Magic Detect currently runs through a cloud AI route.{' '}
+                                            <Link href="/settings" className="font-semibold underline underline-offset-2 hover:text-amber-900">
+                                                Configure a cloud provider in Account Settings
+                                            </Link>{' '}
+                                            to use it, or use one of the split options above.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {magicDetectBlockReason === 'ollama_fallback_available' && (
+                            <button
+                                onClick={() => aiChunks ? updateStrategy('ai_detect') : setShowOllamaFallbackModal(true)}
+                                disabled={aiDetecting}
+                                className={cn(
+                                    "w-full relative group overflow-hidden bg-amber-950 text-amber-50 rounded-2xl p-5 hover:bg-amber-900 transition-all active:scale-[0.99] border shadow-xl shadow-amber-900/10",
+                                    splitStrategy === 'ai_detect' ? "border-amber-400 ring-2 ring-amber-400/30" : "border-amber-800"
+                                )}
+                            >
+                                <div className="flex items-center justify-between relative z-10">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center text-white shadow-[0_0_15px_rgba(245,158,11,0.4)] group-hover:scale-110 transition-transform duration-500">
+                                            <Sparkles className="w-5 h-5" />
+                                        </div>
+                                        <div className="text-left">
+                                            <div className="flex items-center gap-2">
+                                                <div className="font-serif text-lg font-medium tracking-tight">✨ Magic Detect</div>
+                                                <span className="text-[10px] font-bold uppercase tracking-widest bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">Beta</span>
+                                                {aiChunks && (
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest bg-emerald-500/15 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-400/25">Saved</span>
+                                                )}
+                                            </div>
+                                            <div className="text-xs text-amber-200/70 font-medium leading-relaxed max-w-sm mt-1">
+                                                {aiChunks
+                                                    ? <>View the saved AI structure without sending another request.</>
+                                                    : <>Available via your configured cloud fallback — requires your confirmation.</>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="p-2 rounded-full border border-amber-700 bg-amber-900 group-hover:bg-amber-500 group-hover:border-amber-400 transition-all">
+                                        {aiDetecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                                    </div>
+                                </div>
+                                <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+                            </button>
+                        )}
+
+                        {!magicDetectBlockReason && (
                             <button
                                 onClick={() => aiChunks ? updateStrategy('ai_detect') : setShowSanityModal(true)}
                                 disabled={aiDetecting}
@@ -630,8 +687,8 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                                     placeholder="IMPORT"
                                     className="h-14 bg-stone-50/50 border-stone-200 focus:border-indigo-400 focus:bg-white text-lg font-bold tracking-widest text-center"
                                 />
-                                <Button 
-                                    onClick={triggerAiDetection}
+                                <Button
+                                    onClick={() => triggerAiDetection()}
                                     disabled={sanityInput !== 'IMPORT'}
                                     className={cn(
                                         "w-full h-14 rounded-full text-base font-semibold gap-3 transition-all duration-500",
@@ -641,6 +698,78 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
                                     Proceed with AI Detection
                                 </Button>
                             </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Ollama Fallback Confirmation Modal (State A) */}
+            {showOllamaFallbackModal && (
+                <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[100] flex items-start justify-center overflow-hidden p-4 md:p-6 animate-in fade-in duration-300 sm:items-center">
+                    <div className="import-wizard-sanity-modal bg-white rounded-[2rem] md:rounded-[2.5rem] max-w-lg w-full max-h-[calc(100dvh-2rem)] md:max-h-[calc(100dvh-3rem)] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-500 border border-slate-100">
+                        <button
+                            onClick={() => setShowOllamaFallbackModal(false)}
+                            className="absolute top-6 right-6 z-10 p-2 rounded-full hover:bg-slate-50 text-slate-400 transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+
+                        <div className="max-h-[calc(100dvh-2rem)] md:max-h-[calc(100dvh-3rem)] overflow-y-auto overscroll-contain p-8 pr-10 md:p-14 md:pr-16">
+                            <div className="space-y-8">
+                                <div className="space-y-4">
+                                    <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 mb-6">
+                                        <Sparkles className="w-8 h-8" />
+                                    </div>
+                                    <h3 className="text-3xl font-serif text-slate-800 leading-tight">
+                                        Use cloud fallback <span className="text-slate-400 italic">for this import?</span>
+                                    </h3>
+                                    <p className="text-slate-500 text-sm leading-relaxed font-medium px-1">
+                                        Magic Detect cannot run through local Ollama yet. Ollama runs on your device, while Magic Detect currently runs through a cloud AI route.
+                                    </p>
+                                    <div className="p-6 bg-amber-50 rounded-2xl border border-amber-100 space-y-3">
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                                            <p className="text-sm text-amber-900 font-medium leading-relaxed">
+                                                About <span className="font-bold">{rawText.length.toLocaleString()} characters</span> of manuscript text will be sent to your configured cloud fallback provider{ollamaFallbackProvider ? ` (${ollamaFallbackProvider.charAt(0).toUpperCase() + ollamaFallbackProvider.slice(1)})` : ''} for detection.
+                                            </p>
+                                        </div>
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 shrink-0" />
+                                            <p className="text-sm text-amber-900 font-bold leading-relaxed">
+                                                Ollama will remain your default AI provider after this import. This only applies to this one detection request.
+                                            </p>
+                                        </div>
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                                            <p className="text-sm text-amber-900 font-medium leading-relaxed">
+                                                AI results are suggestions. Review and edit all suggested chapters before finalizing.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <Button
+                                        onClick={() => triggerAiDetection(true)}
+                                        className="w-full h-14 rounded-full text-base font-semibold gap-3 bg-amber-600 hover:bg-amber-700 text-white shadow-xl shadow-amber-200 transition-all duration-300"
+                                    >
+                                        <Sparkles className="w-5 h-5" />
+                                        Use cloud fallback for this import
+                                    </Button>
+                                    <Link
+                                        href="/settings"
+                                        className="flex items-center justify-center w-full h-12 rounded-full text-sm font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors"
+                                    >
+                                        Open Account Settings
+                                    </Link>
+                                    <button
+                                        onClick={() => setShowOllamaFallbackModal(false)}
+                                        className="w-full h-10 text-sm text-slate-400 hover:text-slate-600 transition-colors font-medium"
+                                    >
+                                        Continue without Magic Detect
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import {
+    DEFAULT_GEMINI_MODEL,
     DEFAULT_OPENAI_MODEL,
+    DEFAULT_OPENROUTER_MODEL,
     extractOpenAiOutputText,
     extractOpenRouterCompletionText,
+    OPENROUTER_CURATED_MODEL_IDS,
 } from '@/lib/ai/providers'
 import { enforceAiRateLimit } from '@/lib/ai/rate-limit'
 import { getAiRuntimeState } from '@/lib/ai/runtime'
@@ -36,7 +39,7 @@ export async function POST(req: NextRequest) {
     let trialCleanup: (() => Promise<void>) | null = null
 
     try {
-        const { text, projectType, requestId, deviceFingerprint } = await req.json()
+        const { text, projectType, requestId, deviceFingerprint, useFallback } = await req.json()
         const requestKey = typeof requestId === 'string' && requestId ? requestId : crypto.randomUUID()
         const requestContext = getRequestContext(req, typeof deviceFingerprint === 'string' ? deviceFingerprint : null)
 
@@ -62,9 +65,36 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'AI_PARTNER_DISABLED' }, { status: 403 })
         }
 
+        // --- Resolve effective provider/key/model (Ollama with explicit fallback consent) ---
+        let effectiveProvider: 'gemini' | 'openai' | 'openrouter' | 'ollama' = runtime.provider
+        let effectiveApiKey: string | null = runtime.apiKey
+        let effectiveModel: string = runtime.model
+
+        if (useFallback === true && runtime.billingMode === 'ollama') {
+            const fbProv = runtime.aiSettings?.ai_fallback_enabled
+                ? (runtime.aiSettings?.ai_fallback_provider as 'gemini' | 'openai' | 'openrouter' | null)
+                : null
+            const fbKey = fbProv === 'gemini'
+                ? (runtime.aiSettings?.gemini_api_key ?? null)
+                : fbProv === 'openrouter'
+                    ? (runtime.aiSettings?.openrouter_api_key ?? null)
+                    : fbProv === 'openai'
+                        ? (runtime.aiSettings?.openai_api_key ?? null)
+                        : null
+            if (fbProv && fbKey) {
+                effectiveProvider = fbProv
+                effectiveApiKey = fbKey
+                const storedOrModel = runtime.aiSettings?.openrouter_model ?? null
+                effectiveModel = fbProv === 'gemini'
+                    ? DEFAULT_GEMINI_MODEL
+                    : fbProv === 'openrouter'
+                        ? (storedOrModel && OPENROUTER_CURATED_MODEL_IDS.has(storedOrModel) ? storedOrModel : DEFAULT_OPENROUTER_MODEL)
+                        : DEFAULT_OPENAI_MODEL
+            }
+        }
+
         // --- API key check (billing-mode-aware message) ---
-        const apiKey = runtime.apiKey
-        if (!apiKey) {
+        if (!effectiveApiKey) {
             return NextResponse.json({
                 error: runtime.billingMode === 'app_managed_trial'
                     ? 'AI import is temporarily unavailable. Please try again or use manual import.'
@@ -72,8 +102,8 @@ export async function POST(req: NextRequest) {
             }, { status: 400 })
         }
 
-        if (runtime.provider !== 'gemini' && runtime.provider !== 'openai' && runtime.provider !== 'openrouter') {
-            return NextResponse.json({ error: 'Magic Detect requires a cloud AI provider (Gemini, OpenAI, or OpenRouter). Ollama runs locally and cannot be reached from our servers — please add a cloud API key in Account Settings.' }, { status: 400 })
+        if (effectiveProvider !== 'gemini' && effectiveProvider !== 'openai' && effectiveProvider !== 'openrouter') {
+            return NextResponse.json({ error: 'Magic Detect does not support local Ollama yet. Ollama runs on your device, while Magic Detect runs through a cloud AI route. Please add a cloud API key in Account Settings, or configure a cloud fallback provider for Ollama.' }, { status: 400 })
         }
 
         // --- Partitioning (runs before billing gate so trial reservation uses actual chunk sizes) ---
@@ -180,14 +210,14 @@ export async function POST(req: NextRequest) {
                 } catch {}
             }
         } else {
-            // BYOK path: rate-limit with usage recording
+            // BYOK / Ollama-fallback path: rate-limit with usage recording
             const rateLimit = await enforceAiRateLimit({
                 userId: user.id,
                 requestKey,
                 endpoint: 'import_ai_detect',
                 billingMode: runtime.billingMode,
-                provider: runtime.provider,
-                model: runtime.model,
+                provider: effectiveProvider,
+                model: effectiveModel,
                 inputChars: text.length,
                 normalizedEmail: runtime.trialAccount?.normalized_email ?? null,
                 ipAddress: requestContext.ipAddress,
@@ -236,8 +266,8 @@ MANUSCRIPT SEGMENT:
 ${chunk}`
 
             let providerResponse: Response
-            if (runtime.provider === 'gemini') {
-                providerResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+            if (effectiveProvider === 'gemini') {
+                providerResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${effectiveApiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -255,17 +285,17 @@ ${chunk}`
                         },
                     }),
                 })
-            } else if (runtime.provider === 'openrouter') {
+            } else if (effectiveProvider === 'openrouter') {
                 providerResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        Authorization: `Bearer ${apiKey}`,
+                        Authorization: `Bearer ${effectiveApiKey}`,
                         'HTTP-Referer': 'https://storyline-paulokwa-v2.netlify.app',
                         'X-Title': 'Storyline',
                     },
                     body: JSON.stringify({
-                        model: runtime.model,
+                        model: effectiveModel,
                         messages: [
                             { role: 'system', content: 'Return valid JSON only. Do not wrap output in markdown.' },
                             { role: 'user', content: promptText },
@@ -281,7 +311,7 @@ ${chunk}`
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        Authorization: `Bearer ${apiKey}`,
+                        Authorization: `Bearer ${effectiveApiKey}`,
                     },
                     body: JSON.stringify({
                         model: DEFAULT_OPENAI_MODEL,
@@ -299,16 +329,16 @@ ${chunk}`
 
             if (!providerResponse.ok) {
                 const errBody = await providerResponse.text()
-                console.error(`${runtime.provider} API error (chunk):`, errBody)
+                console.error(`${effectiveProvider} API error (chunk):`, errBody)
                 // Continue to next chunk rather than aborting entirely
                 continue
             }
 
             const responseData = await providerResponse.json()
             const rawText =
-                runtime.provider === 'gemini'
+                effectiveProvider === 'gemini'
                     ? responseData?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-                    : runtime.provider === 'openrouter'
+                    : effectiveProvider === 'openrouter'
                         ? extractOpenRouterCompletionText(responseData)
                         : extractOpenAiOutputText(responseData)
 
@@ -355,8 +385,8 @@ ${chunk}`
                     requestKey,
                     endpoint: 'import_ai_detect',
                     billingMode: runtime.billingMode,
-                    provider: runtime.provider,
-                    model: runtime.model,
+                    provider: effectiveProvider,
+                    model: effectiveModel,
                     status: 'failed',
                     inputChars: text.length,
                     errorCode: 'implausible_chapter_count',
@@ -397,8 +427,8 @@ ${chunk}`
                 requestKey,
                 endpoint: 'import_ai_detect',
                 billingMode: runtime.billingMode,
-                provider: runtime.provider,
-                model: runtime.model,
+                provider: effectiveProvider,
+                model: effectiveModel,
                 status: 'completed',
                 inputChars: text.length,
                 httpStatus: 200,

@@ -5,6 +5,44 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-18 - Magic Detect Ollama fallback modal (State A + explicit consent)
+
+### What was completed
+
+- Audited current Magic Detect block logic: `new/page.tsx` only fetched `ai_enabled, ai_provider, billing_mode`; no fallback fields were loaded; `ai-detect` route had a hard 400 for any non-cloud provider with no fallback check.
+- Extended `new/page.tsx` DB query to also select `ai_fallback_enabled, ai_fallback_provider`.
+- Added `'ollama_fallback_available'` to the `magicDetectBlockReason` union type.
+- Compute logic: Ollama + fallback configured → `'ollama_fallback_available'` + stores provider name; Ollama + no fallback → `'ollama_unsupported'` (unchanged).
+- Added `ollamaFallbackProvider` state; passed both new fields to `ImportWizard`.
+- Updated `ImportWizard` props to accept the new block reason and `ollamaFallbackProvider`.
+- Added `showOllamaFallbackModal` state.
+- Updated `triggerAiDetection(useFallback = false)` to accept the flag and include `useFallback: true` in the request body when set.
+- Added State A amber-styled interactive button (in place of the static blocked amber box) when `ollama_fallback_available`.
+- Added Ollama Fallback Confirmation Modal (State A copy): explains Ollama limitation, warns text goes to cloud, reassures Ollama remains default; buttons: "Use cloud fallback for this import", "Open Account Settings", "Continue without Magic Detect".
+- Updated `ai-detect/route.ts`: parses `useFallback`; resolves fallback provider/key/model before the provider guard when `useFallback === true && billingMode === 'ollama'`; uses `effectiveProvider`/`effectiveApiKey`/`effectiveModel` throughout API calls and usage logging.
+- Added missing `DEFAULT_GEMINI_MODEL`, `DEFAULT_OPENROUTER_MODEL`, `OPENROUTER_CURATED_MODEL_IDS` imports to the route.
+- TypeScript clean, build clean, pre-existing ESLint `any` debt in route is unchanged.
+
+### Current status
+
+All three files changed and verified. Browser validation needed.
+
+### Next recommended step
+
+Browser test: sign in as an Ollama user with a cloud fallback configured, go to New Project → Import, upload a manuscript. Confirm:
+1. Magic Detect shows the amber fallback button (not the hard-blocked amber box).
+2. Clicking it opens the Ollama fallback modal with correct copy.
+3. "Use cloud fallback for this import" runs detection using the fallback provider key.
+4. Ollama remains the default provider afterward (check Account Settings).
+5. "Continue without Magic Detect" closes the modal with no AI call.
+6. Ollama user without fallback still sees the static `ollama_unsupported` blocked state.
+
+### Risks or warnings
+
+- `useFallback: true` is accepted at face value by the server — it trusts that the client only sends it after explicit modal confirmation. No server-side re-verification of user consent (by design — the consent is the modal click).
+- If a user somehow sends `useFallback: true` without a configured fallback, the route falls through to the provider guard and returns a 400 (safe failure).
+
+---
 ## 2026-05-18 - Same-browser incomplete local setup privacy fix
 
 ### What was completed

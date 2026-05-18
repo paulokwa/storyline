@@ -68,7 +68,8 @@ export default function NewProjectPage() {
     const [preferredStorageMode, setPreferredStorageMode] = useState<PreferredStorageMode>('local')
     const [selectedStorageMode, setSelectedStorageMode] = useState<PreferredStorageMode>('local')
     const [isAiEnabled, setIsAiEnabled] = useState(false)
-    const [magicDetectBlockReason, setMagicDetectBlockReason] = useState<null | 'ai_disabled' | 'ollama_unsupported'>(null)
+    const [magicDetectBlockReason, setMagicDetectBlockReason] = useState<null | 'ai_disabled' | 'ollama_unsupported' | 'ollama_fallback_available'>(null)
+    const [ollamaFallbackProvider, setOllamaFallbackProvider] = useState<string | null>(null)
     const storageSelectionTouchedRef = useRef(false)
 
     // Draft Persistence
@@ -103,7 +104,7 @@ export default function NewProjectPage() {
                     .maybeSingle(),
                 supabase
                     .from('user_api_keys')
-                    .select('ai_enabled, ai_provider, billing_mode')
+                    .select('ai_enabled, ai_provider, billing_mode, ai_fallback_enabled, ai_fallback_provider')
                     .eq('user_id', user.id)
                     .maybeSingle(),
             ])
@@ -131,10 +132,19 @@ export default function NewProjectPage() {
                 setIsAiEnabled(isTrial || !!aiSettings?.ai_enabled)
 
                 // Compute why Magic Detect might be blocked for this user
-                let blockReason: null | 'ai_disabled' | 'ollama_unsupported' = null
+                let blockReason: null | 'ai_disabled' | 'ollama_unsupported' | 'ollama_fallback_available' = null
                 if (!isTrial) {
-                    if (!aiSettings?.ai_enabled) blockReason = 'ai_disabled'
-                    else if (aiSettings?.ai_provider === 'ollama') blockReason = 'ollama_unsupported'
+                    if (!aiSettings?.ai_enabled) {
+                        blockReason = 'ai_disabled'
+                    } else if (aiSettings?.ai_provider === 'ollama') {
+                        const hasFallback = aiSettings?.ai_fallback_enabled && aiSettings?.ai_fallback_provider
+                        if (hasFallback) {
+                            blockReason = 'ollama_fallback_available'
+                            setOllamaFallbackProvider(aiSettings.ai_fallback_provider ?? null)
+                        } else {
+                            blockReason = 'ollama_unsupported'
+                        }
+                    }
                 }
                 setMagicDetectBlockReason(blockReason)
 
@@ -357,6 +367,7 @@ export default function NewProjectPage() {
                                 creating={creating}
                                 creatingLabel={creatingLabel}
                                 magicDetectBlockReason={magicDetectBlockReason}
+                                ollamaFallbackProvider={ollamaFallbackProvider}
                             />
                         )}
 
