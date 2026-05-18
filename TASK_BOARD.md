@@ -91,7 +91,39 @@ Before changing export code, check `TESTING.md`, `SESSION_HANDOVER.md`, and `doc
 
 ## Next
 
-### 1. Cover art optimization — library performance and upload safety
+### 1. Magic Detect: Ollama fallback support + client-side path (roadmap)
+
+**Background:**  
+Magic Detect currently blocks Ollama users with a hard error at `/api/import/ai-detect`. The UI shows a disabled state via `magicDetectBlockReason='ollama_unsupported'`. Two options were evaluated for fixing this — one is a quick win using existing infrastructure, one is a longer-term architectural improvement.
+
+**Option A — Route through Ollama cloud fallback key (quick win, no new architecture)**  
+If a user has Ollama configured with a cloud fallback provider (Gemini, OpenAI, or OpenRouter), the ai-detect route already has everything it needs to resolve that fallback key and proceed. Right now the route returns a hard 400 for `runtime.provider !== 'gemini' | 'openai' | 'openrouter'` without checking the fallback. A single check before that guard — mirroring what the main `/api/ai` route does for Ollama fallback — would make Magic Detect work for any Ollama user who has a fallback key saved.
+
+Implementation sketch:
+- In `app/api/import/ai-detect/route.ts`, before the provider-block 400, check `runtime.billingMode === 'ollama' && runtime.aiSettings?.ai_fallback_enabled && runtime.aiSettings?.ai_fallback_provider`.
+- Resolve the fallback provider's per-provider key (same pattern as the main AI route).
+- Swap `runtime.provider` and `apiKey` to the fallback values and continue normally.
+- Update `magicDetectBlockReason` logic in `app/(app)/new/page.tsx` — Ollama users with a fallback configured should get `null` (not blocked).
+
+**Option B — Client-side call directly to user's Ollama instance (longer-term)**  
+ImportWizard could POST the structured JSON prompt directly from the browser to the user's `ollama_url`, bypassing the server entirely. No billing/rate-limit wiring needed.  
+Blocker: CORS. Ollama doesn't set `Access-Control-Allow-Origin` by default. Users would need `OLLAMA_ORIGINS=https://app-domain.com`. Until Ollama ships CORS-open or a desktop wrapper exists, real-world pickup would be near zero. Revisit when desktop app is on the roadmap.
+
+**Regex/local parser — evaluated and ruled out:**  
+A JS heading/keyword parser would only cover what the existing "By Heading" strategy already handles. Magic Detect's value is semantic detection of unmarked POV/time/location shifts — regex can't do that.
+
+**Recommended order:**  
+Do Option A first (one route check, very low risk). Put Option B on `docs/future-roadmap.md` pending desktop/wrapper work.
+
+**Acceptance criteria for Option A:**
+- Ollama user with Gemini fallback configured can run Magic Detect — it uses their Gemini key transparently.
+- Ollama user with no fallback configured still sees the disabled state with a helpful message.
+- Trial billing and BYOK usage logging paths are unaffected.
+- `magicDetectBlockReason` correctly reflects whether the user is truly blocked (no fallback) vs. able to proceed (fallback available).
+
+---
+
+### 2. Cover art optimization — library performance and upload safety
 
 **Problem:**  
 Library/project cover art can take too long to load if uploaded images are large. This may make the library feel slow or broken, especially when users upload high-resolution images directly from phones, AI art tools, or stock image downloads.
