@@ -38,7 +38,14 @@ Default branch: `main`
 18. After completing session-end updates, commit and push the changes to GitHub unless the user explicitly says not to, there are no changes to commit, or the agent/tool does not have Git/GitHub write access. If unable to commit or push, say so clearly and provide the exact files that still need committing.
 19. Before committing and pushing changes that could affect the production build or deploy, run a Netlify build check when the session has access to do so, preferably `netlify build --context production`. If Netlify CLI/build access is missing, first try to set it up or link the existing Netlify site using the available CLI/MCP tools instead of skipping the check. If the check cannot be run or cannot be configured safely, report the blocker clearly before committing or pushing. If the Netlify build check fails, do not push deployment-affecting changes unless the user explicitly approves pushing despite the known failure.
 20. Do not edit `MASTER_BRIEF.md` unless the user explicitly asks for the Master Brief itself to be changed.
-21. Automatic Netlify production builds are disabled to reduce build costs. After pushing to GitHub at session end, trigger a Netlify production deploy manually. Use the Netlify MCP tool if available in the current session, otherwise use the CLI: `netlify deploy --prod`. If the deploy cannot be triggered, say so clearly and note it in `SESSION_HANDOVER.md` so the next session picks it up.
+21. Automatic Netlify production builds are disabled to reduce build costs. After pushing to GitHub at session end, trigger a Netlify production deploy using the deploy hook. Do NOT use `netlify deploy --prod` — it fails on Windows due to a local artifact publishing bug in the Next.js plugin. The hook URL is stored locally in `.local/netlify-deploy-hook.txt` (gitignored — never commit it). Use the Netlify MCP tool if available, otherwise read the URL from that file and trigger it via PowerShell:
+
+    ```powershell
+    $hook = Get-Content ".local/netlify-deploy-hook.txt" -Raw
+    Invoke-WebRequest -Method POST -Uri $hook.Trim()
+    ```
+
+    If the file is missing, ask Kwame for the deploy hook URL (Netlify dashboard → Site configuration → Build & deploy → Deploy hooks). If the hook call fails or the tool is unavailable, say so clearly and note it in `SESSION_HANDOVER.md` so the next session picks it up.
 
 ## Decision Log Gate
 
