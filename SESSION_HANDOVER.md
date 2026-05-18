@@ -5,6 +5,28 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-18 - Import wizard leave warning dialog clarification + notifications task added
+
+### What was completed
+
+- Investigated whether the import wizard leave warning was using a system dialog that should be replaced with a custom themed one.
+- Confirmed: all in-app navigation (Archive button, Go Back, Storyline logo, avatar menu items) already shows the custom themed "Unsaved import progress" modal. No `window.confirm()` exists anywhere in the codebase.
+- The system dialog the user observed is the browser's native `beforeunload` dialog, which fires only on tab close and page refresh. This cannot be replaced with custom UI — it is a hard browser security restriction enforced by all modern browsers to prevent phishing. No code change needed.
+- Added Task #4 ("Notifications — list page, detail view, delete, and timestamps") to TASK_BOARD.md under Next. Task covers: routing notification clicks to a central `/notifications` list page instead of direct jump-to-destination; isolated detail view per notification; per-row delete + optional clear all; confirmed date/time display on all notification rows.
+
+### Current status
+
+No code was changed this session. TASK_BOARD.md updated only.
+
+### Next recommended step
+
+Pick up the new notifications task (TASK_BOARD.md → Next → #4) or continue with the existing Now priority (export fixes).
+
+### Risks or warnings
+
+- Browser back button on the import wizard page is still unguarded (documented limitation, acceptable for now).
+
+---
 ## 2026-05-18 - Sponsored AI Activity Log (admin dashboard)
 
 ### What was completed

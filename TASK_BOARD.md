@@ -132,6 +132,50 @@ Automatically optimize cover images at upload time and ensure the library uses l
 
 ### 3. test backup and save that they work well no issue when opening them form the libray.
 
+---
+
+### 4. Notifications — list page, detail view, delete, and timestamps
+
+**Problem:**
+Clicking a notification card currently navigates the user directly to the destination page (e.g. the project or comment). There is no central place to browse all notifications, read one in isolation, or remove unwanted entries. Date/time visibility on notifications is unconfirmed.
+
+**Goal:**
+Give users a proper notifications hub rather than a direct jump-to-destination pattern.
+
+**Scope:**
+
+- **Notifications list page** (`/notifications` or equivalent):
+  - Clicking any notification card (bell icon or inline card) should route to this page, not directly to the notification target.
+  - Show all notifications in a scrollable list, sorted newest-first.
+  - Each row should display: notification type/icon, title/body, and a formatted date + time (e.g. "May 18, 2026 · 3:42 PM"). If `created_at` is already stored, use it; otherwise confirm what field to display.
+  - Unread vs. read visual distinction should be preserved.
+
+- **Notification detail view** (inline panel or sub-page):
+  - Clicking a notification in the list opens it in isolation — either a dedicated `/notifications/[id]` route or an in-page slide-in/detail panel.
+  - The detail view shows the full notification content and a clear CTA to navigate to the related resource (project, comment, etc.) if applicable.
+  - Mark as read when the detail view is opened.
+
+- **Delete notifications:**
+  - Each notification row in the list should have a delete/dismiss affordance (e.g. an X button or swipe action).
+  - Deleting removes it from the list immediately (optimistic update) and removes it from the database.
+  - Consider a "Clear all" action for the full list.
+  - Confirm whether delete is soft (mark dismissed) or hard (row deleted); use whichever pattern the existing notification schema already supports, or choose the simpler one.
+
+- **Date and time display:**
+  - Audit whether `created_at` timestamps are already present on notification rows.
+  - If missing, confirm the migration/backfill needed and do it.
+  - Format: human-readable relative time for recent items ("2 hours ago") with full date+time on hover or for older items.
+
+**Acceptance criteria:**
+- Clicking a notification no longer hard-navigates to the target; it goes to the notifications list first.
+- From the list, a user can open a notification in an isolated detail view and navigate to the target from there.
+- Users can delete individual notifications; the list updates immediately.
+- Every notification shows a date and time.
+- Existing notification delivery (bell count, real-time updates) is not broken.
+
+**Priority:** Medium  
+**Reason:** The current click-to-destination pattern skips context that users need, and there is no way to review or manage past notifications.
+
 
 ## Later
 
