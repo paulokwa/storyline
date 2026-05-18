@@ -43,6 +43,28 @@ These are useful user-experience improvements, but they should not outrank launc
 
 ---
 
+## Local project saving on Firefox, Safari, and mobile
+
+The File System Access API (`showSaveFilePicker`, `createWritable`) is Chromium-only. On Firefox, Safari, and all mobile browsers, `isFileSystemAccessSupported()` returns false and both "Save to file…" and "Save As…" fall back to a standard browser download. This means:
+
+- The linked file handle is never set on these browsers.
+- Every save permanently triggers a download rather than silently updating a file.
+- "Save Project" and "Save As…" collapse into identical behaviour (both download).
+- The "future saves will write there automatically" helper text is technically incorrect on these browsers.
+
+### Possible future improvements
+
+- Detect non-Chromium browsers and adjust the helper text: e.g. "Downloads a backup copy of your project."
+- On Firefox/Safari, hide or disable the "Save Project" / "Save As…" distinction entirely and show a single "Download backup" action.
+- Evaluate the [Origin Private File System](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system) as a cross-browser alternative for persisting a file inside the browser sandbox (not the user's file system).
+- Add a browser compatibility note to the in-app Help entry for local project saving.
+
+### Priority
+
+Low. This is a known browser limitation, not a regression. Most writing app users are on Chromium-based desktop browsers. Do not let this block launch or the current save UX work.
+
+---
+
 ## Launch feedback, survey, and future community
 
 ### Current recommendation

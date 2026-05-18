@@ -130,6 +130,9 @@ Automatically optimize cover images at upload time and ensure the library uses l
 
 ---
 
+### 3. test backup and save that they work well no issue when opening them form the libray.
+
+
 ## Later
 
 ### 1. AI settings autosave UX
@@ -166,6 +169,12 @@ Changing an AI setting should be the save action. Users should not need to make 
 ---
 
 ## Done / Archived
+
+### First-save UX clarification — COMPLETE (2026-05-18)
+
+When no local file is linked yet, the Save menu item now reads "Save to file…" with helper text: "Pick a location on your computer. Future saves will write there automatically." Once a file is linked the label reverts to "Save Project" with the existing linked filename and last-save timestamp. Save / Save As logic, Ctrl+S, file handle persistence, and backup format unchanged. One file changed: `components/app/AppNav.tsx`. TypeScript clean, build clean.
+
+---
 
 ### Sponsored AI Activity Log — COMPLETE (2026-05-18)
 
