@@ -41,6 +41,7 @@ interface StructureTreeProps {
     onNodesChange: (nodes: StructureNode[]) => void
     onSceneCreated: (scene: Scene) => void
     onClose?: () => void
+    onClearSelection?: () => void
 }
 
 const NODE_ICONS: Record<string, React.ElementType> = {
@@ -90,13 +91,15 @@ function truncateLongWords(value: string, maxWordLength = 18) {
 }
 
 export default function StructureTree({
-    project, nodes, activeNodeId, selectedNodeIds = [], onNodeSelect, onNodeToggleSelection, onNodesChange, onSceneCreated, onClose
+    project, nodes, activeNodeId, selectedNodeIds = [], onNodeSelect, onNodeToggleSelection, onNodesChange, onSceneCreated, onClose, onClearSelection
 }: StructureTreeProps) {
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'
     const rootType: NodeType = project.type === 'tv_script' ? 'episode' : 'chapter'
     const rootLabel = project.type === 'tv_script' ? 'Episode' : 'Chapter'
     const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
+    const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false)
+    const nonVirtualSelectedIds = selectedNodeIds.filter(id => id !== 'virtual-root')
     const [dragState, setDragState] = useState<{
         draggingId: string | null;
         overId: string | null;
@@ -181,6 +184,41 @@ export default function StructureTree({
             console.error('Error soft deleting node:', error)
         }
         setConfirmingDeleteId(null)
+    }
+
+    async function bulkDeleteNodes() {
+        // Only delete top-level selections — softDeleteStructureTree recurses, so
+        // deleting a parent that's also selected would double-delete its children.
+        const topLevelIds = nonVirtualSelectedIds.filter(id => {
+            const node = nodes.find(n => n.id === id)
+            if (!node) return false
+            return node.parent_id === null || !nonVirtualSelectedIds.includes(node.parent_id)
+        })
+
+        let remainingNodes = [...nodes]
+        const allRemovedIds: string[] = []
+
+        for (const id of topLevelIds) {
+            const node = remainingNodes.find(n => n.id === id)
+            if (!node) continue
+            try {
+                const idsToRemove = await softDeleteStructureTree(project.id, id, remainingNodes)
+                allRemovedIds.push(...idsToRemove)
+                remainingNodes = remainingNodes.filter(n => !idsToRemove.includes(n.id))
+            } catch (error) {
+                console.error('Error bulk deleting node:', error)
+            }
+        }
+
+        onNodesChange(remainingNodes)
+
+        if (activeNodeId && allRemovedIds.includes(activeNodeId)) {
+            const firstScene = remainingNodes.find(n => n.type === 'scene')
+            onNodeSelect(firstScene?.id ?? '')
+        }
+
+        onClearSelection?.()
+        setConfirmingBulkDelete(false)
     }
 
     async function renameNode(node: StructureNode, title: string) {
@@ -435,6 +473,45 @@ export default function StructureTree({
                     </div>
                 </div>
             </div>
+
+            {!isReadOnly && nonVirtualSelectedIds.length > 0 && (
+                <div className="border-t border-slate-200/80 bg-white/80 backdrop-blur-sm px-4 py-3 animate-in slide-in-from-bottom-1 duration-150">
+                    {!confirmingBulkDelete ? (
+                        <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                {nonVirtualSelectedIds.length} selected
+                            </span>
+                            <button
+                                onClick={() => setConfirmingBulkDelete(true)}
+                                className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-amber-600 transition-colors hover:bg-amber-100 hover:text-amber-700"
+                            >
+                                <Trash2 className="h-3 w-3" />
+                                Delete all
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center gap-2">
+                            <p className="text-center text-[9px] font-bold uppercase tracking-[0.22em] text-amber-700/80">
+                                Delete {nonVirtualSelectedIds.length} item{nonVirtualSelectedIds.length !== 1 ? 's' : ''} and all their content?
+                            </p>
+                            <div className="grid w-full grid-cols-2 gap-2">
+                                <button
+                                    onClick={() => setConfirmingBulkDelete(false)}
+                                    className="rounded-full border border-amber-100 bg-white/80 px-3 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-slate-500 transition-colors hover:text-slate-700"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={bulkDeleteNodes}
+                                    className="rounded-full bg-amber-500 px-3 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-white transition-colors hover:bg-amber-600"
+                                >
+                                    Delete all
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
         </TooltipProvider>
     )
 }
@@ -775,10 +852,12 @@ const NodeItem = React.memo(({
                     {(!isScene && expanded) && (
                         <Droppable droppableId={node.id} isDropDisabled={isReadOnly}>
                             {(provided, snapshot) => (
-                                <div 
+                                <div
                                     className={cn(
-                                        "fade-in min-h-[40px] transition-colors duration-200 rounded-2xl mx-1",
-                                        snapshot.isDraggingOver && "bg-[#546354]/10 ring-2 ring-inset ring-[#546354]/5"
+                                        "fade-in transition-colors duration-200 rounded-2xl mx-1",
+                                        snapshot.isDraggingOver
+                                            ? "min-h-[40px] bg-[#546354]/10 ring-2 ring-inset ring-[#546354]/5"
+                                            : "min-h-0"
                                     )}
                                     {...provided.droppableProps}
                                     ref={provided.innerRef}

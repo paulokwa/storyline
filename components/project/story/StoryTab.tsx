@@ -819,6 +819,7 @@ export default function StoryTab({ project, initialNodes, initialScenes, project
                             onNodesChange={handleNodesChange}
                             onSceneCreated={handleSceneCreated}
                             onClose={() => setSidebarOpen(false)}
+                            onClearSelection={() => setSelectedNodeIds([])}
                         />
                     </div>
                 ) : (

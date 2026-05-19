@@ -1726,7 +1726,9 @@ const SceneEditor = forwardRef<SceneEditorRef, SceneEditorProps>(({
     useEffect(() => {
         if (!editor) return
 
-        const editorDom = editor.view.dom
+        // editor.view.dom throws if the view isn't attached yet (e.g. scene remounting after move/restore)
+        const editorDom = (() => { try { return editor.view.dom } catch { return null } })()
+        if (!editorDom) return
 
         // Clear previous active state from all comment mark spans
         editorDom.querySelectorAll<HTMLElement>('.comment-highlight.active').forEach(el => {

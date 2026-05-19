@@ -32,6 +32,35 @@
 
 ---
 
+## Issue: TipTap "editor view is not available" error on scene remount
+
+### Symptoms
+
+- `Uncaught Error: [tiptap error]: The editor view is not available. Cannot access view['dom']. The editor may not be mounted yet.`
+- Error originates from the comment-sync `useEffect` in `SceneEditor.tsx`.
+- Triggered by moving a scene, deleting and restoring a scene/chapter, or any action that causes `SceneEditor` to remount.
+
+### Cause
+
+TipTap v3 throws when `editor.view.dom` is accessed while the editor object exists but the ProseMirror view hasn't yet attached to the DOM. The guard `if (!editor) return` doesn't cover this transitional state.
+
+### Fix
+
+Wrap the `editor.view.dom` access in a try/catch and return early if the view isn't ready:
+
+```ts
+const editorDom = (() => { try { return editor.view.dom } catch { return null } })()
+if (!editorDom) return
+```
+
+Applied in `components/project/story/SceneEditor.tsx` at the comment-sync `useEffect` (~line 1730).
+
+### Verification
+
+`npx tsc --noEmit` — no errors. Reproduce by deleting a scene, restoring it, then moving it; error should no longer appear.
+
+---
+
 ## Purpose
 
 This file is the project playbook for known failures, proven fixes, and safe diagnostic steps.
