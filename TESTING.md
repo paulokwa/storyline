@@ -135,6 +135,11 @@ Future agents: treat this workflow as established. Before asking the user about 
 
 ## Structure / Planning
 | Autosave/persistence after refresh | Not tested | - | - | Confirm content remains after reload/device switch. |
+| Bulk delete selected structure nodes | Needs retest | AI agent | 2026-05-19 | Bottom action bar appears when nodes are selected. Confirm: count shows correctly, confirmation dialog matches amber style, deleting chapters+scenes removes all descendants, active scene navigates away cleanly, selection clears after delete. |
+| Type picker popover on chapter + button | Needs retest | AI agent | 2026-05-19 | Click + on a chapter. Confirm popover appears (solid background, not transparent), Scene and Sub-chapter options are present, clicking Scene creates a leaf node with auto-rename focus, clicking Sub-chapter creates a nested chapter with auto-rename focus. Episode and Act + buttons should still fire immediately without popover. |
+| Auto-rename on node creation | Needs retest | AI agent | 2026-05-19 | After creating any node via the type picker, confirm the title field is immediately focused and the placeholder name ("Scene 1", "Sub-chapter 1") is fully pre-selected so typing replaces it without manual select-all. |
+| Empty droppable gaps closed | Needs retest | AI agent | 2026-05-19 | Move all scenes out of a chapter. Confirm the chapter row collapses flush with no visible gap below it. Drag a scene over the empty chapter and confirm a drop zone appears. Release and confirm gap closes again. |
+| Action buttons always visible in flex flow | Needs retest | AI agent | 2026-05-19 | Hover a chapter with a long title (e.g. "Prologue / Start"). Confirm +, pencil, and trash icons are all visible and not overlapped by title text. Title should truncate with ellipsis before the icons. |
 | Editor save failure handling | Not tested | - | - | Simulate or provoke a save failure after retries are exhausted and confirm the editor surfaces a visible `Save failed` state. |
 | Read aloud/view mode on tablet portrait | Not tested | - | - | Confirm layout is not cut off on real tablet in portrait mode. |
 | Undelete local scene cleanup | Needs retest | - | - | Undelete works but recovered item should disappear from recovery list. |

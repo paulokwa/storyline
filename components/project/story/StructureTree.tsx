@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useEffect, useState, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { Button } from '@/components/ui/button'
@@ -107,6 +107,7 @@ export default function StructureTree({
         neighborIds: string[];
     }>({ draggingId: null, overId: null, overIndex: null, neighborIds: [] });
     const [expandRequest, setExpandRequest] = useState<{ nodeId: string; nonce: number } | null>(null)
+    const [editRequest, setEditRequest] = useState<{ nodeId: string; nonce: number } | null>(null)
     const [indentStep, setIndentStep] = useState(20)
 
     useEffect(() => {
@@ -147,19 +148,23 @@ export default function StructureTree({
         if (data) onNodesChange([...nodes, data])
     }
 
-    async function addChild(parent: StructureNode) {
-        const childType = CHILD_TYPE[parent.type as keyof typeof CHILD_TYPE]
+    async function addChild(parent: StructureNode, typeOverride?: NodeType) {
+        const childType = typeOverride ?? CHILD_TYPE[parent.type as keyof typeof CHILD_TYPE]
         if (!childType) return
         const siblings = nodes.filter(n => n.parent_id === parent.id)
         const siblingsOfType = siblings.filter(n => n.type === childType)
+        const childLabel = typeOverride
+            ? (NODE_DISPLAY_NAMES[childType] ?? childType)
+            : (CHILD_DISPLAY_NAMES[parent.type as keyof typeof CHILD_DISPLAY_NAMES] ?? childType.charAt(0).toUpperCase() + childType.slice(1))
         const newNode = await createStructureNode({
             projectId: project.id,
             parentId: parent.id,
             type: childType,
-            title: `${CHILD_DISPLAY_NAMES[parent.type as keyof typeof CHILD_DISPLAY_NAMES] ?? childType.charAt(0).toUpperCase() + childType.slice(1)} ${siblingsOfType.length + 1}`,
+            title: `${childLabel} ${siblingsOfType.length + 1}`,
             orderIndex: siblings.length,
         })
         setExpandRequest({ nodeId: parent.id, nonce: Date.now() })
+        setEditRequest({ nodeId: newNode.id, nonce: Date.now() })
         const updatedNodes = [...nodes, newNode]
         onNodesChange(updatedNodes)
 
@@ -372,8 +377,8 @@ export default function StructureTree({
                                             addRootNode()
                                         }}
                                         className={cn(
-                                            "p-1.5 rounded-lg transition-all opacity-0 group-hover:opacity-100 hover:bg-indigo-100/50 text-slate-400 hover:text-indigo-600",
-                                            selectedNodeIds.includes('virtual-root') && "opacity-100 text-indigo-500"
+                                            "p-1.5 rounded-lg transition-all hover:bg-indigo-100/50 text-slate-300 hover:text-indigo-600",
+                                            selectedNodeIds.includes('virtual-root') && "text-indigo-500"
                                         )}
                                         title={`Add ${rootLabel}`}
                                     >
@@ -440,6 +445,7 @@ export default function StructureTree({
                                                         indentStep={indentStep}
                                                         dragState={dragState}
                                                         expandRequest={expandRequest}
+                                                        editRequest={editRequest}
                                                         onSelect={onNodeSelect}
                                                         onToggleSelection={onNodeToggleSelection}
                                                         selectedNodeIds={selectedNodeIds}
@@ -527,23 +533,27 @@ interface NodeItemProps {
     indentStep: number
     onSelect: (id: string) => void
     onToggleSelection?: (id: string) => void
-    onAddChild: (n: StructureNode) => void
+    onAddChild: (n: StructureNode, type?: NodeType) => void
     onDelete: (n: StructureNode) => void
     onRename: (n: StructureNode, title: string) => void
     confirmingDeleteId: string | null
     onRequestDelete: (id: string | null) => void
     dragState?: { draggingId: string | null; overId: string | null; overIndex: number | null; neighborIds: string[] }
     expandRequest?: { nodeId: string; nonce: number } | null
+    editRequest?: { nodeId: string; nonce: number } | null
 }
 
 const NodeItem = React.memo(({
-    node, nodes, projectType, index, activeNodeId, selectedNodeIds = [], depth, indentStep, dragState, expandRequest, onSelect, onToggleSelection, onAddChild, onDelete, onRename, confirmingDeleteId, onRequestDelete
+    node, nodes, projectType, index, activeNodeId, selectedNodeIds = [], depth, indentStep, dragState, expandRequest, editRequest, onSelect, onToggleSelection, onAddChild, onDelete, onRename, confirmingDeleteId, onRequestDelete
 }: NodeItemProps) => {
     const { role } = useProjectActions()
     const isReadOnly = role === 'viewer'
     const [expanded, setExpanded] = useState(true)
     const [editing, setEditing] = useState(false)
     const [draft, setDraft] = useState(node.title)
+    const [showTypePopover, setShowTypePopover] = useState(false)
+    const [typePopoverPos, setTypePopoverPos] = useState<{ top: number; right: number } | null>(null)
+    const addChildBtnRef = useRef<HTMLButtonElement>(null)
     const [mobileOptionsActive, setMobileOptionsActive] = useState(false)
     const touchStartTimer = React.useRef<NodeJS.Timeout | null>(null)
     const autoHideTimer = React.useRef<NodeJS.Timeout | null>(null)
@@ -586,8 +596,16 @@ const NodeItem = React.memo(({
         }
     }, [expandRequest, node.id, node.type])
 
+    useEffect(() => {
+        if (editRequest?.nodeId === node.id) {
+            setDraft(node.title)
+            setEditing(true)
+        }
+    }, [editRequest, node.id, node.title])
+
     function handleClick(e: React.MouseEvent) {
         e.stopPropagation()
+        setShowTypePopover(false)
         onSelect(node.id)
         if (!isScene) setExpanded(e => !e)
     }
@@ -612,7 +630,7 @@ const NodeItem = React.memo(({
         >
             <div
                 className={cn(
-                    'group flex min-w-0 items-center gap-1.5 py-3 px-2 pr-3 sm:px-3 sm:pr-14 mx-1 sm:mx-2 rounded-2xl cursor-pointer transition-all duration-300 text-sm mb-1 relative border border-transparent',
+                    'group flex min-w-0 items-center gap-1.5 py-3 px-2 pr-3 sm:px-3 mx-1 sm:mx-2 rounded-2xl cursor-pointer transition-all duration-300 text-sm mb-1 relative border border-transparent',
                     isActive
                         ? 'bg-white text-[#546354] shadow-[0_8px_24px_rgba(0,0,0,0.06)] font-bold border-[#546354]/10 z-10'
                         : 'text-slate-500 hover:bg-white/60',
@@ -702,6 +720,7 @@ const NodeItem = React.memo(({
                                 onClick={e => e.stopPropagation()}
                                 className="min-w-0 flex-1 bg-white border border-[#546354]/20 rounded-xl px-3 text-xs outline-none h-8 font-serif italic shadow-inner"
                                 autoFocus
+                                onFocus={e => e.target.select()}
                             />
                         ) : (
                             <span
@@ -737,19 +756,67 @@ const NodeItem = React.memo(({
                         {/* Hover/Long Press actions — only when not confirming */}
                         {(!editing && !isReadOnly && confirmingDeleteId !== node.id) && (
                             <div className={cn(
-                                "flex items-center gap-1 shrink-0 self-start transition-all duration-200",
-                                "absolute right-2 top-1/2 -translate-y-1/2 opacity-0 pointer-events-none",
+                                "flex items-center gap-0.5 shrink-0 transition-all duration-200",
+                                // Mobile (touch): absolute, revealed on long-press
+                                "[@media(hover:none)]:absolute [@media(hover:none)]:right-2 [@media(hover:none)]:top-1/2 [@media(hover:none)]:-translate-y-1/2",
                                 mobileOptionsActive
-                                    ? "opacity-100 pointer-events-auto"
-                                    : "w-0 overflow-hidden [@media(hover:hover)]:w-auto [@media(hover:hover)]:overflow-visible [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:pointer-events-auto"
+                                    ? "[@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto"
+                                    : "[@media(hover:none)]:opacity-0 [@media(hover:none)]:pointer-events-none [@media(hover:none)]:w-0 [@media(hover:none)]:overflow-hidden",
+                                // Desktop (hover): in flex flow — title truncates naturally, fades in on hover
+                                "[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:pointer-events-none [@media(hover:hover)]:group-hover:pointer-events-auto"
                             )} onClick={e => e.stopPropagation()}>
                                 {CHILD_TYPE[node.type as NodeType] && (
-                                    <button
-                                        onClick={() => onAddChild(node)}
-                                        className="p-2 rounded-lg hover:bg-primary/10 text-slate-400 hover:text-primary active:scale-95 transition-all"
-                                    >
-                                        <Plus className="w-4 h-4 md:w-3.5 md:h-3.5" />
-                                    </button>
+                                    <>
+                                        <button
+                                            ref={addChildBtnRef}
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                if (node.type === 'chapter') {
+                                                    const rect = addChildBtnRef.current?.getBoundingClientRect()
+                                                    if (rect) {
+                                                        setTypePopoverPos({
+                                                            top: rect.bottom + 4,
+                                                            right: window.innerWidth - rect.right,
+                                                        })
+                                                    }
+                                                    setShowTypePopover(v => !v)
+                                                } else {
+                                                    onAddChild(node)
+                                                }
+                                            }}
+                                            className="p-2 rounded-lg hover:bg-primary/10 text-slate-400 hover:text-primary active:scale-95 transition-all"
+                                        >
+                                            <Plus className="w-4 h-4 md:w-3.5 md:h-3.5" />
+                                        </button>
+                                        {showTypePopover && typePopoverPos && createPortal(
+                                            <>
+                                                <div className="fixed inset-0 z-[200]" onClick={() => setShowTypePopover(false)} />
+                                                <div
+                                                    className="fixed z-[201] animate-in fade-in slide-in-from-top-1 duration-150"
+                                                    style={{ top: typePopoverPos.top, right: typePopoverPos.right }}
+                                                >
+                                                    <div className="bg-[#f5f4ef] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.16),0_2px_8px_rgba(0,0,0,0.10)] border border-[#dddbd4] overflow-hidden min-w-[148px]">
+                                                        <button
+                                                            className="flex items-center gap-2.5 w-full px-3 py-2.5 text-left text-[11px] font-medium text-slate-600 hover:bg-[#eceae3] transition-colors"
+                                                            onClick={(e) => { e.stopPropagation(); onAddChild(node, 'scene'); setShowTypePopover(false) }}
+                                                        >
+                                                            <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                                            Scene
+                                                        </button>
+                                                        <div className="h-px bg-[#dddbd4]" />
+                                                        <button
+                                                            className="flex items-center gap-2.5 w-full px-3 py-2.5 text-left text-[11px] font-medium text-slate-600 hover:bg-[#eceae3] transition-colors"
+                                                            onClick={(e) => { e.stopPropagation(); onAddChild(node, 'chapter'); setShowTypePopover(false) }}
+                                                        >
+                                                            <BookOpen className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                                            Sub-chapter
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </>,
+                                            document.body
+                                        )}
+                                    </>
                                 )}
                                 <button
                                     onClick={e => { e.stopPropagation(); setEditing(true) }}
@@ -875,6 +942,7 @@ const NodeItem = React.memo(({
                                             indentStep={indentStep}
                                             dragState={dragState}
                                             expandRequest={expandRequest}
+                                            editRequest={editRequest}
                                             onSelect={onSelect}
                                             onToggleSelection={onToggleSelection}
                                             onAddChild={onAddChild}
@@ -919,6 +987,7 @@ const NodeItem = React.memo(({
     if (prev.confirmingDeleteId !== next.confirmingDeleteId) return false;
     if (prev.dragState !== next.dragState) return false;
     if (prev.expandRequest !== next.expandRequest) return false;
+    if (prev.editRequest !== next.editRequest) return false;
 
     return true;
 });

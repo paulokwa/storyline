@@ -5,6 +5,40 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-19 - Structure panel UX pass + bug fixes
+
+### What was completed
+
+**Bug fixes:**
+- Fixed TipTap `editor.view.dom` uncaught error in `SceneEditor.tsx` that fired when a scene was remounted after being moved or deleted-and-restored. Guard added via IIFE try/catch. Added entry to `docs/troubleshooting/TROUBLESHOOTING.md`.
+
+**Structure panel — new features:**
+- Added **bulk delete** action bar: sticky panel at the bottom of StructureTree, appears when ≥1 real node is selected, shows count + "Delete all" button with amber confirmation dialog. Smart deletion — only calls `softDeleteStructureTree` on top-level selections so parent+child combos don't double-delete. Clears selection and navigates to first remaining scene after deletion.
+- Added **contextual type picker popover** on the chapter `+` button: instead of immediately creating a scene, a portal-rendered popover (escapes Draggable/overflow-auto stacking context) offers Scene or Sub-chapter. Episode and Act nodes still fire immediately (single valid child type). Auto-enter rename mode on new node — title field is focused and text pre-selected so user types the name in one gesture.
+- Added **Part node type** entry to `docs/future-roadmap.md` with full context: the AI import wizard maps Part-level groupings to `chapter` nodes due to the missing `part` type, the sub-chapter workaround exists but carries no semantic distinction, and a proper implementation would require ~9 touch points including a DB migration.
+
+**Structure panel — UX fixes:**
+- Empty droppable containers (`min-h-[40px]`) now collapse to `min-h-0` at rest; the drop zone only expands during an active drag-over. Eliminates persistent gaps under emptied parent nodes.
+- Action buttons (`+`, pencil, trash) moved out of `absolute` positioning on desktop into the flex flow as `shrink-0`. Title now truncates naturally before the buttons; no more title text overlapping hidden icons. Mobile long-press behaviour unchanged.
+- Virtual root `+` button made permanently visible (was `opacity-0 group-hover:opacity-100`). Provides a persistent always-accessible "Add Chapter" at the top of the panel regardless of scroll position.
+
+**Netlify deploy hook:**
+- Stored in `.local/netlify-deploy-hook.txt` (gitignored via `.gitignore` line 34 `.local/`). Never commit this file.
+
+### Current status
+
+All changes committed and pushed to `main` (commit `7d77be5` covers the first batch; structure UX changes from this session are uncommitted — user will commit manually). Netlify deploy triggered at session end.
+
+### Next recommended step
+
+Continue with `TASK_BOARD.md → Now → #1` (export fixes, starting with PDF).
+
+### Risks or warnings
+
+- The `chapter → chapter` (sub-chapter) nesting works structurally but has no semantic `part` type distinction. See `docs/future-roadmap.md` for the full analysis. Do not mistake sub-chapters for the missing Part type when working on export or AI context logic.
+- The type picker popover uses `createPortal` to `document.body` and `fixed` positioning calculated from `getBoundingClientRect`. If the structure panel is ever rendered inside a transformed container, recalculate accordingly.
+
+---
 ## 2026-05-18 - Import wizard leave warning dialog clarification + notifications task added
 
 ### What was completed

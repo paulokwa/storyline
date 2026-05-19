@@ -229,6 +229,68 @@ Product principle: launch feedback should reduce uncertainty without creating a 
 
 ---
 
+## Novel structure: Part node type
+
+### What was observed (2026-05-19)
+
+During a session where the AI import wizard was used to detect and import a book, it created a node called "Prologue / Start" at the root level with a scene called "Prologue / S..." nested inside it. Visually this looked correct, but the question arose: is "Prologue / Start" a Chapter or a Part?
+
+The answer is that the AI import wizard mapped it as a `chapter` node — the nearest available type — but semantically it is acting as a **Part**: a top-level structural grouping that contains chapters, not scenes directly.
+
+### The gap
+
+The current novel node hierarchy has only two user-created levels:
+
+```
+root_novel
+  └── chapter    ← the only top-level grouping type
+        └── scene  ← the only leaf type
+```
+
+There is no `part` type. Books that use a three-level structure (Parts → Chapters → Scenes) cannot represent that structure properly. Instead:
+
+- The AI import wizard maps Parts to `chapter` nodes (closest available)
+- Users who want sub-division inside a chapter can use the sub-chapter feature (a `chapter` node nested inside another `chapter`), but this is a workaround, not a true Part
+- A sub-chapter at depth 1 looks like a chapter visually but carries no semantic distinction from a regular chapter
+
+### What a proper Part type would look like
+
+```
+root_novel
+  └── part         ← new type: "Part 1", "Prologue", "Act One"
+        └── chapter  ← existing type, now a child of part
+              └── scene  ← unchanged
+```
+
+### What would need to change in the code
+
+This is a meaningful change touching multiple layers:
+
+1. **`NodeType`** in `lib/supabase/types.ts` — add `'part'` as a valid type value
+2. **`CHILD_TYPE`** in `StructureTree.tsx` — add `part: 'chapter'` mapping
+3. **`NODE_ICONS`** and **`NODE_DISPLAY_NAMES`** in `StructureTree.tsx` — add Part icon and label
+4. **`project-blueprint.ts`** — update AI import to emit `part` nodes when it detects top-level groupings above chapters
+5. **`CHILD_DISPLAY_NAMES`** in `StructureTree.tsx` — update Part entry
+6. **Database migration** — the `structure_nodes.type` column likely has a check constraint listing valid types; `'part'` must be added to it
+7. **`docs/PROJECT_TYPES.md`** — update the type mapping documentation
+8. **`addRootNode`** in `StructureTree.tsx` — decision needed: do novels now add a Part at root level, or still a Chapter? (Probably add an option, or default to Chapter and let user choose.)
+9. **The sub-chapter `+` popover** added 2026-05-19 — would need a third option or restructure: Add Scene / Add Chapter / Add Part (if inside a Part)
+
+### Why it is not trivial
+
+- It adds a third level to the novel hierarchy everywhere: editor, AI context, export, import, collaboration
+- Export paths (DOCX, Markdown, HTML) would need to be aware of Parts as a structural level
+- The AI context system that gathers chapter-level content for AI would need to understand Part boundaries
+- The existing sub-chapter workaround (chapter-inside-chapter) creates ambiguity: should existing sub-chapters be migrated to Parts if this type is added?
+
+### Recommendation
+
+Do not implement before launch. The sub-chapter workaround is functional for users who need nesting. Revisit after launch if user feedback consistently identifies the missing Part level as a pain point — particularly from users importing long novels with explicit Part divisions.
+
+When implementing, treat the database migration and AI import update as the highest-risk parts and do those first with branch testing before touching the UI.
+
+---
+
 ## Help system feature audit and rewrite
 
 This is a future user-facing product improvement, not current technical debt.
