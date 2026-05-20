@@ -801,7 +801,7 @@ const NodeItem = React.memo(({
                                                             onClick={(e) => { e.stopPropagation(); onAddChild(node, 'scene'); setShowTypePopover(false) }}
                                                         >
                                                             <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                                            Scene
+                                                            Add scene
                                                         </button>
                                                         <div className="h-px bg-[#dddbd4]" />
                                                         <button
@@ -809,7 +809,7 @@ const NodeItem = React.memo(({
                                                             onClick={(e) => { e.stopPropagation(); onAddChild(node, 'chapter'); setShowTypePopover(false) }}
                                                         >
                                                             <BookOpen className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                                            Sub-chapter
+                                                            Add nested chapter
                                                         </button>
                                                     </div>
                                                 </div>
