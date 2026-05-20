@@ -5324,3 +5324,17 @@ Verify the alignment with a project that has a very short title and no descripti
 ### Next recommended step
 
 Verify that the permanent icons don't clutter the view too much on smaller desktop screens (though the current spacing looks solid).
+
+---
+## 2026-05-20 - Sub-chapter node audit
+
+### What was completed
+- **Audit of "Sub-chapter" node:** Confirmed that Sub-chapter is not a new database type, but a structural use of nested `chapter` nodes (added 2026-05-19).
+- **AI Detectability:** Verified that the AI Partner's recursive context-gathering logic (`getDescendantScenes` in `AiHelperPanel.tsx`) correctly traverses into Sub-chapters and includes their Scenes in the prompt.
+- **Reporting:** Reported findings to the user. No code changes required for detectability.
+
+### Current status
+Audit complete. Sub-chapters are fully detectable by AI Partner.
+
+### Next recommended step
+Continue with `TASK_BOARD.md` priorities.

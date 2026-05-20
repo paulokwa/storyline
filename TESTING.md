@@ -487,3 +487,4 @@ Newest confirmations go at the top.
 | 2026-04-27 | AI agent | Library card UX (iPad Pro visibility & Delete overlap) | Passed | Verified action buttons (Edit, Palette, Trash) stay visible on iPad Pro viewport (1024x1366) and delete dialog hides project icon to prevent overlap. |
 | 2026-04-27 | AI agent | Local transfer guidance notification refactor | Passed | Verified guidance moved to persistent notification, auto-creates on first button interact, and action deep-links back to library with auto-trigger. |
 | 2026-04-27 | AI agent | Library card alignment (Titles & Footers) | Passed | Verified titles and horizontal lines are perfectly aligned across cards with varying title lengths and descriptions. |
+| 2026-05-20 | Sub-chapter AI Detectability Audit | Passed | Jules | Confirmed that recursive `getDescendantScenes` traverses nested chapters (Sub-chapters). |
