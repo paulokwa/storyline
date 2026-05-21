@@ -69,6 +69,29 @@ The first pass now uses the shared `ai_usage_events` infrastructure for AI throt
 
 ---
 
+### 2a. API Key Storage Hardening
+
+**Why it matters:**
+Storyline supports user-provided AI provider keys. Those keys are already masked from the client and protected by database access controls, but storage should be hardened before a wider public rollout.
+
+**Risk if ignored:**
+If privileged database access or a future server-side bug exposed stored credential rows, user-provided provider keys would have less defense-in-depth than they should.
+
+**Current state:**
+A security audit confirmed that user API keys are protected by RLS/masking and are not exposed to the frontend, but they are still stored in the database as standard text values rather than through app-level encryption or a dedicated secrets/vault mechanism.
+
+**Future hardening:**
+
+- Evaluate Supabase Vault, pgsodium, or app-level encryption using server-only key material.
+- Keep user-facing API key values write-only/masked in the UI.
+- Confirm auth/session payloads never include raw provider keys.
+- Add a migration plan that avoids breaking existing saved keys.
+- Add tests for create, update, read-for-server-use, masked-read-for-client, and delete flows.
+
+**Priority:** High before broad public rollout with real user-provided provider keys.
+
+---
+
 ### 3. Robust Retry and Initialisation Patterns
 
 **Why it matters:**
