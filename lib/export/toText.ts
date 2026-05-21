@@ -62,18 +62,12 @@ export function toText(payload: ExportPayload, options: ExportOptions): string {
             if (options.includeChapterTitles) {
                 txt += `[ ${node.title} ]\n\n`
             }
-            if (node.summary && (options.contentMode === 'summaries_only' || options.contentMode === 'both')) {
-                txt += `Summary: ${node.summary}\n\n`
-            }
             if (node.content && (options.contentMode === 'prose_only' || options.contentMode === 'both')) {
                 txt += `${jsonToText(node.content)}\n\n`
             }
         } else if (node.type === 'scene') {
             if (options.includeSceneSubtitles) {
                 txt += `[ ${node.title} ]\n\n`
-            }
-            if (node.summary && (options.contentMode === 'summaries_only' || options.contentMode === 'both')) {
-                txt += `Summary: ${node.summary}\n\n`
             }
             if (node.content && (options.contentMode === 'prose_only' || options.contentMode === 'both')) {
                 txt += `${jsonToText(node.content)}\n\n`

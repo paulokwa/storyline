@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import type { Database } from '@/lib/supabase/types'
+
 import { normalizeContent } from './normalize'
 import { isLocalProjectId } from '@/lib/persistence/project-mode'
 import {
@@ -14,7 +14,6 @@ export type ExportNode = {
     order_index: number
     depth: number
     content?: any // TipTap JSON
-    summary?: string
 }
 
 export interface ExportMetadata {

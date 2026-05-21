@@ -256,15 +256,6 @@ export async function toDocx(payload: ExportPayload, options: ExportOptions): Pr
                     spacing: { before: 300, after: 150 }
                 }))
             }
-            if (node.summary && (options.contentMode === 'summaries_only' || options.contentMode === 'both')) {
-                sections.push(new Paragraph({
-                    children: [
-                        new TextRun({ text: "Summary: ", bold: true, italics: true }),
-                        new TextRun({ text: node.summary, italics: true })
-                    ],
-                    spacing: { after: 200 }
-                }))
-            }
             if (node.content && (options.contentMode === 'prose_only' || options.contentMode === 'both')) {
                 sections.push(...jsonToDocxElements(node.content))
             }

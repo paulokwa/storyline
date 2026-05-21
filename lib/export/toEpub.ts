@@ -45,9 +45,6 @@ export async function toEpub(payload: ExportPayload, options: ExportOptions): Pr
             if (options.includeSceneSubtitles) {
                 contentHtml += `<h${hl}>${escapeMarkupText(node.title)}</h${hl}>`
             }
-            if (node.summary && (options.contentMode === 'summaries_only' || options.contentMode === 'both')) {
-                contentHtml += `<p><i>Summary: ${escapeMarkupText(node.summary)}</i></p>`
-            }
             if (node.content && (options.contentMode === 'prose_only' || options.contentMode === 'both')) {
                 contentHtml += generateHTML(node.content, exportExtensionsNoComments)
             }

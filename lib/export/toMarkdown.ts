@@ -119,9 +119,6 @@ export function toMarkdown(payload: ExportPayload, options: ExportOptions): stri
             if (options.includeSceneSubtitles) {
                 md += `${hashes} ${node.title}\n\n`
             }
-            if (node.summary && (options.contentMode === 'summaries_only' || options.contentMode === 'both')) {
-                md += `> _Summary:_ ${node.summary}\n\n`
-            }
             if (node.content && (options.contentMode === 'prose_only' || options.contentMode === 'both')) {
                 md += `${jsonToMarkdown(node.content)}\n\n`
             }

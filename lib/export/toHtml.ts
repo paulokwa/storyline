@@ -30,7 +30,7 @@ export function toHtml(payload: ExportPayload, options: ExportOptions): string {
         h2 { font-family: 'Georgia', serif; font-size: 1.8em; margin-top: 40px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
         h3 { font-family: 'Georgia', serif; font-size: 1.3em; color: #666; margin-top: 30px; }
         .scene { margin-bottom: 40px; }
-        .summary { font-style: italic; color: #777; margin-bottom: 20px; padding-left: 20px; border-left: 3px solid #eee; }
+
         .prose { margin-top: 10px; }
         .story-image-container { margin: 2rem 0; text-align: center; }
         .story-image-img { max-width: 100%; height: auto; border-radius: 8px; }
@@ -79,9 +79,6 @@ export function toHtml(payload: ExportPayload, options: ExportOptions): string {
             html += `    <div class="scene">\n`
             if (options.includeSceneSubtitles) {
                 html += `        <h${hl}>${escapeMarkupText(node.title)}</h${hl}>\n`
-            }
-            if (node.summary && (options.contentMode === 'summaries_only' || options.contentMode === 'both')) {
-                html += `        <div class="summary">${escapeMarkupText(node.summary)}</div>\n`
             }
             if (node.content && (options.contentMode === 'prose_only' || options.contentMode === 'both')) {
                 const proseHtml = generateHTML(node.content, exportExtensionsNoComments)
