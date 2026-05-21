@@ -189,7 +189,7 @@ export default function ExportModal({
         { id: 'txt', label: 'Plain Text', icon: FileText, ext: '.txt', desc: 'Pure text, no formatting' },
         { id: 'html', label: 'HTML', icon: Files, ext: '.html', desc: 'Ready for browser viewing' },
         { id: 'docx', label: 'MS Word', icon: Files, ext: '.docx', desc: 'Professional manuscript' },
-        { id: 'pdf', label: 'PDF Document', icon: FileText, ext: '.pdf', desc: 'Fixed layout for printing' },
+        { id: 'pdf', label: 'Print / Save as PDF', icon: FileText, ext: '.pdf', desc: 'Opens your browser print dialog' },
         { id: 'epub', label: 'EPUB Ebook', icon: Files, ext: '.epub', desc: 'Ready for Kindle/iBooks' },
     ]
 
@@ -293,6 +293,11 @@ export default function ExportModal({
                                 </button>
                             ))}
                         </div>
+                        {options.format === 'pdf' && (
+                            <p className="text-[11px] leading-relaxed text-slate-500 rounded-xl bg-amber-50 border border-amber-100 px-4 py-3">
+                                PDF uses your browser&rsquo;s print dialog. Choose &ldquo;Save as PDF&rdquo; when the print window opens. If nothing appears, allow pop-ups for this site and try again.
+                            </p>
+                        )}
                     </div>
 
                     {/* Export Metadata Summary */}
@@ -527,7 +532,7 @@ export default function ExportModal({
                             className="bg-[#546354] hover:bg-[#3d4a3d] text-white rounded-xl px-8 flex-1 sm:flex-none shadow-lg shadow-slate-900/10 transition-all duration-300"
                         >
                             <Download className={cn("w-4 h-4 mr-2", loading && "animate-pulse")} />
-                            {loading ? 'Generating...' : canExport ? 'Generate Export' : 'Export Disabled by Owner'}
+                            {loading ? 'Generating...' : canExport ? (options.format === 'pdf' ? 'Open Print Dialog' : 'Generate Export') : 'Export Disabled by Owner'}
                         </Button>
                     </div>
                 </DialogFooter>
