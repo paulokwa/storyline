@@ -30,17 +30,20 @@ export async function toEpub(payload: ExportPayload, options: ExportOptions): Pr
     }
 
     nodes.forEach((node) => {
+        // Heading level derived from tree depth so nested chapters render below root chapters.
+        const hl = Math.min(node.depth + 2, 6)
+
         if (node.type === 'chapter' || node.type === 'episode') {
             if (options.includeChapterTitles) {
-                contentHtml += `<h2>${escapeMarkupText(node.title)}</h2>`
+                contentHtml += `<h${hl}>${escapeMarkupText(node.title)}</h${hl}>`
             }
         } else if (node.type === 'act') {
             if (options.includeChapterTitles) {
-                contentHtml += `<h3>${escapeMarkupText(node.title)}</h3>`
+                contentHtml += `<h${hl}>${escapeMarkupText(node.title)}</h${hl}>`
             }
         } else if (node.type === 'scene') {
             if (options.includeSceneSubtitles) {
-                contentHtml += `<h3>${escapeMarkupText(node.title)}</h3>`
+                contentHtml += `<h${hl}>${escapeMarkupText(node.title)}</h${hl}>`
             }
             if (node.summary && (options.contentMode === 'summaries_only' || options.contentMode === 'both')) {
                 contentHtml += `<p><i>Summary: ${escapeMarkupText(node.summary)}</i></p>`

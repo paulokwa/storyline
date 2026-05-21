@@ -218,13 +218,25 @@ export async function toDocx(payload: ExportPayload, options: ExportOptions): Pr
         }
     }
 
+    // Heading levels indexed by tree depth so nested chapters render below root chapters.
+    const DOCX_HEADINGS = [
+        HeadingLevel.HEADING_1,
+        HeadingLevel.HEADING_2,
+        HeadingLevel.HEADING_3,
+        HeadingLevel.HEADING_4,
+        HeadingLevel.HEADING_5,
+        HeadingLevel.HEADING_6,
+    ]
+
     // 2. Content
     nodes.forEach(node => {
+        const heading = DOCX_HEADINGS[Math.min(node.depth, DOCX_HEADINGS.length - 1)]
+
         if (node.type === 'chapter' || node.type === 'episode') {
             if (options.includeChapterTitles) {
                 sections.push(new Paragraph({
                     text: node.title,
-                    heading: HeadingLevel.HEADING_1,
+                    heading,
                     spacing: { before: 800, after: 400 }
                 }))
             }
@@ -232,7 +244,7 @@ export async function toDocx(payload: ExportPayload, options: ExportOptions): Pr
             if (options.includeChapterTitles) {
                 sections.push(new Paragraph({
                     text: node.title,
-                    heading: HeadingLevel.HEADING_2,
+                    heading,
                     spacing: { before: 400, after: 200 }
                 }))
             }
@@ -240,7 +252,7 @@ export async function toDocx(payload: ExportPayload, options: ExportOptions): Pr
             if (options.includeSceneSubtitles) {
                 sections.push(new Paragraph({
                     text: node.title,
-                    heading: HeadingLevel.HEADING_3,
+                    heading,
                     spacing: { before: 300, after: 150 }
                 }))
             }

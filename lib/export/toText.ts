@@ -51,8 +51,12 @@ export function toText(payload: ExportPayload, options: ExportOptions): string {
     nodes.forEach(node => {
         if (node.type === 'chapter' || node.type === 'episode') {
             if (options.includeChapterTitles) {
-                txt += `\n${node.title.toUpperCase()}\n`
-                txt += '-'.repeat(node.title.length) + '\n\n'
+                if (node.depth === 0) {
+                    txt += `\n${node.title.toUpperCase()}\n`
+                    txt += '-'.repeat(node.title.length) + '\n\n'
+                } else {
+                    txt += `[ ${node.title} ]\n\n`
+                }
             }
         } else if (node.type === 'act') {
             if (options.includeChapterTitles) {

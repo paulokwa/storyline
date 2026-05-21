@@ -103,17 +103,21 @@ export function toMarkdown(payload: ExportPayload, options: ExportOptions): stri
     }
 
     nodes.forEach(node => {
+        // Heading level derived from tree depth so nested chapters render below root chapters.
+        // depth 0 → ##, depth 1 → ###, depth 2 → ####, capped at ######.
+        const hashes = '#'.repeat(Math.min(node.depth + 2, 6))
+
         if (node.type === 'chapter' || node.type === 'episode') {
             if (options.includeChapterTitles) {
-                md += `## ${node.title}\n\n`
+                md += `${hashes} ${node.title}\n\n`
             }
         } else if (node.type === 'act') {
             if (options.includeChapterTitles) {
-                md += `### ${node.title}\n\n`
+                md += `${hashes} ${node.title}\n\n`
             }
         } else if (node.type === 'scene') {
             if (options.includeSceneSubtitles) {
-                md += `#### ${node.title}\n\n`
+                md += `${hashes} ${node.title}\n\n`
             }
             if (node.summary && (options.contentMode === 'summaries_only' || options.contentMode === 'both')) {
                 md += `> _Summary:_ ${node.summary}\n\n`
