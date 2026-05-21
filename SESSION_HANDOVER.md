@@ -5,6 +5,47 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-20 - Sub-chapter audit, popover label rename, export depth fix
+
+### What was completed
+
+**Sub-chapter post-implementation audit (8 items — carried over from 2026-05-19):**
+- Items 1–4: SAFE. Sub-chapter is a `chapter` node with a chapter `parent_id`. No scene row created for sub-chapters. Scene creation under sub-chapter works. AI scope recursion (`getDescendantScenes`) is fully recursive and reaches scenes at any depth.
+- Items 5, 8: SAFE WITH UX CAVEATS. `getStoryScopeTypeLabel` returns 'Chapter' for sub-chapters — slightly misleading label but no functional impact.
+- Item 6: SAFE WITH UX CAVEATS. Drag/drop validator uses `CHILD_TYPE['chapter']='scene'` so a sub-chapter (type='chapter') cannot be dragged under a different chapter parent. No data corruption risk, just an unintuitive UX constraint.
+- Item 7: RISKY (pre-existing) — export flat-sort and type-only heading levels produce wrong order and wrong heading depth for nested chapter→sub-chapter→scene structures. Fixed in this session (see below).
+
+**Structure popover label rename** (commit `a7e7d55`):
+- `components/project/story/StructureTree.tsx`: "Scene" → "Add scene", "Sub-chapter" → "Add nested chapter". Internal `chapter` override path unchanged.
+- TypeScript clean, build clean.
+
+**Export ordering and heading depth fix** (commit `9e4b25d`):
+- `lib/export/buildExportPayload.ts`: replaced global `order_index` flat-sort with `buildDepthFirstNodes` — depth-first traversal that sorts siblings by `order_index` and recurses. Added `depth: number` to `ExportNode` type. Works for both local (IndexedDB) and cloud (Supabase) paths. `parent_id` already available in both raw data sources via `select('*')` and full IndexedDB records.
+- `lib/export/toMarkdown.ts`: heading level = `'#'.repeat(Math.min(depth + 2, 6))` for all node types.
+- `lib/export/toDocx.ts`: heading = `DOCX_HEADINGS[Math.min(depth, 5)]` array indexed by depth.
+- `lib/export/toHtml.ts`: heading tag = `h${Math.min(depth + 2, 6)}`.
+- `lib/export/toEpub.ts`: same as toHtml.
+- `lib/export/toText.ts`: depth-0 chapter/episode → UPPERCASE+underline; depth-1+ chapter → `[ ]`.
+- `toPdf.ts`: no change — delegates to toHtml and inherits the fix automatically.
+- TypeScript clean, build clean.
+
+**Pre-existing issue noted (not fixed):** `ExportNode.summary` is in the type and referenced in renderers, but never populated in `buildExportPayload`. `structure_nodes` has no summary column; `scenes` table has no summary column. All `node.summary` branches in renderers are dead code. Log for future fix.
+
+### Current status
+
+Both commits pushed to `main`. TASK_BOARD Now #1 (export fixes) is partially addressed — ordering and heading depth for nested chapters is fixed. PDF export and other format-specific issues remain open.
+
+### Next recommended step
+
+Continue TASK_BOARD Now #1: audit PDF-specific export issues (PDF delegates to HTML via `toPdf.ts` so the depth fix is inherited, but there may be other PDF-specific layout/rendering problems to address separately). Then check DOCX/EPUB/Markdown output quality with a real nested project.
+
+### Risks or warnings
+
+- Scene title heading levels (when `includeSceneSubtitles=true`) now render at the scene's natural tree depth (depth+2). A scene directly under a root chapter renders as `###` — the same level as a nested chapter at depth=1. This is semantically correct but is a product choice; if the user wants scene titles always visually subordinate to chapter headings, a type-based floor (e.g. minimum `####` for scenes) could be added.
+- `node.summary` in `ExportNode` is never populated — all summary-related renderer branches are currently dead code.
+- The Netlify deploy hook is stored in `.local/netlify-deploy-hook.txt` (gitignored). Never commit this file.
+
+---
 ## 2026-05-19 - Structure panel UX pass + bug fixes
 
 ### What was completed
