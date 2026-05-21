@@ -69,7 +69,7 @@ The first pass now uses the shared `ai_usage_events` infrastructure for AI throt
 
 ---
 
-### 3. API Key Storage Hardening
+### 2a. API Key Storage Hardening
 
 **Why it matters:**
 Storyline supports user-provided AI provider keys. Those keys are already masked from the client and protected by database access controls, but storage should be hardened before a wider public rollout.
@@ -92,7 +92,7 @@ A security audit confirmed that user API keys are protected by RLS/masking and a
 
 ---
 
-### 4. Robust Retry and Initialisation Patterns
+### 3. Robust Retry and Initialisation Patterns
 
 **Why it matters:**
 Writing tools must be boringly reliable. Users will forgive a missing fancy feature faster than they will forgive lost writing.
@@ -119,7 +119,7 @@ A first-pass retry/init hardening was added for cloud project creation and edito
 
 ---
 
-### 5. AI Trial Reconciliation and RPC Failure Handling
+### 4. AI Trial Reconciliation and RPC Failure Handling
 
 **Why it matters:**
 The free-trial AI system is server-authoritative, but trial-grant, finalization, and failure paths can still drift if RPC calls fail, provider responses are partial, or retries duplicate events.
@@ -141,7 +141,7 @@ Trial cost finalization now prefers provider-reported token usage where availabl
 
 ---
 
-### 6. ~~Migration Upload Bypasses Storage Quota Check~~ — RESOLVED 2026-05-07
+### 5. ~~Migration Upload Bypasses Storage Quota Check~~ — RESOLVED 2026-05-07
 
 **Fixed in:** `app/api/migration/upload-asset/route.ts`
 
@@ -151,7 +151,7 @@ Trial cost finalization now prefers provider-reported token usage where availabl
 
 ---
 
-### 7. AI Abuse Controls Hardening
+### 6. AI Abuse Controls Hardening
 
 **Why it matters:**
 Sponsored AI credits are attractive to abuse. Current protections are useful, but signals such as email normalization, disposable-domain lists, forwarded IPs, and browser fingerprints are never perfect.
@@ -281,3 +281,226 @@ The Google OAuth free-trial grant path has been fixed in `app/api/auth/callback/
 **Priority:** Medium.
 
 ---
+
+### 6. Audit Follow-Ups From 2026-05-11
+
+These came from the app audit but are not immediate lone-coder launch blockers unless a later test proves they are breaking real user flows.
+
+**Future hardening:**
+
+- Add automated tests for import, export, auth, editor save behavior, local/cloud handling, AI settings, dark mode, and mobile/tablet flows.
+- Clean up lint debt gradually, prioritizing touched files and high-risk import/export/auth/persistence areas.
+
+Completed audit follow-ups from this section are recorded in `SESSION_HANDOVER.md`, `TESTING.md`, `TROUBLESHOOTING.md`, and commits `204ef13` / `db57549`; do not re-implement EPUB spine ordering, AI import marker mapping, tablet breakpoint unification, or responsive slide-out panel widths.
+
+**Priority:** Medium.
+
+---
+
+## Lower Priority Technical Improvements
+
+### 1. Advanced Offline / Pending Sync
+
+**Description:**
+When a cloud scene save fails due to a network drop, the editor shows `Save failed` and stops retrying after the retry policy is exhausted. If the user keeps writing while disconnected, edits are at risk until another edit triggers autosave again.
+
+**Current behavior audited 2026-05-03:**
+
+- `lib/persistence/scenes.ts -> saveSceneContent()` wraps Supabase saves in `withPersistenceRetry()`.
+- Retries use exponential backoff.
+- After all retries fail, `SceneEditor.tsx` sets `saveStatus = 'error'`.
+- There is no true pending-sync queue for failed cloud saves.
+- `localStorage` is only used for UI preferences, not sync fallback.
+- IndexedDB is the primary local storage for local-only projects. Cloud projects use Supabase.
+
+**Recommended implementation: Tier 2 IndexedDB-persisted queue**
+
+1. Add a `pending_saves` store to IndexedDB and bump the DB version.
+2. Key pending saves by `scene.id` so only the latest pending save matters for each scene.
+3. Add `lib/persistence/pending-sync.ts` with helpers such as `enqueuePendingSave`, `dequeuePendingSave`, `getPendingSave`, and `getPendingSavesByProject`.
+4. In `SceneEditor.tsx`, enqueue retryable failed cloud saves and show something like `Offline — changes queued` instead of only `Save failed`.
+5. Listen for the browser `online` event and let autosave flush the latest dirty editor content.
+6. On scene mount, restore a pending save only if it does not conflict with a newer server version.
+
+**What to skip until truly needed:**
+
+- Service Worker / Background Sync API.
+- Global ProjectShell-level offline indicator for scenes that are not mounted.
+- Multi-scene background queue flush.
+
+**Priority:** Low unless offline writing becomes a marketed feature.
+
+---
+
+### 2. Destructive Action Guards
+
+**Description:**
+Strengthen delete confirmations for high-impact actions, especially deleting container structure nodes with child content.
+
+**Current behavior audited 2026-05-03:**
+
+- Library project delete has a two-step inline confirmation and soft-deletes to trash.
+- Structure tree container nodes have a two-step inline confirmation panel, but no child-count warning.
+- Characters, locations, ideas, and objects can be deleted with lower-friction actions.
+- Account deletion has its own confirmation flow.
+- Native browser `alert`, `confirm`, and `prompt` calls were replaced elsewhere.
+
+**Recommended improvements:**
+
+1. Add child-count warnings on container node delete, e.g. `This will also trash 3 chapters and 12 scenes.`
+2. Add inline confirm for entity deletes if accidental deletion becomes a real problem.
+3. Consider `Type DELETE` only for permanent destroy actions, not normal soft-delete flows.
+
+**Priority:** Low. Child-count warning is the highest-value improvement.
+
+---
+
+### 3. Backup and Asset Handling
+
+**Description:**
+Refine local-only data management and recovery behavior.
+
+**Current state:**
+Native `.storyline` Save / Save As / Open workflow is implemented. Backup size warning above 20 MB is done.
+
+**Future hardening:**
+
+- Support multiple local backups with timestamps/names rather than a single manual file.
+- Optimize how binary files and high-resolution attachments are serialized in `.storyline` files.
+- Make large backup/export behavior clear before users hit confusing browser limits.
+
+**Priority:** Low.
+
+---
+
+### 4. Portable Image Export and Asset Bundling
+
+**Why it matters:**
+Users should eventually be able to export portable documents with images, not only expiring cloud URLs or placeholders.
+
+**Current state:**
+
+- HTML/EPUB/Markdown may reference image URLs.
+- Cloud image URLs may be signed and expire.
+- Local/blob URLs may not be portable.
+- DOCX currently degrades images to placeholders.
+- Plain text placeholders are acceptable.
+
+**Future hardening should audit:**
+
+- Local asset storage.
+- Cloud/Supabase signed URL expiry.
+- Image byte fetching.
+- CORS/PDF rendering.
+- EPUB image bundling.
+- DOCX image embedding.
+- Markdown asset-folder export.
+- HTML asset-folder or base64 export.
+- File-size warnings for large exports.
+
+**Recommended product behavior:**
+
+- `.storyline` backup should preserve assets for restore.
+- HTML/EPUB/PDF should eventually preserve visible inline images.
+- Markdown can use image links or an asset folder.
+- DOCX embedded images are desirable but can come later.
+- Plain text should keep placeholders only.
+
+**Priority:** Low.
+
+---
+
+### 5. Browser Download Overwrite Friction for Same-Name Exports
+
+**Why it matters:**
+On Chrome desktop for Windows, exporting a file with the same name as a recent prior download can trigger a browser-level `Needs permission to download` interruption, even when new filenames work normally.
+
+**Current state:**
+Storyline uses normal browser blob downloads for manuscript exports. Repeated same-name exports may hit browser automatic-download or overwrite protection behavior on localhost, which is confusing during testing.
+
+**Future hardening:**
+
+- Reproduce the same-name overwrite/download-permission issue reliably.
+- Decide whether the best fix is browser guidance, filename strategy, or an in-app warning.
+- Verify behavior across DOCX, PDF, HTML, EPUB, Markdown, and TXT exports.
+
+**Priority:** Low.
+
+---
+
+### 6. Feedback Panel: AI Filter Consistency
+
+**Issue:**
+The Feedback panel AI chip currently matches only `anchor_data.type === 'ai-analysis'`.
+
+Feedback saved from the AI Helper panel uses `anchor_data.type === 'ai-feedback'`.
+
+As a result, AI Helper feedback appears under All/Mine but not under the AI filter chip.
+
+**Why it matters:**
+Users may expect the AI filter to show all AI-generated feedback, not only Scene Analysis feedback.
+
+**Recommendation:**
+Confirm intended product behavior. If the AI chip should include all AI feedback, update the filter, count, and badge logic to include both `ai-analysis` and `ai-feedback`.
+
+**Priority:** Low-Medium.
+
+---
+
+### 7. Feedback Panel: Active Highlight After Resolving Active Comment
+
+**Issue:**
+If a comment is resolved while it is the active comment, ProseMirror may recreate the inline comment span and drop the manually applied `.active` class.
+
+**Current behavior:**
+
+- The comment card remains selected.
+- The inline text receives the correct resolved styling.
+- The stronger active ring/highlight may disappear until the user clicks or jumps to the comment again.
+
+**Recommendation:**
+Only fix if this becomes noticeable in manual testing. A possible fix is to reapply active styling after comment status sync, but avoid broad dependencies that cause the effect to run too often.
+
+**Priority:** Low.
+
+---
+
+### 8. Orphaned Local Project Recovery
+
+**Why it matters:**
+The 2026-05-06 IndexedDB privacy fix scoped `listLocalProjects()` to the authenticated user by filtering on `project.user_id === currentUserId`. Projects whose stored `user_id` does not match the current user are silently excluded from the library list, and direct URL access to those projects is blocked at `LocalProjectShell` with a clear "Local project belongs to another account" screen.
+
+This is the correct privacy behaviour, but it creates an edge case: a user whose local Supabase account was deleted and then re-created with the same email address receives a new Supabase UUID. Their previously stored local projects still carry the old UUID in IndexedDB. After re-registration, those projects become invisible because the stored `user_id` no longer matches. The user's writing is not lost — it is still in IndexedDB on that device — but there is no UI path to find or recover it.
+
+**How this situation arises in practice:**
+- User creates local projects, then deletes their account (e.g. during testing).
+- User re-registers with the same email — Supabase assigns a new UUID.
+- On login, `listLocalProjects(newUserId)` finds zero matches because all stored projects carry the old UUID.
+- The projects are silently inaccessible. The user sees an empty library.
+
+This was directly observed during testing in this project (see `SESSION_HANDOVER.md`, entry 2026-05-06).
+
+**What is in IndexedDB:**
+The `projects` object store in the `storyline-local-projects` database (v4+) has a `user_id` index. Records with a non-matching `user_id` are untouched — they are not deleted. A recovery flow can safely query them.
+
+**Recommended implementation when prioritised:**
+
+1. After `listLocalProjects(currentUserId)` returns, run a secondary query for projects whose `user_id` is null or does not match `currentUserId` (use `getAllLocalRecords` and filter). Call this the "orphaned" set.
+2. If orphaned projects exist, show a dismissible banner in the library: *"We found [N] project(s) saved on this device under a different account. Would you like to review them?"*
+3. Open a modal listing orphaned projects (title, type, last accessed). Let the user claim individual projects (which rewrites `user_id` to the current user) or dismiss/delete them.
+4. Claiming must be explicit — never auto-claim silently. Auto-claiming could expose one user's work to another on a legitimately shared device.
+5. Implement claiming as a single `updateLocalProject(id, { user_id: currentUserId })` call — no migration complexity.
+
+**Do not implement yet unless users actually report invisible local projects.** The silent exclusion is the correct default. Only build the recovery flow if there is real demand — it adds UI complexity and the shared-device case means auto-claiming is genuinely unsafe.
+
+**Cross-reference:** `SESSION_HANDOVER.md` — entry 2026-05-06. `lib/persistence/local-db.ts` — `DB_VERSION = 4`, `user_id` index on `projects` store. `lib/persistence/local-projects.ts` — `listLocalProjects(currentUserId)`. `components/project/local/LocalProjectShell.tsx` — `'forbidden'` status state.
+
+**Priority:** Low — trigger only if users report invisible local projects after the v4 DB upgrade.
+
+---
+
+## Notes on moved items
+
+The previous `Future Plans — Editor, Fonts, and Proofing` section was moved to `docs/future-roadmap.md` because those items are user-facing feature ideas, not technical debt.
+
+The previous Help System Feature Audit & Rewrite plan was also moved to `docs/future-roadmap.md` because it is a future product/help-content project rather than engineering debt.
