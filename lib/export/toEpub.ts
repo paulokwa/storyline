@@ -25,10 +25,6 @@ export async function toEpub(payload: ExportPayload, options: ExportOptions): Pr
 
     let contentHtml = ''
 
-    if (options.includeProjectTitle) {
-        contentHtml += `<h1>${safeProjectTitle}</h1>`
-    }
-
     nodes.forEach((node) => {
         // Heading level derived from tree depth so nested chapters render below root chapters.
         const hl = Math.min(node.depth + 2, 6)
