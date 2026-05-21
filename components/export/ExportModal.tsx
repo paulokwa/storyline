@@ -154,9 +154,9 @@ export default function ExportModal({
                     extension = 'docx'
                     break
                 case 'pdf':
-                    blob = await toPdf(payload, exportOptions)
-                    extension = 'pdf'
-                    break
+                    await toPdf(payload, exportOptions)
+                    onOpenChange(false)
+                    return
                 case 'epub':
                     blob = await toEpub(payload, exportOptions)
                     extension = 'epub'

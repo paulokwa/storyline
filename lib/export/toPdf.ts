@@ -1,68 +1,40 @@
-import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
 import { toHtml } from './toHtml'
 import type { ExportPayload, ExportOptions } from './buildExportPayload'
 
-export async function toPdf(payload: ExportPayload, options: ExportOptions): Promise<Blob> {
+export async function toPdf(payload: ExportPayload, options: ExportOptions): Promise<void> {
     const htmlContent = toHtml(payload, options)
-    
-    // 1. Create a dummy container to render HTML for capture
-    const container = document.createElement('div')
-    container.style.position = 'absolute'
-    container.style.left = '-9999px'
-    container.style.top = '0'
-    container.style.width = '800px' // Same as in toHtml.ts style
-    container.innerHTML = htmlContent
-    document.body.appendChild(container)
 
-    // 2. Wait for layout
-    await new Promise(resolve => setTimeout(resolve, 500))
+    // Inject print-specific CSS so the browser print dialog produces a clean page
+    const printCss = `
+        @media print {
+            body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            @page { margin: 1.5cm; }
+        }`
+    const printHtml = htmlContent.replace('</style>', `${printCss}\n    </style>`)
 
-    // 3. Render and save PDF
-    // Note: We use standard A4 size
-    const canvas = await html2canvas(container, {
-        scale: 2, // Higher quality
-        useCORS: true,
-        logging: false,
-    })
-    
-    const imgData = canvas.toDataURL('image/png')
-    const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'px',
-        format: 'a4'
-    })
+    const blob = new Blob([printHtml], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
 
-    if (payload.metadata) {
-        pdf.setProperties({
-            title: payload.projectTitle,
-            author: payload.metadata.penName || payload.metadata.authorName || '',
-            subject: payload.metadata.description || '',
-            keywords: payload.metadata.keywords || '',
-            creator: 'Storyline'
-        })
+    const printWindow = window.open(url, '_blank', 'width=900,height=700,noopener')
+    if (!printWindow) {
+        URL.revokeObjectURL(url)
+        throw new Error('Popup blocked. Please allow popups for this site and try again.')
     }
 
-    const imgProps = pdf.internal.pageSize
-    const pdfWidth = imgProps.width
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width
-    
-    let heightLeft = pdfHeight
-    let position = 0
+    await new Promise<void>((resolve, reject) => {
+        const giveUp = setTimeout(() => {
+            URL.revokeObjectURL(url)
+            reject(new Error('Print window timed out.'))
+        }, 15000)
 
-    // Add first page
-    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight)
-    heightLeft -= imgProps.height
-
-    // Add multi-page logic
-    while (heightLeft >= 0) {
-        position = heightLeft - pdfHeight
-        pdf.addPage()
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight)
-        heightLeft -= imgProps.height
-    }
-
-    const blob = pdf.output('blob')
-    document.body.removeChild(container)
-    return blob
+        printWindow.addEventListener('load', () => {
+            clearTimeout(giveUp)
+            // Short pause for fonts/layout to settle before the dialog appears
+            setTimeout(() => {
+                printWindow.print()
+                URL.revokeObjectURL(url)
+                resolve()
+            }, 400)
+        }, { once: true })
+    })
 }

@@ -19,7 +19,7 @@ import { CommentMark } from '@/lib/tiptap/comment-mark'
  * and rendering JSON -> HTML during export.
  */
 export const exportExtensions = [
-    StarterKit,
+    StarterKit.configure({ underline: false }),
     Underline,
     Highlight,
     ScreenplaySceneHeading,
