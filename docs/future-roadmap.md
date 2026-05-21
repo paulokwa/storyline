@@ -514,6 +514,42 @@ Future idea:
 
 ---
 
+## Selected chapter and scene export
+
+### Why it can wait
+
+Most first-time users will export the whole manuscript. That is the normal, obvious path:
+
+> "I finished my project. Give me the file."
+
+Selected export is a power-user feature. The use cases are real:
+
+- "I only want Chapter 4."
+- "I want to send just these scenes to a beta reader."
+- "I want to export Act 2 only."
+- "I want a summary-only outline."
+
+Useful? Yes. Launch-critical? No.
+
+### What is already scaffolded
+
+The type system already defines `ExportScope` (`'entire_project' | 'selected_chapters' | 'selected_scenes'`) and `selectedIds?: string[]` in `ExportOptions`. These exist as type scaffolding only. The modal hardcodes `scope: 'entire_project'` and never populates `selectedIds`. No renderer reads `scope` or `selectedIds` — they are unreachable today.
+
+Do not remove the scaffolding. It is cheap to keep and makes the future implementation easier to wire in.
+
+### What a future implementation would require
+
+1. UI to let the user select chapters or scenes inside the Export Modal — checkboxes or a tree picker.
+2. `buildExportPayload` filtering by `selectedIds` instead of returning all active nodes.
+3. All renderers already iterate the node list, so filtering at the payload level should be sufficient.
+4. Edge cases: what if a selected scene's parent chapter is not selected — does the chapter heading appear? What if no scenes are selected?
+
+### Recommendation
+
+Do not implement before launch. Entire-project export covers the majority use case. Revisit after launch if users consistently report needing selective export — particularly users sending drafts to beta readers or editors chapter-by-chapter.
+
+---
+
 ## Magic Detect and AI import
 
 ### Current Ollama behaviour

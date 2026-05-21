@@ -968,7 +968,7 @@ function ProjectShellInner({
                                 </div>
                             )}
 
-                            {!isLocalOnly && <div className="h-6 w-px bg-slate-200/50" />}
+                            {!isLocalOnly && <div className="lg:hidden h-6 w-px bg-slate-200/50" />}
                             
                             <Tooltip>
                                 <TooltipTrigger>
