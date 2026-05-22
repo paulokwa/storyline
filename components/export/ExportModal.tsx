@@ -497,7 +497,9 @@ export default function ExportModal({
                                     {projectTitle}
                                 </p>
                                 <p className="text-xs text-slate-400">
-                                    {stats ? `${stats.chapters} chapters, ${stats.scenes} scenes` : canExport ? 'Loading project stats...' : 'Export stats unavailable while export is disabled'}
+                                    {stats
+                                        ? `${stats.chapters} ${projectType === 'tv_script' ? `episode${stats.chapters !== 1 ? 's' : ''}` : `chapter group${stats.chapters !== 1 ? 's' : ''}`}, ${stats.scenes} scene${stats.scenes !== 1 ? 's' : ''}`
+                                        : canExport ? 'Loading project stats...' : 'Export stats unavailable while export is disabled'}
                                 </p>
                                 <div className="space-y-1 text-xs leading-5 text-slate-500">
                                     <p><span className="font-medium text-slate-700">Scope:</span> {scopeLabel}</p>
@@ -515,6 +517,9 @@ export default function ExportModal({
                                 </p>
                             </div>
                         </div>
+                        <p className="mt-4 text-[10px] text-slate-400 italic">
+                            Counts are based on Storyline structure types, not item titles.
+                        </p>
                     </div>
                 </div>
 

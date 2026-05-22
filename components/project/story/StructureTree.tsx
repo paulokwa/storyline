@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import {
     ChevronRight, ChevronDown, Plus, Trash2,
     Film, Layers, FileText, BookOpen, Check, Pencil,
-    Book, Clapperboard, Shield, X
+    Book, Clapperboard, Shield, X, HelpCircle
 } from 'lucide-react'
 import {
     TooltipProvider,
@@ -99,6 +99,7 @@ export default function StructureTree({
     const rootLabel = project.type === 'tv_script' ? 'Episode' : 'Chapter'
     const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
     const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false)
+    const [showHelp, setShowHelp] = useState(false)
     const nonVirtualSelectedIds = selectedNodeIds.filter(id => id !== 'virtual-root')
     const [dragState, setDragState] = useState<{
         draggingId: string | null;
@@ -324,6 +325,15 @@ export default function StructureTree({
                 <div className="px-4 sm:px-6 pt-2 pb-4 sm:py-6 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <h3 className="text-sm font-serif italic text-slate-500 tracking-wide">The Structure</h3>
+                        <button
+                            type="button"
+                            onClick={() => setShowHelp(v => !v)}
+                            className="inline-flex h-5 w-5 items-center justify-center rounded-full text-slate-300 transition-all hover:bg-white/70 hover:text-slate-500"
+                            aria-label="How structure works"
+                            title="How structure works"
+                        >
+                            <HelpCircle className="h-3.5 w-3.5" />
+                        </button>
                     </div>
                     {onClose && (
                         <button
@@ -336,6 +346,15 @@ export default function StructureTree({
                         </button>
                     )}
                 </div>
+                {showHelp && (
+                    <div className="mx-3 mb-2 rounded-2xl bg-white/80 border border-slate-200/60 px-4 py-3 text-[11px] text-slate-600 leading-relaxed space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                        <p className="font-semibold text-slate-700 text-[10px] uppercase tracking-[0.12em] mb-2">How structure works</p>
+                        <p><span className="font-medium">Project</span> — your whole book or script.</p>
+                        <p><span className="font-medium">{project.type === 'tv_script' ? 'Episode' : 'Chapter'}</span> — a container that groups scenes together.</p>
+                        <p><span className="font-medium">Scene</span> — the main writing unit where prose lives.</p>
+                        <p className="pt-1 text-slate-400">You can rename anything. Icons always show the real type — a scene named &ldquo;Chapter 1&rdquo; is still a scene in the structure.</p>
+                    </div>
+                )}
 
                 <div className="flex-1 min-h-0 overflow-auto overscroll-contain touch-pan-y py-2 custom-scrollbar">
                     <div className="min-h-full flex flex-col">
@@ -700,13 +719,21 @@ const NodeItem = React.memo(({
                             </div>
                         )}
 
-                        <Icon className={cn(
-                            'shrink-0 transition-transform duration-300',
-                            isScene && 'mt-1 self-start',
-                            isRoot ? 'w-5 h-5 text-[#546354]/80' : 'w-4 h-4',
-                            isActive ? 'text-[#546354] scale-110' : 'text-slate-400',
-                            isAct && 'text-slate-500'
-                        )} />
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <span className={cn('shrink-0 flex items-center', isScene && 'mt-1 self-start')}>
+                                    <Icon className={cn(
+                                        'transition-transform duration-300',
+                                        isRoot ? 'w-5 h-5 text-[#546354]/80' : 'w-4 h-4',
+                                        isActive ? 'text-[#546354] scale-110' : 'text-slate-400',
+                                        isAct && 'text-slate-500'
+                                    )} />
+                                </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="right">
+                                <p>{NODE_DISPLAY_NAMES[node.type] ?? node.type}</p>
+                            </TooltipContent>
+                        </Tooltip>
 
                         {editing ? (
                             <input
@@ -767,27 +794,34 @@ const NodeItem = React.memo(({
                             )} onClick={e => e.stopPropagation()}>
                                 {CHILD_TYPE[node.type as NodeType] && (
                                     <>
-                                        <button
-                                            ref={addChildBtnRef}
-                                            onClick={(e) => {
-                                                e.stopPropagation()
-                                                if (node.type === 'chapter') {
-                                                    const rect = addChildBtnRef.current?.getBoundingClientRect()
-                                                    if (rect) {
-                                                        setTypePopoverPos({
-                                                            top: rect.bottom + 4,
-                                                            right: window.innerWidth - rect.right,
-                                                        })
-                                                    }
-                                                    setShowTypePopover(v => !v)
-                                                } else {
-                                                    onAddChild(node)
-                                                }
-                                            }}
-                                            className="p-2 rounded-lg hover:bg-primary/10 text-slate-400 hover:text-primary active:scale-95 transition-all"
-                                        >
-                                            <Plus className="w-4 h-4 md:w-3.5 md:h-3.5" />
-                                        </button>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <button
+                                                    ref={addChildBtnRef}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        if (node.type === 'chapter') {
+                                                            const rect = addChildBtnRef.current?.getBoundingClientRect()
+                                                            if (rect) {
+                                                                setTypePopoverPos({
+                                                                    top: rect.bottom + 4,
+                                                                    right: window.innerWidth - rect.right,
+                                                                })
+                                                            }
+                                                            setShowTypePopover(v => !v)
+                                                        } else {
+                                                            onAddChild(node)
+                                                        }
+                                                    }}
+                                                    className="p-2 rounded-lg hover:bg-primary/10 text-slate-400 hover:text-primary active:scale-95 transition-all"
+                                                >
+                                                    <Plus className="w-4 h-4 md:w-3.5 md:h-3.5" />
+                                                </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">
+                                                <p>{node.type === 'chapter' ? 'Add scene or nested chapter' : `Add ${CHILD_DISPLAY_NAMES[node.type as keyof typeof CHILD_DISPLAY_NAMES]?.toLowerCase() ?? 'item'}`}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
                                         {showTypePopover && typePopoverPos && createPortal(
                                             <>
                                                 <div className="fixed inset-0 z-[200]" onClick={() => setShowTypePopover(false)} />
