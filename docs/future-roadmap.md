@@ -291,6 +291,21 @@ When implementing, treat the database migration and AI import update as the high
 
 ---
 
+## First-run Structure guide
+
+Consider a one-time optional guide after import or first project creation:
+
+- Explain Project > Chapter group > Scene (and Episode > Act > Scene for TV scripts)
+- Explain that icons identify the real structure type, not the title
+- Explain that renamed scenes keep their original type
+- Link to the export preview explanation so users understand why counts reflect structure types, not item titles
+
+This should be lightweight and dismissible — not a forced multi-step tour. The existing `?` help affordance in the Structure panel is the v1 solution; this item tracks a more prominent first-run version for later.
+
+Do not implement before launch. Revisit if user research or feedback shows confusion about structure types being a recurring pain point.
+
+---
+
 ## Help system feature audit and rewrite
 
 This is a future user-facing product improvement, not current technical debt.
