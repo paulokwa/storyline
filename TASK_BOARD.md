@@ -72,6 +72,31 @@ Before writing code, state:
 
 ## Now
 
+### 2. Read aloud — asterisks (***) break line sync and highlighting
+
+**Bug report (2026-05-21, user-verified):**  
+When a scene contains `***` scene-break separators, the read aloud feature skips a line at each separator. This causes the spoken audio to fall out of sync with the sentence highlighting — the highlight moves ahead of what is actually being read. Removing the `***` characters restored correct sync immediately.
+
+**Root cause (suspected):**  
+The read aloud pipeline likely splits text into sentences or lines using the raw TipTap HTML or a text extraction step. A `***` horizontal rule node may be rendered as a blank line or an extra node in that extraction, inserting a phantom sentence/pause that shifts all subsequent highlight positions by one.
+
+**Scope:**
+- Find where the read aloud feature extracts text from the document for TTS and sentence splitting.
+- Identify how `<hr>` / TipTap `horizontalRule` nodes are handled — likely emitting a blank string or newline that registers as a sentence boundary.
+- Either skip horizontal rule nodes entirely during text extraction, or ensure they do not produce a countable sentence slot.
+- Verify that highlight index stays aligned with spoken sentence index after the fix.
+- Test with a scene that has one or more `***` separators at different positions (top, middle, bottom).
+
+**Acceptance criteria:**
+- Sentence highlight stays in sync with spoken audio throughout a scene containing `***` separators.
+- Removing `***` does not change behaviour (already working).
+- No regression to scenes without `***`.
+
+**Priority:** High — user-reported sync bug that makes a key feature unreliable  
+**Confirmed by:** Manual test. Removing `***` restored sync. Adding back broke it.
+
+---
+
 ### 1. Check and fix export issues, starting with PDF
 
 Audit and fix export problems, starting with PDF output and then verifying other export formats.
