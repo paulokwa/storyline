@@ -349,10 +349,17 @@ export default function StructureTree({
                 {showHelp && (
                     <div className="mx-3 mb-2 rounded-2xl bg-white/80 border border-slate-200/60 px-4 py-3 text-[11px] text-slate-600 leading-relaxed space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
                         <p className="font-semibold text-slate-700 text-[10px] uppercase tracking-[0.12em] mb-2">How structure works</p>
-                        <p><span className="font-medium">Project</span> — your whole book or script.</p>
-                        <p><span className="font-medium">{project.type === 'tv_script' ? 'Episode' : 'Chapter'}</span> — a container that groups scenes together.</p>
+                        <p><span className="font-medium">Project</span> — your whole {project.type === 'tv_script' ? 'script project' : 'book'}.</p>
+                        {project.type === 'tv_script' ? (
+                            <>
+                                <p><span className="font-medium">Episode</span> — a major script container.</p>
+                                <p><span className="font-medium">Act</span> — groups scenes within an episode.</p>
+                            </>
+                        ) : (
+                            <p><span className="font-medium">Chapter</span> — a container that groups scenes.</p>
+                        )}
                         <p><span className="font-medium">Scene</span> — the main writing unit where prose lives.</p>
-                        <p className="pt-1 text-slate-400">You can rename anything. Icons always show the real type — a scene named &ldquo;Chapter 1&rdquo; is still a scene in the structure.</p>
+                        <p className="pt-1 text-slate-400">You can rename anything. Icons always show the real type, not the title.</p>
                     </div>
                 )}
 
