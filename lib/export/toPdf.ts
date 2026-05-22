@@ -15,7 +15,7 @@ export async function toPdf(payload: ExportPayload, options: ExportOptions): Pro
     const blob = new Blob([printHtml], { type: 'text/html;charset=utf-8' })
     const url = URL.createObjectURL(blob)
 
-    const printWindow = window.open(url, '_blank', 'width=900,height=700,noopener')
+    const printWindow = window.open(url, '_blank', 'width=900,height=700')
     if (!printWindow) {
         URL.revokeObjectURL(url)
         throw new Error('Popup blocked. Please allow popups for this site and try again.')
