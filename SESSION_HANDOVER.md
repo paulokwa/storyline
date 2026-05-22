@@ -5338,3 +5338,18 @@ Audit complete. Sub-chapters are fully detectable by AI Partner.
 
 ### Next recommended step
 Continue with `TASK_BOARD.md` priorities.
+
+---
+## 2026-05-20 - Sub-chapter recovery audit
+
+### What was completed
+- **Audit of Recovery compatibility:** Confirmed that the "Sub-chapter" feature (nested chapters) is fully compatible with the system recovery features.
+- **Soft-delete/Restore:** Verified that recursive logic in `lib/supabase/recovery.ts` correctly handles nested chapter-to-chapter relationships. Restoring a parent Chapter restores all nested Sub-chapters and Scenes.
+- **Snapshots:** Confirmed that the snapshot restoration algorithm's deferred processing queue handles arbitrary nesting depth for remapping `parent_id`s.
+- **UI:** Verified that the Recovery Tab correctly calculates descendants for nested structures.
+
+### Current status
+Audit complete. Sub-chapters are fully compatible with Trash, Restore, and Snapshot features.
+
+### Next recommended step
+Continue with `TASK_BOARD.md` priorities.
