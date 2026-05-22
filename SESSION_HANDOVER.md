@@ -5,6 +5,69 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-21 - PDF export rewrite, export UX clarifications, structure help panel
+
+### What was completed
+
+**Export QA audit (carried from 2026-05-20):**
+- Audited all 6 export formats against 4 test scenarios. Only one bug found: EPUB double title (fixed). All other formats confirmed safe.
+- `lib/export/toEpub.ts`: removed duplicate `<h1>` that was added to both `contentHtml` and the XHTML body template when `includeProjectTitle=true`. Commit `fa2e27f`.
+
+**Stray nav separator fix:**
+- `components/project/ProjectShell.tsx` line 971: separator between AI cluster and Help button was visible at `lg+` breakpoints when both neighbours were hidden. Added `lg:hidden`. Commit included in `bd64b71`.
+
+**PDF export — full approach rewrite** (commits `69cb58f`, `0602243`, `7d5bd50`):
+- html2canvas+jsPDF was incompatible with Turbopack/Next.js 16 — returned a 0×0 canvas in all approaches (div innerHTML, regex-extract style+body, iframe document.write). Exhausted all practical paths.
+- Rewrote `lib/export/toPdf.ts` to use browser-native `window.print()` via a blob URL. Function now returns `Promise<void>` instead of `Promise<Blob>`.
+- `components/export/ExportModal.tsx`: PDF case in `handleExport` now awaits toPdf, closes modal, and returns early — no blob creation or `<a>` download trigger.
+- Fixed "Popup blocked" error: `noopener` in `window.open()` causes the call to return `null` in modern browsers regardless of popup permissions. Removed `noopener` — safe because the window only loads a self-generated blob URL.
+- PDF UX copy updated: card label → "Print / Save as PDF", card desc → "Opens your browser print dialog", helper note appears when PDF selected, primary button → "Open Print Dialog".
+- Fixed duplicate TipTap Underline extension warning in `lib/export/normalize.ts`: `StarterKit` now bundles Underline internally; added `StarterKit.configure({ underline: false })`.
+
+**Export Preview UX clarifications** (commit `14d15a6`):
+- Fixed pluralization: "1 chapter group" not "1 chapters", "1 scene" not "1 scenes".
+- Novel projects: count label uses "chapter group(s)" to distinguish structure type from item title.
+- TV script projects: count label uses "episode(s)".
+- Added helper note in Export Preview: "Counts are based on Storyline structure types, not item titles."
+
+**Structure panel — help affordance** (commits `14d15a6`, `a8cd03d`):
+- Added `HelpCircle` `?` button next to "The Structure" title. Clicking toggles an inline help panel.
+- Novel help panel: Project → Chapter → Scene.
+- TV script help panel: Project → Episode → Act → Scene (Act level was missing in initial version, corrected in `a8cd03d`).
+- Renaming note: "Icons always show the real type, not the title."
+- Added `Tooltip` on all node icons (shows "Chapter", "Scene", "Episode", "Act" on hover).
+- Added `Tooltip` on Plus buttons: "Add scene or nested chapter" (chapter nodes), "Add act" (episode nodes), "Add scene" (act nodes).
+- Plus button popover (type picker) correctly remains novel/chapter-only — no popover for TV script nodes since Episode→Act→Scene hierarchy is fixed and needs no branching choice.
+
+**Future roadmap** (commit `92cf9b7`):
+- Added "First-run Structure guide" entry to `docs/future-roadmap.md`.
+- Act count audit for TV script export preview: recommended deferred — acts are structural scaffolding, adding a third number makes the preview busier without meaningful benefit.
+
+### Files changed this session
+
+- `lib/export/toPdf.ts` — full rewrite to browser print dialog
+- `lib/export/normalize.ts` — StarterKit.configure({ underline: false })
+- `lib/export/toEpub.ts` — remove duplicate h1
+- `components/export/ExportModal.tsx` — PDF void handling, UX copy, pluralization, helper note
+- `components/project/ProjectShell.tsx` — stray separator lg:hidden
+- `components/project/story/StructureTree.tsx` — help button, help panel, icon tooltips, Plus tooltips
+- `docs/future-roadmap.md` — first-run Structure guide entry
+
+### Current status
+
+All commits pushed to `main`. Netlify deployed (triggered via build hook). Export path is fully audited and launch-ready. PDF uses browser print dialog with clear UX copy. Structure panel has a lightweight help affordance for both project types.
+
+### Next recommended step
+
+Check TASK_BOARD.md for remaining launch blockers. The export path is considered complete for V1/beta. No pending export work unless user testing reveals a regression.
+
+### Risks or warnings
+
+- PDF export requires browser to allow popups. The "Popup blocked" toast fires if the user has popups blocked for the site. UX copy in the helper note explains this.
+- `window.open()` is called after `await buildExportPayload()` — gesture context is expired at that point. Users with popups explicitly set to "Allow" for the site are unaffected. Users relying on the default (gesture-gated) allow will see the blocked toast and need to grant explicit permission. This is documented in the UI.
+- The Netlify deploy hook is stored in `.local/netlify-deploy-hook.txt` (gitignored). Never commit this file.
+
+---
 ## 2026-05-20 - Sub-chapter audit, popover label rename, export depth fix
 
 ### What was completed
