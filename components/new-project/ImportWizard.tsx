@@ -15,6 +15,40 @@ import type { ProjectType } from '@/lib/supabase/types'
 import { getProjectTypeLabel } from '@/lib/constants'
 import { getDeviceFingerprint } from '@/lib/client/device-fingerprint'
 
+// Extract text from a PDF entirely in the browser using pdfjs-dist.
+// This avoids serverless timeout and body-size constraints — the browser sends
+// only the extracted text, not the raw binary, to any server route.
+async function extractPdfText(
+    file: File,
+    onProgress?: (current: number, total: number) => void
+): Promise<string> {
+    const pdfjs = await import('pdfjs-dist')
+    // Load the matching worker from CDN so we don't need to bundle it with webpack
+    pdfjs.GlobalWorkerOptions.workerSrc =
+        `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
+
+    const arrayBuffer = await file.arrayBuffer()
+    const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise
+
+    const pageTexts: string[] = []
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum)
+        const content = await page.getTextContent()
+        const pageText = content.items
+            .filter((item) => 'str' in item)
+            .map((item) => {
+                const t = item as { str: string; hasEOL: boolean }
+                return t.hasEOL ? t.str + '\n' : t.str
+            })
+            .join('')
+        pageTexts.push(pageText)
+        onProgress?.(pageNum, pdf.numPages)
+    }
+
+    await pdf.destroy()
+    return pageTexts.join('\n\n').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+}
+
 interface ImportWizardProps {
     projectType: ProjectType
     onComplete: (chunks: { title: string; content: string }[]) => void
@@ -114,32 +148,34 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
         const selected = e.target.files?.[0]
         if (!selected) return
 
-        // PDFs are processed server-side by pdfjs. Netlify's 6MB body limit and ~10s function
-        // timeout mean large PDFs cannot be imported. Guide users to convert first.
-        if (selected.name.toLowerCase().endsWith('.pdf') && selected.size > 5 * 1024 * 1024) {
-            setError('This PDF is too large to import directly (limit: 5MB). Please export your manuscript as a .docx or .txt file, then import that instead.')
-            e.target.value = ''
-            return
-        }
-
         setFile(selected)
         setUploading(true)
         setError('')
 
-        const formData = new FormData()
-        formData.append('file', selected)
-
         try {
-            const res = await fetch('/api/import', {
-                method: 'POST',
-                body: formData
-            })
-            const data = await res.json()
-            
-            if (!res.ok) throw new Error(data.error || 'Upload failed')
-            
-            setRawText(data.text)
-            processChunks(data.text, 'chapter_keyword')
+            let text: string
+
+            if (selected.name.toLowerCase().endsWith('.pdf')) {
+                // PDFs are extracted client-side — browser pdfjs handles any size without
+                // serverless timeout or body-size constraints
+                text = await extractPdfText(selected)
+                if (!text.trim()) {
+                    throw new Error(
+                        'No selectable text found in this PDF. It may be a scanned image. ' +
+                        'Please use a PDF with selectable text, or export your manuscript as .docx or .txt.'
+                    )
+                }
+            } else {
+                const formData = new FormData()
+                formData.append('file', selected)
+                const res = await fetch('/api/import', { method: 'POST', body: formData })
+                const data = await res.json()
+                if (!res.ok) throw new Error(data.error || 'Upload failed')
+                text = data.text
+            }
+
+            setRawText(text)
+            processChunks(text, 'chapter_keyword')
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'Upload failed')
             setFile(null)
