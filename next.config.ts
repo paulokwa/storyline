@@ -6,7 +6,9 @@ const nextConfig: NextConfig = {
     qualities: [100, 75],
   },
   outputFileTracingIncludes: {
-    '/api/import': ['./node_modules/@napi-rs/canvas*/**/*'],
+    // pdf-parse uses a runtime template-string require for its bundled pdf.js, which NFT
+    // cannot statically trace — include the whole lib so it's present in the Lambda bundle
+    '/api/import': ['./node_modules/pdf-parse/lib/**/*'],
   },
 }
 

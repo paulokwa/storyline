@@ -253,7 +253,11 @@ export async function POST(req: NextRequest) {
                 text = sanitizePandocPlainText(text)
             }
         } else if (filename.endsWith('.pdf')) {
-            const pdfParse = (await import('pdf-parse')).default
+            // Import lib directly to avoid pdf-parse/index.js running Fs.readFileSync on load
+            // (index.js sets isDebugMode = !module.parent, which is true in webpack bundles,
+            // causing it to crash the Lambda by reading a non-existent test file at cold start)
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const pdfParse = require('pdf-parse/lib/pdf-parse.js') as (buf: Buffer) => Promise<{ text: string }>
             const timeoutPromise = new Promise<never>((_, reject) =>
                 setTimeout(
                     () => reject(new Error('PDF import took too long. Please try a smaller PDF or export your manuscript as DOCX or TXT.')),
