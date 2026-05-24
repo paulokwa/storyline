@@ -253,20 +253,15 @@ export async function POST(req: NextRequest) {
                 text = sanitizePandocPlainText(text)
             }
         } else if (filename.endsWith('.pdf')) {
-            const { PDFParse } = await import('pdf-parse')
-            const parser = new PDFParse({ data: buffer })
+            const pdfParse = (await import('pdf-parse')).default
             const timeoutPromise = new Promise<never>((_, reject) =>
                 setTimeout(
                     () => reject(new Error('PDF import took too long. Please try a smaller PDF or export your manuscript as DOCX or TXT.')),
                     PDF_TIMEOUT_MS
                 )
             )
-            try {
-                const result = await Promise.race([parser.getText(), timeoutPromise])
-                text = result.text
-            } finally {
-                await parser.destroy()
-            }
+            const result = await Promise.race([pdfParse(buffer), timeoutPromise])
+            text = result.text
         } else if (filename.endsWith('.epub')) {
             text = await extractEpubText(buffer)
         } else {
