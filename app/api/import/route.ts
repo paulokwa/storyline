@@ -4,7 +4,9 @@ import JSZip from 'jszip'
 import { createClient } from '@/lib/supabase/server'
 
 const MAX_FILE_BYTES = 50 * 1024 * 1024 // 50 MB
-const PDF_TIMEOUT_MS = 30_000 // 30 seconds
+// 8s gives pdfjs time to process small PDFs while firing before Netlify's ~10s hard function kill,
+// ensuring the catch block can return JSON instead of Netlify returning a plain-text 500.
+const PDF_TIMEOUT_MS = 8_000
 
 function getErrorMessage(error: unknown) {
     return error instanceof Error ? error.message : 'Failed to parse document'

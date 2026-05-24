@@ -114,6 +114,14 @@ export default function ImportWizard({ projectType, onComplete, onBack, creating
         const selected = e.target.files?.[0]
         if (!selected) return
 
+        // PDFs are processed server-side by pdfjs. Netlify's 6MB body limit and ~10s function
+        // timeout mean large PDFs cannot be imported. Guide users to convert first.
+        if (selected.name.toLowerCase().endsWith('.pdf') && selected.size > 5 * 1024 * 1024) {
+            setError('This PDF is too large to import directly (limit: 5MB). Please export your manuscript as a .docx or .txt file, then import that instead.')
+            e.target.value = ''
+            return
+        }
+
         setFile(selected)
         setUploading(true)
         setError('')
