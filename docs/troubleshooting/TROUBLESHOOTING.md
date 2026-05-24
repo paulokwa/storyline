@@ -1,5 +1,42 @@
 # TROUBLESHOOTING
 
+## Issue: PDF import fails with `DOMMatrix is not defined` on Netlify
+
+### Symptoms
+
+- Uploading any PDF to the import flow returns a 500 Internal Server Error.
+- Browser console shows `DOMMatrix is not defined` (may appear as `Unexpected token 'I', "Internal E"...` on the client if the raw text is parsed as JSON).
+
+### Cause
+
+- `pdf-parse@2.x` depends on browser DOM APIs (`DOMMatrix`, `Canvas`) that do not exist in Node.js serverless functions.
+- The v2 API is class-based (`new PDFParse({ data: buffer })`); v1 is a plain async function.
+
+### Fix
+
+- Pin `pdf-parse` to `1.1.1` in `package.json` (the original Node.js-native version).
+- Import directly from `pdf-parse/lib/pdf-parse.js` — **not** from `pdf-parse` — to skip the buggy `index.js`. `index.js` sets `isDebugMode = !module.parent`, which is `true` in webpack-bundled Lambda code (where `module.parent` is `null`). This causes it to call `Fs.readFileSync('./test/data/05-versions-space.pdf')` at cold-start, crashing the function before any request is handled. Importing the lib directly bypasses this:
+  ```ts
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const pdfParse = require('pdf-parse/lib/pdf-parse.js') as (buf: Buffer) => Promise<{ text: string }>
+  const result = await Promise.race([pdfParse(buffer), timeoutPromise])
+  text = result.text
+  ```
+- Add `@types/pdf-parse` to devDependencies for TypeScript coverage.
+- Update `outputFileTracingIncludes` in `next.config.ts` to include `./node_modules/pdf-parse/lib/**/*`. pdf-parse uses a runtime template-string `require(\`./pdf.js/${version}/build/pdf.js\`)` which Next.js's NFT bundler cannot statically trace, so the pdf.js binary would otherwise be absent from the Lambda.
+
+### Verification
+
+- `npm run build` passes with no type errors.
+- PDF import works in production without a 500 error.
+
+### Notes
+
+- Do not upgrade to `pdf-parse@2.x` — it targets browser/canvas environments and cannot run in serverless.
+- Do not import from `pdf-parse` (index.js) — always import from `pdf-parse/lib/pdf-parse.js` in this project.
+
+---
+
 ## Issue: Google OAuth signup creates default AI settings but no free trial grant
 
 ### Symptoms
