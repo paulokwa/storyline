@@ -23,9 +23,9 @@ async function extractPdfText(
     onProgress?: (current: number, total: number) => void
 ): Promise<string> {
     const pdfjs = await import('pdfjs-dist')
-    // Load the matching worker from CDN so we don't need to bundle it with webpack
-    pdfjs.GlobalWorkerOptions.workerSrc =
-        `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
+    // Worker is copied from node_modules to public/ by scripts/copy-pdf-worker.js (postinstall).
+    // Served from our own CDN — no external runtime dependency.
+    pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
 
     const arrayBuffer = await file.arrayBuffer()
     const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise

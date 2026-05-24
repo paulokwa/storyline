@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "font:audit": "node scripts/font-audit.js",
-    "create:test-account": "tsx scripts/create-test-account.ts"
+    "create:test-account": "tsx scripts/create-test-account.ts",
+    "postinstall": "node scripts/copy-pdf-worker.js"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.53",

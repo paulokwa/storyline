@@ -13,6 +13,9 @@
 /out/
 /build
 
+# Generated at install time by scripts/copy-pdf-worker.js — do not commit
+/public/pdf.worker.min.mjs
+
 # Hosting / platform local folders
 /.vercel
 /.netlify
