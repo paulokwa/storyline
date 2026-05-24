@@ -238,10 +238,7 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        const allChapters: any[] = []
-        let totalOutputChars = 0
-
-        for (const chunk of chunks) {
+        const processChunk = async (chunk: string): Promise<{ chapters: any[], outputChars: number }> => {
             const promptText = `Analyze the following manuscript segment and identify logical major chapter start points.
 
 PRIORITY:
@@ -330,8 +327,7 @@ ${chunk}`
             if (!providerResponse.ok) {
                 const errBody = await providerResponse.text()
                 console.error(`${effectiveProvider} API error (chunk):`, errBody)
-                // Continue to next chunk rather than aborting entirely
-                continue
+                return { chapters: [], outputChars: 0 }
             }
 
             const responseData = await providerResponse.json()
@@ -342,28 +338,36 @@ ${chunk}`
                         ? extractOpenRouterCompletionText(responseData)
                         : extractOpenAiOutputText(responseData)
 
-            totalOutputChars += rawText.length
-
             try {
                 // Strip markdown code fences if present
                 const clean = rawText.replace(/```json/gi, '').replace(/```/g, '').trim()
                 const parsed = JSON.parse(clean)
                 if (Array.isArray(parsed)) {
-                    allChapters.push(...parsed)
+                    return { chapters: parsed, outputChars: rawText.length }
                 } else if (parsed && typeof parsed === 'object') {
                     // Some models (especially under json_object mode) wrap the array:
                     // { "chapters": [...] } or { "result": [...] } etc.
                     const nested = parsed.chapters ?? parsed.result ?? parsed.data ?? parsed.items
                     if (Array.isArray(nested)) {
-                        allChapters.push(...nested)
+                        return { chapters: nested, outputChars: rawText.length }
                     } else {
                         console.error('AI Detect: Unexpected JSON shape from OpenRouter chunk:', JSON.stringify(parsed).slice(0, 200))
                     }
                 }
             } catch (e) {
                 console.error('AI Detect: Failed to parse chunk JSON:', e, '\nRaw:', rawText.slice(0, 300))
-                // Skip malformed chunks
             }
+            return { chapters: [], outputChars: rawText.length }
+        }
+
+        // Process all chunks in parallel — reduces wall-clock time from N×latency to max(latency)
+        const chunkResults = await Promise.all(chunks.map(processChunk))
+
+        const allChapters: any[] = []
+        let totalOutputChars = 0
+        for (const result of chunkResults) {
+            allChapters.push(...result.chapters)
+            totalOutputChars += result.outputChars
         }
 
         // De-duplicate by markerSnippet
