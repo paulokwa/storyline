@@ -465,8 +465,12 @@ export default function ProjectSettingsModal({
 
                                     <div className="space-y-2.5">
                                         <Label htmlFor="premise" className="text-sm font-semibold text-foreground ml-1">Core Premise</Label>
-                                        <div className="mb-2 rounded-2xl border border-border/50 bg-muted/30 p-4 text-xs font-medium leading-5 text-slate-500">
-                                            A short note about the story at its heart. This helps orient the project and can guide AI tools when you choose to use them.
+                                        <div className="flex items-start gap-2 px-1 text-xs font-medium leading-5 text-slate-500">
+                                            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden="true" />
+                                            <p className="min-w-0 flex-1">A short note about the story at its heart.</p>
+                                            <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-primary">
+                                                AI Partner Context
+                                            </span>
                                         </div>
                                         <Textarea
                                             id="premise"
@@ -483,8 +487,12 @@ export default function ProjectSettingsModal({
                                             <Label htmlFor="tone" className="text-sm font-semibold text-foreground">Story Tone</Label>
                                             <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">Optional</span>
                                         </div>
-                                        <div className="mb-2 rounded-2xl border border-border/50 bg-muted/30 p-4 text-xs font-medium leading-5 text-slate-500">
-                                            Capture the mood, voice, or atmosphere you want to return to later. AI tools may also use this when you ask for help.
+                                        <div className="flex items-start gap-2 px-1 text-xs font-medium leading-5 text-slate-500">
+                                            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden="true" />
+                                            <p className="min-w-0 flex-1">Capture the mood, voice, or atmosphere you want to return to later.</p>
+                                            <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-primary">
+                                                AI Partner Context
+                                            </span>
                                         </div>
                                         <Textarea
                                             id="tone"

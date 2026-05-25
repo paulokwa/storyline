@@ -5,6 +5,29 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+## 2026-05-25 - Project settings helper text polish
+
+### What was completed
+
+- Updated Project Settings → Core Premise and Story Tone guidance so explanatory copy no longer appears inside bordered input-like boxes.
+- Added an info icon and right-aligned "AI Partner Context" badge to preserve the AI-use signal without making the helper text look editable.
+- Saved the Netlify deploy hook locally at `.local/netlify-deploy-hook.txt`; `.local/` was already ignored by Git.
+
+### Current status
+
+UI code change is complete and ready for browser visual QA. The local dev server was started successfully during the session and then stopped before handoff. TypeScript passed after refreshing the local dependency install.
+
+### Next recommended step
+
+Open Project Settings in a browser and confirm the helper rows read clearly at desktop and narrow/mobile widths.
+
+### Risks or warnings
+
+- Focused ESLint is blocked by pre-existing `any` errors in `components/project/ProjectSettingsModal.tsx`.
+- `npm run build` fails during the Next.js webpack compile stage with only the generic message `Build failed because of webpack errors`; `--debug` and disabling the build worker did not surface a deeper diagnostic.
+- `npm install` repaired the missing local `@emailjs/browser` package and reported existing audit findings: 13 moderate, 5 high, and 2 critical vulnerabilities. No audit fix was run.
+
+---
 ## 2026-05-21 - PDF export rewrite, export UX clarifications, structure help panel
 
 ### What was completed
