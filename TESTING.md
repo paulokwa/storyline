@@ -128,6 +128,7 @@ Future agents: treat this workflow as established. Before asking the user about 
 | Provider copy audit — onboarding help (AiSetupGuide) | Not tested | - | - | Open the AI setup guide. Confirm OpenRouter default model is described as "Llama 3.3 70B via OpenRouter" (not "gpt-4o-mini"). |
 | Provider copy audit — legal pages | Not tested | - | - | Visit `/privacy` and `/ai-disclaimer`. Confirm both pages list "Google Gemini, OpenAI, or OpenRouter" (not just "Google Gemini and OpenAI"). |
 | Provider copy audit — in-app help BYOK entry | Not tested | - | - | Open the in-app help panel and search for "API key" or "BYOK". Confirm the answer mentions OpenAI, Gemini, and OpenRouter with steps for each. |
+| Magic Detect Mobile Audit (361k chars) | Failed | AI agent | 2026-05-23 | Request reached server (bypassed rate limit) but never completed or failed in logs. Highly likely a 10s sync timeout on live hosting during 3 sequential AI chunks. Local retest needed. |
 | Broader pre-launch regression pass | Not tested | - | - | Cover core project flow, import/export, local/cloud behavior, AI availability states, collaboration, tablet/mobile layout, and onboarding tours. |
 | Public beta import/export confidence pass | Passed | User | 2026-05-18 | All common file types imported, structure reviewed, export formats confirmed usable. |
 | Public beta auth flow QA | Not tested | - | - | Manual launch QA moved here from `docs/human-launch-checklist.md`: signup, login, verification, reused/expired verification link, forgot-password, and reset-password flows. |
