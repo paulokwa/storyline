@@ -97,23 +97,6 @@ The read aloud pipeline likely splits text into sentences or lines using the raw
 
 ---
 
-### 1. Check and fix export issues, starting with PDF
-
-Audit and fix export problems, starting with PDF output and then verifying other export formats.
-
-Pay special attention to screenplay-mode export errors and format parity across:
-
-- PDF
-- DOCX
-- EPUB
-- HTML
-- Markdown
-- Plain text
-
-Before changing export code, check `TESTING.md`, `SESSION_HANDOVER.md`, and `docs/technical-debt-roadmap.md` for known export-related issues.
-
----
-
 ## Next
 
 
@@ -160,6 +143,8 @@ Automatically optimize cover images at upload time and ensure the library uses l
 ---
 
 ### 4. Notifications — list page, detail view, delete, and timestamps
+
+**Experiment status (2026-11-07):** Kwame authorized a test-branch trial. Preparation lives on `experiment/stitch-storyline`; see `docs/stitch-experiment.md` for the scoped Stitch prompt, existing-code audit, safety boundary and acceptance checks. The detail route/read-state implementation already exists; do not recreate it. Stitch generation is blocked by the connected service returning HTTP 404. No hub implementation or browser verification is claimed. Keep production unchanged.
 
 **Problem:**
 Clicking a notification card currently navigates the user directly to the destination page (e.g. the project or comment). There is no central place to browse all notifications, read one in isolation, or remove unwanted entries. Date/time visibility on notifications is unconfirmed.
@@ -238,6 +223,10 @@ Changing an AI setting should be the save action. Users should not need to make 
 ---
 
 ## Done / Archived
+
+### Export audit and PDF flow — previously completed (2026-05-21)
+
+The May 21 handover records all six export formats audited, an EPUB duplicate-title fix, and the PDF rewrite to browser Print / Save as PDF. The stale Now entry was removed on 2026-11-07 to prevent duplicate implementation. This is reconciliation of existing completion evidence, not a new runtime verification. Preserve the documented popup-permission caveat; reopen only for a specific regression.
 
 ### First-save UX clarification — COMPLETE (2026-05-18)
 
