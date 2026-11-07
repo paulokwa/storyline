@@ -99,6 +99,19 @@ Future agents: treat this workflow as established. Before asking the user about 
 
 ---
 
+## 2026-11-07 — Stitch experiment preparation
+
+| Check | Status | Tested by | Date tested | Notes |
+|---|---|---|---|---|
+| Clean checkout dependency installation | Passed | Codex | 2026-11-07 | `npm ci --no-audit --no-fund` succeeded with the existing lockfile; no dependency changes. |
+| Baseline webpack and TypeScript stages | Passed | Codex | 2026-11-07 | Original `npm run build` compiled and type-checked successfully, then failed `/reset-password` prerendering due to absent Supabase public settings. The old generic webpack failure was not reproduced. |
+| Full Next build with isolated dummy public settings | Passed | Codex | 2026-11-07 | `NEXT_PUBLIC_SUPABASE_URL=https://storyline-build-check.invalid NEXT_PUBLIC_SUPABASE_ANON_KEY=build-check-placeholder NEXT_TELEMETRY_DISABLED=1 npm run build` completed, including static pages and build traces. Verifies build only; does not test actual backend, authentication or production configuration. |
+| Experiment documentation references and diff | Passed | Codex | 2026-11-07 | Confirmed source paths and the existing detail route; missing list route confirmed; prompt fences balanced; `git diff --check` clean. No application code changed. |
+| Stitch prototype generation | Blocked | Codex | 2026-11-07 | Read-only `list_projects` returned service HTTP 404 / UNAVAILABLE. No generated screens or full product-loop run. |
+| Authenticated notifications browser QA | Blocked | Codex | 2026-11-07 | This checkout has no `.env.local`, `.local/test-account.env` or `.env.test.local`. No login, live data, delete or cross-account tests were attempted. |
+
+These checks do not mark the notifications-hub implementation complete. Its acceptance checklist is in `docs/stitch-experiment.md`.
+
 # Tests To Do
 
 ## Core Project Flow

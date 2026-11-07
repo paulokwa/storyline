@@ -5,6 +5,37 @@ This file records the current project state at the end of each AI coding session
 Agents should update this file before ending a session.
 
 ---
+
+## 2026-11-07 - Isolated Stitch notifications experiment prepared
+
+### What was completed
+
+- Created `experiment/stitch-storyline` from main commit `bdb0844000a800c8cc13d63c81bebe6ddef5b1bc`, following Kwame's authorization to trial the recommendations on a test branch.
+- Added `docs/stitch-experiment.md`: concrete notifications-hub prompt, source audit, acceptance checks, evaluation criteria and resume gate. The existing notification detail route and owner-scoped database policies are to be reused, not rebuilt.
+- Reconciled the stale export task with the May 21 completion handover. No exporter behavior was changed or newly verified.
+- Confirmed the connected Stitch service fails on read-only project listing with HTTP 404 / UNAVAILABLE. No prototype, Stitch project, product-loop run or generated code was created.
+
+### Current status
+
+Preparation only. No application source, database, auth, billing, deployment configuration or Master Brief changes. No production deploy, merge or production data writes.
+
+`npm ci --no-audit --no-fund` succeeded using the existing lockfile. The fresh baseline `npm run build` passed webpack compilation and TypeScript, then failed prerendering `/reset-password` because this checkout has no Supabase URL/anon key. This does not reproduce the May 25 generic webpack failure and does not prove it is fixed on the original machine.
+
+A second `npm run build` with `NEXT_PUBLIC_SUPABASE_URL=https://storyline-build-check.invalid` and `NEXT_PUBLIC_SUPABASE_ANON_KEY=build-check-placeholder` passed in full (webpack, TypeScript, static pages and build traces). These are dummy build-only public settings, not usable credentials. This verifies compilation/build shape only, not live Supabase, sign-in or runtime behavior. `git diff --check` and experiment source-reference checks also passed. A Netlify build was not run: this PR changes documentation only, not deployable application source or deployment configuration.
+
+### Next recommended step
+
+Restore Stitch access and generate/review the prototype with the brief in `docs/stitch-experiment.md`. Confirm branch selection or use a branch archive without granting GitHub writes. Integrate the bounded hub change into this branch, then run owner/read/delete/realtime/mobile/theme checks against non-production fixtures.
+
+### Risks or warnings
+
+- The fuller waitlisted PR-and-metrics pilot has not been enabled or verified.
+- `.env.local` and the machine-local test-account credential files are absent. Authenticated browser QA is blocked; follow `docs/dev-test-account.md` locally, never paste credentials in chat.
+- Branch isolation does not isolate a shared backend. Do not write production data or change schemas/policies.
+- The user's explicit test-branch scope overrides the normal production-deploy step for this experiment. No production deployment is authorized.
+- NO CHANGE TO RECOMMENDATION: existing product direction is preserved; the experiment remains bounded and reviewable.
+
+---
 ## 2026-05-25 - Project settings helper text polish
 
 ### What was completed
